@@ -14,13 +14,6 @@ const Index = () => {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center flex flex-col items-center space-y-2">
-            <div className="mb-4">
-              <img 
-                src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
-                alt="Deckademics Logo" 
-                className="h-28 w-auto"
-              />
-            </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
               Welcome to Deckademics DJ School
             </h1>
