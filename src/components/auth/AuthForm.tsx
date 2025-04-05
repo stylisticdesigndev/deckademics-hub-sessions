@@ -11,12 +11,15 @@ import { EyeIcon, EyeOffIcon, Mail, LockKeyhole } from 'lucide-react';
 
 type UserType = 'student' | 'instructor';
 
-export const AuthForm = () => {
+interface AuthFormProps {
+  userType: UserType;
+}
+
+export const AuthForm = ({ userType }: AuthFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [userType, setUserType] = useState<UserType>('student');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -90,32 +93,16 @@ export const AuthForm = () => {
   return (
     <Card className="w-full max-w-md border-deckademics-primary/20">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">Welcome to Deckademics</CardTitle>
-        <CardDescription>Sign in to access your DJ school account</CardDescription>
+        <CardTitle className="text-2xl font-bold">
+          {userType === 'student' ? 'Student Access' : 'Instructor Access'}
+        </CardTitle>
+        <CardDescription>
+          {userType === 'student' 
+            ? 'Sign in to access your DJ school account' 
+            : 'Sign in to manage your students'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <Label>I am a:</Label>
-          <div className="flex mt-2 gap-2">
-            <Button 
-              type="button" 
-              variant={userType === 'student' ? 'default' : 'outline'} 
-              onClick={() => setUserType('student')}
-              className="flex-1"
-            >
-              Student
-            </Button>
-            <Button 
-              type="button" 
-              variant={userType === 'instructor' ? 'default' : 'outline'} 
-              onClick={() => setUserType('instructor')}
-              className="flex-1"
-            >
-              Instructor
-            </Button>
-          </div>
-        </div>
-        
         <Tabs defaultValue="login">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="login">Login</TabsTrigger>

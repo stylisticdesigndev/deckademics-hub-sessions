@@ -3,10 +3,9 @@ import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Logo } from '@/components/logo/Logo';
 import { Disc3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
-const Auth = () => {
+const StudentAuth = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-deckademics-dark to-deckademics-darker">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
@@ -22,40 +21,18 @@ const Auth = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
-              Welcome to Deckademics DJ School
+              Student Sign In
             </h1>
             <p className="text-muted-foreground max-w-xs mx-auto">
-              Sign in to access your personalized DJ learning experience
+              Access your DJ learning dashboard and track your progress
             </p>
           </div>
-          
-          <div className="flex flex-col gap-4">
-            <Button 
-              className="w-full py-6 text-lg" 
-              variant="default" 
-              size="lg"
-              asChild
-            >
-              <Link to="/auth/student">
-                Student Sign In
-              </Link>
-            </Button>
-            
-            <Button 
-              className="w-full py-6 text-lg"
-              variant="outline" 
-              size="lg"
-              asChild
-            >
-              <Link to="/auth/instructor">
-                Instructor Sign In
-              </Link>
-            </Button>
+          <AuthForm userType="student" />
+          <div className="text-center">
+            <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
+              Back to sign in options
+            </Link>
           </div>
-          
-          <p className="text-center text-muted-foreground text-sm">
-            Choose the appropriate sign in option above
-          </p>
         </div>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground">
@@ -65,4 +42,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default StudentAuth;
