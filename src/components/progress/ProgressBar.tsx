@@ -37,7 +37,7 @@ export const ProgressBar = ({
       )}
       <div className={cn("w-full bg-muted rounded-full overflow-hidden", heightClasses[size])}>
         <div 
-          className="bg-gray-700 transition-all duration-500"
+          className="bg-gradient-to-r from-deckademics-primary to-deckademics-accent transition-all duration-500"
           style={{ width: `${percentage}%` }}
           role="progressbar"
           aria-valuenow={value}
