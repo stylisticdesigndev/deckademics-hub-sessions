@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -187,49 +188,7 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border">
-                  <div className="p-4">
-                    <h3 className="font-medium">New Instructor Registrations</h3>
-                    <div className="mt-2 divide-y">
-                      {[1, 2].map((i) => (
-                        instructorStatus[i] === null && (
-                          <div key={`instructor-${i}`} className="flex items-center justify-between py-3">
-                            <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 rounded-full bg-deckademics-primary/20 flex items-center justify-center">
-                                <span className="font-medium text-deckademics-primary">I{i}</span>
-                              </div>
-                              <div>
-                                <p className="font-medium">John Instructor {i}</p>
-                                <p className="text-sm text-muted-foreground">john{i}@example.com</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button 
-                                variant="default" 
-                                className="bg-green-500 hover:bg-green-600"
-                                onClick={() => handleInstructorApprove(i)}
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                variant="destructive"
-                                onClick={() => handleInstructorDecline(i)}
-                              >
-                                Decline
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      ))}
-                      {pendingInstructors === 0 && (
-                        <div className="py-4 text-center text-muted-foreground">
-                          No pending instructor approvals
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
+                {/* Changed the order: Students first, then Instructors */}
                 <div className="rounded-md border">
                   <div className="p-4">
                     <h3 className="font-medium">New Student Registrations</h3>
@@ -267,6 +226,49 @@ const AdminDashboard = () => {
                       {pendingStudents === 0 && (
                         <div className="py-4 text-center text-muted-foreground">
                           No pending student approvals
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="rounded-md border">
+                  <div className="p-4">
+                    <h3 className="font-medium">New Instructor Registrations</h3>
+                    <div className="mt-2 divide-y">
+                      {[1, 2].map((i) => (
+                        instructorStatus[i] === null && (
+                          <div key={`instructor-${i}`} className="flex items-center justify-between py-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="h-10 w-10 rounded-full bg-deckademics-primary/20 flex items-center justify-center">
+                                <span className="font-medium text-deckademics-primary">I{i}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium">John Instructor {i}</p>
+                                <p className="text-sm text-muted-foreground">john{i}@example.com</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="default" 
+                                className="bg-green-500 hover:bg-green-600"
+                                onClick={() => handleInstructorApprove(i)}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleInstructorDecline(i)}
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      ))}
+                      {pendingInstructors === 0 && (
+                        <div className="py-4 text-center text-muted-foreground">
+                          No pending instructor approvals
                         </div>
                       )}
                     </div>
