@@ -83,6 +83,12 @@ const InstructorDashboard = () => {
 
         <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <StatsCard 
+            title="Today's Classes"
+            value={upcomingClassCount}
+            icon={<Calendar className="h-5 w-5" />}
+            description="Scheduled for today"
+          />
+          <StatsCard 
             title="Total Students"
             value={students.length}
             icon={<Users className="h-5 w-5" />}
@@ -93,12 +99,6 @@ const InstructorDashboard = () => {
             value="56%"
             icon={<CheckCircle className="h-5 w-5" />}
             trend={{ value: 5, isPositive: true }}
-          />
-          <StatsCard 
-            title="Today's Classes"
-            value={upcomingClassCount}
-            icon={<Calendar className="h-5 w-5" />}
-            description="Scheduled for today"
           />
         </section>
 
