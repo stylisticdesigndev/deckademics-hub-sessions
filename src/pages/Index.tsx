@@ -1,70 +1,72 @@
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+
+import React from 'react';
+import { AuthForm } from '@/components/auth/AuthForm';
 import { Logo } from '@/components/logo/Logo';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
-  const navigate = useNavigate();
-  
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
-      <header className="container flex h-20 items-center px-4 sm:px-6 lg:px-8">
-        <Logo size="md" />
-        <div className="ml-auto flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/auth')}>
-            Sign In
-          </Button>
-        </div>
+      <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
+        <Logo size="header" />
       </header>
-      
-      <main className="flex-1 flex items-center">
-        <div className="container px-4 md:px-6 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-          <div className="flex-1 space-y-6 text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
-              Master the Art of DJing with <span className="text-deckademics-primary">Deckademics</span>
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Learn from expert instructors, track your progress, and connect with a community of passionate DJs
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button size="lg" onClick={() => navigate('/auth')}>
-                Get Started
-              </Button>
-              <Button variant="outline" size="lg">
-                Learn More
-              </Button>
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center flex flex-col items-center space-y-2">
+            <div className="mb-4">
+              <img 
+                src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
+                alt="Deckademics Logo" 
+                className="h-28 w-auto"
+              />
             </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Welcome to Deckademics DJ School
+            </h1>
+            <p className="text-muted-foreground max-w-xs mx-auto">
+              Sign in to access your personalized DJ learning experience
+            </p>
           </div>
           
-          <div className="flex-1 flex justify-center md:justify-end relative">
-            <div className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-deckademics-primary/20 relative animate-pulse-subtle">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-black border-8 border-deckademics-primary animate-spin-slow">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-4 h-4 md:w-6 md:h-6 rounded-full bg-white"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex flex-col gap-4">
+            <Button 
+              className="w-full py-6 text-lg" 
+              variant="outline" 
+              size="lg"
+              asChild
+            >
+              <Link to="/auth/student">
+                Student Sign In
+              </Link>
+            </Button>
+            
+            <Button 
+              className="w-full py-6 text-lg"
+              variant="outline" 
+              size="lg"
+              asChild
+            >
+              <Link to="/auth/instructor">
+                Instructor Sign In
+              </Link>
+            </Button>
           </div>
+          
+          <p className="text-center text-muted-foreground text-sm">
+            Choose the appropriate sign in option above
+          </p>
         </div>
       </main>
-      
-      <footer className="border-t border-border bg-deckademics-darker/50 py-6">
-        <div className="container px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
-          </p>
-          <div className="flex gap-4">
-            <a href="#" className="text-sm text-muted-foreground hover:text-white">
-              Terms
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-white">
-              Privacy
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-white">
-              Contact
-            </a>
-          </div>
+      <footer className="py-6 text-center text-sm text-muted-foreground">
+        © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
+        <div className="mt-4">
+          <Link 
+            to="/auth/admin" 
+            className="text-xs text-muted-foreground hover:text-deckademics-primary transition-colors"
+          >
+            Administrator Access
+          </Link>
         </div>
       </footer>
     </div>

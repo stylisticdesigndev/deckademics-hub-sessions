@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Auth from "./pages/auth/Auth";
 import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
 import AdminAuth from "./pages/auth/AdminAuth";
@@ -44,7 +43,6 @@ const App = () => (
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
           <Route path="/auth/student" element={<StudentAuth />} />
           <Route path="/auth/instructor" element={<InstructorAuth />} />
           <Route path="/auth/admin" element={<AdminAuth />} />
