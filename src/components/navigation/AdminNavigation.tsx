@@ -16,6 +16,10 @@ import {
 export const AdminNavigation = () => {
   const { pathname } = useLocation();
 
+  // Define the counts to use across the navigation
+  const pendingInstructorsCount = 2;
+  const pendingStudentsCount = 5;
+
   const navItems = [
     {
       title: "Dashboard",
@@ -27,13 +31,15 @@ export const AdminNavigation = () => {
       title: "Instructors",
       icon: Users,
       href: "/admin/instructors",
-      active: pathname === "/admin/instructors"
+      active: pathname === "/admin/instructors",
+      badge: pendingInstructorsCount
     },
     {
       title: "Students",
       icon: GraduationCap,
       href: "/admin/students",
-      active: pathname === "/admin/students"
+      active: pathname === "/admin/students",
+      badge: pendingStudentsCount
     },
     {
       title: "Attendance",
@@ -82,14 +88,9 @@ export const AdminNavigation = () => {
         >
           <item.icon className="h-5 w-5" />
           <span>{item.title}</span>
-          {item.href === "/admin/instructors" && (
+          {item.badge && (
             <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
-              2
-            </span>
-          )}
-          {item.href === "/admin/students" && (
-            <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
-              5
+              {item.badge}
             </span>
           )}
         </Link>

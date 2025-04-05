@@ -160,6 +160,36 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
+                
+                {/* Add Student Registrations Section */}
+                <div className="rounded-md border">
+                  <div className="p-4">
+                    <h3 className="font-medium">New Student Registrations</h3>
+                    <div className="mt-2 divide-y">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={`student-${i}`} className="flex items-center justify-between py-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                              <span className="font-medium text-blue-500">S{i}</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Jane Student {i}</p>
+                              <p className="text-sm text-muted-foreground">jane{i}@example.com</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button className="rounded-md bg-green-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-green-600">
+                              Approve
+                            </button>
+                            <button className="rounded-md bg-red-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-red-600">
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
