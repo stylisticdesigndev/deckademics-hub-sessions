@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,8 +64,8 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				deckademics: {
-					dark: "#121212",
-					darker: "#0A0A0A",
+					dark: "#212529",
+					darker: "#191c20",
 					light: "#F5F5F5",
 					primary: "#40a647",
 					secondary: "#8B5CF6",

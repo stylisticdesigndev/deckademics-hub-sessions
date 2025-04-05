@@ -7,7 +7,7 @@ const Index = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-deckademics-dark to-deckademics-darker">
+    <div className="min-h-screen flex flex-col bg-deckademics-dark">
       <header className="container flex h-20 items-center px-4 sm:px-6 lg:px-8">
         <Logo size="md" />
         <div className="ml-auto flex items-center gap-4">
