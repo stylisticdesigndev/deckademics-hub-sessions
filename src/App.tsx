@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/auth/Auth";
 import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
+import AdminAuth from "./pages/auth/AdminAuth";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -21,6 +22,11 @@ import StudentProfile from "./pages/student/StudentProfile";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
+
+// Admin pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminInstructors from "./pages/admin/AdminInstructors";
+import AdminStudents from "./pages/admin/AdminStudents";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +42,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/student" element={<StudentAuth />} />
           <Route path="/auth/instructor" element={<InstructorAuth />} />
+          <Route path="/auth/admin" element={<AdminAuth />} />
           
           {/* Student routes */}
           <Route path="/student/dashboard" element={<StudentDashboard />} />
@@ -48,6 +55,15 @@ const App = () => (
           <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
           <Route path="/instructor/students" element={<InstructorStudents />} />
           <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/instructors" element={<AdminInstructors />} />
+          <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/attendance" element={<AdminDashboard />} />
+          <Route path="/admin/payments" element={<AdminDashboard />} />
+          <Route path="/admin/announcements" element={<AdminDashboard />} />
+          <Route path="/admin/settings" element={<AdminDashboard />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Logo } from '@/components/logo/Logo';
@@ -48,6 +49,17 @@ const Auth = () => {
             >
               <Link to="/auth/instructor">
                 Instructor Sign In
+              </Link>
+            </Button>
+            
+            <Button 
+              className="w-full py-6 text-lg"
+              variant="secondary" 
+              size="lg"
+              asChild
+            >
+              <Link to="/auth/admin">
+                Administrator Access
               </Link>
             </Button>
           </div>
