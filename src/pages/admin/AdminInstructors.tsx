@@ -19,24 +19,48 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Check, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { Search, UserPlus, Check, X, Eye } from 'lucide-react';
 
 const AdminInstructors = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [addInstructorOpen, setAddInstructorOpen] = useState(false);
+  const [viewInstructorId, setViewInstructorId] = useState<number | null>(null);
+  const [newInstructor, setNewInstructor] = useState({
+    name: '',
+    email: '',
+    specialization: '',
+  });
   
   // Mock instructor data
   const activeInstructors = [
-    { id: 1, name: 'Professor Smith', email: 'smith@example.com', students: 12, classes: 3, status: 'active' },
-    { id: 2, name: 'DJ Mike', email: 'mike@example.com', students: 8, classes: 2, status: 'active' },
-    { id: 3, name: 'Sarah Jones', email: 'sarah@example.com', students: 15, classes: 4, status: 'active' },
-    { id: 4, name: 'Robert Williams', email: 'robert@example.com', students: 10, classes: 2, status: 'active' },
-    { id: 5, name: 'Laura Thompson', email: 'laura@example.com', students: 7, classes: 1, status: 'active' },
+    { id: 1, name: 'Professor Smith', email: 'smith@example.com', students: 12, classes: 3, status: 'active', specialization: 'Turntablism' },
+    { id: 2, name: 'DJ Mike', email: 'mike@example.com', students: 8, classes: 2, status: 'active', specialization: 'Scratching' },
+    { id: 3, name: 'Sarah Jones', email: 'sarah@example.com', students: 15, classes: 4, status: 'active', specialization: 'Beat Mixing' },
+    { id: 4, name: 'Robert Williams', email: 'robert@example.com', students: 10, classes: 2, status: 'active', specialization: 'Production' },
+    { id: 5, name: 'Laura Thompson', email: 'laura@example.com', students: 7, classes: 1, status: 'active', specialization: 'Music Theory' },
   ];
 
   const pendingInstructors = [
-    { id: 6, name: 'David Carter', email: 'david@example.com', students: 0, classes: 0, status: 'pending' },
-    { id: 7, name: 'Emily Wilson', email: 'emily@example.com', students: 0, classes: 0, status: 'pending' },
+    { id: 6, name: 'David Carter', email: 'david@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Beat Making' },
+    { id: 7, name: 'Emily Wilson', email: 'emily@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Digital DJing' },
   ];
 
   const handleApprove = (id: number) => {
@@ -59,6 +83,44 @@ const AdminInstructors = () => {
       description: 'The instructor account has been deactivated.',
     });
   };
+
+  const handleAddInstructor = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate input
+    if (!newInstructor.name || !newInstructor.email) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Here you would normally send this to your API
+    toast({
+      title: 'Instructor Added',
+      description: `${newInstructor.name} has been added as an instructor.`,
+    });
+    
+    // Reset form and close dialog
+    setNewInstructor({ name: '', email: '', specialization: '' });
+    setAddInstructorOpen(false);
+  };
+
+  const viewInstructor = (id: number) => {
+    setViewInstructorId(id);
+  };
+
+  const closeViewInstructor = () => {
+    setViewInstructorId(null);
+  };
+
+  const getInstructorById = (id: number) => {
+    return [...activeInstructors, ...pendingInstructors].find(instructor => instructor.id === id);
+  };
+
+  const currentViewedInstructor = viewInstructorId ? getInstructorById(viewInstructorId) : null;
 
   const filteredActiveInstructors = activeInstructors.filter(
     instructor => instructor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,10 +145,61 @@ const AdminInstructors = () => {
               Manage all instructors, approve new requests, and assign students.
             </p>
           </div>
-          <Button>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Instructor
-          </Button>
+          
+          <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Instructor
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={handleAddInstructor}>
+                <DialogHeader>
+                  <DialogTitle>Add New Instructor</DialogTitle>
+                  <DialogDescription>
+                    Create a new instructor account. The instructor will receive an email to set up their password.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-left">Name</Label>
+                    <Input
+                      id="name"
+                      value={newInstructor.name}
+                      onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email" className="text-left">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newInstructor.email}
+                      onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="specialization" className="text-left">Specialization</Label>
+                    <Input
+                      id="specialization"
+                      value={newInstructor.specialization}
+                      onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
+                      placeholder="E.g., Turntablism, Scratching, Beat Mixing"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Add Instructor</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -147,7 +260,12 @@ const AdminInstructors = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end space-x-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => viewInstructor(instructor.id)}
+                              >
+                                <Eye className="mr-1 h-4 w-4" />
                                 View
                               </Button>
                               <Button 
@@ -155,6 +273,7 @@ const AdminInstructors = () => {
                                 size="sm"
                                 onClick={() => handleDeactivate(instructor.id)}
                               >
+                                <X className="mr-1 h-4 w-4" />
                                 Deactivate
                               </Button>
                             </div>
@@ -209,6 +328,14 @@ const AdminInstructors = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                onClick={() => viewInstructor(instructor.id)}
+                              >
+                                <Eye className="mr-1 h-4 w-4" />
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
                                 onClick={() => handleApprove(instructor.id)}
                                 className="bg-green-500 text-white hover:bg-green-600"
                               >
@@ -242,6 +369,68 @@ const AdminInstructors = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Instructor View Sheet */}
+      <Sheet open={viewInstructorId !== null} onOpenChange={closeViewInstructor}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Instructor Details</SheetTitle>
+            <SheetDescription>
+              View instructor information and statistics
+            </SheetDescription>
+          </SheetHeader>
+          {currentViewedInstructor && (
+            <div className="space-y-6 py-6">
+              <div className="flex flex-col space-y-4">
+                <div className="h-24 w-24 rounded-full bg-deckademics-primary/20 mx-auto flex items-center justify-center">
+                  <span className="text-2xl font-bold text-deckademics-primary">
+                    {currentViewedInstructor.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+                
+                <div className="space-y-1 text-center">
+                  <h3 className="text-xl font-bold">{currentViewedInstructor.name}</h3>
+                  <p className="text-muted-foreground">{currentViewedInstructor.email}</p>
+                  <Badge 
+                    variant="outline" 
+                    className={currentViewedInstructor.status === 'active' 
+                      ? "bg-green-500/10 text-green-500" 
+                      : "bg-amber-500/10 text-amber-500"}
+                  >
+                    {currentViewedInstructor.status === 'active' ? 'Active' : 'Pending'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="space-y-4 pt-4 border-t">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Specialization</h4>
+                  <p>{currentViewedInstructor.specialization || 'Not specified'}</p>
+                </div>
+                
+                {currentViewedInstructor.status === 'active' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="border rounded-md p-3">
+                        <div className="text-2xl font-bold">{currentViewedInstructor.students}</div>
+                        <div className="text-sm text-muted-foreground">Students</div>
+                      </div>
+                      <div className="border rounded-md p-3">
+                        <div className="text-2xl font-bold">{currentViewedInstructor.classes}</div>
+                        <div className="text-sm text-muted-foreground">Classes</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="border-t pt-4 flex justify-end">
+                <Button onClick={closeViewInstructor}>Close</Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 };
