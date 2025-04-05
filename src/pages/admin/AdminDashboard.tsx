@@ -1,21 +1,76 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
+  const { toast } = useToast();
+  
   // Mock data
-  const pendingInstructors = 2;
-  const pendingStudents = 5;
-  const totalStudents = 43;
-  const totalInstructors = 7;
+  const [pendingInstructors, setPendingInstructors] = useState(2);
+  const [pendingStudents, setPendingStudents] = useState(5);
+  const [totalStudents, setTotalStudents] = useState(43);
+  const [totalInstructors, setTotalInstructors] = useState(7);
+  
+  // Track which instructors and students have been approved or declined
+  const [instructorStatus, setInstructorStatus] = useState<Record<number, 'approved' | 'declined' | null>>({
+    1: null,
+    2: null,
+  });
+  
+  const [studentStatus, setStudentStatus] = useState<Record<number, 'approved' | 'declined' | null>>({
+    1: null,
+    2: null,
+    3: null,
+    4: null,
+    5: null,
+  });
   
   // Mock payment status data
   const paymentsData = {
     pending: 3,
     overdue: 2
+  };
+  
+  const handleInstructorApprove = (instructorId: number) => {
+    setInstructorStatus(prev => ({ ...prev, [instructorId]: 'approved' }));
+    setPendingInstructors(prev => Math.max(0, prev - 1));
+    setTotalInstructors(prev => prev + 1);
+    toast({
+      title: "Instructor approved",
+      description: `Instructor ${instructorId} has been successfully approved.`,
+    });
+  };
+  
+  const handleInstructorDecline = (instructorId: number) => {
+    setInstructorStatus(prev => ({ ...prev, [instructorId]: 'declined' }));
+    setPendingInstructors(prev => Math.max(0, prev - 1));
+    toast({
+      title: "Instructor declined",
+      description: `Instructor ${instructorId} has been declined.`,
+    });
+  };
+  
+  const handleStudentApprove = (studentId: number) => {
+    setStudentStatus(prev => ({ ...prev, [studentId]: 'approved' }));
+    setPendingStudents(prev => Math.max(0, prev - 1));
+    setTotalStudents(prev => prev + 1);
+    toast({
+      title: "Student approved",
+      description: `Student ${studentId} has been successfully approved.`,
+    });
+  };
+  
+  const handleStudentDecline = (studentId: number) => {
+    setStudentStatus(prev => ({ ...prev, [studentId]: 'declined' }));
+    setPendingStudents(prev => Math.max(0, prev - 1));
+    toast({
+      title: "Student declined",
+      description: `Student ${studentId} has been declined.`,
+    });
   };
   
   return (
@@ -137,56 +192,83 @@ const AdminDashboard = () => {
                     <h3 className="font-medium">New Instructor Registrations</h3>
                     <div className="mt-2 divide-y">
                       {[1, 2].map((i) => (
-                        <div key={`instructor-${i}`} className="flex items-center justify-between py-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 rounded-full bg-deckademics-primary/20 flex items-center justify-center">
-                              <span className="font-medium text-deckademics-primary">I{i}</span>
+                        instructorStatus[i] === null && (
+                          <div key={`instructor-${i}`} className="flex items-center justify-between py-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="h-10 w-10 rounded-full bg-deckademics-primary/20 flex items-center justify-center">
+                                <span className="font-medium text-deckademics-primary">I{i}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium">John Instructor {i}</p>
+                                <p className="text-sm text-muted-foreground">john{i}@example.com</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">John Instructor {i}</p>
-                              <p className="text-sm text-muted-foreground">john{i}@example.com</p>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="default" 
+                                className="bg-green-500 hover:bg-green-600"
+                                onClick={() => handleInstructorApprove(i)}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleInstructorDecline(i)}
+                              >
+                                Decline
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <button className="rounded-md bg-green-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-green-600">
-                              Approve
-                            </button>
-                            <button className="rounded-md bg-red-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-red-600">
-                              Decline
-                            </button>
-                          </div>
-                        </div>
+                        )
                       ))}
+                      {pendingInstructors === 0 && (
+                        <div className="py-4 text-center text-muted-foreground">
+                          No pending instructor approvals
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 
-                {/* Add Student Registrations Section */}
                 <div className="rounded-md border">
                   <div className="p-4">
                     <h3 className="font-medium">New Student Registrations</h3>
                     <div className="mt-2 divide-y">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={`student-${i}`} className="flex items-center justify-between py-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                              <span className="font-medium text-blue-500">S{i}</span>
+                        studentStatus[i] === null && (
+                          <div key={`student-${i}`} className="flex items-center justify-between py-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <span className="font-medium text-blue-500">S{i}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium">Jane Student {i}</p>
+                                <p className="text-sm text-muted-foreground">jane{i}@example.com</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">Jane Student {i}</p>
-                              <p className="text-sm text-muted-foreground">jane{i}@example.com</p>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="default" 
+                                className="bg-green-500 hover:bg-green-600"
+                                onClick={() => handleStudentApprove(i)}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleStudentDecline(i)}
+                              >
+                                Decline
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <button className="rounded-md bg-green-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-green-600">
-                              Approve
-                            </button>
-                            <button className="rounded-md bg-red-500 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-red-600">
-                              Decline
-                            </button>
-                          </div>
-                        </div>
+                        )
                       ))}
+                      {pendingStudents === 0 && (
+                        <div className="py-4 text-center text-muted-foreground">
+                          No pending student approvals
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
