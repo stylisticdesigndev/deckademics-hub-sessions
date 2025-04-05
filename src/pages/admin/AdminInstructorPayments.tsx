@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -16,8 +15,9 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
-import { DollarSign, PlusCircle, Clock, Save } from 'lucide-react';
+import { DollarSign, PlusCircle, Clock, Save, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // Define instructor payment type
 interface InstructorPayment {
@@ -46,10 +46,11 @@ const AdminInstructorPayments = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [editPaymentId, setEditPaymentId] = useState<number | null>(null);
-  const [showAddHoursDialog, setShowAddHoursDialog] = useState(false);
+  const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
-  const [hoursToAdd, setHoursToAdd] = useState<string>('');
+  const [hoursToChange, setHoursToChange] = useState<string>('');
+  const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   
   // Mock data for instructors
@@ -155,10 +156,11 @@ const AdminInstructorPayments = () => {
     setShowSetRateDialog(true);
   };
   
-  const openAddHoursDialog = (payment: InstructorPayment) => {
+  const openEditHoursDialog = (payment: InstructorPayment) => {
     setEditPaymentId(payment.id);
-    setHoursToAdd('');
-    setShowAddHoursDialog(true);
+    setHoursToChange('');
+    setHoursOperation('add');
+    setShowEditHoursDialog(true);
   };
   
   const handleUpdateHourlyRate = () => {
@@ -204,10 +206,10 @@ const AdminInstructorPayments = () => {
     setSelectedInstructor(null);
   };
   
-  const handleAddHours = () => {
+  const handleEditHours = () => {
     if (!editPaymentId) return;
     
-    const hours = parseFloat(hoursToAdd);
+    const hours = parseFloat(hoursToChange);
     if (isNaN(hours) || hours <= 0) {
       toast({
         title: 'Invalid Hours',
@@ -219,7 +221,10 @@ const AdminInstructorPayments = () => {
     
     setPayments(payments.map(payment => {
       if (payment.id === editPaymentId) {
-        const newHours = payment.hoursLogged + hours;
+        const newHours = hoursOperation === 'add' 
+          ? payment.hoursLogged + hours 
+          : Math.max(0, payment.hoursLogged - hours);
+        
         const newTotal = newHours * payment.hourlyRate;
         return {
           ...payment,
@@ -232,11 +237,11 @@ const AdminInstructorPayments = () => {
     }));
     
     toast({
-      title: 'Hours Added',
-      description: `${hours} hours have been added to the payment record.`,
+      title: hoursOperation === 'add' ? 'Hours Added' : 'Hours Subtracted',
+      description: `${hours} hours have been ${hoursOperation === 'add' ? 'added to' : 'subtracted from'} the payment record.`,
     });
     
-    setShowAddHoursDialog(false);
+    setShowEditHoursDialog(false);
     setEditPaymentId(null);
   };
 
@@ -380,10 +385,10 @@ const AdminInstructorPayments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => openAddHoursDialog(payment)}
+                            onClick={() => openEditHoursDialog(payment)}
                           >
-                            <PlusCircle className="mr-1 h-3 w-3" />
-                            Add Hours
+                            <Edit className="mr-1 h-3 w-3" />
+                            Edit Hours
                           </Button>
                           <Button 
                             variant="outline" 
@@ -457,32 +462,46 @@ const AdminInstructorPayments = () => {
         </Card>
       </div>
 
-      {/* Dialog for adding hours */}
-      <Dialog open={showAddHoursDialog} onOpenChange={setShowAddHoursDialog}>
+      {/* Dialog for editing hours */}
+      <Dialog open={showEditHoursDialog} onOpenChange={setShowEditHoursDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Add Hours</DialogTitle>
+            <DialogTitle>Edit Hours</DialogTitle>
             <DialogDescription>
-              Add additional hours worked by the instructor
+              Add or subtract hours worked by the instructor
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <RadioGroup 
+              value={hoursOperation} 
+              onValueChange={(value) => setHoursOperation(value as 'add' | 'subtract')}
+              className="flex items-center space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="add" id="add" />
+                <Label htmlFor="add">Add Hours</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="subtract" id="subtract" />
+                <Label htmlFor="subtract">Subtract Hours</Label>
+              </div>
+            </RadioGroup>
             <div className="grid gap-2">
-              <Label htmlFor="hours">Hours to Add</Label>
+              <Label htmlFor="hours">Hours to {hoursOperation === 'add' ? 'Add' : 'Subtract'}</Label>
               <Input
                 id="hours"
                 type="number"
                 step="0.5"
                 min="0.5"
-                placeholder="Enter hours"
-                value={hoursToAdd}
-                onChange={(e) => setHoursToAdd(e.target.value)}
+                placeholder={`Enter hours to ${hoursOperation === 'add' ? 'add' : 'subtract'}`}
+                value={hoursToChange}
+                onChange={(e) => setHoursToChange(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddHoursDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddHours}>Add Hours</Button>
+            <Button variant="outline" onClick={() => setShowEditHoursDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditHours}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
