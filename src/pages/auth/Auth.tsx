@@ -51,17 +51,6 @@ const Auth = () => {
                 Instructor Sign In
               </Link>
             </Button>
-            
-            <Button 
-              className="w-full py-6 text-lg"
-              variant="secondary" 
-              size="lg"
-              asChild
-            >
-              <Link to="/auth/admin">
-                Administrator Access
-              </Link>
-            </Button>
           </div>
           
           <p className="text-center text-muted-foreground text-sm">
@@ -71,6 +60,14 @@ const Auth = () => {
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
+        <div className="mt-4">
+          <Link 
+            to="/auth/admin" 
+            className="text-xs text-muted-foreground hover:text-deckademics-primary transition-colors"
+          >
+            Administrator Access
+          </Link>
+        </div>
       </footer>
     </div>
   );
