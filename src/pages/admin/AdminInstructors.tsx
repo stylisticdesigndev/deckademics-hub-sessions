@@ -50,7 +50,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, CheckCircle, AlertCircle, UserRound } from 'lucide-react';
 
 // Define a student type for instructor's students
 interface Student {
@@ -58,6 +58,7 @@ interface Student {
   name: string;
   email: string;
   level: string;
+  assignedTo?: number | null;
 }
 
 // Extend the instructor type to include students detail
@@ -80,9 +81,18 @@ const AdminInstructors = () => {
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<number | null>(null);
   
-  // New state for student reassignment
+  // New state for student assignment
   const [studentAssignments, setStudentAssignments] = useState<{[key: number]: string}>({});
   const [showStudentReassignment, setShowStudentReassignment] = useState(false);
+  const [showStudentAssignment, setShowStudentAssignment] = useState(false);
+  const [instructorToAssign, setInstructorToAssign] = useState<number | null>(null);
+  
+  // State for unassigned students
+  const [unassignedStudents, setUnassignedStudents] = useState<Student[]>([
+    { id: 201, name: 'Alex Miller', email: 'alex@example.com', level: 'Beginner', assignedTo: null },
+    { id: 202, name: 'Blake Taylor', email: 'blake@example.com', level: 'Intermediate', assignedTo: null },
+    { id: 203, name: 'Chris Jordan', email: 'chris@example.com', level: 'Advanced', assignedTo: null }
+  ]);
   
   const [newInstructor, setNewInstructor] = useState({
     name: '',
@@ -288,10 +298,85 @@ const AdminInstructors = () => {
           description: 'The instructor account has been activated.',
         });
         
+        // Show the student assignment dialog when an instructor is activated
+        setInstructorToAssign(id);
+        setShowStudentAssignment(true);
+        
         return { ...instructor, status: 'active' };
       }
       return instructor;
     }));
+  };
+
+  // New function to handle assigning students to an instructor
+  const handleAssignStudents = () => {
+    if (!instructorToAssign) {
+      toast({
+        title: 'Error',
+        description: 'No instructor selected for assignment.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Get the selected students for this instructor
+    const selectedStudentIds = Object.entries(studentAssignments)
+      .filter(([_, instructorId]) => instructorId === instructorToAssign.toString())
+      .map(([studentId, _]) => parseInt(studentId));
+      
+    if (selectedStudentIds.length === 0) {
+      toast({
+        title: 'No Students Selected',
+        description: 'No students were selected for assignment.',
+      });
+      setShowStudentAssignment(false);
+      setInstructorToAssign(null);
+      setStudentAssignments({});
+      return;
+    }
+    
+    // Update the instructor's student list
+    const newInstructors = [...instructors];
+    const instructorIndex = newInstructors.findIndex(i => i.id === instructorToAssign);
+    
+    if (instructorIndex >= 0) {
+      // Get selected students from unassigned list
+      const studentsToAssign = unassignedStudents.filter(
+        student => selectedStudentIds.includes(student.id)
+      );
+      
+      // Add students to instructor
+      if (!newInstructors[instructorIndex].studentsList) {
+        newInstructors[instructorIndex].studentsList = [];
+      }
+      
+      newInstructors[instructorIndex].studentsList?.push(...studentsToAssign);
+      newInstructors[instructorIndex].students += studentsToAssign.length;
+      
+      // Update the instructor array
+      setInstructors(newInstructors);
+      
+      // Remove students from unassigned list
+      setUnassignedStudents(
+        unassignedStudents.filter(student => !selectedStudentIds.includes(student.id))
+      );
+      
+      toast({
+        title: 'Students Assigned',
+        description: `${studentsToAssign.length} student(s) have been assigned to ${newInstructors[instructorIndex].name}.`,
+      });
+    }
+    
+    // Reset state
+    setShowStudentAssignment(false);
+    setInstructorToAssign(null);
+    setStudentAssignments({});
+  };
+
+  // New function to manually open the student assignment dialog for any instructor
+  const handleOpenAssignStudents = (id: number) => {
+    setInstructorToAssign(id);
+    setShowStudentAssignment(true);
   };
 
   const handleAddInstructor = (e: React.FormEvent) => {
@@ -518,6 +603,78 @@ const AdminInstructors = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* New Dialog for Assigning Students to Instructor */}
+          <Dialog open={showStudentAssignment} onOpenChange={setShowStudentAssignment}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Assign Students to Instructor</DialogTitle>
+                <DialogDescription>
+                  {instructorToAssign && instructors.find(i => i.id === instructorToAssign)?.name 
+                    ? `Select students to assign to ${instructors.find(i => i.id === instructorToAssign)?.name}`
+                    : "Select students to assign to this instructor"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                {unassignedStudents.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Level</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unassignedStudents.map(student => (
+                        <TableRow key={student.id}>
+                          <TableCell>
+                            <input 
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300"
+                              checked={studentAssignments[student.id] === instructorToAssign?.toString()}
+                              onChange={(e) => {
+                                setStudentAssignments({
+                                  ...studentAssignments,
+                                  [student.id]: e.target.checked ? instructorToAssign!.toString() : ''
+                                });
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{student.name}</div>
+                              <div className="text-sm text-muted-foreground">{student.email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{student.level}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">No unassigned students available</p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowStudentAssignment(false);
+                    setInstructorToAssign(null);
+                    setStudentAssignments({});
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAssignStudents} disabled={unassignedStudents.length === 0}>
+                  Assign Students
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -584,6 +741,14 @@ const AdminInstructors = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                onClick={() => handleOpenAssignStudents(instructor.id)}
+                              >
+                                <UserRound className="mr-1 h-4 w-4" />
+                                Assign
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
                                 onClick={() => viewInstructor(instructor.id)}
                               >
                                 <Eye className="mr-1 h-4 w-4" />
@@ -615,7 +780,6 @@ const AdminInstructors = () => {
             </Card>
           </TabsContent>
 
-          
           <TabsContent value="pending" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
@@ -690,7 +854,6 @@ const AdminInstructors = () => {
             </Card>
           </TabsContent>
           
-          
           <TabsContent value="inactive" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
@@ -736,154 +899,3 @@ const AdminInstructors = () => {
                                 onClick={() => handleActivate(instructor.id)}
                                 className="bg-green-500 text-white hover:bg-green-600"
                               >
-                                <CheckCircle className="mr-1 h-4 w-4" />
-                                Activate
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredInactiveInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No inactive instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Instructor Details Sheet */}
-      <Sheet open={viewInstructorId !== null} onOpenChange={closeViewInstructor}>
-        <SheetContent className="sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Instructor Details</SheetTitle>
-            <SheetDescription>
-              View instructor information and statistics
-            </SheetDescription>
-          </SheetHeader>
-          {currentViewedInstructor && (
-            <div className="space-y-6 py-6">
-              <div className="flex flex-col space-y-4">
-                <div className="h-24 w-24 rounded-full bg-deckademics-primary/20 mx-auto flex items-center justify-center">
-                  <span className="text-2xl font-bold text-deckademics-primary">
-                    {currentViewedInstructor.name.split(' ').map(n => n[0]).join('')}
-                  </span>
-                </div>
-                
-                <div className="space-y-1 text-center">
-                  <h3 className="text-xl font-bold">{currentViewedInstructor.name}</h3>
-                  <p className="text-muted-foreground">{currentViewedInstructor.email}</p>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      currentViewedInstructor.status === 'active' 
-                        ? "bg-green-500/10 text-green-500" 
-                        : currentViewedInstructor.status === 'pending'
-                        ? "bg-amber-500/10 text-amber-500"
-                        : "bg-red-500/10 text-red-500"
-                    }
-                  >
-                    {currentViewedInstructor.status === 'active' 
-                      ? 'Active' 
-                      : currentViewedInstructor.status === 'pending'
-                      ? 'Pending'
-                      : 'Inactive'}
-                  </Badge>
-                </div>
-              </div>
-              
-              <div className="space-y-4 pt-4 border-t">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Specialization</h4>
-                  <p>{currentViewedInstructor.specialization || 'Not specified'}</p>
-                </div>
-                
-                {currentViewedInstructor.status === 'active' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="border rounded-md p-3">
-                        <div className="text-2xl font-bold">{currentViewedInstructor.students}</div>
-                        <div className="text-sm text-muted-foreground">Students</div>
-                      </div>
-                      <div className="border rounded-md p-3">
-                        <div className="text-2xl font-bold">{currentViewedInstructor.classes}</div>
-                        <div className="text-sm text-muted-foreground">Classes</div>
-                      </div>
-                    </div>
-                    
-                    {/* Show students list if available */}
-                    {currentViewedInstructor.studentsList && currentViewedInstructor.studentsList.length > 0 && (
-                      <div className="pt-4">
-                        <h4 className="text-sm font-medium mb-2">Students</h4>
-                        <div className="border rounded-md overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="px-3 py-2 text-left font-medium">Name</th>
-                                <th className="px-3 py-2 text-left font-medium">Email</th>
-                                <th className="px-3 py-2 text-right font-medium">Level</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {currentViewedInstructor.studentsList.map((student) => (
-                                <tr key={student.id} className="border-b last:border-0">
-                                  <td className="px-3 py-2">{student.name}</td>
-                                  <td className="px-3 py-2 text-muted-foreground">{student.email}</td>
-                                  <td className="px-3 py-2 text-right">{student.level}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {/* Action buttons for the instructor in the sheet view */}
-                <div className="pt-4">
-                  {currentViewedInstructor.status === 'active' ? (
-                    <Button 
-                      onClick={() => {
-                        handleDeactivate(currentViewedInstructor.id);
-                        closeViewInstructor();
-                      }}
-                      variant="destructive"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Deactivate Instructor
-                    </Button>
-                  ) : currentViewedInstructor.status === 'inactive' ? (
-                    <Button 
-                      onClick={() => {
-                        handleActivate(currentViewedInstructor.id);
-                        closeViewInstructor();
-                      }}
-                      className="bg-green-500 text-white hover:bg-green-600"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Activate Instructor
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-              
-              <div className="border-t pt-4 flex justify-end">
-                <Button onClick={closeViewInstructor}>Close</Button>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-    </DashboardLayout>
-  );
-};
-
-export default AdminInstructors;
