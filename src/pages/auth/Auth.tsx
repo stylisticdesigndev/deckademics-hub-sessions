@@ -32,7 +32,7 @@ const Auth = () => {
           <div className="flex flex-col gap-4">
             <Button 
               className="w-full py-6 text-lg" 
-              variant="default" 
+              variant="outline" 
               size="lg"
               asChild
             >
