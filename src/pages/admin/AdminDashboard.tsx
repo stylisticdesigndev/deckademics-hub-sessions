@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -34,6 +35,40 @@ const AdminDashboard = () => {
   const paymentsData = {
     pending: 3,
     overdue: 2
+  };
+  
+  // Activity log mock data with timestamps
+  const mockActivities = [
+    { id: 1, action: "New student approved", details: "Alex Johnson was approved", timestamp: new Date(2025, 3, 5, 14, 30) },
+    { id: 2, action: "Instructor assigned to class", details: "Prof. Smith assigned to Beginner Class", timestamp: new Date(2025, 3, 5, 12, 15) },
+    { id: 3, action: "Payment received", details: "Payment for Advanced DJ Class", timestamp: new Date(2025, 3, 5, 10, 45) },
+    { id: 4, action: "New instructor declined", details: "Application from John Doe was declined", timestamp: new Date(2025, 3, 4, 16, 20) },
+    { id: 5, action: "Announcement posted", details: "New schedule for summer classes", timestamp: new Date(2025, 3, 4, 14, 10) },
+    { id: 6, action: "Student payment overdue", details: "Payment reminder sent to Mike Smith", timestamp: new Date(2025, 3, 4, 9, 30) },
+    { id: 7, action: "Class cancelled", details: "Advanced Scratching class on April 10", timestamp: new Date(2025, 3, 3, 17, 45) },
+    { id: 8, action: "New equipment added", details: "Two Pioneer DJ controllers added to inventory", timestamp: new Date(2025, 3, 3, 11, 20) },
+  ];
+
+  // Activity pagination state
+  const [currentActivityPage, setCurrentActivityPage] = useState(1);
+  const activitiesPerPage = 3;
+  const totalActivityPages = Math.ceil(mockActivities.length / activitiesPerPage);
+  
+  // Get current activities
+  const indexOfLastActivity = currentActivityPage * activitiesPerPage;
+  const indexOfFirstActivity = indexOfLastActivity - activitiesPerPage;
+  const currentActivities = mockActivities.slice(indexOfFirstActivity, indexOfLastActivity);
+  
+  // Format relative time
+  const formatRelativeTime = (timestamp: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minute${Math.floor(diffInSeconds / 60) > 1 ? 's' : ''} ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour${Math.floor(diffInSeconds / 3600) > 1 ? 's' : ''} ago`;
+    if (diffInSeconds < 172800) return 'Yesterday';
+    return `${timestamp.getDate()}/${timestamp.getMonth() + 1}/${timestamp.getFullYear()}`;
   };
   
   const handleInstructorApprove = (instructorId: number) => {
@@ -188,7 +223,6 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Changed the order: Students first, then Instructors */}
                 <div className="rounded-md border">
                   <div className="p-4">
                     <h3 className="font-medium">New Student Registrations</h3>
@@ -287,34 +321,54 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={`activity-${i}`} className="flex items-center justify-between pb-4 border-b last:border-0">
+                  {currentActivities.map((activity) => (
+                    <div key={`activity-${activity.id}`} className="flex items-center justify-between pb-4 border-b last:border-0">
                       <div className="flex items-start space-x-4">
                         <div className="h-10 w-10 rounded-full bg-deckademics-primary/20 flex items-center justify-center">
-                          <span className="font-medium text-deckademics-primary">A{i}</span>
+                          <span className="font-medium text-deckademics-primary">A{activity.id}</span>
                         </div>
                         <div>
-                          <p className="font-medium">
-                            {i === 1 ? "New student approved" : 
-                             i === 2 ? "Instructor assigned to class" :
-                             "Payment received"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {i === 1 ? "Alex Johnson was approved" : 
-                             i === 2 ? "Prof. Smith assigned to Beginner Class" :
-                             "Payment for Advanced DJ Class"}
-                          </p>
+                          <p className="font-medium">{activity.action}</p>
+                          <p className="text-sm text-muted-foreground">{activity.details}</p>
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {i === 1 ? "Just now" : 
-                         i === 2 ? "2 hours ago" :
-                         "Yesterday"}
+                        {formatRelativeTime(activity.timestamp)}
                       </span>
                     </div>
                   ))}
                 </div>
               </CardContent>
+              <CardFooter className="border-t pt-4 pb-2">
+                <Pagination className="w-full">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentActivityPage(prev => Math.max(prev - 1, 1))}
+                        className={currentActivityPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {[...Array(totalActivityPages)].map((_, i) => (
+                      <PaginationItem key={i + 1}>
+                        <PaginationLink 
+                          isActive={currentActivityPage === i + 1}
+                          onClick={() => setCurrentActivityPage(i + 1)}
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentActivityPage(prev => Math.min(prev + 1, totalActivityPages))}
+                        className={currentActivityPage >= totalActivityPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </CardFooter>
             </Card>
           </TabsContent>
           <TabsContent value="payments" className="space-y-4 pt-4">
@@ -348,3 +402,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
