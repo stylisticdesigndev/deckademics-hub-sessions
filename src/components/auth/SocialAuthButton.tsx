@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 interface SocialAuthButtonProps {
   provider: 'google';
-  userType: 'student' | 'instructor';
+  userType: 'student' | 'instructor' | 'admin';
   isLoading: boolean;
   onClick: () => void;
 }

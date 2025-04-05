@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Mail, LockKeyhole, EyeIcon, EyeOffIcon } from 'lucide-react';
 
 interface LoginFormProps {
-  userType: 'student' | 'instructor';
+  userType: 'student' | 'instructor' | 'admin';
   formData: {
     email: string;
     password: string;
