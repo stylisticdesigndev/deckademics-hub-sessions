@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -8,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle, Search, Users, X } from 'lucide-react';
+import { Calendar, CheckCircle, MessageSquare, Search, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { StudentNoteDialog } from '@/components/notes/StudentNoteDialog';
+import { Toaster } from '@/components/ui/toaster';
 
 interface Student {
   id: string;
@@ -23,14 +26,17 @@ interface Student {
   overdue?: boolean;
   nextClass?: string;
   needsAttention?: boolean;
+  note?: string;
 }
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   
   // Mock students data - only showing today's students
-  const students: Student[] = [
+  const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
       name: 'Alex Johnson',
@@ -39,6 +45,7 @@ const InstructorDashboard = () => {
       lastActive: 'Today',
       initials: 'AJ',
       nextClass: 'Today, 2:00 PM',
+      note: '',
     },
     {
       id: '2',
@@ -49,6 +56,7 @@ const InstructorDashboard = () => {
       initials: 'TS',
       needsAttention: true,
       nextClass: 'Today, 3:30 PM',
+      note: '',
     },
     {
       id: '5',
@@ -58,14 +66,28 @@ const InstructorDashboard = () => {
       lastActive: '2 days ago',
       initials: 'CW',
       nextClass: 'Today, 5:00 PM',
+      note: '',
     },
-  ];
+  ]);
 
   // Filter students based on search
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.level.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleOpenNoteDialog = (student: Student) => {
+    setSelectedStudent(student);
+    setIsNoteDialogOpen(true);
+  };
+
+  const handleSaveNote = (studentId: string, note: string) => {
+    setStudents(prevStudents => 
+      prevStudents.map(student => 
+        student.id === studentId ? { ...student, note } : student
+      )
+    );
+  };
 
   // Upcoming classes calculation
   const upcomingClassCount = students.length;
@@ -127,10 +149,11 @@ const InstructorDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
-                <div className="grid grid-cols-5 p-3 font-medium border-b text-xs sm:text-sm">
+                <div className="grid grid-cols-6 p-3 font-medium border-b text-xs sm:text-sm">
                   <div className="col-span-3">STUDENT</div>
                   <div className="col-span-1">PROGRESS</div>
                   <div className="col-span-1 text-center">LEVEL</div>
+                  <div className="col-span-1 text-center">NOTES</div>
                 </div>
                 
                 {filteredStudents.length > 0 ? (
@@ -139,7 +162,7 @@ const InstructorDashboard = () => {
                       <div 
                         key={student.id}
                         className={cn(
-                          "grid grid-cols-5 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
+                          "grid grid-cols-6 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
                           student.needsAttention && "bg-amber-500/5",
                           student.overdue && "bg-red-500/5"
                         )}
@@ -188,6 +211,23 @@ const InstructorDashboard = () => {
                             {student.level}
                           </Badge>
                         </div>
+
+                        <div className="col-span-1 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenNoteDialog(student)}
+                            className="p-2 hover:bg-muted rounded-full"
+                            aria-label="Add or edit note"
+                          >
+                            <MessageSquare 
+                              className={cn(
+                                "h-4 w-4", 
+                                student.note ? "text-deckademics-primary" : "text-muted-foreground"
+                              )} 
+                            />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -207,6 +247,19 @@ const InstructorDashboard = () => {
           </Card>
         </section>
       </div>
+
+      {selectedStudent && (
+        <StudentNoteDialog
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.name}
+          open={isNoteDialogOpen}
+          onOpenChange={setIsNoteDialogOpen}
+          existingNote={selectedStudent.note}
+          onSaveNote={handleSaveNote}
+        />
+      )}
+      
+      <Toaster />
     </DashboardLayout>
   );
 };
