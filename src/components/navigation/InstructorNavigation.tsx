@@ -1,68 +1,77 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
-import { Home, Users, CalendarCheck, Bell, UserCog } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Bell,
+  UserCog
+} from 'lucide-react';
 
-export const InstructorNavigation: React.FC = () => {
+export const InstructorNavigation = () => {
+  const { pathname } = useLocation();
+
+  // Define the counts to use across the navigation
+  const pendingStudentsCount = 3;
+
   const navItems = [
     {
-      name: 'Dashboard',
-      path: '/instructor/dashboard',
-      icon: Home,
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/instructor/dashboard",
+      active: pathname === "/instructor/dashboard"
     },
     {
-      name: 'Students',
-      path: '/instructor/students',
+      title: "Students",
       icon: Users,
+      href: "/instructor/students",
+      active: pathname === "/instructor/students",
+      badge: pendingStudentsCount
     },
     {
-      name: 'Classes',
-      path: '/instructor/classes',
-      icon: CalendarCheck,
+      title: "Classes",
+      icon: Calendar,
+      href: "/instructor/classes",
+      active: pathname === "/instructor/classes"
     },
     {
-      name: 'Announcements',
-      path: '/instructor/announcements',
+      title: "Announcements",
       icon: Bell,
+      href: "/instructor/announcements",
+      active: pathname === "/instructor/announcements"
     },
     {
-      name: 'Profile',
-      path: '/instructor/profile',
+      title: "Profile",
       icon: UserCog,
-    },
+      href: "/instructor/profile",
+      active: pathname === "/instructor/profile"
+    }
   ];
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton asChild>
-                <NavLink 
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn("flex items-center gap-2", 
-                      isActive && "bg-sidebar-accent text-deckademics-primary font-medium"
-                    )
-                  }
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <div className="space-y-1.5">
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          to={item.href}
+          className={cn(
+            "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+            item.active
+              ? "bg-deckademics-primary/10 text-deckademics-primary"
+              : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          <span>{item.title}</span>
+          {item.badge && (
+            <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
+              {item.badge}
+            </span>
+          )}
+        </Link>
+      ))}
+    </div>
   );
 };

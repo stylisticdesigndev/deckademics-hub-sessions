@@ -1,70 +1,74 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
-import { Home, BookOpen, Calendar, MessageSquare, User } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  BookOpen,
+  Calendar,
+  MessageSquare,
+  User
+} from 'lucide-react';
 
-export const StudentNavigation: React.FC = () => {
-  const location = useLocation();
-  
+export const StudentNavigation = () => {
+  const { pathname } = useLocation();
+
   const navItems = [
     {
-      name: 'Dashboard',
-      path: '/student/dashboard',
-      icon: Home,
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/student/dashboard",
+      active: pathname === "/student/dashboard"
     },
     {
-      name: 'Progress',
-      path: '/student/progress',
+      title: "Progress",
       icon: BookOpen,
+      href: "/student/progress",
+      active: pathname === "/student/progress"
     },
     {
-      name: 'Classes',
-      path: '/student/classes',
+      title: "Classes",
       icon: Calendar,
+      href: "/student/classes",
+      active: pathname === "/student/classes"
     },
     {
-      name: 'Messages',
-      path: '/student/messages',
+      title: "Messages",
       icon: MessageSquare,
+      href: "/student/messages",
+      active: pathname === "/student/messages",
+      badge: 2 // Example unread messages count
     },
     {
-      name: 'Profile',
-      path: '/student/profile',
+      title: "Profile",
       icon: User,
-    },
+      href: "/student/profile",
+      active: pathname === "/student/profile"
+    }
   ];
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton asChild>
-                <NavLink 
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn("flex items-center gap-2", 
-                      isActive && "bg-sidebar-accent text-deckademics-primary font-medium"
-                    )
-                  }
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <div className="space-y-1.5">
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          to={item.href}
+          className={cn(
+            "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+            item.active
+              ? "bg-deckademics-primary/10 text-deckademics-primary"
+              : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          <span>{item.title}</span>
+          {item.badge && (
+            <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
+              {item.badge}
+            </span>
+          )}
+        </Link>
+      ))}
+    </div>
   );
 };
