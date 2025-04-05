@@ -89,6 +89,11 @@ const AdminAttendance = () => {
   const missedCount = students.filter(s => s.status === 'missed').length;
   const scheduledMakeups = students.filter(s => s.makeupDate !== null).length;
 
+  // Format dates in US format (MM/dd/yyyy)
+  const formatDateUS = (date: Date) => {
+    return format(date, 'MM/dd/yyyy');
+  };
+
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
       <div className="space-y-6">
@@ -162,13 +167,13 @@ const AdminAttendance = () => {
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.email}</TableCell>
-                    <TableCell>{format(student.classDate, 'MMM d, yyyy')}</TableCell>
+                    <TableCell>{formatDateUS(student.classDate)}</TableCell>
                     <TableCell>
                       <StatusBadge status={student.status} />
                     </TableCell>
                     <TableCell>
                       {student.makeupDate ? (
-                        format(student.makeupDate, 'MMM d, yyyy')
+                        formatDateUS(student.makeupDate)
                       ) : (
                         <span className="text-muted-foreground text-sm">Not scheduled</span>
                       )}

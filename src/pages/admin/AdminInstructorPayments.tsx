@@ -18,6 +18,7 @@ import {
 import { DollarSign, PlusCircle, Clock, Save, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { format } from 'date-fns';
 
 // Define instructor payment type
 interface InstructorPayment {
@@ -245,6 +246,12 @@ const AdminInstructorPayments = () => {
     setEditPaymentId(null);
   };
 
+  // Format a date string to US format (MM/DD/YYYY)
+  const formatDateToUS = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, 'MM/dd/yyyy');
+  };
+
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
       <div className="space-y-6">
@@ -356,7 +363,7 @@ const AdminInstructorPayments = () => {
           <CardHeader>
             <CardTitle>Current Pay Period</CardTitle>
             <CardDescription>
-              Pending payments for instructors (March 15-31, 2025)
+              Pending payments for instructors (03/15/2025-03/31/2025)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -379,7 +386,7 @@ const AdminInstructorPayments = () => {
                       <TableCell className="text-right">${payment.hourlyRate}/hr</TableCell>
                       <TableCell className="text-right">{payment.hoursLogged}</TableCell>
                       <TableCell className="text-right">${payment.totalAmount}</TableCell>
-                      <TableCell className="text-right">{payment.lastUpdated}</TableCell>
+                      <TableCell className="text-right">{formatDateToUS(payment.lastUpdated)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button 
@@ -439,7 +446,7 @@ const AdminInstructorPayments = () => {
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.instructorName}</TableCell>
                       <TableCell>
-                        {payment.payPeriodStart} to {payment.payPeriodEnd}
+                        {formatDateToUS(payment.payPeriodStart)} to {formatDateToUS(payment.payPeriodEnd)}
                       </TableCell>
                       <TableCell className="text-right">${payment.hourlyRate}/hr</TableCell>
                       <TableCell className="text-right">{payment.hoursLogged}</TableCell>

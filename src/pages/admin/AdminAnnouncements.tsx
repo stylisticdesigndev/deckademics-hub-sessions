@@ -29,13 +29,13 @@ const AdminAnnouncements = () => {
       id: '1',
       title: 'Upcoming DJ Workshop',
       content: 'We\'re excited to announce a special workshop on advanced DJ techniques this weekend. Open to all students with at least 3 months of experience.',
-      date: 'April 2, 2025'
+      date: '04/02/2025'
     },
     {
       id: '2',
       title: 'School Closure - April 10',
       content: 'Please note that Deckademics will be closed on April 10 for building maintenance. All classes scheduled for that day will be rescheduled.',
-      date: 'April 1, 2025'
+      date: '04/01/2025'
     }
   ]);
 
@@ -50,12 +50,15 @@ const AdminAnnouncements = () => {
       return;
     }
 
-    // Create new announcement
+    // Create new announcement with US date format (MM/dd/yyyy)
+    const today = new Date();
+    const formattedDate = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
+    
     const announcement = {
       id: (announcements.length + 1).toString(),
       title: newAnnouncement.title,
       content: newAnnouncement.content,
-      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      date: formattedDate
     };
 
     // Add to announcements list
