@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, CreditCard, Calendar } from 'lucide-react';
+import { CreditCard, Calendar, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 // Mock payment data
-const paymentData = [
+const initialPaymentData = [
   {
     id: 1,
     studentName: "Alex Johnson",
@@ -16,7 +18,8 @@ const paymentData = [
     amount: 250,
     dueDate: "2025-04-10",
     status: "missed",
-    daysPastDue: 5
+    daysPastDue: 5,
+    partiallyPaid: false
   },
   {
     id: 2,
@@ -25,7 +28,8 @@ const paymentData = [
     amount: 250,
     dueDate: "2025-04-12",
     status: "upcoming",
-    daysTillDue: 7
+    daysTillDue: 7,
+    partiallyPaid: false
   },
   {
     id: 3,
@@ -34,7 +38,8 @@ const paymentData = [
     amount: 250,
     dueDate: "2025-04-15",
     status: "upcoming",
-    daysTillDue: 10
+    daysTillDue: 10,
+    partiallyPaid: false
   },
   {
     id: 4,
@@ -43,7 +48,8 @@ const paymentData = [
     amount: 250,
     dueDate: "2025-03-30",
     status: "missed",
-    daysPastDue: 16
+    daysPastDue: 16,
+    partiallyPaid: true
   },
   {
     id: 5,
@@ -52,16 +58,43 @@ const paymentData = [
     amount: 250,
     dueDate: "2025-04-18",
     status: "upcoming",
-    daysTillDue: 13
+    daysTillDue: 13,
+    partiallyPaid: false
   }
 ];
 
 const AdminPayments = () => {
+  const [paymentData, setPaymentData] = useState(initialPaymentData);
+  
   const missedPayments = paymentData.filter(payment => payment.status === "missed");
   const upcomingPayments = paymentData.filter(payment => payment.status === "upcoming");
   
   const totalMissed = missedPayments.reduce((sum, payment) => sum + payment.amount, 0);
   const totalUpcoming = upcomingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  
+  const handleMarkAsPaid = (paymentId: number, paymentType: 'full' | 'partial') => {
+    setPaymentData(prev => 
+      prev.map(payment => {
+        if (payment.id === paymentId) {
+          if (paymentType === 'full') {
+            // Remove the payment by returning null
+            return { ...payment, status: 'paid' };
+          } else {
+            // Mark as partially paid
+            return { ...payment, partiallyPaid: true };
+          }
+        }
+        return payment;
+      }).filter(payment => payment.status !== 'paid')
+    );
+    
+    toast({
+      title: paymentType === 'full' ? "Payment Marked as Paid" : "Payment Marked as Partially Paid",
+      description: paymentType === 'full' 
+        ? "The payment has been marked as fully paid and removed from the list." 
+        : "The payment has been marked as partially paid.",
+    });
+  };
   
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
@@ -73,22 +106,7 @@ const AdminPayments = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Revenue
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$15,231.89</div>
-              <p className="text-xs text-muted-foreground">
-                +20.1% from last month
-              </p>
-            </CardContent>
-          </Card>
-          
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -135,6 +153,7 @@ const AdminPayments = () => {
                     <TableHead>Amount</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -145,9 +164,37 @@ const AdminPayments = () => {
                       <TableCell>${payment.amount}</TableCell>
                       <TableCell>{payment.dueDate}</TableCell>
                       <TableCell>
-                        <Badge variant="destructive">
-                          {payment.daysPastDue} days past due
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive">
+                            {payment.daysPastDue} days past due
+                          </Badge>
+                          {payment.partiallyPaid && (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                              Partially Paid
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1 text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => handleMarkAsPaid(payment.id, 'full')}
+                          >
+                            <Check className="h-3 w-3" />
+                            Fully Paid
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleMarkAsPaid(payment.id, 'partial')}
+                          >
+                            Partial
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -174,6 +221,7 @@ const AdminPayments = () => {
                     <TableHead>Amount</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Days Until Due</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -184,9 +232,37 @@ const AdminPayments = () => {
                       <TableCell>${payment.amount}</TableCell>
                       <TableCell>{payment.dueDate}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-                          Due in {payment.daysTillDue} days
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                            Due in {payment.daysTillDue} days
+                          </Badge>
+                          {payment.partiallyPaid && (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                              Partially Paid
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1 text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => handleMarkAsPaid(payment.id, 'full')}
+                          >
+                            <Check className="h-3 w-3" />
+                            Fully Paid
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleMarkAsPaid(payment.id, 'partial')}
+                          >
+                            Partial
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
