@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -51,7 +50,7 @@ const AdminDashboard = () => {
 
   // Activity pagination state
   const [currentActivityPage, setCurrentActivityPage] = useState(1);
-  const activitiesPerPage = 3;
+  const activitiesPerPage = 10; // Changed from 3 to 10
   const totalActivityPages = Math.ceil(mockActivities.length / activitiesPerPage);
   
   // Get current activities
@@ -402,4 +401,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
