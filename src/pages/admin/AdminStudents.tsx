@@ -48,10 +48,10 @@ const AdminStudents = () => {
   
   // Mock student data
   const [activeStudents, setActiveStudents] = useState([
-    { id: 1, name: 'Alex Johnson', email: 'alex@example.com', instructor: 'Professor Smith', level: 'Beginner', paymentStatus: 'paid' },
+    { id: 1, name: 'Alex Johnson', email: 'alex@example.com', instructor: 'Professor Smith', level: 'Novice', paymentStatus: 'paid' },
     { id: 2, name: 'Maria Garcia', email: 'maria@example.com', instructor: 'DJ Mike', level: 'Intermediate', paymentStatus: 'paid' },
     { id: 3, name: 'James Wilson', email: 'james@example.com', instructor: 'Sarah Jones', level: 'Advanced', paymentStatus: 'overdue' },
-    { id: 4, name: 'Emma Brown', email: 'emma@example.com', instructor: 'Professor Smith', level: 'Beginner', paymentStatus: 'paid' },
+    { id: 4, name: 'Emma Brown', email: 'emma@example.com', instructor: 'Professor Smith', level: 'Novice', paymentStatus: 'paid' },
     { id: 5, name: 'Michael Davis', email: 'michael@example.com', instructor: 'Robert Williams', level: 'Intermediate', paymentStatus: 'pending' },
   ]);
 
@@ -80,7 +80,7 @@ const AdminStudents = () => {
     setPendingStudents(pendingStudents.filter(s => s.id !== id));
     setActiveStudents([...activeStudents, {
       ...student,
-      level: 'Beginner', // Default level
+      level: 'Novice', // Default level changed from Beginner to Novice
       paymentStatus: 'pending' // Default payment status
     }]);
 

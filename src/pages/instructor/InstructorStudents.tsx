@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -54,7 +53,7 @@ const InstructorStudents = () => {
       id: '2',
       name: 'Taylor Smith',
       email: 'tsmith@example.com',
-      level: 'Beginner',
+      level: 'Novice',
       progress: 32,
       lastActive: 'Yesterday',
       initials: 'TS',
@@ -79,7 +78,7 @@ const InstructorStudents = () => {
       id: '4',
       name: 'Morgan Rivera',
       email: 'morgan.r@example.com',
-      level: 'Beginner',
+      level: 'Novice',
       progress: 15,
       lastActive: '1 week ago',
       initials: 'MR',
@@ -103,7 +102,7 @@ const InstructorStudents = () => {
       id: '6',
       name: 'Jamie Roberts',
       email: 'jroberts@example.com',
-      level: 'Beginner',
+      level: 'Novice',
       progress: 28,
       lastActive: 'Yesterday',
       initials: 'JR',
@@ -148,7 +147,7 @@ const InstructorStudents = () => {
 
   // Group students by level for the level tab view
   const studentsByLevel = {
-    Beginner: filteredStudents.filter(s => s.level === 'Beginner'),
+    Novice: filteredStudents.filter(s => s.level === 'Novice'),
     Intermediate: filteredStudents.filter(s => s.level === 'Intermediate'),
     Advanced: filteredStudents.filter(s => s.level === 'Advanced'),
   };
@@ -199,7 +198,7 @@ const InstructorStudents = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
+                      <SelectItem value="Novice">Novice</SelectItem>
                       <SelectItem value="Intermediate">Intermediate</SelectItem>
                       <SelectItem value="Advanced">Advanced</SelectItem>
                     </SelectContent>
@@ -287,7 +286,7 @@ const InstructorStudents = () => {
                           
                           <div className="col-span-1 text-center">
                             <Badge variant="outline" className={cn(
-                              student.level === 'Beginner' && "border-green-500/50 text-green-500",
+                              student.level === 'Novice' && "border-green-500/50 text-green-500",
                               student.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
                               student.level === 'Advanced' && "border-purple-500/50 text-purple-500"
                             )}>
@@ -344,7 +343,7 @@ const InstructorStudents = () => {
                           <CardTitle className="flex items-center gap-2">
                             {level}
                             <Badge variant="outline" className={cn(
-                              level === 'Beginner' && "border-green-500/50 text-green-500",
+                              level === 'Novice' && "border-green-500/50 text-green-500",
                               level === 'Intermediate' && "border-blue-500/50 text-blue-500",
                               level === 'Advanced' && "border-purple-500/50 text-purple-500"
                             )}>
