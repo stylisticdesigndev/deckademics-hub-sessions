@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Logo } from '@/components/logo/Logo';
@@ -17,7 +16,7 @@ const InstructorAuth = () => {
               <img 
                 src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
-                className="h-16 w-16"
+                className="h-20 w-auto"
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
