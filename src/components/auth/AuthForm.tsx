@@ -9,7 +9,7 @@ import { SignupForm } from './SignupForm';
 import { SocialAuthButton } from './SocialAuthButton';
 import { AuthFormDivider } from './AuthFormDivider';
 
-type UserType = 'student' | 'instructor';
+type UserType = 'student' | 'instructor' | 'admin';
 
 interface AuthFormProps {
   userType: UserType;
@@ -47,8 +47,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       // Redirect based on user type
       if (userType === 'student') {
         navigate('/student/dashboard');
-      } else {
+      } else if (userType === 'instructor') {
         navigate('/instructor/dashboard');
+      } else if (userType === 'admin') {
+        navigate('/admin/dashboard');
       }
     } catch (error) {
       toast({
@@ -76,8 +78,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       // Redirect based on user type
       if (userType === 'student') {
         navigate('/student/dashboard');
-      } else {
+      } else if (userType === 'instructor') {
         navigate('/instructor/dashboard');
+      } else if (userType === 'admin') {
+        navigate('/admin/dashboard');
       }
     } catch (error) {
       toast({

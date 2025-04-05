@@ -1,3 +1,4 @@
+
 import { ReactNode, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 interface DashboardLayoutProps {
   children: ReactNode;
   sidebarContent: ReactNode;
-  userType: 'student' | 'instructor';
+  userType: 'student' | 'instructor' | 'admin';
 }
 
 export const DashboardLayout = ({ 
@@ -39,9 +40,12 @@ export const DashboardLayout = ({
   };
 
   const mockUser = {
-    name: userType === 'student' ? 'Alex Johnson' : 'Prof. Smith',
-    initials: userType === 'student' ? 'AJ' : 'PS',
-    role: userType === 'student' ? 'Student' : 'Instructor'
+    name: userType === 'student' ? 'Alex Johnson' : 
+          userType === 'instructor' ? 'Prof. Smith' : 'Admin User',
+    initials: userType === 'student' ? 'AJ' : 
+              userType === 'instructor' ? 'PS' : 'AU',
+    role: userType === 'student' ? 'Student' : 
+          userType === 'instructor' ? 'Instructor' : 'Administrator'
   };
 
   return (
