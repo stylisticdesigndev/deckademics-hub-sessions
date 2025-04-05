@@ -165,27 +165,35 @@ const AdminInstructors = () => {
     });
   };
 
+  // Modified handleDeactivate function to always show the reassignment dialog
   const handleDeactivate = (id: number) => {
     const instructor = instructors.find(i => i.id === id);
     
-    if (instructor && instructor.students > 0) {
-      // If instructor has students, show student reassignment dialog
-      setInstructorToDeactivate(id);
-      
-      // Initialize the student assignments
-      if (instructor.studentsList) {
-        const initialAssignments: {[key: number]: string} = {};
-        instructor.studentsList.forEach(student => {
-          initialAssignments[student.id] = '';
-        });
-        setStudentAssignments(initialAssignments);
-      }
-      
-      setShowStudentReassignment(true);
-    } else {
-      // If no students, just deactivate
-      completeDeactivation(id);
+    if (!instructor) {
+      toast({
+        title: 'Error',
+        description: 'Instructor not found.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    setInstructorToDeactivate(id);
+    
+    // Initialize the student assignments
+    if (instructor.studentsList && instructor.studentsList.length > 0) {
+      const initialAssignments: {[key: number]: string} = {};
+      instructor.studentsList.forEach(student => {
+        initialAssignments[student.id] = '';
+      });
+      setStudentAssignments(initialAssignments);
+    } else {
+      // Even if there are no students, initialize empty assignments
+      setStudentAssignments({});
+    }
+    
+    // Always show the student reassignment dialog, even if there are no students
+    setShowStudentReassignment(true);
   };
   
   const completeDeactivation = (id: number) => {
@@ -219,51 +227,56 @@ const AdminInstructors = () => {
     // Get the instructor being deactivated
     const deactivatingInstructor = instructors.find(i => i.id === instructorToDeactivate);
     
-    if (!deactivatingInstructor || !deactivatingInstructor.studentsList) {
+    if (!deactivatingInstructor) {
       completeDeactivation(instructorToDeactivate);
       return;
     }
     
-    // Check if all students have been assigned
-    const unassignedStudents = deactivatingInstructor.studentsList.filter(
-      student => !studentAssignments[student.id] || studentAssignments[student.id] === ''
-    );
-    
-    if (unassignedStudents.length > 0) {
-      toast({
-        title: 'Missing Assignments',
-        description: `Please assign all students to new instructors.`,
-        variant: 'destructive',
+    // Only check for unassigned students if instructor actually has students
+    if (deactivatingInstructor.studentsList && deactivatingInstructor.studentsList.length > 0) {
+      // Check if all students have been assigned
+      const unassignedStudents = deactivatingInstructor.studentsList.filter(
+        student => !studentAssignments[student.id] || studentAssignments[student.id] === ''
+      );
+      
+      if (unassignedStudents.length > 0) {
+        toast({
+          title: 'Missing Assignments',
+          description: `Please assign all students to new instructors.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Process student reassignments
+      const newInstructors = [...instructors];
+      
+      // For each student, find their new instructor and add them
+      deactivatingInstructor.studentsList.forEach(student => {
+        const newInstructorName = studentAssignments[student.id];
+        const newInstructorIndex = newInstructors.findIndex(i => i.name === newInstructorName);
+        
+        if (newInstructorIndex >= 0) {
+          // Add student to new instructor
+          if (!newInstructors[newInstructorIndex].studentsList) {
+            newInstructors[newInstructorIndex].studentsList = [];
+          }
+          
+          newInstructors[newInstructorIndex].studentsList?.push(student);
+          newInstructors[newInstructorIndex].students += 1;
+          
+          toast({
+            title: 'Student Reassigned',
+            description: `${student.name} has been reassigned to ${newInstructorName}.`,
+          });
+        }
       });
-      return;
+      
+      // Update instructors after reassignment
+      setInstructors(newInstructors);
     }
     
-    // Process student reassignments
-    const newInstructors = [...instructors];
-    
-    // For each student, find their new instructor and add them
-    deactivatingInstructor.studentsList.forEach(student => {
-      const newInstructorName = studentAssignments[student.id];
-      const newInstructorIndex = newInstructors.findIndex(i => i.name === newInstructorName);
-      
-      if (newInstructorIndex >= 0) {
-        // Add student to new instructor
-        if (!newInstructors[newInstructorIndex].studentsList) {
-          newInstructors[newInstructorIndex].studentsList = [];
-        }
-        
-        newInstructors[newInstructorIndex].studentsList?.push(student);
-        newInstructors[newInstructorIndex].students += 1;
-        
-        toast({
-          title: 'Student Reassigned',
-          description: `${student.name} has been reassigned to ${newInstructorName}.`,
-        });
-      }
-    });
-    
     // Now complete the deactivation
-    setInstructors(newInstructors);
     completeDeactivation(instructorToDeactivate);
   };
 
@@ -421,60 +434,71 @@ const AdminInstructors = () => {
             </DialogContent>
           </Dialog>
           
-          {/* Individual Student Reassignment Dialog */}
+          {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
           <Dialog open={showStudentReassignment} onOpenChange={setShowStudentReassignment}>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Reassign Students Individually</DialogTitle>
+                <DialogTitle>Reassign Students</DialogTitle>
                 <DialogDescription>
-                  Please assign each student to a new instructor before deactivating.
+                  {instructorToDeactivate && 
+                   instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
+                   "Please assign each student to a new instructor before deactivating." :
+                   "This instructor has no students to reassign. You can proceed with deactivation."}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>New Instructor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {instructorToDeactivate && instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.map(student => (
-                      <TableRow key={student.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{student.name}</div>
-                            <div className="text-sm text-muted-foreground">{student.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{student.level}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={studentAssignments[student.id] || ''}
-                            onValueChange={(value) => 
-                              setStudentAssignments({
-                                ...studentAssignments,
-                                [student.id]: value
-                              })
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select instructor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableInstructors.map((name) => (
-                                <SelectItem key={name} value={name}>
-                                  {name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
+                {instructorToDeactivate && 
+                 instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead>New Instructor</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {instructorToDeactivate && 
+                       instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.map(student => (
+                        <TableRow key={student.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{student.name}</div>
+                              <div className="text-sm text-muted-foreground">{student.email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{student.level}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={studentAssignments[student.id] || ''}
+                              onValueChange={(value) => 
+                                setStudentAssignments({
+                                  ...studentAssignments,
+                                  [student.id]: value
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select instructor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableInstructors.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">No students to reassign</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button 
@@ -486,7 +510,11 @@ const AdminInstructors = () => {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleReassignStudents}>Reassign & Deactivate</Button>
+                <Button onClick={handleReassignStudents}>
+                  {instructorToDeactivate && 
+                   instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
+                   "Reassign & Deactivate" : "Deactivate"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
