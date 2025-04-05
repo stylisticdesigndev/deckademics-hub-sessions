@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { EyeIcon, EyeOffIcon, Mail, LockKeyhole } from 'lucide-react';
+import { LoginForm } from './LoginForm';
+import { SignupForm } from './SignupForm';
+import { SocialAuthButton } from './SocialAuthButton';
+import { AuthFormDivider } from './AuthFormDivider';
 
 type UserType = 'student' | 'instructor';
 
@@ -19,7 +19,6 @@ export const AuthForm = ({ userType }: AuthFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -112,132 +111,33 @@ export const AuthForm = ({ userType }: AuthFormProps) => {
           </TabsList>
           
           <TabsContent value="login">
-            <form onSubmit={(e) => handleSubmit(e, 'login')}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input 
-                      id="email" 
-                      name="email"
-                      placeholder="youremail@example.com" 
-                      type="email" 
-                      autoComplete="email" 
-                      required
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input 
-                      id="password" 
-                      name="password"
-                      placeholder="••••••••" 
-                      type={showPassword ? "text" : "password"} 
-                      autoComplete="current-password"
-                      required
-                      className="pl-10 pr-10"
-                      value={formData.password}
-                      onChange={handleChange}
-                    />
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 py-0 text-muted-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
-                </Button>
-              </div>
-            </form>
+            <LoginForm
+              userType={userType}
+              formData={formData}
+              isLoading={isLoading}
+              handleChange={handleChange}
+              handleSubmit={(e) => handleSubmit(e, 'login')}
+            />
           </TabsContent>
           
           <TabsContent value="signup">
-            <form onSubmit={(e) => handleSubmit(e, 'signup')}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input 
-                      id="signup-email" 
-                      name="email"
-                      placeholder="youremail@example.com" 
-                      type="email" 
-                      autoComplete="email" 
-                      required
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <div className="relative">
-                    <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input 
-                      id="signup-password" 
-                      name="password"
-                      placeholder="••••••••" 
-                      type={showPassword ? "text" : "password"} 
-                      autoComplete="new-password"
-                      required
-                      className="pl-10 pr-10"
-                      value={formData.password}
-                      onChange={handleChange}
-                    />
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 py-0 text-muted-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create Account"}
-                </Button>
-              </div>
-            </form>
+            <SignupForm
+              formData={formData}
+              isLoading={isLoading}
+              handleChange={handleChange}
+              handleSubmit={(e) => handleSubmit(e, 'signup')}
+            />
           </TabsContent>
         </Tabs>
         
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-muted"></div>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-          </div>
-        </div>
+        <AuthFormDivider />
         
-        <Button 
-          variant="outline" 
-          className="w-full" 
+        <SocialAuthButton
+          provider="google"
+          userType={userType}
+          isLoading={isLoading}
           onClick={handleGoogleAuth}
-          disabled={isLoading}
-        >
-          <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M12 11v2h5.5c-.22 1.15-1.2 3.36-5.5 3.36-3.31 0-6-2.74-6-6.12 0-3.37 2.69-6.11 6-6.11 1.88 0 3.14.8 3.85 1.5l2.56-2.47C17.02 1.97 14.72 1 12 1c-6.08 0-11 4.92-11 11s4.92 11 11 11c6.35 0 10.56-4.47 10.56-10.75 0-.72-.06-1.27-.15-1.82H12z"/>
-          </svg>
-          {userType === 'instructor' ? 'Login with Google' : 'Continue with Google'}
-        </Button>
+        />
       </CardContent>
       <CardFooter className="flex flex-col space-y-2 text-center text-sm">
         <p className="text-muted-foreground">
