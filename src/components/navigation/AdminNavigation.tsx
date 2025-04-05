@@ -9,7 +9,8 @@ import {
   Bell,
   Calendar,
   Settings,
-  ClipboardCheck
+  ClipboardCheck,
+  DollarSign
 } from 'lucide-react';
 
 export const AdminNavigation = () => {
@@ -41,10 +42,16 @@ export const AdminNavigation = () => {
       active: pathname === "/admin/attendance"
     },
     {
-      title: "Payments",
+      title: "Student Payments",
       icon: Calendar,
       href: "/admin/payments",
       active: pathname === "/admin/payments"
+    },
+    {
+      title: "Instructor Payments",
+      icon: DollarSign,
+      href: "/admin/instructor-payments",
+      active: pathname === "/admin/instructor-payments"
     },
     {
       title: "Announcements",

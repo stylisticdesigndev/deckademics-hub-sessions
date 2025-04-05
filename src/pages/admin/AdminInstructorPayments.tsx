@@ -1,0 +1,523 @@
+
+import React, { useState } from 'react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { AdminNavigation } from '@/components/navigation/AdminNavigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { DollarSign, PlusCircle, Clock, Save } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+
+// Define instructor payment type
+interface InstructorPayment {
+  id: number;
+  instructorId: number;
+  instructorName: string;
+  hourlyRate: number;
+  hoursLogged: number;
+  totalAmount: number;
+  payPeriodStart: string;
+  payPeriodEnd: string;
+  status: 'pending' | 'paid';
+  lastUpdated: string;
+}
+
+// Define instructor type
+interface Instructor {
+  id: number;
+  name: string;
+  email: string;
+  hourlyRate: number;
+  specialization: string;
+}
+
+const AdminInstructorPayments = () => {
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editPaymentId, setEditPaymentId] = useState<number | null>(null);
+  const [showAddHoursDialog, setShowAddHoursDialog] = useState(false);
+  const [showSetRateDialog, setShowSetRateDialog] = useState(false);
+  const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
+  const [hoursToAdd, setHoursToAdd] = useState<string>('');
+  const [newHourlyRate, setNewHourlyRate] = useState<string>('');
+  
+  // Mock data for instructors
+  const [instructors, setInstructors] = useState<Instructor[]>([
+    { id: 1, name: 'Professor Smith', email: 'smith@example.com', hourlyRate: 30, specialization: 'Turntablism' },
+    { id: 2, name: 'DJ Mike', email: 'mike@example.com', hourlyRate: 28, specialization: 'Scratching' },
+    { id: 3, name: 'Sarah Jones', email: 'sarah@example.com', hourlyRate: 32, specialization: 'Beat Mixing' },
+    { id: 4, name: 'Robert Williams', email: 'robert@example.com', hourlyRate: 25, specialization: 'Production' },
+    { id: 5, name: 'Laura Thompson', email: 'laura@example.com', hourlyRate: 27, specialization: 'Music Theory' },
+  ]);
+  
+  // Mock data for payments
+  const [payments, setPayments] = useState<InstructorPayment[]>([
+    { 
+      id: 1, 
+      instructorId: 1, 
+      instructorName: 'Professor Smith', 
+      hourlyRate: 30, 
+      hoursLogged: 24, 
+      totalAmount: 720, 
+      payPeriodStart: '2025-03-15', 
+      payPeriodEnd: '2025-03-31', 
+      status: 'pending',
+      lastUpdated: '2025-04-01'
+    },
+    { 
+      id: 2, 
+      instructorId: 2, 
+      instructorName: 'DJ Mike', 
+      hourlyRate: 28, 
+      hoursLogged: 20, 
+      totalAmount: 560, 
+      payPeriodStart: '2025-03-15', 
+      payPeriodEnd: '2025-03-31', 
+      status: 'pending',
+      lastUpdated: '2025-04-01'
+    },
+    { 
+      id: 3, 
+      instructorId: 3, 
+      instructorName: 'Sarah Jones', 
+      hourlyRate: 32, 
+      hoursLogged: 22, 
+      totalAmount: 704, 
+      payPeriodStart: '2025-03-15', 
+      payPeriodEnd: '2025-03-31', 
+      status: 'pending',
+      lastUpdated: '2025-04-02'
+    },
+    { 
+      id: 4, 
+      instructorId: 1, 
+      instructorName: 'Professor Smith', 
+      hourlyRate: 30, 
+      hoursLogged: 25, 
+      totalAmount: 750, 
+      payPeriodStart: '2025-03-01', 
+      payPeriodEnd: '2025-03-14', 
+      status: 'paid',
+      lastUpdated: '2025-03-16'
+    },
+    { 
+      id: 5, 
+      instructorId: 2, 
+      instructorName: 'DJ Mike', 
+      hourlyRate: 28, 
+      hoursLogged: 18, 
+      totalAmount: 504, 
+      payPeriodStart: '2025-03-01', 
+      payPeriodEnd: '2025-03-14', 
+      status: 'paid',
+      lastUpdated: '2025-03-16'
+    }
+  ]);
+  
+  const pendingPayments = payments.filter(payment => payment.status === 'pending');
+  const completedPayments = payments.filter(payment => payment.status === 'paid');
+  
+  const totalPendingAmount = pendingPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
+  
+  const filteredPendingPayments = pendingPayments.filter(payment => 
+    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredCompletedPayments = completedPayments.filter(payment => 
+    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleMarkAsPaid = (paymentId: number) => {
+    setPayments(payments.map(payment => 
+      payment.id === paymentId ? { ...payment, status: 'paid' } : payment
+    ));
+    
+    toast({
+      title: 'Payment Marked as Paid',
+      description: 'The instructor payment has been marked as paid.',
+    });
+  };
+  
+  const openSetRateDialog = (instructor: Instructor) => {
+    setSelectedInstructor(instructor);
+    setNewHourlyRate(instructor.hourlyRate.toString());
+    setShowSetRateDialog(true);
+  };
+  
+  const openAddHoursDialog = (payment: InstructorPayment) => {
+    setEditPaymentId(payment.id);
+    setHoursToAdd('');
+    setShowAddHoursDialog(true);
+  };
+  
+  const handleUpdateHourlyRate = () => {
+    if (!selectedInstructor) return;
+    
+    const rate = parseFloat(newHourlyRate);
+    if (isNaN(rate) || rate <= 0) {
+      toast({
+        title: 'Invalid Rate',
+        description: 'Please enter a valid hourly rate.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Update instructor's hourly rate
+    setInstructors(instructors.map(instructor => 
+      instructor.id === selectedInstructor.id 
+        ? { ...instructor, hourlyRate: rate } 
+        : instructor
+    ));
+    
+    // Update any pending payments for this instructor
+    setPayments(payments.map(payment => {
+      if (payment.instructorId === selectedInstructor.id && payment.status === 'pending') {
+        const newTotal = payment.hoursLogged * rate;
+        return {
+          ...payment,
+          hourlyRate: rate,
+          totalAmount: newTotal,
+          lastUpdated: new Date().toISOString().split('T')[0]
+        };
+      }
+      return payment;
+    }));
+    
+    toast({
+      title: 'Hourly Rate Updated',
+      description: `${selectedInstructor.name}'s hourly rate has been updated to $${rate}.`,
+    });
+    
+    setShowSetRateDialog(false);
+    setSelectedInstructor(null);
+  };
+  
+  const handleAddHours = () => {
+    if (!editPaymentId) return;
+    
+    const hours = parseFloat(hoursToAdd);
+    if (isNaN(hours) || hours <= 0) {
+      toast({
+        title: 'Invalid Hours',
+        description: 'Please enter a valid number of hours.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setPayments(payments.map(payment => {
+      if (payment.id === editPaymentId) {
+        const newHours = payment.hoursLogged + hours;
+        const newTotal = newHours * payment.hourlyRate;
+        return {
+          ...payment,
+          hoursLogged: newHours,
+          totalAmount: newTotal,
+          lastUpdated: new Date().toISOString().split('T')[0]
+        };
+      }
+      return payment;
+    }));
+    
+    toast({
+      title: 'Hours Added',
+      description: `${hours} hours have been added to the payment record.`,
+    });
+    
+    setShowAddHoursDialog(false);
+    setEditPaymentId(null);
+  };
+
+  return (
+    <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Instructor Payments</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage instructor compensation and payment records
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Pending Payments
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pendingPayments.length}</div>
+              <p className="text-xs text-muted-foreground">
+                ${totalPendingAmount} pending
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Instructor Hourly Rates
+              </CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm space-y-1">
+                {instructors.slice(0, 3).map(instructor => (
+                  <div key={instructor.id} className="flex justify-between items-center">
+                    <span>{instructor.name}</span>
+                    <span className="font-semibold">${instructor.hourlyRate}/hr</span>
+                  </div>
+                ))}
+                {instructors.length > 3 && (
+                  <div className="text-xs text-muted-foreground text-right mt-1">
+                    +{instructors.length - 3} more instructors
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <div className="relative flex-1">
+            <Input
+              type="search"
+              placeholder="Search instructors..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+
+        {/* Instructor Rate Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Instructor Rates</CardTitle>
+            <CardDescription>
+              Manage instructor hourly rates for payment calculations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Instructor</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Specialization</TableHead>
+                  <TableHead className="text-right">Hourly Rate</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {instructors.map((instructor) => (
+                  <TableRow key={instructor.id}>
+                    <TableCell className="font-medium">{instructor.name}</TableCell>
+                    <TableCell>{instructor.email}</TableCell>
+                    <TableCell>{instructor.specialization}</TableCell>
+                    <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openSetRateDialog(instructor)}
+                      >
+                        Update Rate
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Pending Payments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Pay Period</CardTitle>
+            <CardDescription>
+              Pending payments for instructors (March 15-31, 2025)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredPendingPayments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Instructor</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Last Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPendingPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.instructorName}</TableCell>
+                      <TableCell className="text-right">${payment.hourlyRate}/hr</TableCell>
+                      <TableCell className="text-right">{payment.hoursLogged}</TableCell>
+                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
+                      <TableCell className="text-right">{payment.lastUpdated}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openAddHoursDialog(payment)}
+                          >
+                            <PlusCircle className="mr-1 h-3 w-3" />
+                            Add Hours
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="bg-green-500 text-white"
+                            onClick={() => handleMarkAsPaid(payment.id)}
+                          >
+                            <Save className="mr-1 h-3 w-3" />
+                            Mark Paid
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No pending payments found matching your search.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment History */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment History</CardTitle>
+            <CardDescription>
+              Previous instructor payments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredCompletedPayments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Instructor</TableHead>
+                    <TableHead>Pay Period</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompletedPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.instructorName}</TableCell>
+                      <TableCell>
+                        {payment.payPeriodStart} to {payment.payPeriodEnd}
+                      </TableCell>
+                      <TableCell className="text-right">${payment.hourlyRate}/hr</TableCell>
+                      <TableCell className="text-right">{payment.hoursLogged}</TableCell>
+                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="bg-green-500/10 text-green-500">
+                          Paid
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No payment history found matching your search.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Dialog for adding hours */}
+      <Dialog open={showAddHoursDialog} onOpenChange={setShowAddHoursDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add Hours</DialogTitle>
+            <DialogDescription>
+              Add additional hours worked by the instructor
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="hours">Hours to Add</Label>
+              <Input
+                id="hours"
+                type="number"
+                step="0.5"
+                min="0.5"
+                placeholder="Enter hours"
+                value={hoursToAdd}
+                onChange={(e) => setHoursToAdd(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddHoursDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddHours}>Add Hours</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for setting hourly rate */}
+      <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Set Hourly Rate</DialogTitle>
+            <DialogDescription>
+              {selectedInstructor && `Update hourly rate for ${selectedInstructor.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="rate">Hourly Rate ($)</Label>
+              <Input
+                id="rate"
+                type="number"
+                step="0.50"
+                min="1"
+                placeholder="Enter hourly rate"
+                value={newHourlyRate}
+                onChange={(e) => setNewHourlyRate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
+            <Button onClick={handleUpdateHourlyRate}>Update Rate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+};
+
+export default AdminInstructorPayments;
