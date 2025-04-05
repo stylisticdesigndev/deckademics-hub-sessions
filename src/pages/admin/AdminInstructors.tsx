@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -899,3 +900,30 @@ const AdminInstructors = () => {
                                 onClick={() => handleActivate(instructor.id)}
                                 className="bg-green-500 text-white hover:bg-green-600"
                               >
+                                <Check className="mr-1 h-4 w-4" />
+                                Activate
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredInactiveInstructors.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                            No inactive instructors found matching your search.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default AdminInstructors;
