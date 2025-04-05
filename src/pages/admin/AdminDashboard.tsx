@@ -50,7 +50,7 @@ const AdminDashboard = () => {
 
   // Activity pagination state
   const [currentActivityPage, setCurrentActivityPage] = useState(1);
-  const activitiesPerPage = 10; // Changed from 3 to 10
+  const activitiesPerPage = 10;
   const totalActivityPages = Math.ceil(mockActivities.length / activitiesPerPage);
   
   // Get current activities
@@ -208,10 +208,9 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="pending">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
             <TabsTrigger value="recent">Recent Activity</TabsTrigger>
-            <TabsTrigger value="payments">Payment Status</TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="space-y-4 pt-4">
             <Card>
@@ -368,30 +367,6 @@ const AdminDashboard = () => {
                   </PaginationContent>
                 </Pagination>
               </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="payments" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Status</CardTitle>
-                <CardDescription>
-                  Overview of student payment status.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg border bg-card p-3">
-                      <div className="text-xl font-semibold text-amber-500">3</div>
-                      <p className="text-xs text-muted-foreground">Pending</p>
-                    </div>
-                    <div className="rounded-lg border bg-card p-3">
-                      <div className="text-xl font-semibold text-red-500">2</div>
-                      <p className="text-xs text-muted-foreground">Overdue</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
