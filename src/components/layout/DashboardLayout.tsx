@@ -53,7 +53,7 @@ export const DashboardLayout = ({
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <SidebarHeader className="border-b border-sidebar-border">
-            <Logo size="sm" />
+            <Logo size="header" />
           </SidebarHeader>
           <SidebarContent className="py-4">
             {sidebarContent}

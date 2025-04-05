@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'header';
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
@@ -15,7 +15,8 @@ export const Logo: React.FC<LogoProps> = ({
   const sizes = {
     sm: 'h-10 w-auto',
     md: 'h-12 w-auto',
-    lg: 'h-16 w-auto'
+    lg: 'h-16 w-auto',
+    header: 'h-full w-auto'
   };
   
   return (

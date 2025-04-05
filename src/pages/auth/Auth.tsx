@@ -9,7 +9,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <Logo size="md" />
+        <Logo size="header" />
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-6">
@@ -18,7 +18,7 @@ const Auth = () => {
               <img 
                 src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
-                className="h-20 w-auto"
+                className="h-28 w-auto"
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
