@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				deckademics: {
+					dark: "#121212",
+					darker: "#0A0A0A",
+					light: "#F5F5F5",
+					primary: "#9b87f5",
+					secondary: "#8B5CF6",
+					accent: "#6E59A5"
 				}
 			},
 			borderRadius: {
@@ -84,12 +93,25 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-subtle': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' },
+				},
+				'spin-slow': {
+					to: { transform: 'rotate(360deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',
+				'spin-slow': 'spin-slow 12s linear infinite'
+			},
+			backgroundImage: {
+				'vinyl-pattern': "url('/vinyl-pattern.svg')",
+				'waveform': "url('/waveform.svg')",
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
