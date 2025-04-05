@@ -3,12 +3,14 @@ import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-deckademics-dark">
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex flex-col bg-transparent relative">
+      <VideoBackground videoSrc="/lovable-uploads/dj-background.mp4" />
+      <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
+        <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
           <div className="text-center flex flex-col items-center space-y-2">
             <div className="mb-4">
               <img 
@@ -54,7 +56,7 @@ const Index = () => {
           </p>
         </div>
       </main>
-      <footer className="py-6 text-center text-sm text-muted-foreground">
+      <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
         <div className="mt-4">
           <Link 
