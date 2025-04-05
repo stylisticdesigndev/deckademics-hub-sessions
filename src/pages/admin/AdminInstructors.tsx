@@ -35,14 +35,24 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, CheckCircle } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, CheckCircle, AlertCircle } from 'lucide-react';
 
 const AdminInstructors = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [addInstructorOpen, setAddInstructorOpen] = useState(false);
   const [viewInstructorId, setViewInstructorId] = useState<number | null>(null);
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [instructorToDeactivate, setInstructorToDeactivate] = useState<number | null>(null);
+  const [selectedNewInstructor, setSelectedNewInstructor] = useState<string>('');
   const [newInstructor, setNewInstructor] = useState({
     name: '',
     email: '',
@@ -58,11 +68,12 @@ const AdminInstructors = () => {
     { id: 5, name: 'Laura Thompson', email: 'laura@example.com', students: 7, classes: 1, status: 'active', specialization: 'Music Theory' },
     { id: 6, name: 'David Carter', email: 'david@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Beat Making' },
     { id: 7, name: 'Emily Wilson', email: 'emily@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Digital DJing' },
-    { id: 8, name: 'Michael Johnson', email: 'michael@example.com', students: 0, classes: 0, status: 'inactive', specialization: 'Music Production' },
+    { id: 8, name: 'Michael Johnson', email: 'michael@example.com', students: 5, classes: 2, status: 'inactive', specialization: 'Music Production' },
   ]);
 
   const activeInstructors = instructors.filter(instructor => instructor.status === 'active');
   const pendingInstructors = instructors.filter(instructor => instructor.status === 'pending');
+  const inactiveInstructors = instructors.filter(instructor => instructor.status === 'inactive');
 
   const handleApprove = (id: number) => {
     setInstructors(instructors.map(instructor => 
@@ -86,17 +97,82 @@ const AdminInstructors = () => {
     });
   };
 
-  const handleToggleStatus = (id: number) => {
+  const handleDeactivate = (id: number) => {
+    const instructor = instructors.find(i => i.id === id);
+    
+    if (instructor && instructor.students > 0) {
+      // If instructor has students, show reassign dialog
+      setInstructorToDeactivate(id);
+      setReassignDialogOpen(true);
+    } else {
+      // If no students, just deactivate
+      completeDeactivation(id);
+    }
+  };
+  
+  const completeDeactivation = (id: number) => {
     setInstructors(instructors.map(instructor => {
       if (instructor.id === id) {
-        const newStatus = instructor.status === 'active' ? 'inactive' : 'active';
-        
+        return { ...instructor, status: 'inactive' };
+      }
+      return instructor;
+    }));
+    
+    toast({
+      title: 'Instructor Deactivated',
+      description: 'The instructor account has been deactivated.',
+    });
+    
+    setReassignDialogOpen(false);
+    setInstructorToDeactivate(null);
+    setSelectedNewInstructor('');
+  };
+  
+  const handleReassignStudents = () => {
+    if (!instructorToDeactivate || !selectedNewInstructor) {
+      toast({
+        title: 'Error',
+        description: 'Please select an instructor to reassign students to.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const deactivatingInstructor = instructors.find(i => i.id === instructorToDeactivate);
+    const receivingInstructor = instructors.find(i => i.name === selectedNewInstructor);
+    
+    if (deactivatingInstructor && receivingInstructor) {
+      // Update instructors array - move students to new instructor
+      setInstructors(instructors.map(instructor => {
+        if (instructor.id === receivingInstructor.id) {
+          return {
+            ...instructor,
+            students: instructor.students + deactivatingInstructor.students,
+            classes: instructor.classes + deactivatingInstructor.classes,
+          };
+        }
+        return instructor;
+      }));
+      
+      // Now complete the deactivation
+      completeDeactivation(instructorToDeactivate);
+      
+      toast({
+        title: 'Students Reassigned',
+        description: `${deactivatingInstructor.students} students have been reassigned to ${receivingInstructor.name}.`,
+      });
+    }
+  };
+
+  const handleActivate = (id: number) => {
+    setInstructors(instructors.map(instructor => {
+      if (instructor.id === id) {
         toast({
-          title: newStatus === 'active' ? 'Instructor Activated' : 'Instructor Deactivated',
-          description: `The instructor account has been ${newStatus === 'active' ? 'activated' : 'deactivated'}.`,
+          title: 'Instructor Activated',
+          description: 'The instructor account has been activated.',
         });
         
-        return { ...instructor, status: newStatus };
+        return { ...instructor, status: 'active' };
       }
       return instructor;
     }));
@@ -162,6 +238,16 @@ const AdminInstructors = () => {
     instructor => instructor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   instructor.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  const filteredInactiveInstructors = inactiveInstructors.filter(
+    instructor => instructor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  instructor.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get active instructors for reassignment dropdown (exclude the one being deactivated)
+  const availableInstructors = activeInstructors
+    .filter(instructor => instructor.id !== instructorToDeactivate)
+    .map(instructor => instructor.name);
 
   return (
     <DashboardLayout
@@ -231,6 +317,50 @@ const AdminInstructors = () => {
               </form>
             </DialogContent>
           </Dialog>
+          
+          {/* Reassign Students Dialog */}
+          <Dialog open={reassignDialogOpen} onOpenChange={setReassignDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Reassign Students</DialogTitle>
+                <DialogDescription>
+                  This instructor has active students. Please select another instructor to reassign them to.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="new-instructor">New Instructor</Label>
+                  <Select
+                    value={selectedNewInstructor}
+                    onValueChange={setSelectedNewInstructor}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an instructor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableInstructors.map((name) => (
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setReassignDialogOpen(false);
+                    setInstructorToDeactivate(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleReassignStudents}>Reassign & Deactivate</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -253,6 +383,9 @@ const AdminInstructors = () => {
             </TabsTrigger>
             <TabsTrigger value="pending">
               Pending Approval ({filteredPendingInstructors.length})
+            </TabsTrigger>
+            <TabsTrigger value="inactive">
+              Inactive Instructors ({filteredInactiveInstructors.length})
             </TabsTrigger>
           </TabsList>
 
@@ -302,7 +435,7 @@ const AdminInstructors = () => {
                               <Button 
                                 variant="destructive" 
                                 size="sm"
-                                onClick={() => handleToggleStatus(instructor.id)}
+                                onClick={() => handleDeactivate(instructor.id)}
                               >
                                 <X className="mr-1 h-4 w-4" />
                                 Deactivate
@@ -398,10 +531,77 @@ const AdminInstructors = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          
+          {/* Inactive Instructors Tab */}
+          <TabsContent value="inactive" className="space-y-4 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inactive Instructors</CardTitle>
+                <CardDescription>
+                  View and reactivate previously deactivated instructors.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-3 text-left font-medium">Name</th>
+                        <th className="px-4 py-3 text-left font-medium">Email</th>
+                        <th className="px-4 py-3 text-center font-medium">Status</th>
+                        <th className="px-4 py-3 text-right font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInactiveInstructors.map((instructor) => (
+                        <tr key={instructor.id} className="border-b last:border-0">
+                          <td className="px-4 py-3 font-medium">{instructor.name}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500">
+                              Inactive
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => viewInstructor(instructor.id)}
+                              >
+                                <Eye className="mr-1 h-4 w-4" />
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleActivate(instructor.id)}
+                                className="bg-green-500 text-white hover:bg-green-600"
+                              >
+                                <CheckCircle className="mr-1 h-4 w-4" />
+                                Activate
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredInactiveInstructors.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                            No inactive instructors found matching your search.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
-      {/* Add a new tab for inactive instructors */}
+      {/* Instructor Details Sheet */}
       <Sheet open={viewInstructorId !== null} onOpenChange={closeViewInstructor}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
@@ -462,31 +662,32 @@ const AdminInstructors = () => {
                   </>
                 )}
                 
-                {/* Add action buttons for the instructor in the sheet view */}
-                {currentViewedInstructor.status === 'active' || currentViewedInstructor.status === 'inactive' ? (
-                  <div className="pt-4">
+                {/* Action buttons for the instructor in the sheet view */}
+                <div className="pt-4">
+                  {currentViewedInstructor.status === 'active' ? (
                     <Button 
                       onClick={() => {
-                        handleToggleStatus(currentViewedInstructor.id);
+                        handleDeactivate(currentViewedInstructor.id);
                         closeViewInstructor();
                       }}
-                      variant={currentViewedInstructor.status === 'active' ? "destructive" : "default"}
-                      className={currentViewedInstructor.status === 'inactive' ? "bg-green-500 text-white hover:bg-green-600" : ""}
+                      variant="destructive"
                     >
-                      {currentViewedInstructor.status === 'active' ? (
-                        <>
-                          <X className="mr-2 h-4 w-4" />
-                          Deactivate Instructor
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Activate Instructor
-                        </>
-                      )}
+                      <X className="mr-2 h-4 w-4" />
+                      Deactivate Instructor
                     </Button>
-                  </div>
-                ) : null}
+                  ) : currentViewedInstructor.status === 'inactive' ? (
+                    <Button 
+                      onClick={() => {
+                        handleActivate(currentViewedInstructor.id);
+                        closeViewInstructor();
+                      }}
+                      className="bg-green-500 text-white hover:bg-green-600"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Activate Instructor
+                    </Button>
+                  ) : null}
+                </div>
               </div>
               
               <div className="border-t pt-4 flex justify-end">
@@ -501,4 +702,3 @@ const AdminInstructors = () => {
 };
 
 export default AdminInstructors;
-
