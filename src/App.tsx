@@ -27,6 +27,10 @@ import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements"
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInstructors from "./pages/admin/AdminInstructors";
 import AdminStudents from "./pages/admin/AdminStudents";
+import AdminAttendance from "./pages/admin/AdminAttendance";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -60,10 +64,10 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/attendance" element={<AdminDashboard />} />
-          <Route path="/admin/payments" element={<AdminDashboard />} />
-          <Route path="/admin/announcements" element={<AdminDashboard />} />
-          <Route path="/admin/settings" element={<AdminDashboard />} />
+          <Route path="/admin/attendance" element={<AdminAttendance />} />
+          <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
