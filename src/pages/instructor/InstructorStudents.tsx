@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -9,9 +10,18 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Edit, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
 
 interface Student {
   id: string;
@@ -26,17 +36,21 @@ interface Student {
   needsAttention?: boolean;
   email: string;
   enrollmentDate: string;
-  tags: string[];
+  notes?: string;
 }
 
 const InstructorStudents = () => {
-  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [isEditingLevel, setIsEditingLevel] = useState<string | null>(null);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [noteText, setNoteText] = useState('');
   
   // Mock students data
-  const students: Student[] = [
+  const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
       name: 'Alex Johnson',
@@ -46,8 +60,8 @@ const InstructorStudents = () => {
       lastActive: 'Today',
       initials: 'AJ',
       enrollmentDate: 'Jan 15, 2025',
-      tags: ['Scratching', 'Beat Matching'],
       nextClass: 'April 7, 2025',
+      notes: 'Showing good progress with beat matching skills.'
     },
     {
       id: '2',
@@ -58,7 +72,6 @@ const InstructorStudents = () => {
       lastActive: 'Yesterday',
       initials: 'TS',
       enrollmentDate: 'Feb 3, 2025',
-      tags: ['Fundamentals'],
       needsAttention: true,
       nextClass: 'April 8, 2025',
     },
@@ -71,8 +84,8 @@ const InstructorStudents = () => {
       lastActive: '3 days ago',
       initials: 'JL',
       enrollmentDate: 'Nov 10, 2024',
-      tags: ['Advanced Techniques', 'Production'],
       nextClass: 'April 9, 2025',
+      notes: 'Ready to move to performance techniques.'
     },
     {
       id: '4',
@@ -83,7 +96,6 @@ const InstructorStudents = () => {
       lastActive: '1 week ago',
       initials: 'MR',
       enrollmentDate: 'Feb 20, 2025',
-      tags: ['Fundamentals'],
       overdue: true,
     },
     {
@@ -95,7 +107,6 @@ const InstructorStudents = () => {
       lastActive: '2 days ago',
       initials: 'CW',
       enrollmentDate: 'Dec 12, 2024',
-      tags: ['Beat Matching', 'EQ Mixing'],
       nextClass: 'April 12, 2025',
     },
     {
@@ -107,7 +118,6 @@ const InstructorStudents = () => {
       lastActive: 'Yesterday',
       initials: 'JR',
       enrollmentDate: 'Mar 5, 2025',
-      tags: ['Fundamentals'],
     },
     {
       id: '7',
@@ -118,18 +128,16 @@ const InstructorStudents = () => {
       lastActive: 'Today',
       initials: 'DP',
       enrollmentDate: 'Oct 3, 2024',
-      tags: ['Advanced Techniques', 'Performance'],
       nextClass: 'April 10, 2025',
     },
-  ];
+  ]);
 
   // Filter students based on search and filters
   const filteredStudents = students.filter(student => {
     // Search term filter
     const matchesSearch = 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      student.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Level filter
     const matchesLevel = filterLevel === 'all' || student.level === filterLevel;
@@ -150,6 +158,45 @@ const InstructorStudents = () => {
     Novice: filteredStudents.filter(s => s.level === 'Novice'),
     Intermediate: filteredStudents.filter(s => s.level === 'Intermediate'),
     Advanced: filteredStudents.filter(s => s.level === 'Advanced'),
+  };
+  
+  // Handle level change for a student
+  const handleLevelChange = (studentId: string, newLevel: string) => {
+    setStudents(prevStudents => prevStudents.map(student => 
+      student.id === studentId ? { ...student, level: newLevel } : student
+    ));
+    setIsEditingLevel(null);
+    
+    toast({
+      title: "Level updated",
+      description: "Student level has been successfully updated.",
+    });
+  };
+  
+  // Handle adding a note for a student
+  const handleAddNote = () => {
+    if (!selectedStudent || !noteText.trim()) return;
+    
+    setStudents(prevStudents => prevStudents.map(student => 
+      student.id === selectedStudent ? { ...student, notes: noteText } : student
+    ));
+    
+    setShowNoteDialog(false);
+    setSelectedStudent(null);
+    setNoteText('');
+    
+    toast({
+      title: "Note added",
+      description: "Your note has been saved successfully.",
+    });
+  };
+  
+  // Open note dialog for a student
+  const openNoteDialog = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    setSelectedStudent(studentId);
+    setNoteText(student?.notes || '');
+    setShowNoteDialog(true);
   };
   
   return (
@@ -230,12 +277,11 @@ const InstructorStudents = () => {
               
               <TabsContent value="list">
                 <div className="rounded-md border">
-                  <div className="grid grid-cols-10 p-3 font-medium border-b text-xs sm:text-sm">
+                  <div className="grid grid-cols-7 p-3 font-medium border-b text-xs sm:text-sm">
                     <div className="col-span-3">STUDENT</div>
                     <div className="col-span-2">PROGRESS</div>
                     <div className="col-span-1 text-center">LEVEL</div>
-                    <div className="col-span-2">TAGS</div>
-                    <div className="col-span-2 text-center">ACTIONS</div>
+                    <div className="col-span-1 text-center">NOTES</div>
                   </div>
                   
                   {filteredStudents.length > 0 ? (
@@ -244,7 +290,7 @@ const InstructorStudents = () => {
                         <div 
                           key={student.id}
                           className={cn(
-                            "grid grid-cols-10 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
+                            "grid grid-cols-7 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
                             student.needsAttention && "bg-amber-500/5",
                             student.overdue && "bg-red-500/5"
                           )}
@@ -285,42 +331,54 @@ const InstructorStudents = () => {
                           </div>
                           
                           <div className="col-span-1 text-center">
-                            <Badge variant="outline" className={cn(
-                              student.level === 'Novice' && "border-green-500/50 text-green-500",
-                              student.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
-                              student.level === 'Advanced' && "border-purple-500/50 text-purple-500"
-                            )}>
-                              {student.level}
-                            </Badge>
-                          </div>
-                          
-                          <div className="col-span-2 flex flex-wrap gap-1">
-                            {student.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {student.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{student.tags.length - 2}
-                              </Badge>
+                            {isEditingLevel === student.id ? (
+                              <Select 
+                                defaultValue={student.level} 
+                                onValueChange={(value) => handleLevelChange(student.id, value)}
+                                onOpenChange={(open) => {
+                                  if (!open && isEditingLevel === student.id) {
+                                    setIsEditingLevel(null);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-[100px] h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Novice">Novice</SelectItem>
+                                  <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="Advanced">Advanced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="flex items-center justify-center gap-2">
+                                <Badge variant="outline" className={cn(
+                                  student.level === 'Novice' && "border-green-500/50 text-green-500",
+                                  student.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
+                                  student.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                                )}>
+                                  {student.level}
+                                </Badge>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6" 
+                                  onClick={() => setIsEditingLevel(student.id)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                           
-                          <div className="col-span-2 flex justify-center gap-2">
+                          <div className="col-span-1 text-center">
                             <Button 
                               variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/instructor/students/${student.id}`)}
+                              size="sm" 
+                              onClick={() => openNoteDialog(student.id)}
+                              className="text-xs px-2"
                             >
-                              View
-                            </Button>
-                            <Button 
-                              variant="default" 
-                              size="sm"
-                              onClick={() => navigate(`/instructor/students/${student.id}/update`)}
-                            >
-                              Update
+                              {student.notes ? "Edit Note" : "Add Note"}
                             </Button>
                           </div>
                         </div>
@@ -393,17 +451,19 @@ const InstructorStudents = () => {
                                 <div className="flex gap-2">
                                   <Button 
                                     variant="outline" 
-                                    size="sm"
-                                    onClick={() => navigate(`/instructor/students/${student.id}`)}
+                                    size="sm" 
+                                    onClick={() => openNoteDialog(student.id)}
+                                    className="text-xs px-2"
                                   >
-                                    View
+                                    {student.notes ? "Edit Note" : "Add Note"}
                                   </Button>
                                   <Button 
-                                    variant="default" 
-                                    size="sm"
-                                    onClick={() => navigate(`/instructor/students/${student.id}/update`)}
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setIsEditingLevel(student.id)}
+                                    className="text-xs px-2"
                                   >
-                                    Update
+                                    Change Level
                                   </Button>
                                 </div>
                               </div>
@@ -422,6 +482,39 @@ const InstructorStudents = () => {
             </Tabs>
           </CardContent>
         </Card>
+        
+        {/* Add/Edit Note Dialog */}
+        <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>
+                {students.find(s => s.id === selectedStudent)?.notes ? "Edit Student Note" : "Add Student Note"}
+              </DialogTitle>
+              <DialogDescription>
+                Add notes about the student's progress that both you and the student can see.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <Textarea 
+                placeholder="Enter your note here..." 
+                className="min-h-[150px]"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddNote} disabled={!noteText.trim()}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Note
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle, Search, Star, Users, X } from 'lucide-react';
+import { Calendar, CheckCircle, Search, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,7 +30,7 @@ const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Mock students data
+  // Mock students data - only showing today's students
   const students: Student[] = [
     {
       id: '1',
@@ -39,7 +39,7 @@ const InstructorDashboard = () => {
       progress: 68,
       lastActive: 'Today',
       initials: 'AJ',
-      nextClass: 'April 7, 2025',
+      nextClass: 'Today, 2:00 PM',
     },
     {
       id: '2',
@@ -49,25 +49,7 @@ const InstructorDashboard = () => {
       lastActive: 'Yesterday',
       initials: 'TS',
       needsAttention: true,
-      nextClass: 'April 8, 2025',
-    },
-    {
-      id: '3',
-      name: 'Jordan Lee',
-      level: 'Advanced',
-      progress: 87,
-      lastActive: '3 days ago',
-      initials: 'JL',
-      nextClass: 'April 9, 2025',
-    },
-    {
-      id: '4',
-      name: 'Morgan Rivera',
-      level: 'Beginner',
-      progress: 15,
-      lastActive: '1 week ago',
-      initials: 'MR',
-      overdue: true,
+      nextClass: 'Today, 3:30 PM',
     },
     {
       id: '5',
@@ -76,7 +58,7 @@ const InstructorDashboard = () => {
       progress: 52,
       lastActive: '2 days ago',
       initials: 'CW',
-      nextClass: 'April 12, 2025',
+      nextClass: 'Today, 5:00 PM',
     },
   ];
 
@@ -87,7 +69,7 @@ const InstructorDashboard = () => {
   );
 
   // Upcoming classes calculation
-  const upcomingClassCount = students.filter(student => student.nextClass).length;
+  const upcomingClassCount = students.length;
   
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
@@ -99,7 +81,7 @@ const InstructorDashboard = () => {
           </p>
         </section>
 
-        <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <StatsCard 
             title="Total Students"
             value={students.length}
@@ -113,23 +95,17 @@ const InstructorDashboard = () => {
             trend={{ value: 5, isPositive: true }}
           />
           <StatsCard 
-            title="Upcoming Classes"
+            title="Today's Classes"
             value={upcomingClassCount}
             icon={<Calendar className="h-5 w-5" />}
-            description="In the next 7 days"
-          />
-          <StatsCard 
-            title="Instructor Rating"
-            value="4.8"
-            icon={<Star className="h-5 w-5" />}
-            description="Based on student feedback"
+            description="Scheduled for today"
           />
         </section>
 
         <section>
           <Card>
             <CardHeader className="flex-row justify-between items-center pb-4">
-              <CardTitle>Your Students</CardTitle>
+              <CardTitle>Today's Students</CardTitle>
               <div className="relative w-full max-w-xs">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -152,11 +128,10 @@ const InstructorDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
-                <div className="grid grid-cols-7 p-3 font-medium border-b text-xs sm:text-sm">
+                <div className="grid grid-cols-5 p-3 font-medium border-b text-xs sm:text-sm">
                   <div className="col-span-3">STUDENT</div>
-                  <div className="col-span-2">PROGRESS</div>
+                  <div className="col-span-1">PROGRESS</div>
                   <div className="col-span-1 text-center">LEVEL</div>
-                  <div className="col-span-1 text-center">ACTIONS</div>
                 </div>
                 
                 {filteredStudents.length > 0 ? (
@@ -165,7 +140,7 @@ const InstructorDashboard = () => {
                       <div 
                         key={student.id}
                         className={cn(
-                          "grid grid-cols-7 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
+                          "grid grid-cols-5 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
                           student.needsAttention && "bg-amber-500/5",
                           student.overdue && "bg-red-500/5"
                         )}
@@ -183,7 +158,7 @@ const InstructorDashboard = () => {
                           <div>
                             <div className="font-medium">{student.name}</div>
                             <div className="text-muted-foreground text-xs">
-                              Last active: {student.lastActive}
+                              Next class: {student.nextClass}
                             </div>
                           </div>
                           {student.needsAttention && (
@@ -198,7 +173,7 @@ const InstructorDashboard = () => {
                           )}
                         </div>
                         
-                        <div className="col-span-2 flex items-center gap-2">
+                        <div className="col-span-1 flex items-center gap-2">
                           <Progress value={student.progress} className="h-2" />
                           <span className="text-xs font-medium sm:ml-2">
                             {student.progress}%
@@ -213,16 +188,6 @@ const InstructorDashboard = () => {
                           )}>
                             {student.level}
                           </Badge>
-                        </div>
-                        
-                        <div className="col-span-1 text-center">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => navigate(`/instructor/students/${student.id}`)}
-                          >
-                            View
-                          </Button>
                         </div>
                       </div>
                     ))}
