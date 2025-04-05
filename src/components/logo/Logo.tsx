@@ -6,43 +6,27 @@ import { cn } from '@/lib/utils';
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
-  withText?: boolean;
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
   className, 
-  size = 'md',
-  withText = true 
+  size = 'md'
 }) => {
   const sizes = {
-    sm: 'h-8',
-    md: 'h-10',
-    lg: 'h-14'
-  };
-  
-  const textSizes = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-3xl'
+    sm: 'h-8 w-auto',
+    md: 'h-10 w-auto',
+    lg: 'h-14 w-auto'
   };
   
   return (
-    <Link to="/" className={cn("flex items-center gap-2", className)}>
+    <Link to="/" className={cn("flex items-center", className)}>
       <div className={cn("relative", sizes[size])}>
         <img 
           src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
           alt="Deckademics Logo" 
-          className={cn(sizes[size], "aspect-square object-contain")}
+          className={cn(sizes[size], "object-contain")}
         />
       </div>
-      {withText && (
-        <span className={cn(
-          "font-bold tracking-tight text-white",
-          textSizes[size]
-        )}>
-          Deckademics
-        </span>
-      )}
     </Link>
   );
 };
