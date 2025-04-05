@@ -27,11 +27,18 @@ const InstructorAuth = () => {
               Access your teaching dashboard and manage your students
             </p>
           </div>
-          <AuthForm userType="instructor" />
+          <AuthForm userType="instructor" disableSignup={true} />
           <div className="text-center">
             <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
             </Link>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Instructor accounts can only be created by administrators.
+              <br />
+              Please contact the school if you need access.
+            </p>
           </div>
         </div>
       </main>

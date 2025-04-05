@@ -13,9 +13,10 @@ type UserType = 'student' | 'instructor';
 
 interface AuthFormProps {
   userType: UserType;
+  disableSignup?: boolean;
 }
 
-export const AuthForm = ({ userType }: AuthFormProps) => {
+export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -105,7 +106,10 @@ export const AuthForm = ({ userType }: AuthFormProps) => {
         <Tabs defaultValue="login">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup" disabled={userType === 'instructor'}>
+            <TabsTrigger 
+              value="signup" 
+              disabled={disableSignup || userType === 'instructor'}
+            >
               Sign Up
             </TabsTrigger>
           </TabsList>
