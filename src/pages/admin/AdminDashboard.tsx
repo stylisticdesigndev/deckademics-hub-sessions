@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -11,7 +10,13 @@ const AdminDashboard = () => {
   const pendingStudents = 5;
   const totalStudents = 43;
   const totalInstructors = 7;
-  const totalClasses = 12;
+  
+  // Mock payment status data
+  const paymentsData = {
+    paid: 38,
+    pending: 3,
+    overdue: 2
+  };
   
   return (
     <DashboardLayout
@@ -26,7 +31,7 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -84,32 +89,6 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Classes
-              </CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <rect width="20" height="14" x="2" y="5" rx="2" />
-                <path d="M2 10h20" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalClasses}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all levels
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
                 Payment Status
               </CardTitle>
               <svg
@@ -126,10 +105,16 @@ const AdminDashboard = () => {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">86%</div>
-              <p className="text-xs text-muted-foreground">
-                Current month payments
-              </p>
+              <div className="flex justify-between text-xs font-medium mb-1">
+                <span>Paid</span>
+                <span>Pending</span>
+                <span>Overdue</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold">
+                <span className="text-green-600">{paymentsData.paid}</span>
+                <span className="text-amber-500">{paymentsData.pending}</span>
+                <span className="text-red-500">{paymentsData.overdue}</span>
+              </div>
             </CardContent>
           </Card>
         </div>
