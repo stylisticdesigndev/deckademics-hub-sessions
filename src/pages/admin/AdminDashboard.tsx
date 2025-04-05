@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -13,7 +14,6 @@ const AdminDashboard = () => {
   
   // Mock payment status data
   const paymentsData = {
-    paid: 38,
     pending: 3,
     overdue: 2
   };
@@ -106,12 +106,10 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between text-xs font-medium mb-1">
-                <span>Paid</span>
                 <span>Pending</span>
                 <span>Overdue</span>
               </div>
               <div className="flex justify-between text-lg font-bold">
-                <span className="text-green-600">{paymentsData.paid}</span>
                 <span className="text-amber-500">{paymentsData.pending}</span>
                 <span className="text-red-500">{paymentsData.overdue}</span>
               </div>
@@ -215,17 +213,13 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border bg-card p-3">
-                      <div className="text-xl font-semibold">38</div>
-                      <p className="text-xs text-muted-foreground">Paid</p>
-                    </div>
-                    <div className="rounded-lg border bg-card p-3">
-                      <div className="text-xl font-semibold">3</div>
+                      <div className="text-xl font-semibold text-amber-500">3</div>
                       <p className="text-xs text-muted-foreground">Pending</p>
                     </div>
                     <div className="rounded-lg border bg-card p-3">
-                      <div className="text-xl font-semibold">2</div>
+                      <div className="text-xl font-semibold text-red-500">2</div>
                       <p className="text-xs text-muted-foreground">Overdue</p>
                     </div>
                   </div>
