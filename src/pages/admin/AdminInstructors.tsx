@@ -36,7 +36,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, CheckCircle } from 'lucide-react';
 
 const AdminInstructors = () => {
   const { toast } = useToast();
@@ -49,21 +49,26 @@ const AdminInstructors = () => {
     specialization: '',
   });
   
-  // Mock instructor data
-  const activeInstructors = [
+  // Mock instructor data with updated status property
+  const [instructors, setInstructors] = useState([
     { id: 1, name: 'Professor Smith', email: 'smith@example.com', students: 12, classes: 3, status: 'active', specialization: 'Turntablism' },
     { id: 2, name: 'DJ Mike', email: 'mike@example.com', students: 8, classes: 2, status: 'active', specialization: 'Scratching' },
     { id: 3, name: 'Sarah Jones', email: 'sarah@example.com', students: 15, classes: 4, status: 'active', specialization: 'Beat Mixing' },
     { id: 4, name: 'Robert Williams', email: 'robert@example.com', students: 10, classes: 2, status: 'active', specialization: 'Production' },
     { id: 5, name: 'Laura Thompson', email: 'laura@example.com', students: 7, classes: 1, status: 'active', specialization: 'Music Theory' },
-  ];
-
-  const pendingInstructors = [
     { id: 6, name: 'David Carter', email: 'david@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Beat Making' },
     { id: 7, name: 'Emily Wilson', email: 'emily@example.com', students: 0, classes: 0, status: 'pending', specialization: 'Digital DJing' },
-  ];
+    { id: 8, name: 'Michael Johnson', email: 'michael@example.com', students: 0, classes: 0, status: 'inactive', specialization: 'Music Production' },
+  ]);
+
+  const activeInstructors = instructors.filter(instructor => instructor.status === 'active');
+  const pendingInstructors = instructors.filter(instructor => instructor.status === 'pending');
 
   const handleApprove = (id: number) => {
+    setInstructors(instructors.map(instructor => 
+      instructor.id === id ? { ...instructor, status: 'active' } : instructor
+    ));
+    
     toast({
       title: 'Instructor Approved',
       description: 'The instructor account has been approved.',
@@ -71,17 +76,30 @@ const AdminInstructors = () => {
   };
 
   const handleDecline = (id: number) => {
+    setInstructors(instructors.map(instructor => 
+      instructor.id === id ? { ...instructor, status: 'inactive' } : instructor
+    ));
+    
     toast({
       title: 'Instructor Declined',
       description: 'The instructor account has been declined.',
     });
   };
 
-  const handleDeactivate = (id: number) => {
-    toast({
-      title: 'Instructor Deactivated',
-      description: 'The instructor account has been deactivated.',
-    });
+  const handleToggleStatus = (id: number) => {
+    setInstructors(instructors.map(instructor => {
+      if (instructor.id === id) {
+        const newStatus = instructor.status === 'active' ? 'inactive' : 'active';
+        
+        toast({
+          title: newStatus === 'active' ? 'Instructor Activated' : 'Instructor Deactivated',
+          description: `The instructor account has been ${newStatus === 'active' ? 'activated' : 'deactivated'}.`,
+        });
+        
+        return { ...instructor, status: newStatus };
+      }
+      return instructor;
+    }));
   };
 
   const handleAddInstructor = (e: React.FormEvent) => {
@@ -97,7 +115,20 @@ const AdminInstructors = () => {
       return;
     }
     
-    // Here you would normally send this to your API
+    // Add new instructor to the list
+    const newId = Math.max(...instructors.map(i => i.id)) + 1;
+    const instructorToAdd = {
+      id: newId,
+      name: newInstructor.name,
+      email: newInstructor.email,
+      specialization: newInstructor.specialization,
+      students: 0,
+      classes: 0,
+      status: 'active',
+    };
+    
+    setInstructors([...instructors, instructorToAdd]);
+    
     toast({
       title: 'Instructor Added',
       description: `${newInstructor.name} has been added as an instructor.`,
@@ -117,7 +148,7 @@ const AdminInstructors = () => {
   };
 
   const getInstructorById = (id: number) => {
-    return [...activeInstructors, ...pendingInstructors].find(instructor => instructor.id === id);
+    return instructors.find(instructor => instructor.id === id);
   };
 
   const currentViewedInstructor = viewInstructorId ? getInstructorById(viewInstructorId) : null;
@@ -271,7 +302,7 @@ const AdminInstructors = () => {
                               <Button 
                                 variant="destructive" 
                                 size="sm"
-                                onClick={() => handleDeactivate(instructor.id)}
+                                onClick={() => handleToggleStatus(instructor.id)}
                               >
                                 <X className="mr-1 h-4 w-4" />
                                 Deactivate
@@ -370,7 +401,7 @@ const AdminInstructors = () => {
         </Tabs>
       </div>
 
-      {/* Instructor View Sheet */}
+      {/* Add a new tab for inactive instructors */}
       <Sheet open={viewInstructorId !== null} onOpenChange={closeViewInstructor}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
@@ -393,11 +424,19 @@ const AdminInstructors = () => {
                   <p className="text-muted-foreground">{currentViewedInstructor.email}</p>
                   <Badge 
                     variant="outline" 
-                    className={currentViewedInstructor.status === 'active' 
-                      ? "bg-green-500/10 text-green-500" 
-                      : "bg-amber-500/10 text-amber-500"}
+                    className={
+                      currentViewedInstructor.status === 'active' 
+                        ? "bg-green-500/10 text-green-500" 
+                        : currentViewedInstructor.status === 'pending'
+                        ? "bg-amber-500/10 text-amber-500"
+                        : "bg-red-500/10 text-red-500"
+                    }
                   >
-                    {currentViewedInstructor.status === 'active' ? 'Active' : 'Pending'}
+                    {currentViewedInstructor.status === 'active' 
+                      ? 'Active' 
+                      : currentViewedInstructor.status === 'pending'
+                      ? 'Pending'
+                      : 'Inactive'}
                   </Badge>
                 </div>
               </div>
@@ -422,6 +461,32 @@ const AdminInstructors = () => {
                     </div>
                   </>
                 )}
+                
+                {/* Add action buttons for the instructor in the sheet view */}
+                {currentViewedInstructor.status === 'active' || currentViewedInstructor.status === 'inactive' ? (
+                  <div className="pt-4">
+                    <Button 
+                      onClick={() => {
+                        handleToggleStatus(currentViewedInstructor.id);
+                        closeViewInstructor();
+                      }}
+                      variant={currentViewedInstructor.status === 'active' ? "destructive" : "default"}
+                      className={currentViewedInstructor.status === 'inactive' ? "bg-green-500 text-white hover:bg-green-600" : ""}
+                    >
+                      {currentViewedInstructor.status === 'active' ? (
+                        <>
+                          <X className="mr-2 h-4 w-4" />
+                          Deactivate Instructor
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Activate Instructor
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
               
               <div className="border-t pt-4 flex justify-end">
@@ -436,3 +501,4 @@ const AdminInstructors = () => {
 };
 
 export default AdminInstructors;
+
