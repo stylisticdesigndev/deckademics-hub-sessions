@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -89,16 +88,16 @@ const InstructorDashboard = () => {
             description="Scheduled for today"
           />
           <StatsCard 
-            title="Total Students"
-            value={students.length}
-            icon={<Users className="h-5 w-5" />}
-            trend={{ value: 10, isPositive: true }}
-          />
-          <StatsCard 
             title="Average Progress"
             value="56%"
             icon={<CheckCircle className="h-5 w-5" />}
             trend={{ value: 5, isPositive: true }}
+          />
+          <StatsCard 
+            title="Total Students"
+            value={students.length}
+            icon={<Users className="h-5 w-5" />}
+            trend={{ value: 10, isPositive: true }}
           />
         </section>
 
