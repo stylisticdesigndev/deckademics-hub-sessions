@@ -21,6 +21,8 @@ import StudentProfile from "./pages/student/StudentProfile";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
+import InstructorClasses from "./pages/instructor/InstructorClasses";
+import InstructorProfile from "./pages/instructor/InstructorProfile";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -58,6 +60,8 @@ const App = () => (
           <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
           <Route path="/instructor/students" element={<InstructorStudents />} />
           <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
+          <Route path="/instructor/classes" element={<InstructorClasses />} />
+          <Route path="/instructor/profile" element={<InstructorProfile />} />
           
           {/* Admin routes */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
