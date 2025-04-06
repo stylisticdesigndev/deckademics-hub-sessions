@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -738,29 +737,32 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end gap-2">
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleOpenAssignStudents(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <UserRound className="mr-1 h-4 w-4" />
+                                <UserRound className="mr-1 h-3 w-3" />
                                 Assign
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => viewInstructor(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <Eye className="mr-1 h-4 w-4" />
+                                <Eye className="mr-1 h-3 w-3" />
                                 View
                               </Button>
                               <Button 
                                 variant="destructive" 
                                 size="sm"
                                 onClick={() => handleDeactivate(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <X className="mr-1 h-4 w-4" />
+                                <X className="mr-1 h-3 w-3" />
                                 Deactivate
                               </Button>
                             </div>
@@ -811,30 +813,32 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end gap-2">
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => viewInstructor(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <Eye className="mr-1 h-4 w-4" />
+                                <Eye className="mr-1 h-3 w-3" />
                                 View
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleApprove(instructor.id)}
-                                className="bg-green-500 text-white hover:bg-green-600"
+                                className="text-xs px-2 bg-green-500 text-white hover:bg-green-600"
                               >
-                                <Check className="mr-1 h-4 w-4" />
+                                <Check className="mr-1 h-3 w-3" />
                                 Approve
                               </Button>
                               <Button 
                                 variant="destructive" 
                                 size="sm"
                                 onClick={() => handleDecline(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <X className="mr-1 h-4 w-4" />
+                                <X className="mr-1 h-3 w-3" />
                                 Decline
                               </Button>
                             </div>
@@ -885,45 +889,11 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end gap-2">
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => viewInstructor(instructor.id)}
+                                className="text-xs px-2"
                               >
-                                <Eye className="mr-1 h-4 w-4" />
-                                View
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleActivate(instructor.id)}
-                                className="bg-green-500 text-white hover:bg-green-600"
-                              >
-                                <Check className="mr-1 h-4 w-4" />
-                                Activate
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredInactiveInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No inactive instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default AdminInstructors;
+                                <Eye className="mr-1 h-3 w-3" />
