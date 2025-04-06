@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -50,7 +51,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, CheckCircle, AlertCircle, UserRound } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound } from 'lucide-react';
 
 // Define a student type for instructor's students
 interface Student {
@@ -897,3 +898,38 @@ const AdminInstructors = () => {
                                 className="text-xs px-2"
                               >
                                 <Eye className="mr-1 h-3 w-3" />
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleActivate(instructor.id)}
+                                className="text-xs px-2 bg-green-500 text-white hover:bg-green-600"
+                              >
+                                <Check className="mr-1 h-3 w-3" />
+                                Activate
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredInactiveInstructors.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                            No inactive instructors found matching your search.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default AdminInstructors;

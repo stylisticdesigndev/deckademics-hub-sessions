@@ -4,7 +4,6 @@ import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  BookOpen,
   MessageSquare,
   User
 } from 'lucide-react';
@@ -18,12 +17,6 @@ export const StudentNavigation = () => {
       icon: LayoutDashboard,
       href: "/student/dashboard",
       active: pathname === "/student/dashboard"
-    },
-    {
-      title: "Progress",
-      icon: BookOpen,
-      href: "/student/progress",
-      active: pathname === "/student/progress"
     },
     {
       title: "Messages",
