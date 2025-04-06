@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -281,9 +280,10 @@ const InstructorStudents = () => {
               
               <TabsContent value="list">
                 <div className="rounded-md border">
-                  <div className="grid grid-cols-7 p-3 font-medium border-b text-xs sm:text-sm">
+                  {/* Header row with improved spacing */}
+                  <div className="grid grid-cols-7 p-4 font-medium border-b text-xs sm:text-sm">
                     <div className="col-span-3">STUDENT</div>
-                    <div className="col-span-2">PROGRESS</div>
+                    <div className="col-span-2 px-4">PROGRESS</div>
                     <div className="col-span-1 text-center">LEVEL</div>
                     <div className="col-span-1 text-center">NOTES</div>
                   </div>
@@ -316,14 +316,16 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-2 flex items-center gap-2">
-                            <Progress value={student.progress} className="h-2" />
-                            <span className="text-xs font-medium ml-2">
+                          {/* Improved spacing for progress column */}
+                          <div className="col-span-2 flex items-center gap-2 px-4">
+                            <Progress value={student.progress} className="h-2 flex-grow" />
+                            <span className="text-xs font-medium ml-2 w-8 text-right">
                               {student.progress}%
                             </span>
                           </div>
                           
-                          <div className="col-span-1 text-center">
+                          {/* Better centered level column */}
+                          <div className="col-span-1 flex justify-center">
                             {isEditingLevel === student.id ? (
                               <Select 
                                 defaultValue={student.level} 
@@ -364,7 +366,8 @@ const InstructorStudents = () => {
                             )}
                           </div>
                           
-                          <div className="col-span-1 text-center">
+                          {/* Improved notes button alignment */}
+                          <div className="col-span-1 flex justify-center">
                             <Button 
                               variant="outline" 
                               size="sm" 
