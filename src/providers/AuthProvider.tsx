@@ -170,21 +170,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Signing in with email:", email);
       
       // Handle default admin credentials specifically
-      let userData = {};
+      let options = {};
       
       if (email === 'admin@example.com' && password === 'Admin123!') {
         console.log("Using admin credentials");
-        userData = {
-          role: 'admin'
+        options = {
+          data: {
+            role: 'admin'
+          }
         };
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password,
-        options: {
-          data: userData
-        }
+        ...options
       });
       
       if (error) {
