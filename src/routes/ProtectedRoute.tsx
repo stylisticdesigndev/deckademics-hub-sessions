@@ -17,7 +17,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   
   // Check if user is authenticated and has the required role
   if (!userData.user || !userData.role || !allowedRoles.includes(userData.role)) {
-    // Redirect to login page if not authenticated
+    // Redirect to login page if not authenticated or not authorized
     return <Navigate to="/auth/student" replace />;
   }
   
