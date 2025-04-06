@@ -1,11 +1,9 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/providers/AuthProvider';
 import { UserRole } from '@/providers/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { SocialAuthButton } from './SocialAuthButton';
@@ -19,7 +17,6 @@ interface AuthFormProps {
 
 export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
   const { signIn, signUp, isLoading } = useAuth();
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,6 +42,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Attempting sign in with:", formData.email);
     await signIn(formData.email, formData.password);
   };
 
@@ -60,6 +58,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       return;
     }
     
+    console.log("Attempting sign up with:", formData.email, "role:", userType);
     await signUp(formData.email, formData.password, userType, {
       first_name: formData.firstName,
       last_name: formData.lastName
@@ -67,28 +66,11 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   };
 
   const handleGoogleAuth = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Google authentication error',
-        description: error.message || 'Please try again later.',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Google authentication',
+      description: 'Google authentication is not configured yet.',
+      variant: 'destructive',
+    });
   };
 
   return (
