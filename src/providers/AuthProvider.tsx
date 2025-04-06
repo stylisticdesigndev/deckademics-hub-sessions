@@ -168,9 +168,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       console.log("Signing in with email:", email);
+      
+      // Handle default admin credentials specifically
+      let userData = {};
+      
+      if (email === 'admin@example.com' && password === 'Admin123!') {
+        console.log("Using admin credentials");
+        userData = {
+          role: 'admin'
+        };
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
-        password 
+        password,
+        options: {
+          data: userData
+        }
       });
       
       if (error) {
@@ -186,6 +200,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Sign in successful:", data.session ? "Session exists" : "No session");
       
       if (data.session) {
+        // Special handling for admin login
+        if (email === 'admin@example.com') {
+          console.log("Admin login detected, manually setting profile");
+          
+          // Check if admin exists in profiles table
+          const { data: adminProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+            
+          if (profileError || !adminProfile) {
+            console.log("Creating admin profile", data.user.id);
+            // Create admin profile if it doesn't exist
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              email: data.user.email!,
+              first_name: 'Admin',
+              last_name: 'User', 
+              role: 'admin'
+            });
+          }
+        }
+        
         const profile = await fetchUserProfile(data.session.user.id);
         console.log("User profile after sign in:", profile);
         
@@ -195,7 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Route user based on role
-        if (profile?.role === 'admin') {
+        if (profile?.role === 'admin' || email === 'admin@example.com') {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
           navigate('/instructor/dashboard');
