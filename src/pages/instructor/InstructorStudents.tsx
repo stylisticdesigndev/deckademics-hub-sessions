@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, X, Edit, Save, User, Percent } from 'lucide-react';
+import { Search, Filter, X, Edit, Save, User, Percent, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Student {
   id: string;
@@ -873,4 +875,216 @@ const InstructorStudents = () => {
               />
             </div>
             
-            <
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowNoteDialog(false)}>Cancel</Button>
+              <Button onClick={handleAddNote}>Save Note</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Progress Update Dialog */}
+        <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedModule ? `Update Module Progress` : `Update Overall Progress`}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedModule 
+                  ? `Adjust the progress for the "${selectedModule.moduleName}" module.`
+                  : `Adjust the overall progress for this student.`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Progress: {progressValue}%</span>
+              </div>
+              <Slider 
+                value={[progressValue]} 
+                onValueChange={(value) => setProgressValue(value[0])}
+                max={100}
+                step={1}
+                className="w-full" 
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowProgressDialog(false)}>Cancel</Button>
+              <Button onClick={selectedModule ? handleModuleProgressUpdate : handleProgressUpdate}>
+                Save Progress
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Student Details Dialog */}
+        <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-auto">
+            {detailedStudent && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-xl flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {detailedStudent.avatar ? (
+                        <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                      ) : (
+                        <AvatarFallback>
+                          {detailedStudent.initials}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    {detailedStudent.name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Student details and progress information
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Basic Information</h3>
+                      <div className="text-sm space-y-1">
+                        <p><span className="text-muted-foreground">Email:</span> {detailedStudent.email}</p>
+                        <p><span className="text-muted-foreground">Level:</span> {detailedStudent.level}</p>
+                        <p><span className="text-muted-foreground">Last Active:</span> {detailedStudent.lastActive}</p>
+                        <p><span className="text-muted-foreground">Enrolled:</span> {detailedStudent.enrollmentDate}</p>
+                        {detailedStudent.nextClass && (
+                          <p><span className="text-muted-foreground">Next Class:</span> {detailedStudent.nextClass}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Progress</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Overall Progress</span>
+                          <span className="text-sm font-medium">{detailedStudent.progress}%</span>
+                        </div>
+                        <Progress 
+                          value={detailedStudent.progress}
+                          className="h-2"
+                          indicatorColor={
+                            detailedStudent.progress < 30 ? "bg-red-500" :
+                            detailedStudent.progress < 70 ? "bg-yellow-500" :
+                            "bg-green-500"
+                          }
+                        />
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 text-xs"
+                          onClick={() => {
+                            setSelectedModule(null);
+                            setProgressValue(detailedStudent.progress);
+                            setSelectedStudent(detailedStudent.id);
+                            setShowStudentDetails(false);
+                            setShowProgressDialog(true);
+                          }}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Update Progress
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Notes */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium">Notes</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => {
+                          setSelectedStudent(detailedStudent.id);
+                          setShowStudentDetails(false);
+                          setShowNoteDialog(true);
+                        }}
+                      >
+                        Add Note
+                      </Button>
+                    </div>
+                    
+                    {detailedStudent.notes && detailedStudent.notes.length > 0 ? (
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {detailedStudent.notes.map((note, index) => (
+                          <div key={index} className="p-3 bg-muted/50 rounded-md text-sm">
+                            {note}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No notes have been added yet.</p>
+                    )}
+                  </div>
+                  
+                  {/* Module Progress */}
+                  {detailedStudent.moduleProgress && detailedStudent.moduleProgress.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">Module Progress</h3>
+                      <div className="space-y-4">
+                        {detailedStudent.moduleProgress.map((module) => (
+                          <div key={module.moduleId} className="bg-muted/30 p-4 rounded-md">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium">{module.moduleName}</h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => {
+                                  openModuleProgressDialog(detailedStudent.id, module);
+                                  setShowStudentDetails(false);
+                                }}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit Progress
+                              </Button>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 mb-3">
+                              <Progress value={module.progress} className="h-2 flex-grow" />
+                              <span className="text-xs font-medium w-10 text-right">{module.progress}%</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                              {module.lessons.map((lesson) => (
+                                <div 
+                                  key={lesson.id} 
+                                  className="flex items-center gap-2 text-sm"
+                                  onClick={() => toggleLessonCompletion(detailedStudent.id, module.moduleId, lesson.id)}
+                                >
+                                  <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${lesson.completed ? 'bg-primary border-primary' : 'border-primary/20'}`}>
+                                    {lesson.completed && <Check className="h-3 w-3 text-primary-foreground" />}
+                                  </div>
+                                  <span className={lesson.completed ? "line-through opacity-70" : ""}>
+                                    {lesson.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button onClick={() => setShowStudentDetails(false)}>Close</Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default InstructorStudents;
