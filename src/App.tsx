@@ -3,7 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
+
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StudentAuth from "./pages/auth/StudentAuth";
@@ -43,38 +46,49 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/auth/student" element={<StudentAuth />} />
-          <Route path="/auth/instructor" element={<InstructorAuth />} />
-          <Route path="/auth/admin" element={<AdminAuth />} />
-          
-          {/* Student routes */}
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/progress" element={<StudentProgress />} />
-          <Route path="/student/classes" element={<StudentClasses />} />
-          <Route path="/student/messages" element={<StudentMessages />} />
-          <Route path="/student/profile" element={<StudentProfile />} />
-          
-          {/* Instructor routes */}
-          <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
-          <Route path="/instructor/students" element={<InstructorStudents />} />
-          <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
-          <Route path="/instructor/classes" element={<InstructorClasses />} />
-          <Route path="/instructor/profile" element={<InstructorProfile />} />
-          
-          {/* Admin routes */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/instructors" element={<AdminInstructors />} />
-          <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/curriculum" element={<AdminCurriculum />} />
-          <Route path="/admin/attendance" element={<AdminAttendance />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
-          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/auth/student" element={<StudentAuth />} />
+            <Route path="/auth/instructor" element={<InstructorAuth />} />
+            <Route path="/auth/admin" element={<AdminAuth />} />
+            
+            {/* Student routes */}
+            <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/progress" element={<StudentProgress />} />
+              <Route path="/student/classes" element={<StudentClasses />} />
+              <Route path="/student/messages" element={<StudentMessages />} />
+              <Route path="/student/profile" element={<StudentProfile />} />
+            </Route>
+            
+            {/* Instructor routes */}
+            <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+              <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
+              <Route path="/instructor/students" element={<InstructorStudents />} />
+              <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
+              <Route path="/instructor/classes" element={<InstructorClasses />} />
+              <Route path="/instructor/profile" element={<InstructorProfile />} />
+            </Route>
+            
+            {/* Admin routes */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/instructors" element={<AdminInstructors />} />
+              <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/curriculum" element={<AdminCurriculum />} />
+              <Route path="/admin/attendance" element={<AdminAttendance />} />
+              <Route path="/admin/payments" element={<AdminPayments />} />
+              <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
+            </Route>
+
+            {/* Default route for unknown paths */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

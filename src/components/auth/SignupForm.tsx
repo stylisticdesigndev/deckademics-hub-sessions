@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, LockKeyhole, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Mail, LockKeyhole, EyeIcon, EyeOffIcon, User } from 'lucide-react';
 
 interface SignupFormProps {
   formData: {
     email: string;
     password: string;
+    firstName: string;
+    lastName: string;
   };
   isLoading: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -26,6 +28,41 @@ export const SignupForm = ({
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input 
+                id="firstName" 
+                name="firstName"
+                placeholder="John" 
+                type="text" 
+                required
+                className="pl-10"
+                value={formData.firstName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input 
+                id="lastName" 
+                name="lastName"
+                placeholder="Doe" 
+                type="text" 
+                required
+                className="pl-10"
+                value={formData.lastName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        </div>
+        
         <div className="space-y-2">
           <Label htmlFor="signup-email">Email</Label>
           <div className="relative">

@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface DashboardLayoutProps {
@@ -28,24 +28,28 @@ export const DashboardLayout = ({
   userType
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signOut, userData } = useAuth();
   const [unreadNotifications, setUnreadNotifications] = useState(3);
 
   const handleLogout = () => {
-    toast({
-      title: 'Logged out successfully',
-      description: 'You have been logged out of your account.',
-    });
-    navigate('/');
+    signOut();
   };
 
-  const mockUser = {
-    name: userType === 'student' ? 'Alex Johnson' : 
-          userType === 'instructor' ? 'Prof. Smith' : 'Admin User',
-    initials: userType === 'student' ? 'AJ' : 
-              userType === 'instructor' ? 'PS' : 'AU',
-    role: userType === 'student' ? 'Student' : 
-          userType === 'instructor' ? 'Instructor' : 'Administrator'
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (userData.profile) {
+      const first = userData.profile.first_name?.charAt(0) || '';
+      const last = userData.profile.last_name?.charAt(0) || '';
+      return (first + last).toUpperCase();
+    }
+    return userType?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const getUserName = () => {
+    if (userData.profile) {
+      return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
+    }
+    return `${userType.charAt(0).toUpperCase() + userType.slice(1)} User`;
   };
 
   return (
@@ -62,13 +66,14 @@ export const DashboardLayout = ({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Avatar>
+                  <AvatarImage src={userData.profile?.avatar_url || undefined} />
                   <AvatarFallback className="bg-deckademics-primary/20 text-deckademics-primary">
-                    {mockUser.initials}
+                    {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm font-medium">{mockUser.name}</p>
-                  <p className="text-xs text-muted-foreground">{mockUser.role}</p>
+                  <p className="text-sm font-medium">{getUserName()}</p>
+                  <p className="text-xs text-muted-foreground">{userType.charAt(0).toUpperCase() + userType.slice(1)}</p>
                 </div>
               </div>
               <DropdownMenu>

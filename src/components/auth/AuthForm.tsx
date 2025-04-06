@@ -3,26 +3,28 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
+import { UserRole } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { SocialAuthButton } from './SocialAuthButton';
 import { AuthFormDivider } from './AuthFormDivider';
-
-type UserType = 'student' | 'instructor' | 'admin';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthFormProps {
-  userType: UserType;
+  userType: UserRole;
   disableSignup?: boolean;
 }
 
 export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
+  const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    firstName: '',
+    lastName: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,67 +32,51 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent, action: 'login' | 'signup') => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    await signIn(formData.email, formData.password);
+  };
 
-    try {
-      // Simulate auth process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, we'll just redirect without actual auth
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.firstName || !formData.lastName) {
       toast({
-        title: action === 'login' ? 'Logged in successfully!' : 'Account created successfully!',
-        description: `Welcome to Deckademics DJ School`,
-      });
-
-      // Redirect based on user type
-      if (userType === 'student') {
-        navigate('/student/dashboard');
-      } else if (userType === 'instructor') {
-        navigate('/instructor/dashboard');
-      } else if (userType === 'admin') {
-        navigate('/admin/dashboard');
-      }
-    } catch (error) {
-      toast({
-        title: 'Authentication error',
-        description: 'Please check your credentials and try again.',
+        title: 'Missing information',
+        description: 'Please provide your first and last name.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    
+    await signUp(formData.email, formData.password, userType, {
+      first_name: formData.firstName,
+      last_name: formData.lastName
+    });
   };
 
   const handleGoogleAuth = async () => {
-    setIsLoading(true);
-    
     try {
-      // Simulate Google auth process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: 'Logged in with Google successfully!',
-        description: `Welcome to Deckademics DJ School`,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
       });
-
-      // Redirect based on user type
-      if (userType === 'student') {
-        navigate('/student/dashboard');
-      } else if (userType === 'instructor') {
-        navigate('/instructor/dashboard');
-      } else if (userType === 'admin') {
-        navigate('/admin/dashboard');
+      
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Google authentication error',
-        description: 'Please try again later.',
+        description: error.message || 'Please try again later.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -98,12 +84,14 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     <Card className="w-full max-w-md border-deckademics-primary/20">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">
-          {userType === 'student' ? 'Student Access' : 'Instructor Access'}
+          {userType === 'student' ? 'Student Access' : userType === 'instructor' ? 'Instructor Access' : 'Admin Access'}
         </CardTitle>
         <CardDescription>
           {userType === 'student' 
             ? 'Sign in to access your DJ school account' 
-            : 'Sign in to manage your students'}
+            : userType === 'instructor'
+              ? 'Sign in to manage your students'
+              : 'Sign in to access admin controls'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,7 +100,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger 
               value="signup" 
-              disabled={disableSignup || userType === 'instructor'}
+              disabled={disableSignup || userType === 'admin'}
             >
               Sign Up
             </TabsTrigger>
@@ -124,16 +112,21 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
               formData={formData}
               isLoading={isLoading}
               handleChange={handleChange}
-              handleSubmit={(e) => handleSubmit(e, 'login')}
+              handleSubmit={handleSignIn}
             />
           </TabsContent>
           
           <TabsContent value="signup">
             <SignupForm
-              formData={formData}
+              formData={{
+                email: formData.email,
+                password: formData.password,
+                firstName: formData.firstName,
+                lastName: formData.lastName
+              }}
               isLoading={isLoading}
               handleChange={handleChange}
-              handleSubmit={(e) => handleSubmit(e, 'signup')}
+              handleSubmit={handleSignUp}
             />
           </TabsContent>
         </Tabs>
