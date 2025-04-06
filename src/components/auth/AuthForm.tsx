@@ -27,6 +27,17 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     lastName: '',
   });
 
+  // For testing - pre-fill admin credentials if on admin login
+  React.useEffect(() => {
+    if (userType === 'admin') {
+      setFormData(prev => ({
+        ...prev,
+        email: 'admin@deckademics.com',
+        password: 'admin123'
+      }));
+    }
+  }, [userType]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));

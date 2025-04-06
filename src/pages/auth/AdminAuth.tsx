@@ -34,9 +34,9 @@ const AdminAuth = () => {
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Administrative accounts require special authorization.
-              <br />
-              Please contact the school owner if you need access.
+              Default admin credentials:<br/>
+              Email: admin@deckademics.com<br/>
+              Password: admin123
             </p>
           </div>
         </div>
