@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, X, Edit, Save, User, Percent, Check } from 'lucide-react';
+import { Search, Filter, X, Edit, User, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -870,3 +870,4 @@ const InstructorStudents = () => {
                 {selectedModule ? `Update Module Progress` : `Update Overall Progress`}
               </DialogTitle>
               <DialogDescription>
+                {selectedModule
