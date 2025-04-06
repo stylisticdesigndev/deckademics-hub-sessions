@@ -756,157 +756,156 @@ const AdminInstructors = () => {
                                       <UserRound className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <p>Assign Students</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => viewInstructor(instructor.id)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <p>View Details</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleDeactivate(instructor.id)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <p>Deactivate Instructor</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredActiveInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
-                            No instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                                  <TooltipContent>
+                                    <p>Assign Students</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => viewInstructor(instructor.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDeactivate(instructor.id)}
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Deactivate Instructor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredActiveInstructors.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                              No instructors found matching your search.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="pending" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Instructors</CardTitle>
-                <CardDescription>
-                  Review and approve instructor account requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Email</th>
-                        <th className="px-4 py-3 text-center font-medium">Status</th>
-                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPendingInstructors.map((instructor) => (
-                        <tr key={instructor.id} className="border-b last:border-0">
-                          <td className="px-4 py-3 font-medium">{instructor.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
-                              Pending
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => viewInstructor(instructor.id)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <p>View Details</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleApprove(instructor.id)}
-                                    className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <p>Approve Instructor</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleDecline(instructor.id)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <p>Decline Instructor</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
+            <TabsContent value="pending" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Instructors</CardTitle>
+                  <CardDescription>
+                    Review and approve instructor account requests.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Name</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-center font-medium">Status</th>
+                          <th className="px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
-                      ))}
-                      {filteredPendingInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No pending instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="inactive" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inactive Instructors</CardTitle>
-                <CardDescription>
-                  View and reactivate previously deactivated instructors.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <
+                      </thead>
+                      <tbody>
+                        {filteredPendingInstructors.map((instructor) => (
+                          <tr key={instructor.id} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{instructor.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
+                                Pending
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => viewInstructor(instructor.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleApprove(instructor.id)}
+                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Approve Instructor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDecline(instructor.id)}
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Decline Instructor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredPendingInstructors.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                              No pending instructors found matching your search.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="inactive" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inactive Instructors</CardTitle>
+                  <CardDescription>
+                    View and reactivate previously deactivated instructors.
+                  </Card

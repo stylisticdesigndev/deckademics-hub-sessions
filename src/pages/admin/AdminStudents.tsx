@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -198,10 +199,17 @@ const AdminStudents = () => {
                 Manage all students, approve new registrations, and track payments.
               </p>
             </div>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Student
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Student
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add a new student to the system</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -309,7 +317,7 @@ const AdminStudents = () => {
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>View Details</p>
+                                    <p>View Student Details</p>
                                   </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>

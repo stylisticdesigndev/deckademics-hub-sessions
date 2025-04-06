@@ -23,13 +23,15 @@ export const StudentNavigation = () => {
       title: "Dashboard",
       icon: LayoutDashboard,
       href: "/student/dashboard",
-      active: pathname === "/student/dashboard"
+      active: pathname === "/student/dashboard",
+      tooltip: "View your dashboard"
     },
     {
       title: "Progress",
       icon: BarChart,
       href: "/student/progress",
-      active: pathname === "/student/progress"
+      active: pathname === "/student/progress",
+      tooltip: "Check your learning progress"
     },
     {
       title: "Messages",
@@ -37,13 +39,15 @@ export const StudentNavigation = () => {
       href: "/student/messages",
       active: pathname === "/student/messages",
       badge: 2, // Example unread messages count
-      badgeTooltip: "Unread messages"
+      badgeTooltip: "Unread messages",
+      tooltip: "Access your messages"
     },
     {
       title: "Profile",
       icon: User,
       href: "/student/profile",
-      active: pathname === "/student/profile"
+      active: pathname === "/student/profile",
+      tooltip: "View and edit your profile"
     }
   ];
 
@@ -72,7 +76,7 @@ export const StudentNavigation = () => {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{item.title}</p>
+              <p>{item.tooltip}</p>
               {item.badgeTooltip && item.badge ? (
                 <p className="text-xs text-muted">{item.badgeTooltip}: {item.badge}</p>
               ) : null}

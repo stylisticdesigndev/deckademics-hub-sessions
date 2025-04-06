@@ -28,7 +28,8 @@ export const InstructorNavigation = () => {
       title: "Dashboard",
       icon: LayoutDashboard,
       href: "/instructor/dashboard",
-      active: pathname === "/instructor/dashboard"
+      active: pathname === "/instructor/dashboard",
+      tooltip: "View your dashboard summary"
     },
     {
       title: "Students",
@@ -36,25 +37,29 @@ export const InstructorNavigation = () => {
       href: "/instructor/students",
       active: pathname === "/instructor/students",
       badge: pendingStudentsCount,
-      badgeTooltip: "Students needing action"
+      badgeTooltip: "Students needing action",
+      tooltip: "Manage your student roster"
     },
     {
       title: "Classes",
       icon: Calendar,
       href: "/instructor/classes",
-      active: pathname === "/instructor/classes"
+      active: pathname === "/instructor/classes",
+      tooltip: "View and manage your class schedule"
     },
     {
       title: "Announcements",
       icon: MessageSquare,
       href: "/instructor/announcements",
-      active: pathname === "/instructor/announcements"
+      active: pathname === "/instructor/announcements",
+      tooltip: "Post and view announcements"
     },
     {
       title: "Profile",
       icon: UserCog,
       href: "/instructor/profile",
-      active: pathname === "/instructor/profile"
+      active: pathname === "/instructor/profile",
+      tooltip: "View and update your profile"
     }
   ];
 
@@ -83,7 +88,7 @@ export const InstructorNavigation = () => {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{item.title}</p>
+              <p>{item.tooltip}</p>
               {item.badgeTooltip && item.badge ? (
                 <p className="text-xs text-muted">{item.badgeTooltip}: {item.badge}</p>
               ) : null}
