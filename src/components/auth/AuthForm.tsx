@@ -24,13 +24,13 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     lastName: '',
   });
 
-  // For testing - pre-fill admin credentials if on admin login
+  // For testing - pre-fill credentials if on admin login
   React.useEffect(() => {
     if (userType === 'admin') {
       setFormData(prev => ({
         ...prev,
-        email: 'admin@deckademics.com',
-        password: 'admin123'
+        email: 'admin@example.com',
+        password: 'Admin123!'
       }));
     }
   }, [userType]);
@@ -54,17 +54,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      const result = await signIn(formData.email, formData.password);
-      console.log("Sign in result:", result);
+      await signIn(formData.email, formData.password);
     } catch (error) {
       console.error("Sign in error in form:", error);
-      
-      // Display more helpful error message to the user
-      toast({
-        title: 'Login failed',
-        description: "Please try again or sign up for a new account",
-        variant: 'destructive',
-      });
+      // Error toast is already shown in the signIn function
     }
   };
 
@@ -97,13 +90,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       });
     } catch (error) {
       console.error("Sign up error in form:", error);
-      
-      // Display more helpful error message to the user
-      toast({
-        title: 'Registration failed',
-        description: "Please try again with a different email address",
-        variant: 'destructive',
-      });
+      // Error toast is already shown in the signUp function
     }
   };
 

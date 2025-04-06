@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  console.log("Initializing AuthProvider");
+  
   // Fetch user profile data
   const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
     try {
@@ -160,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Auth methods
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     try {
       console.log("Signing in with email:", email);
@@ -176,16 +178,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Sign in successful:", data.session ? "Session exists" : "No session");
       
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-
-      // Route user based on role
       if (data.session) {
         const profile = await fetchUserProfile(data.session.user.id);
         console.log("User profile after sign in:", profile);
         
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.',
+        });
+
+        // Route user based on role
         if (profile?.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
@@ -232,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           data: userData,
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/auth`,
         }
       });
       
@@ -244,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Sign up successful:", data);
       toast({
         title: 'Account created!',
-        description: 'Your account has been created successfully.',
+        description: 'Check your email to confirm your account.',
       });
       
       // For immediate sign-in after signup, route to the appropriate dashboard
