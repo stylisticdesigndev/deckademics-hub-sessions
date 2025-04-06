@@ -189,21 +189,6 @@ const InstructorProfile = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Employment Information</CardTitle>
-                <CardDescription>
-                  Your status at Deckademics
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Start Date</p>
-                  <p className="font-medium">{profile.startDate}</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
                 <CardTitle>Teaching Schedule</CardTitle>
                 <CardDescription>
                   Your weekly hours
