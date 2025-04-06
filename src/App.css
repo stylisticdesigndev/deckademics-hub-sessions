@@ -41,14 +41,3 @@
 .read-the-docs {
   color: #888;
 }
-
-/* Ensure the header logo takes the full height */
-header .logo-container {
-  height: 100%;
-}
-
-header .logo-container img {
-  height: 100%;
-  width: auto;
-  object-fit: contain;
-}
