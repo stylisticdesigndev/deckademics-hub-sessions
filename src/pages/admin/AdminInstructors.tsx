@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -738,33 +737,30 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleOpenAssignStudents(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8"
                               >
-                                <UserRound className="mr-1 h-3 w-3" />
-                                Assign
+                                <UserRound className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => viewInstructor(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8"
                               >
-                                <Eye className="mr-1 h-3 w-3" />
-                                View
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="destructive" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleDeactivate(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                <X className="mr-1 h-3 w-3" />
-                                Deactivate
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
@@ -814,33 +810,30 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => viewInstructor(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8"
                               >
-                                <Eye className="mr-1 h-3 w-3" />
-                                View
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleApprove(instructor.id)}
-                                className="text-xs px-2 bg-green-500 text-white hover:bg-green-600"
+                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
                               >
-                                <Check className="mr-1 h-3 w-3" />
-                                Approve
+                                <Check className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="destructive" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleDecline(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                <X className="mr-1 h-3 w-3" />
-                                Decline
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
@@ -890,46 +883,12 @@ const AdminInstructors = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => viewInstructor(instructor.id)}
-                                className="text-xs px-2"
+                                className="h-8 w-8"
                               >
-                                <Eye className="mr-1 h-3 w-3" />
-                                View
+                                <Eye className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleActivate(instructor.id)}
-                                className="text-xs px-2 bg-green-500 text-white hover:bg-green-600"
-                              >
-                                <Check className="mr-1 h-3 w-3" />
-                                Activate
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredInactiveInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No inactive instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default AdminInstructors;
