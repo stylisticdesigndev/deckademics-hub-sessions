@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
@@ -90,13 +89,13 @@ const StudentProgress = () => {
       feedback: [
         { 
           moduleId: '1', 
-          text: 'Excellent grasp of equipment basics. You're ready to move forward to more advanced concepts.', 
+          text: "Excellent grasp of equipment basics. You're ready to move forward to more advanced concepts.", 
           date: '2025-03-25',
           rating: 5
         },
         { 
           moduleId: '2', 
-          text: 'Great progress on beat matching. Work on consistency with manual beat matching before our next session.', 
+          text: "Great progress on beat matching. Work on consistency with manual beat matching before our next session.", 
           date: '2025-04-01',
           rating: 4
         }
@@ -110,7 +109,7 @@ const StudentProgress = () => {
       feedback: [
         { 
           moduleId: '4', 
-          text: 'Good start with scratching techniques. Focus on wrist movement control and timing.', 
+          text: "Good start with scratching techniques. Focus on wrist movement control and timing.", 
           date: '2025-03-28',
           rating: 3
         }
@@ -124,7 +123,7 @@ const StudentProgress = () => {
       feedback: [
         { 
           moduleId: '3', 
-          text: 'Your EQ mixing is showing improvement. I'd like to see more practice with filter transitions.', 
+          text: "Your EQ mixing is showing improvement. I'd like to see more practice with filter transitions.", 
           date: '2025-04-03',
           rating: 4
         }
