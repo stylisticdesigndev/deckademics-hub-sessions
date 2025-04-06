@@ -10,42 +10,57 @@ import { Calendar, CheckCircle, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const InstructorClasses = () => {
   const { toast } = useToast();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock class data
+  // Mock class data with week numbers and students list
   const classes = [
     {
       id: '1',
+      week: 'Week 1',
       title: 'Beat Matching 101',
       date: 'April 7, 2025',
       time: '6:00 PM',
       duration: '90 min',
-      location: 'Studio A',
-      attendees: ['Alex Johnson', 'Maria Smith', 'James Brown'],
+      room: 'Studio A',
+      students: [
+        { id: '1', name: 'Alex Johnson', initials: 'AJ' },
+        { id: '2', name: 'Maria Smith', initials: 'MS' },
+        { id: '3', name: 'James Brown', initials: 'JB' }
+      ],
       status: 'scheduled'
     },
     {
       id: '2',
+      week: 'Week 3',
       title: 'Advanced Scratching',
       date: 'April 9, 2025',
       time: '5:30 PM',
       duration: '120 min',
-      location: 'Main Studio',
-      attendees: ['Chris Martin', 'David Wang', 'Sara Miller'],
+      room: 'Main Studio',
+      students: [
+        { id: '4', name: 'Chris Martin', initials: 'CM' },
+        { id: '5', name: 'David Wang', initials: 'DW' },
+        { id: '6', name: 'Sara Miller', initials: 'SM' }
+      ],
       status: 'scheduled'
     },
     {
       id: '3',
+      week: 'Week 2',
       title: 'Music Theory for DJs',
       date: 'March 28, 2025',
       time: '4:30 PM',
       duration: '90 min',
-      location: 'Classroom 2',
-      attendees: ['Emma Wilson', 'Michael Clark'],
+      room: 'Classroom 2',
+      students: [
+        { id: '7', name: 'Emma Wilson', initials: 'EW' },
+        { id: '8', name: 'Michael Clark', initials: 'MC' }
+      ],
       status: 'completed'
     }
   ];
@@ -55,7 +70,8 @@ const InstructorClasses = () => {
     return classes
       .filter(cls => 
         cls.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cls.location.toLowerCase().includes(searchTerm.toLowerCase())
+        cls.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cls.week.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter(cls => {
         if (filter === 'all') return true;
@@ -132,31 +148,40 @@ const InstructorClasses = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Class Name</TableHead>
+                      <TableHead>Class Week</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead>Class Room</TableHead>
                       <TableHead>Students</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {scheduledClasses.length > 0 ? (
                       scheduledClasses.map((cls) => (
-                        <TableRow key={cls.id}>
-                          <TableCell className="font-medium">{cls.title}</TableCell>
-                          <TableCell>{cls.date}</TableCell>
-                          <TableCell>{cls.time} ({cls.duration})</TableCell>
-                          <TableCell>{cls.location}</TableCell>
-                          <TableCell>{cls.attendees.length}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm">View Details</Button>
+                        <TableRow key={cls.id} className="py-4">
+                          <TableCell className="font-medium py-4">{cls.week} - {cls.title}</TableCell>
+                          <TableCell className="py-4">{cls.date}</TableCell>
+                          <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
+                          <TableCell className="py-4">{cls.room}</TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center -space-x-2">
+                              {cls.students.map((student) => (
+                                <Avatar key={student.id} className="border-2 border-background h-8 w-8 hover:z-10 transition-all">
+                                  <AvatarFallback className="bg-muted text-xs">
+                                    {student.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                              <span className="pl-4 text-muted-foreground text-sm">
+                                {cls.students.length} student{cls.students.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4">
+                        <TableCell colSpan={5} className="text-center py-8">
                           No scheduled classes found
                         </TableCell>
                       </TableRow>
@@ -176,31 +201,40 @@ const InstructorClasses = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Class Name</TableHead>
+                      <TableHead>Class Week</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead>Class Room</TableHead>
                       <TableHead>Students</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {completedClasses.length > 0 ? (
                       completedClasses.map((cls) => (
-                        <TableRow key={cls.id}>
-                          <TableCell className="font-medium">{cls.title}</TableCell>
-                          <TableCell>{cls.date}</TableCell>
-                          <TableCell>{cls.time} ({cls.duration})</TableCell>
-                          <TableCell>{cls.location}</TableCell>
-                          <TableCell>{cls.attendees.length}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm">View Details</Button>
+                        <TableRow key={cls.id} className="py-4">
+                          <TableCell className="font-medium py-4">{cls.week} - {cls.title}</TableCell>
+                          <TableCell className="py-4">{cls.date}</TableCell>
+                          <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
+                          <TableCell className="py-4">{cls.room}</TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center -space-x-2">
+                              {cls.students.map((student) => (
+                                <Avatar key={student.id} className="border-2 border-background h-8 w-8 hover:z-10 transition-all">
+                                  <AvatarFallback className="bg-muted text-xs">
+                                    {student.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                              <span className="pl-4 text-muted-foreground text-sm">
+                                {cls.students.length} student{cls.students.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4">
+                        <TableCell colSpan={5} className="text-center py-8">
                           No completed classes found
                         </TableCell>
                       </TableRow>
