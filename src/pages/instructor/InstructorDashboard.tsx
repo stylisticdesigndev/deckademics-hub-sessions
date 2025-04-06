@@ -9,11 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle, MessageSquare, Search, Users, X } from 'lucide-react';
+import { Calendar, CheckCircle, MessageSquare, Search, Users, X, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { StudentNoteDialog } from '@/components/notes/StudentNoteDialog';
 import { Toaster } from '@/components/ui/toaster';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 
 interface Student {
   id: string;
@@ -25,6 +33,9 @@ interface Student {
   initials: string;
   nextClass?: string;
   note?: string;
+  email?: string;
+  enrollmentDate?: string;
+  notes?: string[];
 }
 
 const InstructorDashboard = () => {
@@ -32,38 +43,51 @@ const InstructorDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [detailedStudent, setDetailedStudent] = useState<Student | null>(null);
   
   // Mock students data - only showing today's students
   const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
       name: 'Alex Johnson',
+      email: 'alex.j@example.com',
       level: 'Intermediate',
       progress: 68,
       lastActive: 'Today',
       initials: 'AJ',
       nextClass: 'Today, 2:00 PM',
       note: '',
+      enrollmentDate: 'Jan 15, 2025',
+      notes: [
+        'April 1: Showing good progress with beat matching skills.'
+      ]
     },
     {
       id: '2',
       name: 'Taylor Smith',
+      email: 'tsmith@example.com',
       level: 'Beginner',
       progress: 32,
       lastActive: 'Yesterday',
       initials: 'TS',
       nextClass: 'Today, 3:30 PM',
       note: '',
+      enrollmentDate: 'Feb 3, 2025',
+      notes: []
     },
     {
       id: '5',
       name: 'Casey Williams',
+      email: 'c.williams@example.com',
       level: 'Intermediate',
       progress: 52,
       lastActive: '2 days ago',
       initials: 'CW',
       nextClass: 'Today, 5:00 PM',
       note: '',
+      enrollmentDate: 'Dec 12, 2024',
+      notes: []
     },
   ]);
 
@@ -72,6 +96,11 @@ const InstructorDashboard = () => {
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.level.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openStudentDetails = (student: Student) => {
+    setDetailedStudent(student);
+    setShowStudentDetails(true);
+  };
 
   const handleOpenNoteDialog = (student: Student) => {
     setSelectedStudent(student);
@@ -84,6 +113,20 @@ const InstructorDashboard = () => {
         student.id === studentId ? { ...student, note } : student
       )
     );
+
+    // Also update the notes array for the student details view
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getDate()}`;
+    const newNote = `${formattedDate}: ${note}`;
+    
+    setStudents(prevStudents => prevStudents.map(student => 
+      student.id === studentId 
+        ? { 
+            ...student, 
+            notes: [newNote, ...(student.notes || [])] 
+          } 
+        : student
+    ));
   };
 
   // Upcoming classes calculation
@@ -160,7 +203,10 @@ const InstructorDashboard = () => {
                         key={student.id}
                         className="grid grid-cols-6 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm"
                       >
-                        <div className="col-span-3 flex items-center gap-3">
+                        <div 
+                          className="col-span-3 flex items-center gap-3 cursor-pointer"
+                          onClick={() => openStudentDetails(student)}
+                        >
                           <Avatar className="h-8 w-8">
                             {student.avatar ? (
                               <img src={student.avatar} alt={student.name} />
@@ -199,7 +245,10 @@ const InstructorDashboard = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleOpenNoteDialog(student)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenNoteDialog(student);
+                            }}
                             className="p-2 hover:bg-muted rounded-full"
                             aria-label="Add or edit note"
                           >
@@ -241,6 +290,99 @@ const InstructorDashboard = () => {
           onSaveNote={handleSaveNote}
         />
       )}
+      
+      {/* Student Details Dialog */}
+      <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Student Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {detailedStudent && (
+            <div className="py-4 space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <Avatar className="h-16 w-16">
+                  {detailedStudent.avatar ? (
+                    <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                  ) : (
+                    <AvatarFallback className="text-xl">
+                      {detailedStudent.initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-bold">{detailedStudent.name}</h3>
+                  <p className="text-sm text-muted-foreground">{detailedStudent.email}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge variant="outline" className={cn(
+                      detailedStudent.level === 'Beginner' && "border-green-500/50 text-green-500",
+                      detailedStudent.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
+                      detailedStudent.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                    )}>
+                      {detailedStudent.level}
+                    </Badge>
+                    <span className="text-sm">Enrolled: {detailedStudent.enrollmentDate || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">Progress</h4>
+                <div className="flex items-center gap-3">
+                  <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
+                  <span className="font-medium">{detailedStudent.progress}%</span>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-medium">Instructor Notes</h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setShowStudentDetails(false);
+                      setTimeout(() => {
+                        handleOpenNoteDialog(detailedStudent);
+                      }, 100);
+                    }}
+                  >
+                    Add Note
+                  </Button>
+                </div>
+                
+                {detailedStudent.notes && detailedStudent.notes.length > 0 ? (
+                  <div className="space-y-3">
+                    {detailedStudent.notes.map((note, index) => (
+                      <div key={index} className="p-3 rounded-md bg-muted text-sm">
+                        {note}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center p-4 text-muted-foreground text-sm bg-muted/30 rounded-md">
+                    No notes have been added yet.
+                  </p>
+                )}
+              </div>
+              
+              <div className="pt-2">
+                <h4 className="font-medium mb-2">Next Class</h4>
+                <p className="text-sm">
+                  {detailedStudent.nextClass || "No upcoming classes scheduled"}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setShowStudentDetails(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <Toaster />
     </DashboardLayout>
