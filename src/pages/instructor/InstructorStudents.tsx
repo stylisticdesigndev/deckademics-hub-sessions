@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -863,4 +864,275 @@ const InstructorStudents = () => {
           </CardContent>
         </Card>
 
-        {/* Student Note
+        {/* Student Note Dialog */}
+        <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Note</DialogTitle>
+              <DialogDescription>
+                Add a note for this student. The note will be saved with today's date.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea 
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Enter your note here..."
+              className="min-h-[120px]"
+            />
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNoteDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAddNote}>Save Note</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Lesson Note Dialog */}
+        <Dialog open={showLessonNoteDialog} onOpenChange={setShowLessonNoteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Lesson Note</DialogTitle>
+              <DialogDescription>
+                {selectedLessonTitle && `Add a note for the lesson: ${selectedLessonTitle}`}
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea 
+              value={lessonNoteText}
+              onChange={(e) => setLessonNoteText(e.target.value)}
+              placeholder="Enter your note about this lesson..."
+              className="min-h-[120px]"
+            />
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowLessonNoteDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAddLessonNote}>Save Note</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Progress Update Dialog */}
+        <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedModule ? `Update Module Progress` : `Update Overall Progress`}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedModule 
+                  ? `Adjust the progress for ${selectedModule.moduleName}.`
+                  : 'Adjust the overall progress for this student.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between">
+                <span>Progress: {progressValue}%</span>
+              </div>
+              <Slider
+                value={[progressValue]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={([value]) => setProgressValue(value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowProgressDialog(false);
+                  setSelectedModule(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={selectedModule ? handleModuleProgressUpdate : handleProgressUpdate}
+              >
+                Update Progress
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Student Details Dialog */}
+        <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            {detailedStudent && (
+              <div className="space-y-6">
+                <DialogHeader>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                      {detailedStudent.avatar ? (
+                        <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                      ) : (
+                        <AvatarFallback className="text-lg">
+                          {detailedStudent.initials}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div>
+                      <DialogTitle className="text-xl">{detailedStudent.name}</DialogTitle>
+                      <DialogDescription>{detailedStudent.email}</DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+                
+                <Tabs defaultValue="info">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="info">Info</TabsTrigger>
+                    <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="info" className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 py-4">
+                      <div>
+                        <h3 className="font-medium text-muted-foreground">Enrollment Date</h3>
+                        <p>{detailedStudent.enrollmentDate}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-muted-foreground">Level</h3>
+                        <Badge variant="outline" className={cn(
+                          detailedStudent.level === 'Novice' && "border-green-500/50 text-green-500",
+                          detailedStudent.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
+                          detailedStudent.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                        )}>
+                          {detailedStudent.level}
+                        </Badge>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-muted-foreground">Last Active</h3>
+                        <p>{detailedStudent.lastActive}</p>
+                      </div>
+                      {detailedStudent.nextClass && (
+                        <div>
+                          <h3 className="font-medium text-muted-foreground">Next Class</h3>
+                          <p>{detailedStudent.nextClass}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <h3 className="font-medium mb-2">Overall Progress</h3>
+                      <div className="flex items-center gap-2">
+                        <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
+                        <span className="text-sm font-medium w-10 text-right">
+                          {detailedStudent.progress}%
+                        </span>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <Button 
+                          size="sm" 
+                          onClick={() => openProgressDialog(detailedStudent.id)}
+                        >
+                          Update Progress
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="progress" className="space-y-6">
+                    {detailedStudent.moduleProgress?.length ? (
+                      detailedStudent.moduleProgress.map((module) => (
+                        <div key={module.moduleId} className="border rounded-md p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">{module.moduleName}</h3>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{module.progress}%</span>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openModuleProgressDialog(detailedStudent.id, module)}
+                              >
+                                Update
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <Progress value={module.progress} className="h-2" />
+                          
+                          <div className="space-y-2 mt-4">
+                            {module.lessons.map((lesson) => (
+                              <div key={lesson.id} className="flex items-center gap-2">
+                                <Checkbox 
+                                  checked={lesson.completed} 
+                                  onCheckedChange={() => toggleLessonCompletion(
+                                    detailedStudent.id, 
+                                    module.moduleId, 
+                                    lesson.id
+                                  )}
+                                  id={`lesson-${lesson.id}`}
+                                />
+                                <label 
+                                  htmlFor={`lesson-${lesson.id}`}
+                                  className={cn(
+                                    "text-sm cursor-pointer flex-grow",
+                                    lesson.completed && "line-through text-muted-foreground"
+                                  )}
+                                >
+                                  {lesson.title}
+                                </label>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => openLessonNoteDialog(
+                                    detailedStudent.id,
+                                    lesson.id,
+                                    lesson.title
+                                  )}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No progress data available for this student.
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="notes" className="space-y-4">
+                    <div className="flex justify-end mb-2">
+                      <Button onClick={() => openNoteDialog(detailedStudent.id)}>
+                        Add New Note
+                      </Button>
+                    </div>
+                    
+                    {detailedStudent.notes?.length ? (
+                      <div className="space-y-3">
+                        {detailedStudent.notes.map((note, index) => (
+                          <div key={index} className="border rounded-md p-3 text-sm">
+                            {note}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No notes have been added for this student yet.
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default InstructorStudents;
