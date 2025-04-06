@@ -3,18 +3,24 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
-import { Logo } from '@/components/logo/Logo';
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       <VideoBackground videoSrc="/lovable-uploads/dj-background.mp4" />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        <Logo size="header" />
+        {/* Header logo removed */}
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
         <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
           <div className="text-center flex flex-col items-center space-y-2">
+            <div className="mb-4">
+              <img 
+                src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
+                alt="Deckademics Logo" 
+                className="h-28 w-auto"
+              />
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
               Welcome to Deckademics DJ School
             </h1>
