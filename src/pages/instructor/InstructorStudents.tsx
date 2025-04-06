@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -859,3 +860,13 @@ const InstructorStudents = () => {
                     </Card>
                   ))}
                 </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default InstructorStudents;
