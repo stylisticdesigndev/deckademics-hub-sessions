@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -682,23 +681,12 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          {/* Progress column with update button */}
+                          {/* Progress column - removed edit button */}
                           <div className="col-span-2 flex items-center gap-2 px-4">
                             <Progress value={student.progress} className="h-2 flex-grow" />
                             <span className="text-xs font-medium ml-2 w-8 text-right">
                               {student.progress}%
                             </span>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openProgressDialog(student.id);
-                              }}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
                           </div>
                           
                           {/* Level column */}
@@ -743,23 +731,15 @@ const InstructorStudents = () => {
                             )}
                           </div>
                           
-                          {/* Actions column */}
-                          <div className="col-span-2 flex justify-center gap-2">
+                          {/* Actions column - removed Details button and changed Edit Note to Add Note */}
+                          <div className="col-span-2 flex justify-center">
                             <Button 
                               variant="outline" 
                               size="sm" 
                               onClick={() => openNoteDialog(student.id)}
                               className="text-xs px-2"
                             >
-                              {student.notes && student.notes.length > 0 ? "Edit Note" : "Add Note"}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => openStudentDetails(student.id)}
-                              className="text-xs px-2"
-                            >
-                              Details
+                              Add Note
                             </Button>
                           </div>
                         </div>
@@ -828,7 +808,7 @@ const InstructorStudents = () => {
                                     onClick={() => openNoteDialog(student.id)}
                                     className="text-xs px-2"
                                   >
-                                    {student.notes && student.notes.length > 0 ? "Edit Note" : "Add Note"}
+                                    Add Note
                                   </Button>
                                   <Button 
                                     variant="outline" 
