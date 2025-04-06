@@ -412,7 +412,6 @@ const InstructorStudents = () => {
     return matchesSearch && matchesLevel;
   });
 
-  // Group students by level for the level tab view
   const studentsByLevel = {
     Novice: filteredStudents.filter(s => s.level === 'Novice'),
     Intermediate: filteredStudents.filter(s => s.level === 'Intermediate'),
@@ -856,3 +855,7 @@ const InstructorStudents = () => {
                             No students in this level yet.
                           </div>
                         )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
