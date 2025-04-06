@@ -10,7 +10,8 @@ import {
   Calendar,
   Settings,
   ClipboardCheck,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 
 export const AdminNavigation = () => {
@@ -40,6 +41,12 @@ export const AdminNavigation = () => {
       href: "/admin/students",
       active: pathname === "/admin/students",
       badge: pendingStudentsCount
+    },
+    {
+      title: "Curriculum",
+      icon: BookOpen,
+      href: "/admin/curriculum",
+      active: pathname === "/admin/curriculum"
     },
     {
       title: "Attendance",

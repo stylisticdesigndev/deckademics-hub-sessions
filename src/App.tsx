@@ -33,6 +33,7 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import AdminInstructorPayments from "./pages/admin/AdminInstructorPayments";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminCurriculum from "./pages/admin/AdminCurriculum";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/curriculum" element={<AdminCurriculum />} />
           <Route path="/admin/attendance" element={<AdminAttendance />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
