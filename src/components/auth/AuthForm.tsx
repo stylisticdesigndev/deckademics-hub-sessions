@@ -42,7 +42,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Attempting sign in with:", formData.email);
+    console.log("Attempting sign in with:", formData.email, "for user type:", userType);
     
     if (!formData.email || !formData.password) {
       toast({
@@ -136,6 +136,13 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
               handleChange={handleChange}
               handleSubmit={handleSignIn}
             />
+            {userType === 'admin' && (
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
+                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: admin@example.com</p>
+                <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="signup">

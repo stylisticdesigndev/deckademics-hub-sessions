@@ -169,16 +169,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Signing in with email:", email);
       
-      // Handle default admin credentials specifically
+      // Handle admin credentials - accept both email addresses
       let options = {};
+      const isAdminEmail = email === 'admin@example.com' || email === 'admin@deckademics.com';
+      const isAdminPassword = password === 'Admin123!' || password === 'admin123';
       
-      if (email === 'admin@example.com' && password === 'Admin123!') {
+      if (isAdminEmail && isAdminPassword) {
         console.log("Using admin credentials");
         options = {
           data: {
             role: 'admin'
           }
         };
+        
+        // If using deckademics.com email but the password is for example.com, correct it
+        if (email === 'admin@deckademics.com' && password === 'Admin123!') {
+          email = 'admin@example.com';
+        }
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -201,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.session) {
         // Special handling for admin login
-        if (email === 'admin@example.com') {
+        if (isAdminEmail) {
           console.log("Admin login detected, manually setting profile");
           
           // Check if admin exists in profiles table
@@ -233,7 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Route user based on role
-        if (profile?.role === 'admin' || email === 'admin@example.com') {
+        if (profile?.role === 'admin' || isAdminEmail) {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
           navigate('/instructor/dashboard');
