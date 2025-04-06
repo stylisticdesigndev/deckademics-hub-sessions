@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch user profile data
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Use type assertion to fix TypeScript error
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -96,11 +97,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Get initial session
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         setSession(initialSession);
-        await refreshUserData(initialSession);
+        
+        if (initialSession) {
+          console.log("Initial session found:", initialSession.user.email);
+          await refreshUserData(initialSession);
+        }
 
         // Set up auth change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_, newSession) => {
+          async (event, newSession) => {
+            console.log("Auth state change event:", event);
             setSession(newSession);
             await refreshUserData(newSession);
           }
@@ -123,12 +129,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log("Signing in with email:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         throw error;
       }
 
+      console.log("Sign in successful:", data);
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
@@ -137,6 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Route user based on role
       if (data.session) {
         const profile = await fetchUserProfile(data.session.user.id);
+        console.log("User profile:", profile);
+        
         if (profile?.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
@@ -146,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error: any) {
+      console.error("Sign in error:", error);
       toast({
         title: 'Login failed',
         description: error.message || 'Failed to sign in. Please check your credentials.',
@@ -164,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ) => {
     setIsLoading(true);
     try {
+      console.log("Signing up with email:", email, "role:", role);
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -179,13 +191,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
+      console.log("Sign up successful:", data);
       toast({
         title: 'Account created!',
-        description: 'Your account has been created successfully.',
+        description: 'Your account has been created successfully. Please check your email for verification.',
       });
       
       // For now, don't navigate - wait for confirmation if email verification is enabled
     } catch (error: any) {
+      console.error("Sign up error:", error);
       toast({
         title: 'Registration failed',
         description: error.message || 'Failed to create account.',
@@ -219,7 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('User not authenticated');
       }
 
-      // Type casting to any to bypass the type checking issue
+      // Use type assertion to fix TypeScript error
       const { error } = await supabase
         .from('profiles')
         .update(data as any)
