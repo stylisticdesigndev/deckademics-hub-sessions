@@ -105,7 +105,10 @@ const InstructorClasses = () => {
       cls.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cls.week.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cls.student.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ).filter(cls => {
+      if (filter === 'all') return true;
+      return cls.week === filter;
+    });
   };
 
   const filteredClasses = filterClasses(classes);
@@ -173,21 +176,17 @@ const InstructorClasses = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Class Week</TableHead>
+                  <TableHead>Student</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Class Room</TableHead>
-                  <TableHead>Student</TableHead>
+                  <TableHead>Class Week</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredClasses.length > 0 ? (
                   filteredClasses.map((cls) => (
                     <TableRow key={cls.id} className="py-4">
-                      <TableCell className="font-medium py-4">{cls.week} - {cls.title}</TableCell>
-                      <TableCell className="py-4">{cls.date}</TableCell>
-                      <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
-                      <TableCell className="py-4">{cls.room}</TableCell>
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -198,6 +197,10 @@ const InstructorClasses = () => {
                           <span>{cls.student.name}</span>
                         </div>
                       </TableCell>
+                      <TableCell className="py-4">{cls.date}</TableCell>
+                      <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
+                      <TableCell className="py-4">{cls.room}</TableCell>
+                      <TableCell className="py-4">{cls.week}</TableCell>
                     </TableRow>
                   ))
                 ) : (
