@@ -23,11 +23,20 @@ interface UserData {
   role: UserRole | null;
 }
 
+// Updated return type for signIn to match actual implementation
+type SignInResult = {
+  user: User;
+  session: Session;
+} | {
+  user: null;
+  session: null;
+}
+
 interface AuthContextProps {
   session: Session | null;
   userData: UserData;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<SignInResult>;
   signUp: (email: string, password: string, role?: UserRole, metadata?: Record<string, any>) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
