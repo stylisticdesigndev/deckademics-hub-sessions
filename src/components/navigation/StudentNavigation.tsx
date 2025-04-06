@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   BookOpen,
-  Calendar,
   MessageSquare,
   User
 } from 'lucide-react';
@@ -25,12 +24,6 @@ export const StudentNavigation = () => {
       icon: BookOpen,
       href: "/student/progress",
       active: pathname === "/student/progress"
-    },
-    {
-      title: "Classes",
-      icon: Calendar,
-      href: "/student/classes",
-      active: pathname === "/student/classes"
     },
     {
       title: "Messages",
