@@ -31,9 +31,7 @@ interface Student {
   lastActive: string;
   avatar?: string;
   initials: string;
-  overdue?: boolean;
   nextClass?: string;
-  needsAttention?: boolean;
   email: string;
   enrollmentDate: string;
   notes?: string;
@@ -43,13 +41,12 @@ const InstructorStudents = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [isEditingLevel, setIsEditingLevel] = useState<string | null>(null);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteText, setNoteText] = useState('');
   
-  // Mock students data
+  // Mock students data - removed needsAttention and overdue properties
   const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
@@ -72,7 +69,6 @@ const InstructorStudents = () => {
       lastActive: 'Yesterday',
       initials: 'TS',
       enrollmentDate: 'Feb 3, 2025',
-      needsAttention: true,
       nextClass: 'April 8, 2025',
     },
     {
@@ -96,7 +92,6 @@ const InstructorStudents = () => {
       lastActive: '1 week ago',
       initials: 'MR',
       enrollmentDate: 'Feb 20, 2025',
-      overdue: true,
     },
     {
       id: '5',
@@ -132,7 +127,7 @@ const InstructorStudents = () => {
     },
   ]);
 
-  // Filter students based on search and filters
+  // Filter students based on search and filters - removed status filter
   const filteredStudents = students.filter(student => {
     // Search term filter
     const matchesSearch = 
@@ -142,15 +137,7 @@ const InstructorStudents = () => {
     // Level filter
     const matchesLevel = filterLevel === 'all' || student.level === filterLevel;
     
-    // Status filter
-    let matchesStatus = true;
-    if (filterStatus === 'attention') {
-      matchesStatus = !!student.needsAttention;
-    } else if (filterStatus === 'overdue') {
-      matchesStatus = !!student.overdue;
-    }
-    
-    return matchesSearch && matchesLevel && matchesStatus;
+    return matchesSearch && matchesLevel;
   });
 
   // Group students by level for the level tab view
@@ -250,20 +237,6 @@ const InstructorStudents = () => {
                       <SelectItem value="Advanced">Advanced</SelectItem>
                     </SelectContent>
                   </Select>
-                  
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-[130px]">
-                      <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4" />
-                        <span>Status</span>
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Students</SelectItem>
-                      <SelectItem value="attention">Needs Help</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </div>
@@ -289,11 +262,7 @@ const InstructorStudents = () => {
                       {filteredStudents.map((student) => (
                         <div 
                           key={student.id}
-                          className={cn(
-                            "grid grid-cols-7 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
-                            student.needsAttention && "bg-amber-500/5",
-                            student.overdue && "bg-red-500/5"
-                          )}
+                          className="grid grid-cols-7 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm"
                         >
                           <div className="col-span-3 flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -311,16 +280,6 @@ const InstructorStudents = () => {
                                 {student.email}
                               </div>
                             </div>
-                            {student.needsAttention && (
-                              <Badge className="bg-amber-500 ml-2 hidden sm:flex">
-                                Needs Help
-                              </Badge>
-                            )}
-                            {student.overdue && (
-                              <Badge className="bg-red-500 ml-2 hidden sm:flex">
-                                Overdue
-                              </Badge>
-                            )}
                           </div>
                           
                           <div className="col-span-2 flex items-center gap-2">
@@ -416,12 +375,7 @@ const InstructorStudents = () => {
                             {students.map((student) => (
                               <div 
                                 key={student.id}
-                                className={cn(
-                                  "flex items-center justify-between p-3 rounded-md",
-                                  student.needsAttention && "bg-amber-500/5",
-                                  student.overdue && "bg-red-500/5",
-                                  !student.needsAttention && !student.overdue && "bg-muted/30"
-                                )}
+                                className="flex items-center justify-between p-3 rounded-md bg-muted/30"
                               >
                                 <div className="flex items-center gap-3">
                                   <Avatar className="h-8 w-8">
@@ -434,14 +388,8 @@ const InstructorStudents = () => {
                                     )}
                                   </Avatar>
                                   <div>
-                                    <div className="font-medium flex items-center gap-2">
+                                    <div className="font-medium">
                                       {student.name}
-                                      {student.needsAttention && (
-                                        <Badge className="bg-amber-500">Needs Help</Badge>
-                                      )}
-                                      {student.overdue && (
-                                        <Badge className="bg-red-500">Overdue</Badge>
-                                      )}
                                     </div>
                                     <div className="text-muted-foreground text-xs">
                                       Progress: {student.progress}%

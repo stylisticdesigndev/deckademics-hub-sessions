@@ -23,9 +23,7 @@ interface Student {
   lastActive: string;
   avatar?: string;
   initials: string;
-  overdue?: boolean;
   nextClass?: string;
-  needsAttention?: boolean;
   note?: string;
 }
 
@@ -54,7 +52,6 @@ const InstructorDashboard = () => {
       progress: 32,
       lastActive: 'Yesterday',
       initials: 'TS',
-      needsAttention: true,
       nextClass: 'Today, 3:30 PM',
       note: '',
     },
@@ -161,11 +158,7 @@ const InstructorDashboard = () => {
                     {filteredStudents.map((student) => (
                       <div 
                         key={student.id}
-                        className={cn(
-                          "grid grid-cols-6 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm",
-                          student.needsAttention && "bg-amber-500/5",
-                          student.overdue && "bg-red-500/5"
-                        )}
+                        className="grid grid-cols-6 p-3 border-b last:border-b-0 items-center text-xs sm:text-sm"
                       >
                         <div className="col-span-3 flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -183,16 +176,6 @@ const InstructorDashboard = () => {
                               Next class: {student.nextClass}
                             </div>
                           </div>
-                          {student.needsAttention && (
-                            <Badge className="bg-amber-500 ml-2 hidden sm:flex">
-                              Needs Help
-                            </Badge>
-                          )}
-                          {student.overdue && (
-                            <Badge className="bg-red-500 ml-2 hidden sm:flex">
-                              Overdue
-                            </Badge>
-                          )}
                         </div>
                         
                         <div className="col-span-1 flex items-center gap-2">
