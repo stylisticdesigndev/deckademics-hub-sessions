@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
@@ -8,6 +9,8 @@ import { ProgressBar } from '@/components/progress/ProgressBar';
 import { useToast } from '@/hooks/use-toast';
 import { Award, Calendar, Clock, Music } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { toast } = useToast();
@@ -139,7 +142,14 @@ const StudentDashboard = () => {
             <h2 className="text-xl font-semibold">Your Progress</h2>
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-base font-medium">Overall Progress</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base font-medium">Overall Progress</CardTitle>
+                  <Link to="/student/progress">
+                    <Button variant="link" size="sm" className="text-deckademics-primary">
+                      View All Progress
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ProgressBar 
