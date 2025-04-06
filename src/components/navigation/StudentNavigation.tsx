@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   MessageSquare,
-  User
+  User,
+  BarChart
 } from 'lucide-react';
 
 export const StudentNavigation = () => {
@@ -17,6 +18,12 @@ export const StudentNavigation = () => {
       icon: LayoutDashboard,
       href: "/student/dashboard",
       active: pathname === "/student/dashboard"
+    },
+    {
+      title: "Progress",
+      icon: BarChart,
+      href: "/student/progress",
+      active: pathname === "/student/progress"
     },
     {
       title: "Messages",
