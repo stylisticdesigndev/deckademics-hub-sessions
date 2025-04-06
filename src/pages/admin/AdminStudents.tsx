@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Check, X } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -275,27 +275,30 @@ const AdminStudents = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleAssign(student.id)}
+                                className="h-8 w-8"
                               >
-                                Assign
+                                <UserRound className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleView(student.id)}
+                                className="h-8 w-8"
                               >
-                                View
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="destructive" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleDeactivate(student.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                Deactivate
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
@@ -345,23 +348,22 @@ const AdminStudents = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
-                                variant="outline" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleApprove(student.id)}
-                                className="bg-green-500 text-white hover:bg-green-600"
+                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
                               >
-                                <Check className="mr-1 h-4 w-4" />
-                                Approve
+                                <Check className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="destructive" 
-                                size="sm"
+                                variant="ghost" 
+                                size="icon"
                                 onClick={() => handleDecline(student.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                <X className="mr-1 h-4 w-4" />
-                                Decline
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
