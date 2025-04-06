@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -52,6 +51,12 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Search, UserPlus, Check, X, Eye, UserRound } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 
 // Define a student type for instructor's students
 interface Student {
@@ -456,313 +461,332 @@ const AdminInstructors = () => {
       sidebarContent={<AdminNavigation />}
       userType="admin"
     >
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Instructors Management</h1>
-            <p className="text-muted-foreground">
-              Manage all instructors, approve new requests, and assign students.
-            </p>
-          </div>
-          
-          <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Instructor
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleAddInstructor}>
+      <TooltipProvider>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Instructors Management</h1>
+              <p className="text-muted-foreground">
+                Manage all instructors, approve new requests, and assign students.
+              </p>
+            </div>
+            
+            <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Instructor
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleAddInstructor}>
+                  <DialogHeader>
+                    <DialogTitle>Add New Instructor</DialogTitle>
+                    <DialogDescription>
+                      Create a new instructor account. The instructor will receive an email to set up their password.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name" className="text-left">Name</Label>
+                      <Input
+                        id="name"
+                        value={newInstructor.name}
+                        onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
+                        placeholder="Enter full name"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email" className="text-left">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newInstructor.email}
+                        onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
+                        placeholder="Enter email address"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="specialization" className="text-left">Specialization</Label>
+                      <Input
+                        id="specialization"
+                        value={newInstructor.specialization}
+                        onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
+                        placeholder="E.g., Turntablism, Scratching, Beat Mixing"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Add Instructor</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
+            <Dialog open={showStudentReassignment} onOpenChange={setShowStudentReassignment}>
+              <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                  <DialogTitle>Add New Instructor</DialogTitle>
+                  <DialogTitle>Reassign Students</DialogTitle>
                   <DialogDescription>
-                    Create a new instructor account. The instructor will receive an email to set up their password.
+                    {instructorToDeactivate && 
+                     instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
+                     "Please assign each student to a new instructor before deactivating." :
+                     "This instructor has no students to reassign. You can proceed with deactivation."}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-left">Name</Label>
-                    <Input
-                      id="name"
-                      value={newInstructor.name}
-                      onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
-                      placeholder="Enter full name"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email" className="text-left">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newInstructor.email}
-                      onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="specialization" className="text-left">Specialization</Label>
-                    <Input
-                      id="specialization"
-                      value={newInstructor.specialization}
-                      onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
-                      placeholder="E.g., Turntablism, Scratching, Beat Mixing"
-                    />
-                  </div>
+                <div className="py-4">
+                  {instructorToDeactivate && 
+                   instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Level</TableHead>
+                          <TableHead>New Instructor</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {instructorToDeactivate && 
+                         instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.map(student => (
+                          <TableRow key={student.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{student.name}</div>
+                                <div className="text-sm text-muted-foreground">{student.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{student.level}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={studentAssignments[student.id] || ''}
+                                onValueChange={(value) => 
+                                  setStudentAssignments({
+                                    ...studentAssignments,
+                                    [student.id]: value
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select instructor" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableInstructors.map((name) => (
+                                    <SelectItem key={name} value={name}>
+                                      {name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">No students to reassign</p>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowStudentReassignment(false);
+                      setInstructorToDeactivate(null);
+                    }}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Add Instructor</Button>
+                  <Button onClick={handleReassignStudents}>
+                    {instructorToDeactivate && 
+                     instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
+                     "Reassign & Deactivate" : "Deactivate"}
+                  </Button>
                 </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
-          <Dialog open={showStudentReassignment} onOpenChange={setShowStudentReassignment}>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Reassign Students</DialogTitle>
-                <DialogDescription>
-                  {instructorToDeactivate && 
-                   instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
-                   "Please assign each student to a new instructor before deactivating." :
-                   "This instructor has no students to reassign. You can proceed with deactivation."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                {instructorToDeactivate && 
-                 instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Level</TableHead>
-                        <TableHead>New Instructor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {instructorToDeactivate && 
-                       instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.map(student => (
-                        <TableRow key={student.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{student.name}</div>
-                              <div className="text-sm text-muted-foreground">{student.email}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{student.level}</TableCell>
-                          <TableCell>
-                            <Select
-                              value={studentAssignments[student.id] || ''}
-                              onValueChange={(value) => 
-                                setStudentAssignments({
-                                  ...studentAssignments,
-                                  [student.id]: value
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select instructor" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableInstructors.map((name) => (
-                                  <SelectItem key={name} value={name}>
-                                    {name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">No students to reassign</p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowStudentReassignment(false);
-                    setInstructorToDeactivate(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleReassignStudents}>
-                  {instructorToDeactivate && 
-                   instructors.find(i => i.id === instructorToDeactivate)?.studentsList?.length ?
-                   "Reassign & Deactivate" : "Deactivate"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
 
-          {/* New Dialog for Assigning Students to Instructor */}
-          <Dialog open={showStudentAssignment} onOpenChange={setShowStudentAssignment}>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Assign Students to Instructor</DialogTitle>
-                <DialogDescription>
-                  {instructorToAssign && instructors.find(i => i.id === instructorToAssign)?.name 
-                    ? `Select students to assign to ${instructors.find(i => i.id === instructorToAssign)?.name}`
-                    : "Select students to assign to this instructor"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                {unassignedStudents.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">Select</TableHead>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Level</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unassignedStudents.map(student => (
-                        <TableRow key={student.id}>
-                          <TableCell>
-                            <input 
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300"
-                              checked={studentAssignments[student.id] === instructorToAssign?.toString()}
-                              onChange={(e) => {
-                                setStudentAssignments({
-                                  ...studentAssignments,
-                                  [student.id]: e.target.checked ? instructorToAssign!.toString() : ''
-                                });
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{student.name}</div>
-                              <div className="text-sm text-muted-foreground">{student.email}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{student.level}</TableCell>
+            {/* New Dialog for Assigning Students to Instructor */}
+            <Dialog open={showStudentAssignment} onOpenChange={setShowStudentAssignment}>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Assign Students to Instructor</DialogTitle>
+                  <DialogDescription>
+                    {instructorToAssign && instructors.find(i => i.id === instructorToAssign)?.name 
+                      ? `Select students to assign to ${instructors.find(i => i.id === instructorToAssign)?.name}`
+                      : "Select students to assign to this instructor"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  {unassignedStudents.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">Select</TableHead>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Level</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">No unassigned students available</p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowStudentAssignment(false);
-                    setInstructorToAssign(null);
-                    setStudentAssignments({});
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleAssignStudents} disabled={unassignedStudents.length === 0}>
-                  Assign Students
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search instructors..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+                      </TableHeader>
+                      <TableBody>
+                        {unassignedStudents.map(student => (
+                          <TableRow key={student.id}>
+                            <TableCell>
+                              <input 
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300"
+                                checked={studentAssignments[student.id] === instructorToAssign?.toString()}
+                                onChange={(e) => {
+                                  setStudentAssignments({
+                                    ...studentAssignments,
+                                    [student.id]: e.target.checked ? instructorToAssign!.toString() : ''
+                                  });
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{student.name}</div>
+                                <div className="text-sm text-muted-foreground">{student.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{student.level}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">No unassigned students available</p>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowStudentAssignment(false);
+                      setInstructorToAssign(null);
+                      setStudentAssignments({});
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAssignStudents} disabled={unassignedStudents.length === 0}>
+                    Assign Students
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-        </div>
 
-        <Tabs defaultValue="active">
-          <TabsList>
-            <TabsTrigger value="active">
-              Active Instructors ({filteredActiveInstructors.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending">
-              Pending Approval ({filteredPendingInstructors.length})
-            </TabsTrigger>
-            <TabsTrigger value="inactive">
-              Inactive Instructors ({filteredInactiveInstructors.length})
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search instructors..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
-          <TabsContent value="active" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Instructors</CardTitle>
-                <CardDescription>
-                  Manage your current instructor team.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Email</th>
-                        <th className="px-4 py-3 text-center font-medium">Students</th>
-                        <th className="px-4 py-3 text-center font-medium">Classes</th>
-                        <th className="px-4 py-3 text-center font-medium">Status</th>
-                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredActiveInstructors.map((instructor) => (
-                        <tr key={instructor.id} className="border-b last:border-0">
-                          <td className="px-4 py-3 font-medium">{instructor.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
-                          <td className="px-4 py-3 text-center">{instructor.students}</td>
-                          <td className="px-4 py-3 text-center">{instructor.classes}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500">
-                              Active
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleOpenAssignStudents(instructor.id)}
-                                className="h-8 w-8"
-                              >
-                                <UserRound className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => viewInstructor(instructor.id)}
-                                className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeactivate(instructor.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+          <Tabs defaultValue="active">
+            <TabsList>
+              <TabsTrigger value="active">
+                Active Instructors ({filteredActiveInstructors.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending Approval ({filteredPendingInstructors.length})
+              </TabsTrigger>
+              <TabsTrigger value="inactive">
+                Inactive Instructors ({filteredInactiveInstructors.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Instructors</CardTitle>
+                  <CardDescription>
+                    Manage your current instructor team.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Name</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-center font-medium">Students</th>
+                          <th className="px-4 py-3 text-center font-medium">Classes</th>
+                          <th className="px-4 py-3 text-center font-medium">Status</th>
+                          <th className="px-4 py-3 text-right font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredActiveInstructors.map((instructor) => (
+                          <tr key={instructor.id} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{instructor.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
+                            <td className="px-4 py-3 text-center">{instructor.students}</td>
+                            <td className="px-4 py-3 text-center">{instructor.classes}</td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500">
+                                Active
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleOpenAssignStudents(instructor.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <UserRound className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <p>Assign Students</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => viewInstructor(instructor.id)}
+                                    className="h-8 w-8"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <p>View Details</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDeactivate(instructor.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <p>Deactivate Instructor</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </td>
                         </tr>
@@ -812,30 +836,48 @@ const AdminInstructors = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => viewInstructor(instructor.id)}
-                                className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleApprove(instructor.id)}
-                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDecline(instructor.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => viewInstructor(instructor.id)}
+                                    className="h-8 w-8"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <p>View Details</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleApprove(instructor.id)}
+                                    className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <p>Approve Instructor</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDecline(instructor.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <p>Decline Instructor</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </td>
                         </tr>
@@ -867,61 +909,4 @@ const AdminInstructors = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Email</th>
-                        <th className="px-4 py-3 text-center font-medium">Status</th>
-                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredInactiveInstructors.map((instructor) => (
-                        <tr key={instructor.id} className="border-b last:border-0">
-                          <td className="px-4 py-3 font-medium">{instructor.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500">
-                              Inactive
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => viewInstructor(instructor.id)}
-                                className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleActivate(instructor.id)}
-                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredInactiveInstructors.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No inactive instructors found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default AdminInstructors;
+                        <

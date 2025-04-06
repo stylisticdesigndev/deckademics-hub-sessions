@@ -8,6 +8,12 @@ import {
   User,
   BarChart
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
@@ -30,7 +36,8 @@ export const StudentNavigation = () => {
       icon: MessageSquare,
       href: "/student/messages",
       active: pathname === "/student/messages",
-      badge: 2 // Example unread messages count
+      badge: 2, // Example unread messages count
+      badgeTooltip: "Unread messages"
     },
     {
       title: "Profile",
@@ -41,27 +48,38 @@ export const StudentNavigation = () => {
   ];
 
   return (
-    <div className="space-y-1.5">
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          to={item.href}
-          className={cn(
-            "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
-            item.active
-              ? "bg-deckademics-primary/10 text-deckademics-primary"
-              : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
-          )}
-        >
-          <item.icon className="h-5 w-5" />
-          <span>{item.title}</span>
-          {item.badge && (
-            <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
-              {item.badge}
-            </span>
-          )}
-        </Link>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="space-y-1.5">
+        {navItems.map((item) => (
+          <Tooltip key={item.href}>
+            <TooltipTrigger asChild>
+              <Link
+                to={item.href}
+                className={cn(
+                  "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+                  item.active
+                    ? "bg-deckademics-primary/10 text-deckademics-primary"
+                    : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.title}</span>
+                {item.badge && (
+                  <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{item.title}</p>
+              {item.badgeTooltip && item.badge ? (
+                <p className="text-xs text-muted">{item.badgeTooltip}: {item.badge}</p>
+              ) : null}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 };

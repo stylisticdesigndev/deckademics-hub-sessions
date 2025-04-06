@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -35,6 +34,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 
 const AdminStudents = () => {
   const { toast } = useToast();
@@ -184,269 +189,38 @@ const AdminStudents = () => {
       sidebarContent={<AdminNavigation />}
       userType="admin"
     >
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Students Management</h1>
-            <p className="text-muted-foreground">
-              Manage all students, approve new registrations, and track payments.
-            </p>
-          </div>
-          <Button>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Student
-          </Button>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search students..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select value={instructorFilter} onValueChange={setInstructorFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by instructor" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Instructors</SelectItem>
-              {instructors.map((instructor) => (
-                <SelectItem key={instructor.id} value={instructor.name}>
-                  {instructor.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Tabs defaultValue="active">
-          <TabsList>
-            <TabsTrigger value="active">
-              Active Students ({filteredActiveStudents.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending">
-              Pending Approval ({filteredPendingStudents.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="active" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Students</CardTitle>
-                <CardDescription>
-                  Manage currently enrolled students.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Email</th>
-                        <th className="px-4 py-3 text-left font-medium">Instructor</th>
-                        <th className="px-4 py-3 text-left font-medium">Level</th>
-                        <th className="px-4 py-3 text-center font-medium">Payment</th>
-                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredActiveStudents.map((student) => (
-                        <tr key={student.id} className="border-b last:border-0">
-                          <td className="px-4 py-3 font-medium">{student.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
-                          <td className="px-4 py-3">{student.instructor}</td>
-                          <td className="px-4 py-3">{student.level}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className={
-                              student.paymentStatus === 'paid' 
-                                ? 'bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500'
-                                : student.paymentStatus === 'pending'
-                                ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500'
-                                : 'bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500'
-                            }>
-                              {student.paymentStatus === 'paid' ? 'Paid' : 
-                               student.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleAssign(student.id)}
-                                className="h-8 w-8"
-                              >
-                                <UserRound className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleView(student.id)}
-                                className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeactivate(student.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredActiveStudents.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
-                            No students found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="pending" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Students</CardTitle>
-                <CardDescription>
-                  Review and approve student registration requests.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Email</th>
-                        <th className="px-4 py-3 text-center font-medium">Status</th>
-                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPendingStudents.map((student) => (
-                        <tr key={student.id} className="border-b last:border-0">
-                          <td className="px-4 py-3 font-medium">{student.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
-                              Pending
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleApprove(student.id)}
-                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDecline(student.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredPendingStudents.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                            No pending students found matching your search.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* View Student Dialog */}
-      <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Student Details</DialogTitle>
-          </DialogHeader>
-          {selectedStudent && (
-            <div className="py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Name</p>
-                  <p>{getStudentById(selectedStudent)?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p>{getStudentById(selectedStudent)?.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Instructor</p>
-                  <p>{getStudentById(selectedStudent)?.instructor || "Not assigned"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Level</p>
-                  <p>{getStudentById(selectedStudent)?.level || "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
-                  <Badge variant="outline" className={
-                    getStudentById(selectedStudent)?.paymentStatus === 'paid' 
-                      ? 'bg-green-500/10 text-green-500'
-                      : getStudentById(selectedStudent)?.paymentStatus === 'pending'
-                      ? 'bg-amber-500/10 text-amber-500'
-                      : 'bg-red-500/10 text-red-500'
-                  }>
-                    {getStudentById(selectedStudent)?.paymentStatus === 'paid' ? 'Paid' : 
-                     getStudentById(selectedStudent)?.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
-                  </Badge>
-                </div>
-              </div>
+      <TooltipProvider>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Students Management</h1>
+              <p className="text-muted-foreground">
+                Manage all students, approve new registrations, and track payments.
+              </p>
             </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Student
+            </Button>
+          </div>
 
-      {/* Assign Instructor Dialog */}
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Assign Instructor</DialogTitle>
-            <DialogDescription>
-              Select an instructor for {selectedStudent && getStudentById(selectedStudent)?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Select value={assignInstructor} onValueChange={setAssignInstructor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an instructor" />
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search students..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={instructorFilter} onValueChange={setInstructorFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by instructor" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Instructors</SelectItem>
                 {instructors.map((instructor) => (
                   <SelectItem key={instructor.id} value={instructor.name}>
                     {instructor.name}
@@ -455,43 +229,311 @@ const AdminStudents = () => {
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmAssign}>Assign</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Deactivate Confirmation Dialog */}
-      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Deactivate Student</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to deactivate this student account? This action will remove them from all classes.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowDeactivateDialog(false);
-                setSelectedStudent(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={confirmDeactivate}
-            >
-              Deactivate
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Tabs defaultValue="active">
+            <TabsList>
+              <TabsTrigger value="active">
+                Active Students ({filteredActiveStudents.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending Approval ({filteredPendingStudents.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Students</CardTitle>
+                  <CardDescription>
+                    Manage currently enrolled students.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Name</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-left font-medium">Instructor</th>
+                          <th className="px-4 py-3 text-left font-medium">Level</th>
+                          <th className="px-4 py-3 text-center font-medium">Payment</th>
+                          <th className="px-4 py-3 text-right font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredActiveStudents.map((student) => (
+                          <tr key={student.id} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{student.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
+                            <td className="px-4 py-3">{student.instructor}</td>
+                            <td className="px-4 py-3">{student.level}</td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline" className={
+                                student.paymentStatus === 'paid' 
+                                  ? 'bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500'
+                                  : student.paymentStatus === 'pending'
+                                  ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500'
+                                  : 'bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500'
+                              }>
+                                {student.paymentStatus === 'paid' ? 'Paid' : 
+                                 student.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleAssign(student.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <UserRound className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Assign Instructor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleView(student.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDeactivate(student.id)}
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Deactivate Student</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredActiveStudents.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                              No students found matching your search.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="pending" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Students</CardTitle>
+                  <CardDescription>
+                    Review and approve student registration requests.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Name</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-center font-medium">Status</th>
+                          <th className="px-4 py-3 text-right font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPendingStudents.map((student) => (
+                          <tr key={student.id} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{student.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
+                                Pending
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleApprove(student.id)}
+                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Approve Student</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDecline(student.id)}
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Decline Student</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredPendingStudents.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                              No pending students found matching your search.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* View Student Dialog */}
+        <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Student Details</DialogTitle>
+            </DialogHeader>
+            {selectedStudent && (
+              <div className="py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Name</p>
+                    <p>{getStudentById(selectedStudent)?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p>{getStudentById(selectedStudent)?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Instructor</p>
+                    <p>{getStudentById(selectedStudent)?.instructor || "Not assigned"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Level</p>
+                    <p>{getStudentById(selectedStudent)?.level || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
+                    <Badge variant="outline" className={
+                      getStudentById(selectedStudent)?.paymentStatus === 'paid' 
+                        ? 'bg-green-500/10 text-green-500'
+                        : getStudentById(selectedStudent)?.paymentStatus === 'pending'
+                        ? 'bg-amber-500/10 text-amber-500'
+                        : 'bg-red-500/10 text-red-500'
+                    }>
+                      {getStudentById(selectedStudent)?.paymentStatus === 'paid' ? 'Paid' : 
+                       getStudentById(selectedStudent)?.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Assign Instructor Dialog */}
+        <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Assign Instructor</DialogTitle>
+              <DialogDescription>
+                Select an instructor for {selectedStudent && getStudentById(selectedStudent)?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Select value={assignInstructor} onValueChange={setAssignInstructor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instructors.map((instructor) => (
+                    <SelectItem key={instructor.id} value={instructor.name}>
+                      {instructor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={confirmAssign}>Assign</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Deactivate Confirmation Dialog */}
+        <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Deactivate Student</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to deactivate this student account? This action will remove them from all classes.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowDeactivateDialog(false);
+                  setSelectedStudent(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={confirmDeactivate}
+              >
+                Deactivate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </TooltipProvider>
     </DashboardLayout>
   );
 };
