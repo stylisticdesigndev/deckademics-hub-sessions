@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -908,4 +909,83 @@ const AdminInstructors = () => {
                   <CardTitle>Inactive Instructors</CardTitle>
                   <CardDescription>
                     View and reactivate previously deactivated instructors.
-                  </Card
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Name</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-center font-medium">Status</th>
+                          <th className="px-4 py-3 text-right font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredInactiveInstructors.map((instructor) => (
+                          <tr key={instructor.id} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{instructor.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{instructor.email}</td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500">
+                                Inactive
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => viewInstructor(instructor.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleActivate(instructor.id)}
+                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Activate Instructor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredInactiveInstructors.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                              No inactive instructors found matching your search.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </TooltipProvider>
+    </DashboardLayout>
+  );
+};
+
+export default AdminInstructors;
