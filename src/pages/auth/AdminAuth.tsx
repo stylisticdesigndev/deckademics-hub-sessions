@@ -37,8 +37,8 @@ const AdminAuth = () => {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Default admin credentials:<br/>
-              Email: admin@deckademics.com<br/>
-              Password: admin123
+              Email: admin@example.com<br/>
+              Password: Admin123!
             </p>
           </div>
         </div>

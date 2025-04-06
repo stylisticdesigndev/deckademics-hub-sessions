@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, WeakPassword } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
@@ -27,9 +27,11 @@ interface UserData {
 type SignInResult = {
   user: User;
   session: Session;
+  weakPassword?: WeakPassword;
 } | {
   user: null;
   session: null;
+  weakPassword?: null;
 }
 
 interface AuthContextProps {
@@ -173,6 +175,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error("Sign in error:", error.message);
+        toast({
+          title: 'Login failed',
+          description: error.message || 'Failed to sign in. Please check your credentials.',
+          variant: 'destructive',
+        });
         throw error;
       }
 
@@ -200,11 +207,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return data;
     } catch (error: any) {
       console.error("Sign in error:", error);
-      toast({
-        title: 'Login failed',
-        description: error.message || 'Failed to sign in. Please check your credentials.',
-        variant: 'destructive',
-      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -240,6 +242,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error("Sign up error:", error.message);
+        toast({
+          title: 'Registration failed',
+          description: error.message || 'Failed to create account.',
+          variant: 'destructive',
+        });
         throw error;
       }
 
@@ -261,11 +268,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       console.error("Sign up error:", error);
-      toast({
-        title: 'Registration failed',
-        description: error.message || 'Failed to create account.',
-        variant: 'destructive',
-      });
       throw error;
     } finally {
       setIsLoading(false);
