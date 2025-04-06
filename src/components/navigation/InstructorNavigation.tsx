@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  MessageSquare,
   UserCog
 } from 'lucide-react';
 
@@ -36,6 +37,12 @@ export const InstructorNavigation = () => {
       icon: Calendar,
       href: "/instructor/classes",
       active: pathname === "/instructor/classes"
+    },
+    {
+      title: "Announcements",
+      icon: MessageSquare,
+      href: "/instructor/announcements",
+      active: pathname === "/instructor/announcements"
     },
     {
       title: "Profile",

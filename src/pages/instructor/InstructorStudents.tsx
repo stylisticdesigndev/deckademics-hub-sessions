@@ -419,7 +419,6 @@ const InstructorStudents = () => {
     Advanced: filteredStudents.filter(s => s.level === 'Advanced'),
   };
   
-  // Handle level change for a student
   const handleLevelChange = (studentId: string, newLevel: string) => {
     setStudents(prevStudents => prevStudents.map(student => 
       student.id === studentId ? { ...student, level: newLevel } : student
@@ -432,7 +431,6 @@ const InstructorStudents = () => {
     });
   };
   
-  // Open student details dialog
   const openStudentDetails = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (student) {
@@ -441,7 +439,6 @@ const InstructorStudents = () => {
     }
   };
   
-  // Handle adding a note for a student
   const handleAddNote = () => {
     if (!selectedStudent || !noteText.trim()) return;
     
@@ -465,7 +462,6 @@ const InstructorStudents = () => {
     });
   };
   
-  // Handle adding a lesson-specific note
   const handleAddLessonNote = () => {
     if (!selectedStudent || !lessonNoteText.trim() || !selectedLessonTitle) return;
     
@@ -488,14 +484,12 @@ const InstructorStudents = () => {
     });
   };
   
-  // Open note dialog for a student
   const openNoteDialog = (studentId: string) => {
     setSelectedStudent(studentId);
     setNoteText('');
     setShowNoteDialog(true);
   };
   
-  // Open lesson note dialog
   const openLessonNoteDialog = (studentId: string, lessonId: string, lessonTitle: string) => {
     setSelectedStudent(studentId);
     setSelectedLessonId(lessonId);
@@ -504,7 +498,6 @@ const InstructorStudents = () => {
     setShowLessonNoteDialog(true);
   };
 
-  // Open progress update dialog
   const openProgressDialog = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (student) {
@@ -514,7 +507,6 @@ const InstructorStudents = () => {
     }
   };
 
-  // Update overall progress for a student
   const handleProgressUpdate = () => {
     if (!selectedStudent) return;
 
@@ -530,7 +522,6 @@ const InstructorStudents = () => {
     });
   };
 
-  // Open module progress update dialog
   const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
     const student = students.find(s => s.id === studentId);
     if (student) {
@@ -541,7 +532,6 @@ const InstructorStudents = () => {
     }
   };
 
-  // Update module progress for a student
   const handleModuleProgressUpdate = () => {
     if (!selectedStudent || !selectedModule) return;
 
@@ -577,7 +567,6 @@ const InstructorStudents = () => {
     });
   };
 
-  // Toggle lesson completion status
   const toggleLessonCompletion = (studentId: string, moduleId: string, lessonId: string) => {
     setStudents(prevStudents => prevStudents.map(student => {
       if (student.id === studentId && student.moduleProgress) {
@@ -853,3 +842,18 @@ const InstructorStudents = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
+                                    onClick={() => openProgressDialog(student.id)}
+                                    className="text-xs px-2"
+                                  >
+                                    Update Progress
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground">
+                            No students in this level yet.
+                          </div>
+                        )}
+                      </CardContent
