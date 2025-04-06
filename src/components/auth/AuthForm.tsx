@@ -43,7 +43,21 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Attempting sign in with:", formData.email);
-    await signIn(formData.email, formData.password);
+    
+    if (!formData.email || !formData.password) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide your email and password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      await signIn(formData.email, formData.password);
+    } catch (error) {
+      console.error("Sign in error in form:", error);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -58,11 +72,24 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       return;
     }
     
+    if (!formData.email || !formData.password) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide your email and password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     console.log("Attempting sign up with:", formData.email, "role:", userType);
-    await signUp(formData.email, formData.password, userType, {
-      first_name: formData.firstName,
-      last_name: formData.lastName
-    });
+    try {
+      await signUp(formData.email, formData.password, userType, {
+        first_name: formData.firstName,
+        last_name: formData.lastName
+      });
+    } catch (error) {
+      console.error("Sign up error in form:", error);
+    }
   };
 
   const handleGoogleAuth = async () => {

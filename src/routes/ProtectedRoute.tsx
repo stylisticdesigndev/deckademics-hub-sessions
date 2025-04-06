@@ -11,6 +11,11 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { userData, isLoading, session } = useAuth();
   
+  console.log("Protected route - Session:", !!session);
+  console.log("Protected route - Is loading:", isLoading);
+  console.log("Protected route - User data:", userData);
+  console.log("Protected route - Allowed roles:", allowedRoles);
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -24,20 +29,32 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     );
   }
   
-  console.log("Protected route - Session:", !!session);
-  console.log("Protected route - User data:", userData);
-  console.log("Protected route - User role:", userData.role);
-  console.log("Protected route - Allowed roles:", allowedRoles);
-  
-  // Check if user is authenticated and has the required role
-  if (!session || !userData.role || !allowedRoles.includes(userData.role)) {
-    console.log("Access denied - redirecting to login");
+  // Check if user is authenticated
+  if (!session) {
+    console.log("No session - redirecting to login");
     // Redirect to appropriate login page based on attempted role
     if (allowedRoles.includes('admin')) {
       return <Navigate to="/auth/admin" replace />;
     } else if (allowedRoles.includes('instructor')) {
       return <Navigate to="/auth/instructor" replace />;
     } else {
+      return <Navigate to="/auth/student" replace />;
+    }
+  }
+  
+  // If user is authenticated but has no role or wrong role
+  if (!userData.role || !allowedRoles.includes(userData.role)) {
+    console.log("Access denied - redirecting to appropriate dashboard");
+    
+    // Redirect to the appropriate dashboard based on user's actual role
+    if (userData.role === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (userData.role === 'instructor') {
+      return <Navigate to="/instructor/dashboard" replace />;
+    } else if (userData.role === 'student') {
+      return <Navigate to="/student/dashboard" replace />;
+    } else {
+      // Fallback to login if role is missing
       return <Navigate to="/auth/student" replace />;
     }
   }

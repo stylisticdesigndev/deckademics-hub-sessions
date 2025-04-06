@@ -4,6 +4,8 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 
 const AdminAuth = () => {
+  console.log("Rendering AdminAuth page");
+  
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
@@ -28,7 +30,7 @@ const AdminAuth = () => {
           </div>
           <AuthForm userType="admin" disableSignup={true} />
           <div className="text-center">
-            <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
+            <Link to="/" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
             </Link>
           </div>

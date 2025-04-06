@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   // Fetch user profile data
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
     try {
       console.log("Fetching profile for user ID:", userId);
       const { data, error } = await supabase
@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Update session data including profile info
   const refreshUserData = async (currentSession: Session | null) => {
     if (!currentSession) {
+      console.log("No session to refresh user data");
       setUserData({
         user: null,
         profile: null,
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Set up auth change listener FIRST to prevent missing events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
+          (event, newSession) => {
             console.log("Auth state change event:", event);
             console.log("New session:", newSession ? "exists" : "null");
             
@@ -154,9 +155,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       console.log("Signing in with email:", email);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
       if (error) {
+        console.error("Sign in error:", error.message);
         throw error;
       }
 
@@ -187,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error.message || 'Failed to sign in. Please check your credentials.',
         variant: 'destructive',
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -201,20 +207,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       console.log("Signing up with email:", email, "role:", role);
+      
+      // Add role to metadata
+      const userData = {
+        ...metadata,
+        role,
+      };
+      
+      console.log("User data for signup:", userData);
+      
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          data: {
-            ...metadata,
-            first_name: metadata.first_name || '',
-            last_name: metadata.last_name || '',
-            role,
-          }
+          data: userData
         }
       });
       
       if (error) {
+        console.error("Sign up error:", error.message);
         throw error;
       }
 
@@ -241,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error.message || 'Failed to create account.',
         variant: 'destructive',
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -249,6 +261,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setSession(null);
+      setUserData({
+        user: null,
+        profile: null,
+        role: null,
+      });
       navigate('/');
       toast({
         title: 'Logged out',
