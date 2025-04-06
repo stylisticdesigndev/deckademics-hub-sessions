@@ -54,9 +54,17 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      await signIn(formData.email, formData.password);
+      const result = await signIn(formData.email, formData.password);
+      console.log("Sign in result:", result);
     } catch (error) {
       console.error("Sign in error in form:", error);
+      
+      // Display more helpful error message to the user
+      toast({
+        title: 'Login failed',
+        description: "Please try again or sign up for a new account",
+        variant: 'destructive',
+      });
     }
   };
 
@@ -89,6 +97,13 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       });
     } catch (error) {
       console.error("Sign up error in form:", error);
+      
+      // Display more helpful error message to the user
+      toast({
+        title: 'Registration failed',
+        description: "Please try again with a different email address",
+        variant: 'destructive',
+      });
     }
   };
 

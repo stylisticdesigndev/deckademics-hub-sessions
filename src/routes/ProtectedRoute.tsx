@@ -14,6 +14,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - Session:", !!session);
   console.log("Protected route - Is loading:", isLoading);
   console.log("Protected route - User data:", userData);
+  console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
   
   // Show loading state

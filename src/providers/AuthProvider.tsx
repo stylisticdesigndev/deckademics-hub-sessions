@@ -107,16 +107,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Set up auth change listener FIRST to prevent missing events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (event, newSession) => {
+          async (event, newSession) => {
             console.log("Auth state change event:", event);
             console.log("New session:", newSession ? "exists" : "null");
             
             setSession(newSession);
             
-            // Use setTimeout to prevent potential deadlocks with Supabase client
             if (newSession) {
-              setTimeout(() => {
-                refreshUserData(newSession);
+              // Use setTimeout to prevent potential deadlocks with Supabase client
+              setTimeout(async () => {
+                await refreshUserData(newSession);
               }, 0);
             } else {
               setUserData({
@@ -129,12 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
 
         // Then check for existing session
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("Initial session check:", initialSession ? "session exists" : "no session");
-        setSession(initialSession);
+        const { data } = await supabase.auth.getSession();
+        console.log("Initial session check:", data.session ? "session exists" : "no session");
         
-        if (initialSession) {
-          await refreshUserData(initialSession);
+        if (data.session) {
+          setSession(data.session);
+          await refreshUserData(data.session);
         }
 
         return () => {
@@ -185,6 +185,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           navigate('/student/dashboard');
         }
       }
+      
+      return data;
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast({
@@ -220,7 +222,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email, 
         password,
         options: {
-          data: userData
+          data: userData,
+          emailRedirectTo: window.location.origin,
         }
       });
       
