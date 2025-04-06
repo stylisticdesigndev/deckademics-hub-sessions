@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
@@ -7,7 +6,7 @@ import { AnnouncementCard, Announcement } from '@/components/cards/AnnouncementC
 import { UpcomingClassCard, ClassSession } from '@/components/cards/UpcomingClassCard';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { useToast } from '@/hooks/use-toast';
-import { Award, BookOpen, Calendar, Clock, Music } from 'lucide-react';
+import { Award, Calendar, Clock, Music } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const StudentDashboard = () => {
@@ -120,24 +119,12 @@ const StudentDashboard = () => {
           </p>
         </section>
 
-        <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 grid-cols-1 md:grid-cols-2">
           <StatsCard 
             title="Current Level"
             value={studentData.level}
             icon={<Award className="h-5 w-5" />}
             description="68% complete"
-          />
-          <StatsCard 
-            title="Current Module"
-            value={studentData.currentModule}
-            icon={<Music className="h-5 w-5" />}
-            description="45% complete"
-          />
-          <StatsCard 
-            title="Hours Completed"
-            value={studentData.hoursCompleted}
-            icon={<Clock className="h-5 w-5" />}
-            trend={{ value: 12, isPositive: true }}
           />
           <StatsCard 
             title="Next Class"
