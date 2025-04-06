@@ -182,24 +182,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Print final login attempt details for debugging
       console.log(`Actual login attempt with email: ${loginEmail}`);
       
-      let signInResult;
-      
-      // For admin login, first sign in without custom data
-      if (isKnownAdmin && isAdminPassword) {
-        // Regular sign in
-        signInResult = await supabase.auth.signInWithPassword({
-          email: loginEmail,
-          password
-        });
-      } else {
-        // Regular sign in for non-admin users
-        signInResult = await supabase.auth.signInWithPassword({
-          email: loginEmail,
-          password
-        });
-      }
-      
-      const { data, error } = signInResult;
+      // Standard sign in for all users - no custom options that might cause type issues
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password
+      });
       
       if (error) {
         console.error("Sign in error:", error.message);
@@ -215,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.session) {
         // Special handling for admin login
-        if (isKnownAdmin) {
+        if (isKnownAdmin && isAdminPassword) {
           console.log("Admin login detected, checking profile");
           
           // Check if admin exists in profiles table
