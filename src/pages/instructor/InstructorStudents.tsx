@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, X, Edit, Save, User } from 'lucide-react';
+import { Search, Filter, X, Edit, Save, User, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -20,6 +20,7 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from '@/hooks/use-toast';
 
 interface Student {
@@ -34,6 +35,18 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: string[];
+  moduleProgress?: ModuleProgress[];
+}
+
+interface ModuleProgress {
+  moduleId: string;
+  moduleName: string; 
+  progress: number;
+  lessons: {
+    id: string;
+    title: string;
+    completed: boolean;
+  }[];
 }
 
 const InstructorStudents = () => {
@@ -46,8 +59,65 @@ const InstructorStudents = () => {
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(null);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [progressValue, setProgressValue] = useState(0);
+  const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
   
-  // Mock students data with notes array
+  // Mock curriculum modules data - matching student progress page
+  const curriculumModules = [
+    {
+      moduleId: '1',
+      moduleName: 'Introduction to DJ Equipment',
+      lessons: [
+        { id: '1-1', title: 'Turntables & CDJs' },
+        { id: '1-2', title: 'DJ Mixers & Controllers' },
+        { id: '1-3', title: 'Headphones & Monitors' },
+        { id: '1-4', title: 'Software Overview' },
+      ]
+    },
+    {
+      moduleId: '2',
+      moduleName: 'Beat Matching Fundamentals',
+      lessons: [
+        { id: '2-1', title: 'Understanding BPM' },
+        { id: '2-2', title: 'Manual Beat Matching' },
+        { id: '2-3', title: 'Beat Matching with Software' },
+        { id: '2-4', title: 'Troubleshooting Common Issues' },
+      ]
+    },
+    {
+      moduleId: '3',
+      moduleName: 'Basic Mixing Techniques',
+      lessons: [
+        { id: '3-1', title: 'EQ Mixing' },
+        { id: '3-2', title: 'Volume Fading' },
+        { id: '3-3', title: 'Filter Effects' },
+        { id: '3-4', title: 'Intro to Phrase Mixing' },
+      ]
+    },
+    {
+      moduleId: '4',
+      moduleName: 'Scratching Basics',
+      lessons: [
+        { id: '4-1', title: 'Proper Handling of Vinyl' },
+        { id: '4-2', title: 'Baby Scratch' },
+        { id: '4-3', title: 'Forward & Back Scratch' },
+        { id: '4-4', title: 'Scribble Scratch' },
+      ]
+    },
+    {
+      moduleId: '5',
+      moduleName: 'Music Theory for DJs',
+      lessons: [
+        { id: '5-1', title: 'Key Matching' },
+        { id: '5-2', title: 'Musical Phrasing' },
+        { id: '5-3', title: 'Song Structure' },
+        { id: '5-4', title: 'Harmonic Mixing' },
+      ]
+    },
+  ];
+  
+  // Mock students data with notes array and module progress
   const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
@@ -62,6 +132,41 @@ const InstructorStudents = () => {
       notes: [
         'April 1: Showing good progress with beat matching skills.',
         'March 28: Needs to work on timing.'
+      ],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 100,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: true },
+            { id: '1-4', title: 'Software Overview', completed: true },
+          ]
+        },
+        {
+          moduleId: '2',
+          moduleName: 'Beat Matching Fundamentals',
+          progress: 80,
+          lessons: [
+            { id: '2-1', title: 'Understanding BPM', completed: true },
+            { id: '2-2', title: 'Manual Beat Matching', completed: true },
+            { id: '2-3', title: 'Beat Matching with Software', completed: true },
+            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
+          ]
+        },
+        {
+          moduleId: '3',
+          moduleName: 'Basic Mixing Techniques',
+          progress: 20,
+          lessons: [
+            { id: '3-1', title: 'EQ Mixing', completed: true },
+            { id: '3-2', title: 'Volume Fading', completed: false },
+            { id: '3-3', title: 'Filter Effects', completed: false },
+            { id: '3-4', title: 'Intro to Phrase Mixing', completed: false },
+          ]
+        }
       ]
     },
     {
@@ -74,7 +179,31 @@ const InstructorStudents = () => {
       initials: 'TS',
       enrollmentDate: 'Feb 3, 2025',
       nextClass: 'April 8, 2025',
-      notes: []
+      notes: [],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 60,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: false },
+            { id: '1-4', title: 'Software Overview', completed: false },
+          ]
+        },
+        {
+          moduleId: '2',
+          moduleName: 'Beat Matching Fundamentals',
+          progress: 10,
+          lessons: [
+            { id: '2-1', title: 'Understanding BPM', completed: false },
+            { id: '2-2', title: 'Manual Beat Matching', completed: false },
+            { id: '2-3', title: 'Beat Matching with Software', completed: false },
+            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
+          ]
+        }
+      ]
     },
     {
       id: '3',
@@ -89,6 +218,41 @@ const InstructorStudents = () => {
       notes: [
         'April 2: Ready to move to performance techniques.',
         'March 25: Excellent work on transition techniques.'
+      ],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 100,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: true },
+            { id: '1-4', title: 'Software Overview', completed: true },
+          ]
+        },
+        {
+          moduleId: '2',
+          moduleName: 'Beat Matching Fundamentals',
+          progress: 100,
+          lessons: [
+            { id: '2-1', title: 'Understanding BPM', completed: true },
+            { id: '2-2', title: 'Manual Beat Matching', completed: true },
+            { id: '2-3', title: 'Beat Matching with Software', completed: true },
+            { id: '2-4', title: 'Troubleshooting Common Issues', completed: true },
+          ]
+        },
+        {
+          moduleId: '3',
+          moduleName: 'Basic Mixing Techniques',
+          progress: 90,
+          lessons: [
+            { id: '3-1', title: 'EQ Mixing', completed: true },
+            { id: '3-2', title: 'Volume Fading', completed: true },
+            { id: '3-3', title: 'Filter Effects', completed: true },
+            { id: '3-4', title: 'Intro to Phrase Mixing', completed: false },
+          ]
+        }
       ]
     },
     {
@@ -100,7 +264,18 @@ const InstructorStudents = () => {
       lastActive: '1 week ago',
       initials: 'MR',
       enrollmentDate: 'Feb 20, 2025',
-      notes: []
+      notes: [],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 30,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: false },
+          ]
+        }
+      ]
     },
     {
       id: '5',
@@ -112,7 +287,31 @@ const InstructorStudents = () => {
       initials: 'CW',
       enrollmentDate: 'Dec 12, 2024',
       nextClass: 'April 12, 2025',
-      notes: []
+      notes: [],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 80,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: true },
+            { id: '1-4', title: 'Software Overview', completed: false },
+          ]
+        },
+        {
+          moduleId: '2',
+          moduleName: 'Beat Matching Fundamentals',
+          progress: 40,
+          lessons: [
+            { id: '2-1', title: 'Understanding BPM', completed: true },
+            { id: '2-2', title: 'Manual Beat Matching', completed: false },
+            { id: '2-3', title: 'Beat Matching with Software', completed: false },
+            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
+          ]
+        }
+      ]
     },
     {
       id: '6',
@@ -123,7 +322,20 @@ const InstructorStudents = () => {
       lastActive: 'Yesterday',
       initials: 'JR',
       enrollmentDate: 'Mar 5, 2025',
-      notes: []
+      notes: [],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 50,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: false },
+            { id: '1-4', title: 'Software Overview', completed: false },
+          ]
+        }
+      ]
     },
     {
       id: '7',
@@ -139,6 +351,41 @@ const InstructorStudents = () => {
         'March 29: Excellent turntable control.',
         'March 22: Working well with complex transitions.',
         'March 15: Showing mastery of beat juggling techniques.'
+      ],
+      moduleProgress: [
+        {
+          moduleId: '1',
+          moduleName: 'Introduction to DJ Equipment',
+          progress: 100,
+          lessons: [
+            { id: '1-1', title: 'Turntables & CDJs', completed: true },
+            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
+            { id: '1-3', title: 'Headphones & Monitors', completed: true },
+            { id: '1-4', title: 'Software Overview', completed: true },
+          ]
+        },
+        {
+          moduleId: '2',
+          moduleName: 'Beat Matching Fundamentals',
+          progress: 100,
+          lessons: [
+            { id: '2-1', title: 'Understanding BPM', completed: true },
+            { id: '2-2', title: 'Manual Beat Matching', completed: true },
+            { id: '2-3', title: 'Beat Matching with Software', completed: true },
+            { id: '2-4', title: 'Troubleshooting Common Issues', completed: true },
+          ]
+        },
+        {
+          moduleId: '3',
+          moduleName: 'Basic Mixing Techniques',
+          progress: 100,
+          lessons: [
+            { id: '3-1', title: 'EQ Mixing', completed: true },
+            { id: '3-2', title: 'Volume Fading', completed: true },
+            { id: '3-3', title: 'Filter Effects', completed: true },
+            { id: '3-4', title: 'Intro to Phrase Mixing', completed: true },
+          ]
+        }
       ]
     },
   ]);
@@ -215,6 +462,123 @@ const InstructorStudents = () => {
     setNoteText('');
     setShowNoteDialog(true);
   };
+
+  // Open progress update dialog
+  const openProgressDialog = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setSelectedStudent(studentId);
+      setProgressValue(student.progress);
+      setShowProgressDialog(true);
+    }
+  };
+
+  // Update overall progress for a student
+  const handleProgressUpdate = () => {
+    if (!selectedStudent) return;
+
+    setStudents(prevStudents => prevStudents.map(student => 
+      student.id === selectedStudent ? { ...student, progress: progressValue } : student
+    ));
+    
+    setShowProgressDialog(false);
+    
+    toast({
+      title: "Progress updated",
+      description: "Student progress has been successfully updated.",
+    });
+  };
+
+  // Open module progress update dialog
+  const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setSelectedStudent(studentId);
+      setSelectedModule(module);
+      setProgressValue(module.progress);
+      setShowProgressDialog(true);
+    }
+  };
+
+  // Update module progress for a student
+  const handleModuleProgressUpdate = () => {
+    if (!selectedStudent || !selectedModule) return;
+
+    setStudents(prevStudents => prevStudents.map(student => {
+      if (student.id === selectedStudent && student.moduleProgress) {
+        const updatedModules = student.moduleProgress.map(module => 
+          module.moduleId === selectedModule.moduleId 
+            ? { ...module, progress: progressValue } 
+            : module
+        );
+        
+        // Recalculate overall progress based on module progress
+        const totalModules = updatedModules.length;
+        const overallProgress = Math.round(
+          updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
+        );
+        
+        return { 
+          ...student, 
+          moduleProgress: updatedModules,
+          progress: overallProgress
+        };
+      }
+      return student;
+    }));
+    
+    setShowProgressDialog(false);
+    setSelectedModule(null);
+    
+    toast({
+      title: "Module progress updated",
+      description: "Student module progress has been successfully updated.",
+    });
+  };
+
+  // Toggle lesson completion status
+  const toggleLessonCompletion = (studentId: string, moduleId: string, lessonId: string) => {
+    setStudents(prevStudents => prevStudents.map(student => {
+      if (student.id === studentId && student.moduleProgress) {
+        const updatedModules = student.moduleProgress.map(module => {
+          if (module.moduleId === moduleId) {
+            const updatedLessons = module.lessons.map(lesson => 
+              lesson.id === lessonId ? { ...lesson, completed: !lesson.completed } : lesson
+            );
+            
+            // Recalculate module progress
+            const completedLessons = updatedLessons.filter(lesson => lesson.completed).length;
+            const moduleProgress = Math.round((completedLessons / updatedLessons.length) * 100);
+            
+            return { 
+              ...module, 
+              lessons: updatedLessons,
+              progress: moduleProgress
+            };
+          }
+          return module;
+        });
+        
+        // Recalculate overall progress
+        const totalModules = updatedModules.length;
+        const overallProgress = Math.round(
+          updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
+        );
+        
+        return { 
+          ...student, 
+          moduleProgress: updatedModules,
+          progress: overallProgress
+        };
+      }
+      return student;
+    }));
+    
+    toast({
+      title: "Lesson status updated",
+      description: "Student lesson status has been successfully updated.",
+    });
+  };
   
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
@@ -281,11 +645,11 @@ const InstructorStudents = () => {
               <TabsContent value="list">
                 <div className="rounded-md border">
                   {/* Header row with improved spacing */}
-                  <div className="grid grid-cols-7 p-4 font-medium border-b text-xs sm:text-sm">
+                  <div className="grid grid-cols-8 p-4 font-medium border-b text-xs sm:text-sm">
                     <div className="col-span-3">STUDENT</div>
                     <div className="col-span-2 px-4">PROGRESS</div>
                     <div className="col-span-1 text-center">LEVEL</div>
-                    <div className="col-span-1 text-center">NOTES</div>
+                    <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
                   {filteredStudents.length > 0 ? (
@@ -293,7 +657,7 @@ const InstructorStudents = () => {
                       {filteredStudents.map((student) => (
                         <div 
                           key={student.id}
-                          className="grid grid-cols-7 p-4 border-b last:border-b-0 items-center text-xs sm:text-sm hover:bg-muted/30"
+                          className="grid grid-cols-8 p-4 border-b last:border-b-0 items-center text-xs sm:text-sm hover:bg-muted/30"
                         >
                           <div 
                             className="col-span-3 flex items-center gap-3 cursor-pointer"
@@ -316,15 +680,26 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          {/* Improved spacing for progress column */}
+                          {/* Progress column with update button */}
                           <div className="col-span-2 flex items-center gap-2 px-4">
                             <Progress value={student.progress} className="h-2 flex-grow" />
                             <span className="text-xs font-medium ml-2 w-8 text-right">
                               {student.progress}%
                             </span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openProgressDialog(student.id);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
                           </div>
                           
-                          {/* Better centered level column */}
+                          {/* Level column */}
                           <div className="col-span-1 flex justify-center">
                             {isEditingLevel === student.id ? (
                               <Select 
@@ -366,8 +741,8 @@ const InstructorStudents = () => {
                             )}
                           </div>
                           
-                          {/* Improved notes button alignment */}
-                          <div className="col-span-1 flex justify-center">
+                          {/* Actions column */}
+                          <div className="col-span-2 flex justify-center gap-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -375,6 +750,14 @@ const InstructorStudents = () => {
                               className="text-xs px-2"
                             >
                               {student.notes && student.notes.length > 0 ? "Edit Note" : "Add Note"}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openStudentDetails(student.id)}
+                              className="text-xs px-2"
+                            >
+                              Details
                             </Button>
                           </div>
                         </div>
@@ -489,114 +872,3 @@ const InstructorStudents = () => {
                 onChange={(e) => setNoteText(e.target.value)}
               />
             </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddNote} disabled={!noteText.trim()}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Note
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Student Details Dialog */}
-        <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Student Details
-              </DialogTitle>
-            </DialogHeader>
-            
-            {detailedStudent && (
-              <div className="py-4 space-y-6">
-                <div className="flex items-center gap-4 pb-4 border-b">
-                  <Avatar className="h-16 w-16">
-                    {detailedStudent.avatar ? (
-                      <img src={detailedStudent.avatar} alt={detailedStudent.name} />
-                    ) : (
-                      <AvatarFallback className="text-xl">
-                        {detailedStudent.initials}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div>
-                    <h3 className="text-xl font-bold">{detailedStudent.name}</h3>
-                    <p className="text-sm text-muted-foreground">{detailedStudent.email}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <Badge variant="outline" className={cn(
-                        detailedStudent.level === 'Novice' && "border-green-500/50 text-green-500",
-                        detailedStudent.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
-                        detailedStudent.level === 'Advanced' && "border-purple-500/50 text-purple-500"
-                      )}>
-                        {detailedStudent.level}
-                      </Badge>
-                      <span className="text-sm">Enrolled: {detailedStudent.enrollmentDate}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Progress</h4>
-                  <div className="flex items-center gap-3">
-                    <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
-                    <span className="font-medium">{detailedStudent.progress}%</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-medium">Instructor Notes</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setShowStudentDetails(false);
-                        setTimeout(() => {
-                          openNoteDialog(detailedStudent.id);
-                        }, 100);
-                      }}
-                    >
-                      Add Note
-                    </Button>
-                  </div>
-                  
-                  {detailedStudent.notes && detailedStudent.notes.length > 0 ? (
-                    <div className="space-y-3">
-                      {detailedStudent.notes.map((note, index) => (
-                        <div key={index} className="p-3 rounded-md bg-muted text-sm">
-                          {note}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-center p-4 text-muted-foreground text-sm bg-muted/30 rounded-md">
-                      No notes have been added yet.
-                    </p>
-                  )}
-                </div>
-                
-                <div className="pt-2">
-                  <h4 className="font-medium mb-2">Next Class</h4>
-                  <p className="text-sm">
-                    {detailedStudent.nextClass || "No upcoming classes scheduled"}
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            <DialogFooter>
-              <Button onClick={() => setShowStudentDetails(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default InstructorStudents;

@@ -13,7 +13,8 @@ export const InstructorNavigation = () => {
   const { pathname } = useLocation();
 
   // Define the counts to use across the navigation
-  const pendingStudentsCount = 3;
+  const pendingStudentsCount = 5; // This would normally come from an API or state
+  const progressUpdatesCount = 3; // Students needing progress updates
 
   const navItems = [
     {
@@ -27,7 +28,8 @@ export const InstructorNavigation = () => {
       icon: Users,
       href: "/instructor/students",
       active: pathname === "/instructor/students",
-      badge: pendingStudentsCount
+      badge: pendingStudentsCount,
+      badgeTooltip: "Students needing action"
     },
     {
       title: "Classes",
@@ -55,6 +57,7 @@ export const InstructorNavigation = () => {
               ? "bg-deckademics-primary/10 text-deckademics-primary"
               : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
           )}
+          title={item.badgeTooltip}
         >
           <item.icon className="h-5 w-5" />
           <span>{item.title}</span>
