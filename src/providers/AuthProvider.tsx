@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User, WeakPassword } from '@supabase/supabase-js';
@@ -183,22 +182,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Print final login attempt details for debugging
       console.log(`Actual login attempt with email: ${loginEmail}`);
       
-      // Create the auth options properly
-      const authOptions = isKnownAdmin && isAdminPassword ? {
-        email: loginEmail,
-        password,
-        options: {
-          data: {
-            role: 'admin'
-          }
-        }
-      } : {
-        email: loginEmail,
-        password
-      };
+      let signInResult;
       
-      // Attempt login with correctly typed options
-      const { data, error } = await supabase.auth.signInWithPassword(authOptions);
+      // For admin login, first sign in without custom data
+      if (isKnownAdmin && isAdminPassword) {
+        // Regular sign in
+        signInResult = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password
+        });
+      } else {
+        // Regular sign in for non-admin users
+        signInResult = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password
+        });
+      }
+      
+      const { data, error } = signInResult;
       
       if (error) {
         console.error("Sign in error:", error.message);
