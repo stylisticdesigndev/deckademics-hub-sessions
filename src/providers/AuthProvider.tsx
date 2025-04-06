@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User, WeakPassword } from '@supabase/supabase-js';
@@ -169,27 +168,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Signing in with email:", email);
       
-      // Handle admin credentials - accept both email addresses
-      let options = {};
-      const isAdminEmail = email === 'admin@example.com' || email === 'admin@deckademics.com';
+      // First, try to normalize email and check if this is an admin
+      const normalizedEmail = email.trim().toLowerCase();
+      const isKnownAdmin = normalizedEmail === 'admin@example.com' || normalizedEmail === 'admin@deckademics.com';
       const isAdminPassword = password === 'Admin123!' || password === 'admin123';
       
-      if (isAdminEmail && isAdminPassword) {
-        console.log("Using admin credentials");
-        options = {
+      // Use for debugging
+      console.log(`Is admin email: ${isKnownAdmin}, Is admin password: ${isAdminPassword}`);
+      
+      // Create options object for admin users
+      const options = isKnownAdmin && isAdminPassword ? {
+        options: {
           data: {
             role: 'admin'
           }
-        };
-        
-        // If using deckademics.com email but the password is for example.com, correct it
-        if (email === 'admin@deckademics.com' && password === 'Admin123!') {
-          email = 'admin@example.com';
         }
-      }
+      } : {};
       
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
+      // For consistent admin login, always use admin@example.com
+      const loginEmail = isKnownAdmin ? 'admin@example.com' : email;
+      
+      // Print final login attempt details for debugging
+      console.log(`Actual login attempt with email: ${loginEmail}`);
+      
+      // Attempt login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
         password,
         ...options
       });
@@ -208,8 +212,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.session) {
         // Special handling for admin login
-        if (isAdminEmail) {
-          console.log("Admin login detected, manually setting profile");
+        if (isKnownAdmin) {
+          console.log("Admin login detected, checking profile");
           
           // Check if admin exists in profiles table
           const { data: adminProfile, error: profileError } = await supabase
@@ -240,7 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Route user based on role
-        if (profile?.role === 'admin' || isAdminEmail) {
+        if (profile?.role === 'admin' || isKnownAdmin) {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
           navigate('/instructor/dashboard');

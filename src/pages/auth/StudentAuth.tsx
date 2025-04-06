@@ -2,6 +2,8 @@
 import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
 
 const StudentAuth = () => {
   return (
@@ -26,6 +28,18 @@ const StudentAuth = () => {
               Access your DJ learning dashboard and track your progress
             </p>
           </div>
+          
+          <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Student Access</AlertTitle>
+            <AlertDescription>
+              Sign in with your student credentials or create a new account.
+              <div className="mt-1 text-sm">
+                Admin users can also sign in here with admin credentials.
+              </div>
+            </AlertDescription>
+          </Alert>
+          
           <AuthForm userType="student" disableSignup={false} />
           <div className="text-center">
             <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
