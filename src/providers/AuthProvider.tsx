@@ -1,9 +1,9 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User, WeakPassword } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Database } from '@/integrations/supabase/types';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Print final login attempt details for debugging
       console.log(`Actual login attempt with email: ${loginEmail}`);
       
-      // Standard sign in for all users - no custom options that might cause type issues
+      // Standard sign in for all users
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password
@@ -270,6 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("User data for signup:", userData);
       
+      // Use correct typing for the options object
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
