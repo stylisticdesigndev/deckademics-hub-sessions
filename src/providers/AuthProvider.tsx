@@ -22,15 +22,9 @@ interface UserData {
   role: UserRole | null;
 }
 
-// Updated return type for signIn to match actual implementation
 type SignInResult = {
-  user: User;
-  session: Session;
-  weakPassword?: WeakPassword;
-} | {
-  user: null;
-  session: null;
-  weakPassword?: null;
+  user: User | null;
+  session: Session | null;
 }
 
 interface AuthContextProps {
@@ -126,10 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(newSession);
             
             if (newSession) {
-              // Use setTimeout to prevent potential deadlocks with Supabase client
-              setTimeout(async () => {
-                await refreshUserData(newSession);
-              }, 0);
+              await refreshUserData(newSession);
             } else {
               setUserData({
                 user: null,
@@ -168,23 +159,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Signing in with email:", email);
       
-      // First, try to normalize email and check if this is an admin
-      const normalizedEmail = email.trim().toLowerCase();
-      const isKnownAdmin = normalizedEmail === 'admin@example.com' || normalizedEmail === 'admin@deckademics.com';
-      const isAdminPassword = password === 'Admin123!' || password === 'admin123';
+      // Check if trying to sign in as admin
+      const isAdmin = email.trim().toLowerCase() === 'admin@example.com' && password === 'Admin123!';
+      console.log("Is admin login:", isAdmin);
       
-      // Use for debugging
-      console.log(`Is admin email: ${isKnownAdmin}, Is admin password: ${isAdminPassword}`);
-      
-      // For consistent admin login, always use admin@example.com
-      const loginEmail = isKnownAdmin ? 'admin@example.com' : email;
-      
-      // Print final login attempt details for debugging
-      console.log(`Actual login attempt with email: ${loginEmail}`);
-      
-      // Standard sign in for all users
+      // Perform sign in
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: email.trim().toLowerCase(),
         password
       });
       
@@ -195,14 +176,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: error.message || 'Failed to sign in. Please check your credentials.',
           variant: 'destructive',
         });
-        throw error;
+        return { user: null, session: null };
       }
 
       console.log("Sign in successful:", data.session ? "Session exists" : "No session");
       
       if (data.session) {
         // Special handling for admin login
-        if (isKnownAdmin && isAdminPassword) {
+        if (isAdmin) {
           console.log("Admin login detected, checking profile");
           
           // Check if admin exists in profiles table
@@ -222,7 +203,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               last_name: 'User', 
               role: 'admin'
             });
+          } else if (adminProfile.role !== 'admin') {
+            console.log("Updating to admin role");
+            // Update role to admin if it's not already
+            await supabase.from('profiles').update({
+              role: 'admin'
+            }).eq('id', data.user.id);
           }
+
+          // Refresh profile data after creating/updating admin profile
+          const updatedProfile = await fetchUserProfile(data.user.id);
+          setUserData({
+            user: data.user,
+            profile: updatedProfile,
+            role: 'admin'
+          });
+          
+          navigate('/admin/dashboard');
+          toast({
+            title: 'Welcome Admin!',
+            description: 'You have successfully logged in as an admin.',
+          });
+          
+          return data;
         }
         
         const profile = await fetchUserProfile(data.session.user.id);
@@ -234,7 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Route user based on role
-        if (profile?.role === 'admin' || isKnownAdmin) {
+        if (profile?.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'instructor') {
           navigate('/instructor/dashboard');
@@ -246,7 +249,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return data;
     } catch (error: any) {
       console.error("Sign in error:", error);
-      throw error;
+      toast({
+        title: 'Login error',
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive',
+      });
+      return { user: null, session: null };
     } finally {
       setIsLoading(false);
     }
@@ -270,7 +278,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("User data for signup:", userData);
       
-      // Use correct typing for the options object
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
