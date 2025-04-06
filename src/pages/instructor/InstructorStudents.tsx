@@ -858,4 +858,3 @@ const InstructorStudents = () => {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
