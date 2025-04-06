@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -24,8 +23,8 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { StudentNoteDialog } from '@/components/notes/StudentNoteDialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 
 interface Student {
   id: string;
@@ -860,13 +859,3 @@ const InstructorStudents = () => {
                     </Card>
                   ))}
                 </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
-  );
-};
-
-export default InstructorStudents;
