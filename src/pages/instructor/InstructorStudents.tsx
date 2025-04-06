@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -870,4 +871,204 @@ const InstructorStudents = () => {
                 {selectedModule ? `Update Module Progress` : `Update Overall Progress`}
               </DialogTitle>
               <DialogDescription>
-                {selectedModule
+                {selectedModule 
+                  ? `Update progress for the ${selectedModule.moduleName} module.`
+                  : `Update overall progress for this student.`}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Progress</span>
+                  <span className="text-sm">{progressValue}%</span>
+                </div>
+                <Slider
+                  value={[progressValue]}
+                  onValueChange={(value) => setProgressValue(value[0])}
+                  min={0}
+                  max={100}
+                  step={1}
+                />
+              </div>
+              
+              {selectedModule && selectedModule.lessons && (
+                <div className="space-y-2 border-t pt-4">
+                  <h4 className="text-sm font-medium mb-2">Lessons</h4>
+                  <div className="space-y-2">
+                    {selectedModule.lessons.map((lesson) => {
+                      const student = students.find(s => s.id === selectedStudent);
+                      const isCompleted = student?.moduleProgress
+                        ?.find(m => m.moduleId === selectedModule.moduleId)
+                        ?.lessons.find(l => l.id === lesson.id)
+                        ?.completed || false;
+                        
+                      return (
+                        <div key={lesson.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`lesson-${lesson.id}`}
+                            checked={isCompleted}
+                            onCheckedChange={() => {
+                              if (selectedStudent && selectedModule) {
+                                toggleLessonCompletion(selectedStudent, selectedModule.moduleId, lesson.id);
+                              }
+                            }}
+                          />
+                          <label 
+                            htmlFor={`lesson-${lesson.id}`}
+                            className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {lesson.title}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowProgressDialog(false)}>Cancel</Button>
+              <Button 
+                onClick={selectedModule ? handleModuleProgressUpdate : handleProgressUpdate}
+              >
+                Save Progress
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Student Details Dialog */}
+        <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+            {detailedStudent && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {detailedStudent.avatar ? (
+                        <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                      ) : (
+                        <AvatarFallback>
+                          {detailedStudent.initials}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    {detailedStudent.name}
+                  </DialogTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className={cn(
+                      detailedStudent.level === 'Novice' && "border-green-500/50 text-green-500",
+                      detailedStudent.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
+                      detailedStudent.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                    )}>
+                      {detailedStudent.level}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Enrolled: {detailedStudent.enrollmentDate}
+                    </span>
+                  </div>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  {/* Student Info */}
+                  <div>
+                    <h3 className="text-md font-medium mb-2">Contact Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm">{detailedStudent.email}</p>
+                      </div>
+                      {detailedStudent.nextClass && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Next Class</p>
+                          <p className="text-sm">{detailedStudent.nextClass}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Overall Progress */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-md font-medium">Overall Progress</h3>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
+                      <span className="text-sm font-medium">{detailedStudent.progress}%</span>
+                    </div>
+                  </div>
+                  
+                  {/* Module Progress */}
+                  {detailedStudent.moduleProgress && detailedStudent.moduleProgress.length > 0 && (
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Module Progress</h3>
+                      <div className="space-y-4">
+                        {detailedStudent.moduleProgress.map((module) => (
+                          <div key={module.moduleId} className="border rounded-md p-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="text-sm font-medium">{module.moduleName}</h4>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <Progress value={module.progress} className="h-2 flex-grow" />
+                              <span className="text-sm">{module.progress}%</span>
+                            </div>
+                            
+                            {/* Lessons */}
+                            <div className="mt-3 pt-3 border-t space-y-1">
+                              {module.lessons.map((lesson) => (
+                                <div key={lesson.id} className="flex items-center">
+                                  <div className={`w-4 h-4 rounded-full mr-2 ${lesson.completed ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                    {lesson.completed && (
+                                      <Check className="h-3 w-3 text-white" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs">{lesson.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Notes */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-md font-medium">Notes</h3>
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setShowStudentDetails(false);
+                          openNoteDialog(detailedStudent.id);
+                        }}
+                      >
+                        Add Note
+                      </Button>
+                    </div>
+                    
+                    {detailedStudent.notes && detailedStudent.notes.length > 0 ? (
+                      <div className="space-y-2">
+                        {detailedStudent.notes.map((note, index) => (
+                          <div key={index} className="border-l-2 border-deckademics-primary pl-3 py-1">
+                            <p className="text-sm">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No notes available for this student.</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default InstructorStudents;
