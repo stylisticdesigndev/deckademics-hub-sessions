@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User, WeakPassword } from '@supabase/supabase-js';
@@ -120,7 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(newSession);
             
             if (newSession) {
-              await refreshUserData(newSession);
+              // Use setTimeout to prevent potential deadlocks with Supabase client
+              setTimeout(() => {
+                refreshUserData(newSession);
+              }, 0);
             } else {
               setUserData({
                 user: null,
@@ -157,15 +159,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     try {
-      console.log("Signing in with email:", email);
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log("Signing in with email:", normalizedEmail);
       
-      // Check if trying to sign in as admin
-      const isAdmin = email.trim().toLowerCase() === 'admin@example.com' && password === 'Admin123!';
+      // Simplified admin check
+      const isAdmin = normalizedEmail === 'admin@example.com' && password === 'Admin123!';
       console.log("Is admin login:", isAdmin);
       
-      // Perform sign in
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password
       });
       
@@ -182,67 +184,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Sign in successful:", data.session ? "Session exists" : "No session");
       
       if (data.session) {
-        // Special handling for admin login
         if (isAdmin) {
-          console.log("Admin login detected, checking profile");
+          // Handle admin login
+          console.log("Admin login detected");
           
-          // Check if admin exists in profiles table
-          const { data: adminProfile, error: profileError } = await supabase
+          // Check if admin profile exists
+          const { data: existingProfile } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', data.user.id)
             .single();
-            
-          if (profileError || !adminProfile) {
-            console.log("Creating admin profile", data.user.id);
+          
+          if (!existingProfile) {
             // Create admin profile if it doesn't exist
             await supabase.from('profiles').upsert({
               id: data.user.id,
               email: data.user.email!,
               first_name: 'Admin',
-              last_name: 'User', 
+              last_name: 'User',
               role: 'admin'
             });
-          } else if (adminProfile.role !== 'admin') {
-            console.log("Updating to admin role");
-            // Update role to admin if it's not already
+          } else if (existingProfile.role !== 'admin') {
+            // Ensure the role is set to admin
             await supabase.from('profiles').update({
               role: 'admin'
             }).eq('id', data.user.id);
           }
-
-          // Refresh profile data after creating/updating admin profile
-          const updatedProfile = await fetchUserProfile(data.user.id);
+          
+          // Set user data directly for admin
           setUserData({
             user: data.user,
-            profile: updatedProfile,
+            profile: {
+              id: data.user.id,
+              email: data.user.email!,
+              first_name: 'Admin',
+              last_name: 'User',
+              role: 'admin',
+              avatar_url: null
+            },
             role: 'admin'
           });
           
-          navigate('/admin/dashboard');
           toast({
             title: 'Welcome Admin!',
             description: 'You have successfully logged in as an admin.',
           });
           
+          navigate('/admin/dashboard');
           return data;
         }
         
-        const profile = await fetchUserProfile(data.session.user.id);
-        console.log("User profile after sign in:", profile);
-        
-        toast({
-          title: 'Welcome back!',
-          description: 'You have successfully logged in.',
-        });
-
-        // Route user based on role
-        if (profile?.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (profile?.role === 'instructor') {
-          navigate('/instructor/dashboard');
-        } else {
-          navigate('/student/dashboard');
+        // For non-admin users
+        const profile = await fetchUserProfile(data.user.id);
+        if (profile) {
+          setUserData({
+            user: data.user,
+            profile,
+            role: profile.role
+          });
+          
+          toast({
+            title: 'Welcome back!',
+            description: 'You have successfully logged in.',
+          });
+          
+          // Route user based on role
+          if (profile.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (profile.role === 'instructor') {
+            navigate('/instructor/dashboard');
+          } else {
+            navigate('/student/dashboard');
+          }
         }
       }
       
