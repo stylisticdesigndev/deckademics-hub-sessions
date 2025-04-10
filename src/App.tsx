@@ -13,6 +13,11 @@ import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
 import AdminAuth from "./pages/auth/AdminAuth";
 
+// Profile setup pages
+import StudentProfileSetup from "./pages/student/StudentProfileSetup";
+import InstructorProfileSetup from "./pages/instructor/InstructorProfileSetup";
+import AdminProfileSetup from "./pages/admin/AdminProfileSetup";
+
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentProgress from "./pages/student/StudentProgress";
@@ -53,6 +58,17 @@ const App = () => (
             <Route path="/auth/student" element={<StudentAuth />} />
             <Route path="/auth/instructor" element={<InstructorAuth />} />
             <Route path="/auth/admin" element={<AdminAuth />} />
+            
+            {/* Profile Setup Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+              <Route path="/student/profile-setup" element={<StudentProfileSetup />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+              <Route path="/instructor/profile-setup" element={<InstructorProfileSetup />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin/profile-setup" element={<AdminProfileSetup />} />
+            </Route>
             
             {/* Student routes */}
             <Route element={<ProtectedRoute allowedRoles={['student']} />}>

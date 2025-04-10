@@ -238,8 +238,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         profile: {
           id: `${MOCK_USERS.length + 1}`,
-          first_name: metadata.first_name || '',
-          last_name: metadata.last_name || '',
+          first_name: metadata.firstName || '',
+          last_name: metadata.lastName || '',
           email: normalizedEmail,
           avatar_url: null,
           role
@@ -270,13 +270,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'Your account has been created successfully.',
       });
       
-      // Route user based on role
+      // Redirect to profile setup instead of dashboard
       if (role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin/profile-setup');
       } else if (role === 'instructor') {
-        navigate('/instructor/dashboard');
+        navigate('/instructor/profile-setup');
       } else {
-        navigate('/student/dashboard');
+        navigate('/student/profile-setup');
       }
     } catch (error: any) {
       console.error("Sign up error:", error);
