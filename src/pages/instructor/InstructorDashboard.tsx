@@ -32,6 +32,7 @@ interface Student {
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const { userData } = useAuth();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   
@@ -49,7 +50,7 @@ const InstructorDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!userData.user?.id) return;
-      
+
       try {
         setLoading(true);
         
