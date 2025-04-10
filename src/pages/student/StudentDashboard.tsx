@@ -3,17 +3,33 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { StatsCard } from '@/components/cards/StatsCard';
-import { AnnouncementCard, Announcement } from '@/components/cards/AnnouncementCard';
+import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { UpcomingClassCard, ClassSession } from '@/components/cards/UpcomingClassCard';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { Award, Calendar, Clock, Music, BookOpenText } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Award, Calendar, Music } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { BookOpenText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Updated to match the type in AnnouncementCard.tsx
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  instructor: {
+    name: string;
+    avatar?: string;
+    initials: string;
+  };
+  isNew?: boolean;
+  type: 'event' | 'announcement' | 'update';
+}
 
 const StudentDashboard = () => {
   const { toast } = useToast();
@@ -35,7 +51,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!userData.id) return;
+      if (!userData.user?.id) return;
 
       try {
         setLoading(true);
@@ -44,7 +60,7 @@ const StudentDashboard = () => {
         const { data: studentInfo, error: studentError } = await supabase
           .from('students')
           .select('level, enrollment_status, notes')
-          .eq('id', userData.id)
+          .eq('id', userData.user.id)
           .single();
           
         if (studentError) throw studentError;
@@ -60,7 +76,7 @@ const StudentDashboard = () => {
             author_id,
             profiles:author_id (first_name, last_name)
           `)
-          .eq('target_role', 'student')
+          .eq('target_role', ['student'])
           .order('published_at', { ascending: false });
 
         if (announcementsError) throw announcementsError;
@@ -90,7 +106,7 @@ const StudentDashboard = () => {
         const { data: progressData, error: progressError } = await supabase
           .from('student_progress')
           .select('skill_name, proficiency')
-          .eq('student_id', userData.id);
+          .eq('student_id', userData.user.id);
 
         if (progressError) throw progressError;
 
@@ -109,8 +125,13 @@ const StudentDashboard = () => {
             title: ann.title,
             content: ann.content,
             date: new Date(ann.published_at).toLocaleDateString(),
-            author: ann.profiles ? `${ann.profiles.first_name || ''} ${ann.profiles.last_name || ''}`.trim() : 'Admin',
+            instructor: {
+              name: ann.profiles ? `${ann.profiles.first_name || ''} ${ann.profiles.last_name || ''}`.trim() : 'Admin',
+              initials: ann.profiles ? 
+                `${(ann.profiles.first_name || ' ')[0]}${(ann.profiles.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
+            },
             isNew: true, // Mark as new initially
+            type: 'announcement', // Default type
           }));
           setAnnouncements(formattedAnnouncements);
         }
@@ -177,7 +198,7 @@ const StudentDashboard = () => {
     };
 
     fetchData();
-  }, [userData.id, toast]);
+  }, [userData.user?.id, toast]);
 
   const handleAcknowledgeAnnouncement = (id: string) => {
     setAnnouncements(prevAnnouncements => 

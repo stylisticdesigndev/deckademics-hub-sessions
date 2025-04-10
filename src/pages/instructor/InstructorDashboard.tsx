@@ -48,7 +48,7 @@ const InstructorDashboard = () => {
   
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!userData.id) return;
+      if (!userData.user?.id) return;
       
       try {
         setLoading(true);
@@ -57,7 +57,7 @@ const InstructorDashboard = () => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.id);
+          .eq('instructor_id', userData.user.id);
           
         if (classesError) throw classesError;
         
@@ -130,7 +130,7 @@ const InstructorDashboard = () => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.id)
+            .eq('instructor_id', userData.user.id)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             
@@ -145,7 +145,7 @@ const InstructorDashboard = () => {
     };
     
     fetchDashboardData();
-  }, [userData.id]);
+  }, [userData.user?.id]);
   
   // Filter students based on search term
   const filteredStudents = students.filter(student =>
@@ -252,7 +252,6 @@ const InstructorDashboard = () => {
                               <ProgressBar 
                                 value={student.progress} 
                                 max={100} 
-                                showLabel={false} 
                               />
                               <span className="text-xs">{student.progress}%</span>
                             </div>
