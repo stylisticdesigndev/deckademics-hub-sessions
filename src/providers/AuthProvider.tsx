@@ -13,6 +13,10 @@ interface Profile {
   email: string;
   avatar_url: string | null;
   role: UserRole;
+  phone?: string | null;
+  bio?: string | null;
+  experience?: string | null;
+  specialty?: string | null;
 }
 
 interface UserData {
