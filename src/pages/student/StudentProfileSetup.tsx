@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
 
 const StudentProfileSetup = () => {
   const { userData, updateProfile } = useAuth();
@@ -32,12 +33,28 @@ const StudentProfileSetup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    await updateProfile({
-      first_name: formData.first_name,
-      last_name: formData.last_name
-    });
-    
-    navigate('/student/dashboard');
+    try {
+      await updateProfile({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        bio: formData.bio
+      });
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been set up successfully!',
+      });
+      
+      navigate('/student/dashboard');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update your profile. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
   
   const handleSkip = () => {
