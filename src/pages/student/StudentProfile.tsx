@@ -8,17 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User } from 'lucide-react';
 
 const StudentProfile = () => {
   const { toast } = useToast();
+  const { userData, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Use real user data for profile, fallback to default values if needed
   const [profile, setProfile] = useState({
-    name: 'Alex Johnson',
-    email: 'alex.johnson@example.com',
-    phone: '(555) 123-4567',
-    bio: 'Aspiring DJ with a passion for electronic music and hip-hop. Currently focused on improving scratching and beat matching skills.',
+    name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : '',
+    email: userData.profile?.email || '',
+    phone: userData.profile?.phone || '',
+    bio: userData.profile?.bio || 'No bio provided yet.',
     startDate: 'January 15, 2025',
     level: 'Intermediate',
     instructor: {
@@ -39,15 +43,36 @@ const StudentProfile = () => {
     }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfile({...formData});
-    setIsEditing(false);
     
-    toast({
-      title: 'Profile updated',
-      description: 'Your profile has been updated successfully.',
-    });
+    try {
+      // Extract first and last name from the full name
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      await updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        phone: formData.phone,
+        bio: formData.bio
+      });
+      
+      setProfile({...formData});
+      setIsEditing(false);
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error updating profile',
+        description: 'Failed to update your profile. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -74,7 +99,7 @@ const StudentProfile = () => {
                   <div className="flex flex-col sm:flex-row gap-4 items-center pb-4">
                     <Avatar className="h-24 w-24">
                       <AvatarFallback className="text-2xl bg-deckademics-primary text-primary-foreground">
-                        {profile.name.split(' ').map(n => n[0]).join('')}
+                        {profile.name ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?'}
                       </AvatarFallback>
                     </Avatar>
                     
@@ -115,7 +140,7 @@ const StudentProfile = () => {
                             className="pl-10" 
                             value={formData.email} 
                             onChange={handleChange} 
-                            disabled={!isEditing} 
+                            disabled={true} 
                           />
                         </div>
                       </div>

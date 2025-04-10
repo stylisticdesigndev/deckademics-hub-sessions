@@ -6,6 +6,7 @@ import { StatsCard } from '@/components/cards/StatsCard';
 import { AnnouncementCard, Announcement } from '@/components/cards/AnnouncementCard';
 import { UpcomingClassCard, ClassSession } from '@/components/cards/UpcomingClassCard';
 import { ProgressBar } from '@/components/progress/ProgressBar';
+import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { Award, Calendar, Clock, Music } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,8 @@ import { Link } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { toast } = useToast();
+  const { userData } = useAuth();
+  
   const [announcements, setAnnouncements] = useState<Announcement[]>([
     {
       id: '1',
@@ -79,9 +82,9 @@ const StudentDashboard = () => {
     },
   ];
 
-  // Mock student data
+  // Use actual user data instead of hardcoded values
   const studentData = {
-    name: 'Alex Johnson',
+    name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
     level: 'Intermediate',
     totalProgress: 68,
     currentModule: 'Advanced Beat Matching',
