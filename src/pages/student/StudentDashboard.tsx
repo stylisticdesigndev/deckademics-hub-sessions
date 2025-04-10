@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { StatsCard } from '@/components/cards/StatsCard';
@@ -13,19 +13,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentDashboard = () => {
   const { toast } = useToast();
   const { userData } = useAuth();
   
-  // Empty announcements for new users
+  const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-
-  // Empty upcoming classes for new users
-  const upcomingClasses: ClassSession[] = [];
-
-  // User data for new student
-  const studentData = {
+  const [upcomingClasses, setUpcomingClasses] = useState<ClassSession[]>([]);
+  const [studentData, setStudentData] = useState({
     name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
     level: 'Beginner',
     totalProgress: 0,
@@ -34,7 +31,153 @@ const StudentDashboard = () => {
     hoursCompleted: 0,
     instructor: 'Not assigned',
     nextClass: 'Not scheduled',
-  };
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userData.id) return;
+
+      try {
+        setLoading(true);
+        
+        // Fetch student information
+        const { data: studentInfo, error: studentError } = await supabase
+          .from('students')
+          .select('level, enrollment_status, notes')
+          .eq('id', userData.id)
+          .single();
+          
+        if (studentError) throw studentError;
+
+        // Fetch announcements
+        const { data: announcementsData, error: announcementsError } = await supabase
+          .from('announcements')
+          .select(`
+            id,
+            title,
+            content,
+            published_at,
+            author_id,
+            profiles:author_id (first_name, last_name)
+          `)
+          .eq('target_role', 'student')
+          .order('published_at', { ascending: false });
+
+        if (announcementsError) throw announcementsError;
+
+        // Fetch upcoming classes
+        const now = new Date().toISOString();
+        const { data: classesData, error: classesError } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            title,
+            location,
+            start_time,
+            end_time,
+            instructors:instructor_id (
+              id,
+              profiles:id (first_name, last_name)
+            )
+          `)
+          .gt('start_time', now)
+          .order('start_time', { ascending: true })
+          .limit(3);
+
+        if (classesError) throw classesError;
+
+        // Fetch progress data
+        const { data: progressData, error: progressError } = await supabase
+          .from('student_progress')
+          .select('skill_name, proficiency')
+          .eq('student_id', userData.id);
+
+        if (progressError) throw progressError;
+
+        // Update student data
+        if (studentInfo) {
+          setStudentData(prev => ({
+            ...prev,
+            level: studentInfo.level || 'Beginner'
+          }));
+        }
+
+        // Format announcements
+        if (announcementsData) {
+          const formattedAnnouncements: Announcement[] = announcementsData.map(ann => ({
+            id: ann.id,
+            title: ann.title,
+            content: ann.content,
+            date: new Date(ann.published_at).toLocaleDateString(),
+            author: ann.profiles ? `${ann.profiles.first_name || ''} ${ann.profiles.last_name || ''}`.trim() : 'Admin',
+            isNew: true, // Mark as new initially
+          }));
+          setAnnouncements(formattedAnnouncements);
+        }
+
+        // Format upcoming classes
+        if (classesData) {
+          const formattedClasses: ClassSession[] = classesData.map(cls => {
+            const startTime = new Date(cls.start_time);
+            const endTime = new Date(cls.end_time);
+            const durationMs = endTime.getTime() - startTime.getTime();
+            const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+            const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            const instructorName = cls.instructors?.profiles 
+              ? `${cls.instructors.profiles.first_name || ''} ${cls.instructors.profiles.last_name || ''}`.trim()
+              : 'Not assigned';
+              
+            return {
+              id: cls.id,
+              title: cls.title,
+              instructor: instructorName,
+              date: startTime.toLocaleDateString(),
+              time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              duration: `${durationHours}h ${durationMinutes}m`,
+              location: cls.location || 'Main Studio',
+              attendees: 0, // This would need another query to count enrollments
+              isUpcoming: true,
+            };
+          });
+          
+          setUpcomingClasses(formattedClasses);
+          
+          // Update next class info if available
+          if (formattedClasses.length > 0) {
+            setStudentData(prev => ({
+              ...prev,
+              nextClass: `${formattedClasses[0].date} at ${formattedClasses[0].time}`,
+              instructor: formattedClasses[0].instructor
+            }));
+          }
+        }
+
+        // Calculate total progress if progress data exists
+        if (progressData && progressData.length > 0) {
+          const totalProficiency = progressData.reduce((sum, item) => sum + (item.proficiency || 0), 0);
+          const avgProgress = Math.round(totalProficiency / progressData.length);
+          
+          setStudentData(prev => ({
+            ...prev,
+            totalProgress: avgProgress
+          }));
+        }
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load dashboard data. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userData.id, toast]);
 
   const handleAcknowledgeAnnouncement = (id: string) => {
     setAnnouncements(prevAnnouncements => 
@@ -69,7 +212,15 @@ const StudentDashboard = () => {
           </p>
         </section>
 
-        {isEmpty && (
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-pulse space-y-2 flex flex-col items-center">
+              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <p className="text-sm text-muted-foreground mt-2">Loading dashboard data...</p>
+            </div>
+          </div>
+        ) : isEmpty && (
           <Alert>
             <BookOpenText className="h-4 w-4" />
             <AlertTitle>Welcome to Deckademics!</AlertTitle>
