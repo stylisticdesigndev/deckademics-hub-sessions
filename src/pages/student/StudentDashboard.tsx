@@ -8,90 +8,32 @@ import { UpcomingClassCard, ClassSession } from '@/components/cards/UpcomingClas
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { Award, Calendar, Clock, Music } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Award, Calendar, Clock, Music, BookOpenText } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const StudentDashboard = () => {
   const { toast } = useToast();
   const { userData } = useAuth();
   
-  const [announcements, setAnnouncements] = useState<Announcement[]>([
-    {
-      id: '1',
-      title: 'New Scratching Workshop',
-      content: 'Join us this weekend for an intensive scratching workshop with DJ Precision. All levels welcome!',
-      date: '2 hours ago',
-      instructor: {
-        name: 'DJ Precision',
-        initials: 'DP',
-      },
-      isNew: true,
-      type: 'event',
-    },
-    {
-      id: '2',
-      title: 'Studio Access Updates',
-      content: 'The practice studio hours have been extended to 10 PM on weekdays. Make sure to book your slot!',
-      date: '2 days ago',
-      instructor: {
-        name: 'Admin',
-        initials: 'AD',
-      },
-      isNew: true,
-      type: 'announcement',
-    },
-    {
-      id: '3',
-      title: 'Vinyl Maintenance Session',
-      content: 'Learn how to properly clean and store your vinyl records in next week\'s maintenance session.',
-      date: '5 days ago',
-      instructor: {
-        name: 'DJ Classic',
-        initials: 'DC',
-      },
-      type: 'update',
-    },
-  ]);
+  // Empty announcements for new users
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
-  const upcomingClasses: ClassSession[] = [
-    {
-      id: '1',
-      title: 'Beat Matching 101',
-      instructor: 'DJ Rhythm',
-      date: 'April 7, 2025',
-      time: '6:00 PM',
-      duration: '90 min',
-      location: 'Studio A',
-      attendees: 8,
-      isUpcoming: true,
-      topic: 'Understanding tempo and phrase matching',
-    },
-    {
-      id: '2',
-      title: 'Advanced Scratching',
-      instructor: 'DJ Scratch Master',
-      date: 'April 9, 2025',
-      time: '5:30 PM',
-      duration: '120 min',
-      location: 'Main Studio',
-      attendees: 6,
-      isUpcoming: true,
-      topic: 'Baby scratches and transforms',
-    },
-  ];
+  // Empty upcoming classes for new users
+  const upcomingClasses: ClassSession[] = [];
 
-  // Use actual user data instead of hardcoded values
+  // User data for new student
   const studentData = {
     name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
-    level: 'Intermediate',
-    totalProgress: 68,
-    currentModule: 'Advanced Beat Matching',
-    moduleProgress: 45,
-    hoursCompleted: 32,
-    instructor: 'DJ Rhythm',
-    nextClass: 'April 7, 2025',
+    level: 'Beginner',
+    totalProgress: 0,
+    currentModule: 'Not started',
+    moduleProgress: 0,
+    hoursCompleted: 0,
+    instructor: 'Not assigned',
+    nextClass: 'Not scheduled',
   };
 
   const handleAcknowledgeAnnouncement = (id: string) => {
@@ -114,29 +56,42 @@ const StudentDashboard = () => {
     });
   };
 
+  const isEmpty = announcements.length === 0 && upcomingClasses.length === 0;
+
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
         <section className="space-y-3">
-          <h1 className="text-2xl font-bold">Welcome back, {studentData.name}</h1>
+          <h1 className="text-2xl font-bold">Welcome, {studentData.name}</h1>
           <p className="text-muted-foreground">
             You're currently at <span className="text-deckademics-primary font-medium">{studentData.level}</span> level. 
-            Keep up the good work!
+            {isEmpty && " Complete your profile and enroll in classes to get started."}
           </p>
         </section>
+
+        {isEmpty && (
+          <Alert>
+            <BookOpenText className="h-4 w-4" />
+            <AlertTitle>Welcome to Deckademics!</AlertTitle>
+            <AlertDescription>
+              Your dashboard is currently empty. Visit your profile to complete your information and then 
+              check back for upcoming classes and announcements.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <section className="grid gap-4 grid-cols-1 md:grid-cols-2">
           <StatsCard 
             title="Current Level"
             value={studentData.level}
             icon={<Award className="h-5 w-5" />}
-            description="68% complete"
+            description={studentData.totalProgress > 0 ? `${studentData.totalProgress}% complete` : "Just getting started"}
           />
           <StatsCard 
             title="Next Class"
             value={studentData.nextClass}
             icon={<Calendar className="h-5 w-5" />}
-            description={`With ${studentData.instructor}`}
+            description={studentData.instructor !== "Not assigned" ? `With ${studentData.instructor}` : "No instructor assigned yet"}
           />
         </section>
 
@@ -155,69 +110,93 @@ const StudentDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ProgressBar 
-                  value={studentData.totalProgress} 
-                  max={100} 
-                  size="lg"
-                  label="Total Curriculum" 
-                />
-                
-                <div className="grid gap-3 grid-cols-1 mt-4">
-                  <div>
+                {studentData.totalProgress > 0 ? (
+                  <>
                     <ProgressBar 
-                      value={80} 
+                      value={studentData.totalProgress} 
                       max={100} 
-                      label="Beat Matching" 
+                      size="lg"
+                      label="Total Curriculum" 
                     />
+                    
+                    <div className="grid gap-3 grid-cols-1 mt-4">
+                      <div>
+                        <ProgressBar 
+                          value={0} 
+                          max={100} 
+                          label="Beat Matching" 
+                        />
+                      </div>
+                      <div>
+                        <ProgressBar 
+                          value={0} 
+                          max={100} 
+                          label="Scratching" 
+                        />
+                      </div>
+                      <div>
+                        <ProgressBar 
+                          value={0} 
+                          max={100} 
+                          label="Music Theory" 
+                        />
+                      </div>
+                      <div>
+                        <ProgressBar 
+                          value={0} 
+                          max={100} 
+                          label="Equipment Management" 
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <p>No progress data yet. Start a class to track your progress.</p>
                   </div>
-                  <div>
-                    <ProgressBar 
-                      value={65} 
-                      max={100} 
-                      label="Scratching" 
-                    />
-                  </div>
-                  <div>
-                    <ProgressBar 
-                      value={45} 
-                      max={100} 
-                      label="Music Theory" 
-                    />
-                  </div>
-                  <div>
-                    <ProgressBar 
-                      value={90} 
-                      max={100} 
-                      label="Equipment Management" 
-                    />
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
             
             <h2 className="text-xl font-semibold">Upcoming Classes</h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-              {upcomingClasses.map(session => (
-                <UpcomingClassCard 
-                  key={session.id} 
-                  session={session} 
-                  onAddToCalendar={handleAddToCalendar} 
-                />
-              ))}
-            </div>
+            {upcomingClasses.length > 0 ? (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                {upcomingClasses.map(session => (
+                  <UpcomingClassCard 
+                    key={session.id} 
+                    session={session} 
+                    onAddToCalendar={handleAddToCalendar} 
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <p>No upcoming classes scheduled. Check back soon!</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
           
           <div>
             <h2 className="text-xl font-semibold mb-4">Recent Announcements</h2>
-            <div className="space-y-4">
-              {announcements.map(announcement => (
-                <AnnouncementCard
-                  key={announcement.id}
-                  announcement={announcement}
-                  onAcknowledge={handleAcknowledgeAnnouncement}
-                />
-              ))}
-            </div>
+            {announcements.length > 0 ? (
+              <div className="space-y-4">
+                {announcements.map(announcement => (
+                  <AnnouncementCard
+                    key={announcement.id}
+                    announcement={announcement}
+                    onAcknowledge={handleAcknowledgeAnnouncement}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <p>No announcements yet. Check back soon for updates!</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </section>
       </div>
