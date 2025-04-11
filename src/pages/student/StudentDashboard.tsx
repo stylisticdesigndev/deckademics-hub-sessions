@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
@@ -66,7 +65,7 @@ const StudentDashboard = () => {
         if (studentError) throw studentError;
 
         // Fetch announcements
-        // Fix: Pass an array of user roles instead of a string
+        // Fix: Pass the array as a filter value in the correct format
         const { data: announcementsData, error: announcementsError } = await supabase
           .from('announcements')
           .select(`
@@ -77,7 +76,7 @@ const StudentDashboard = () => {
             author_id,
             profiles:author_id (first_name, last_name)
           `)
-          .in('target_role', ['student'] as ("instructor" | "student" | "admin")[])
+          .in('target_role', [['student']])
           .order('published_at', { ascending: false });
 
         if (announcementsError) throw announcementsError;
