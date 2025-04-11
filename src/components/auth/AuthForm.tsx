@@ -120,7 +120,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       });
       
       if (error) {
-        console.error("Direct signup error:", error);
+        console.error("Signup error details:", error);
         setSignupError(error.message);
         toast({
           title: 'Registration failed',
@@ -135,10 +135,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       if (data.user && data.session) {
         toast({
           title: 'Account created!',
-          description: 'Your account has been created successfully.',
+          description: 'Your account has been created successfully and you are now logged in.',
         });
         
-        // Optionally redirect based on user type after a successful signup
+        // Redirect based on user type after a successful signup with session
         if (userType === 'admin') {
           window.location.href = '/admin/profile-setup';
         } else if (userType === 'instructor') {
@@ -152,6 +152,9 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           title: 'Account created!',
           description: 'Please check your email to verify your account before signing in.',
         });
+      } else {
+        // This shouldn't happen, but handle it just in case
+        setSignupError("Registration succeeded but user data is missing. Please try signing in.");
       }
       
     } catch (error: any) {

@@ -3,7 +3,7 @@ import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, InfoIcon, HelpCircle } from 'lucide-react';
+import { AlertCircle, InfoIcon, HelpCircle, ShieldCheck } from 'lucide-react';
 
 const StudentAuth = () => {
   return (
@@ -52,6 +52,18 @@ const StudentAuth = () => {
                 </p>
                 <p className="text-amber-700 dark:text-amber-400 mt-2">
                   If you're experiencing issues with signup, try using a different email address or contact support.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-md bg-green-50 dark:bg-green-900 p-4 mt-4">
+            <div className="flex items-start">
+              <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-green-800 dark:text-green-300">Security Information</h3>
+                <p className="text-sm mt-1 text-green-700 dark:text-green-300">
+                  Your account is secure with us. We use industry-standard encryption and never share your personal information.
                 </p>
               </div>
             </div>
