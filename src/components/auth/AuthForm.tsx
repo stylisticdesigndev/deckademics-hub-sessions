@@ -25,6 +25,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     lastName: '',
   });
   const [debugMode, setDebugMode] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
 
   // For testing - pre-fill credentials if on admin login
   React.useEffect(() => {
@@ -40,6 +42,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (signupError) setSignupError(null);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -65,39 +69,44 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.firstName || !formData.lastName) {
-      toast({
-        title: 'Missing information',
-        description: 'Please provide your first and last name.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!formData.email || !formData.password) {
-      toast({
-        title: 'Missing information',
-        description: 'Please provide your email and password.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Basic password validation
-    if (formData.password.length < 8) {
-      toast({
-        title: 'Weak password',
-        description: 'Password must be at least 8 characters long.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    console.log("Attempting sign up with:", formData.email, "role:", userType);
+    setSignupError(null);
+    setSignupLoading(true);
     
     try {
-      // Try direct Supabase signup if the previous method failed
+      if (!formData.firstName || !formData.lastName) {
+        toast({
+          title: 'Missing information',
+          description: 'Please provide your first and last name.',
+          variant: 'destructive',
+        });
+        setSignupLoading(false);
+        return;
+      }
+      
+      if (!formData.email || !formData.password) {
+        toast({
+          title: 'Missing information',
+          description: 'Please provide your email and password.',
+          variant: 'destructive',
+        });
+        setSignupLoading(false);
+        return;
+      }
+
+      // Basic password validation
+      if (formData.password.length < 8) {
+        toast({
+          title: 'Weak password',
+          description: 'Password must be at least 8 characters long.',
+          variant: 'destructive',
+        });
+        setSignupLoading(false);
+        return;
+      }
+      
+      console.log("Attempting sign up with:", formData.email, "role:", userType);
+      
+      // Try direct Supabase signup with improved error handling
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -112,32 +121,49 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       if (error) {
         console.error("Direct signup error:", error);
-        throw error;
+        setSignupError(error.message);
+        toast({
+          title: 'Registration failed',
+          description: error.message || 'An unknown error occurred during registration.',
+          variant: 'destructive',
+        });
+        return;
       }
       
-      console.log("Signup successful:", data);
+      console.log("Signup response:", data);
       
-      toast({
-        title: 'Account created!',
-        description: 'Your account has been created successfully. Please check your email to verify your account.',
-      });
-      
-      // Optionally redirect based on user type after a successful signup
-      if (userType === 'admin') {
-        window.location.href = '/admin/profile-setup';
-      } else if (userType === 'instructor') {
-        window.location.href = '/instructor/profile-setup';
-      } else {
-        window.location.href = '/student/profile-setup';
+      if (data.user && data.session) {
+        toast({
+          title: 'Account created!',
+          description: 'Your account has been created successfully.',
+        });
+        
+        // Optionally redirect based on user type after a successful signup
+        if (userType === 'admin') {
+          window.location.href = '/admin/profile-setup';
+        } else if (userType === 'instructor') {
+          window.location.href = '/instructor/profile-setup';
+        } else {
+          window.location.href = '/student/profile-setup';
+        }
+      } else if (data.user) {
+        // Email confirmation might be required
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to verify your account before signing in.',
+        });
       }
       
     } catch (error: any) {
       console.error("Sign up error:", error);
+      setSignupError(error.message || 'An unknown error occurred');
       toast({
         title: 'Registration failed',
         description: error.message || 'An unknown error occurred during registration.',
         variant: 'destructive',
       });
+    } finally {
+      setSignupLoading(false);
     }
   };
 
@@ -235,10 +261,20 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
                 firstName: formData.firstName,
                 lastName: formData.lastName
               }}
-              isLoading={isLoading}
+              isLoading={signupLoading}
               handleChange={handleChange}
               handleSubmit={handleSignUp}
             />
+            
+            {signupError && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md text-sm">
+                <p className="font-medium text-red-800 dark:text-red-300">Registration Error</p>
+                <p className="text-red-700 dark:text-red-400 mt-1">{signupError}</p>
+                <p className="text-red-700 dark:text-red-400 mt-2 text-xs">
+                  If you continue to experience issues, please contact support or try a different email address.
+                </p>
+              </div>
+            )}
             
             {debugMode && (
               <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs overflow-auto">
