@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +24,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     firstName: '',
     lastName: '',
   });
+  const [debugMode, setDebugMode] = useState(false);
 
   // For testing - pre-fill credentials if on admin login
   React.useEffect(() => {
@@ -93,14 +95,49 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     console.log("Attempting sign up with:", formData.email, "role:", userType);
+    
     try {
-      await signUp(formData.email, formData.password, userType, {
-        first_name: formData.firstName,
-        last_name: formData.lastName
+      // Try direct Supabase signup if the previous method failed
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: userType,
+            first_name: formData.firstName,
+            last_name: formData.lastName
+          }
+        }
       });
-    } catch (error) {
-      console.error("Sign up error in form:", error);
-      // Error toast is already shown in the signUp function
+      
+      if (error) {
+        console.error("Direct signup error:", error);
+        throw error;
+      }
+      
+      console.log("Signup successful:", data);
+      
+      toast({
+        title: 'Account created!',
+        description: 'Your account has been created successfully. Please check your email to verify your account.',
+      });
+      
+      // Optionally redirect based on user type after a successful signup
+      if (userType === 'admin') {
+        window.location.href = '/admin/profile-setup';
+      } else if (userType === 'instructor') {
+        window.location.href = '/instructor/profile-setup';
+      } else {
+        window.location.href = '/student/profile-setup';
+      }
+      
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      toast({
+        title: 'Registration failed',
+        description: error.message || 'An unknown error occurred during registration.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -132,9 +169,14 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
   };
 
+  // Helper function to toggle debug mode (double-click on card header)
+  const toggleDebugMode = () => {
+    setDebugMode(!debugMode);
+  };
+
   return (
     <Card className="w-full max-w-md border-deckademics-primary/20">
-      <CardHeader>
+      <CardHeader onDoubleClick={toggleDebugMode}>
         <CardTitle className="text-2xl font-bold">
           {userType === 'student' ? 'Student Access' : userType === 'instructor' ? 'Instructor Access' : 'Admin Access'}
         </CardTitle>
@@ -173,6 +215,16 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
                 <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
               </div>
             )}
+            
+            {debugMode && (
+              <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs overflow-auto">
+                <p className="font-medium mb-1">Debug Mode</p>
+                <pre className="whitespace-pre-wrap">
+                  User Type: {userType}
+                  {"\n"}Form Data: {JSON.stringify(formData, null, 2)}
+                </pre>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="signup">
@@ -187,6 +239,16 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
               handleChange={handleChange}
               handleSubmit={handleSignUp}
             />
+            
+            {debugMode && (
+              <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs overflow-auto">
+                <p className="font-medium mb-1">Debug Mode</p>
+                <pre className="whitespace-pre-wrap">
+                  User Type: {userType}
+                  {"\n"}Form Data: {JSON.stringify(formData, null, 2)}
+                </pre>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
         

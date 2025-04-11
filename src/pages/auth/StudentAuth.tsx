@@ -3,7 +3,7 @@ import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, InfoIcon } from 'lucide-react';
 
 const StudentAuth = () => {
   return (
@@ -41,6 +41,19 @@ const StudentAuth = () => {
           </Alert>
           
           <AuthForm userType="student" disableSignup={false} />
+          
+          <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-4 text-sm">
+            <div className="flex items-start">
+              <InfoIcon className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-amber-800 dark:text-amber-300">Signup Information</h3>
+                <p className="text-amber-700 dark:text-amber-400 mt-1">
+                  If you're experiencing issues with signup, please try using stronger password with numbers and special characters, or contact support.
+                </p>
+              </div>
+            </div>
+          </div>
+          
           <div className="text-center">
             <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
