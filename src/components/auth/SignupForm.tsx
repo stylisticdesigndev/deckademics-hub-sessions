@@ -73,7 +73,7 @@ export const SignupForm = ({
     if (/[^A-Za-z0-9]/.test(password)) {
       score += 1;
     } else {
-      errors.push("Missing special character");
+      errors.push("Missing special character (!@#$%^&*(),.?\":{}|<>)");
     }
 
     // Set message based on score
@@ -212,7 +212,7 @@ export const SignupForm = ({
               )}
               
               <p className="text-xs mt-2 text-gray-500">
-                Password must contain at least 8 characters, including uppercase, lowercase, number and special character
+                Password must contain at least 8 characters, including uppercase, lowercase, number and special character (!@#$%^&*(),.?":{}|&lt;&gt;)
               </p>
             </div>
           )}

@@ -110,10 +110,17 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       const hasNumber = /\d/.test(formData.password);
       const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
       
-      if (!(hasUppercase && hasLowercase && hasNumber && hasSpecial)) {
+      // Specific feedback for missing password requirements
+      const missingRequirements = [];
+      if (!hasUppercase) missingRequirements.push('uppercase letter');
+      if (!hasLowercase) missingRequirements.push('lowercase letter');
+      if (!hasNumber) missingRequirements.push('number');
+      if (!hasSpecial) missingRequirements.push('special character (!@#$%^&*(),.?":{}|<>)');
+      
+      if (missingRequirements.length > 0) {
         toast({
-          title: 'Weak password',
-          description: 'Password must include uppercase, lowercase, number, and special character.',
+          title: 'Password requirements not met',
+          description: `Your password is missing: ${missingRequirements.join(', ')}`,
           variant: 'destructive',
         });
         setSignupLoading(false);
@@ -137,10 +144,19 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       if (error) {
         console.error("Signup error details:", error);
-        setSignupError(error.message);
+        
+        // More specific error messages based on error code
+        let errorMessage = error.message;
+        if (error.message.includes("Database error")) {
+          errorMessage = "There was an issue creating your account. Please try again with a different email address.";
+        } else if (error.message.includes("User already registered")) {
+          errorMessage = "This email is already registered. Please try logging in instead.";
+        }
+        
+        setSignupError(errorMessage);
         toast({
           title: 'Registration failed',
-          description: error.message || 'An unknown error occurred during registration.',
+          description: errorMessage,
           variant: 'destructive',
         });
         return;
