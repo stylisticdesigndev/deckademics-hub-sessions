@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +8,7 @@ import { SignupForm } from './SignupForm';
 import { SocialAuthButton } from './SocialAuthButton';
 import { AuthFormDivider } from './AuthFormDivider';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthFormProps {
   userType: UserRole;

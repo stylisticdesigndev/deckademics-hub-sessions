@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -36,7 +35,7 @@ interface AuthContextProps {
   userData: UserData;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<SignInResult>;
-  signUp: (email: string, password: string, role?: UserRole, metadata?: Record<string, any>) => Promise<void>;
+  signUp: (email: string, password: string, role?: UserRole, metadata?: Record<string, any>) => Promise<{ user: User | null; session: Session | null; }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
 }
