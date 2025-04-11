@@ -104,6 +104,22 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         return;
       }
       
+      // Check for password complexity
+      const hasUppercase = /[A-Z]/.test(formData.password);
+      const hasLowercase = /[a-z]/.test(formData.password);
+      const hasNumber = /\d/.test(formData.password);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
+      
+      if (!(hasUppercase && hasLowercase && hasNumber && hasSpecial)) {
+        toast({
+          title: 'Weak password',
+          description: 'Password must include uppercase, lowercase, number, and special character.',
+          variant: 'destructive',
+        });
+        setSignupLoading(false);
+        return;
+      }
+      
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
       // Try direct Supabase signup with improved error handling

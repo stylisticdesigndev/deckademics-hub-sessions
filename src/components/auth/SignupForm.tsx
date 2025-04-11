@@ -145,6 +145,9 @@ export const SignupForm = ({
               className="pl-10 pr-10"
               value={formData.password}
               onChange={handlePasswordChange}
+              minLength={8}
+              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).*"
+              title="Password must contain at least 8 characters, including uppercase, lowercase, number and special character"
             />
             <Button 
               type="button"
@@ -171,6 +174,9 @@ export const SignupForm = ({
                 'text-green-500'
               }`}>
                 {passwordStrength.message}
+              </p>
+              <p className="text-xs mt-1 text-gray-500">
+                Password must contain at least 8 characters, including uppercase, lowercase, number and special character
               </p>
             </div>
           )}
