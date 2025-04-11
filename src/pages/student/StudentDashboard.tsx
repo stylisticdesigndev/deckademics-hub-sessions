@@ -77,7 +77,7 @@ const StudentDashboard = () => {
             author_id,
             profiles:author_id (first_name, last_name)
           `)
-          .in('target_role', ['student'])
+          .in('target_role', ['student'] as ("instructor" | "student" | "admin")[])
           .order('published_at', { ascending: false });
 
         if (announcementsError) throw announcementsError;
