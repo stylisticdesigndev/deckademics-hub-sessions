@@ -24,6 +24,57 @@ export const SignupForm = ({
   handleSubmit 
 }: SignupFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    message: ''
+  });
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordStrength({ score: 0, message: '' });
+      return;
+    }
+
+    let score = 0;
+    let message = '';
+
+    // Length check
+    if (password.length >= 8) score += 1;
+    
+    // Complexity checks
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+    // Set message based on score
+    if (score <= 2) {
+      message = 'Weak password';
+    } else if (score <= 4) {
+      message = 'Medium strength';
+    } else {
+      message = 'Strong password';
+    }
+
+    setPasswordStrength({ score, message });
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange(e);
+    validatePassword(e.target.value);
+  };
+
+  // Calculate the width of the strength bar
+  const getStrengthBarWidth = () => {
+    return `${(passwordStrength.score / 5) * 100}%`;
+  };
+
+  // Get the color of the strength bar
+  const getStrengthBarColor = () => {
+    if (passwordStrength.score <= 2) return 'bg-red-500';
+    if (passwordStrength.score <= 4) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -93,7 +144,7 @@ export const SignupForm = ({
               required
               className="pl-10 pr-10"
               value={formData.password}
-              onChange={handleChange}
+              onChange={handlePasswordChange}
             />
             <Button 
               type="button"
@@ -105,6 +156,24 @@ export const SignupForm = ({
               {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
             </Button>
           </div>
+          
+          {formData.password && (
+            <div className="mt-2">
+              <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full ${getStrengthBarColor()} transition-all duration-300`}
+                  style={{ width: getStrengthBarWidth() }}
+                />
+              </div>
+              <p className={`text-xs mt-1 ${
+                passwordStrength.score <= 2 ? 'text-red-500' : 
+                passwordStrength.score <= 4 ? 'text-yellow-500' : 
+                'text-green-500'
+              }`}>
+                {passwordStrength.message}
+              </p>
+            </div>
+          )}
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Creating account..." : "Create Account"}
@@ -112,4 +181,4 @@ export const SignupForm = ({
       </div>
     </form>
   );
-};
+}

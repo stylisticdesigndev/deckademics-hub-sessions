@@ -81,6 +81,16 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       });
       return;
     }
+
+    // Basic password validation
+    if (formData.password.length < 8) {
+      toast({
+        title: 'Weak password',
+        description: 'Password must be at least 8 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     console.log("Attempting sign up with:", formData.email, "role:", userType);
     try {
@@ -95,11 +105,31 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   };
 
   const handleGoogleAuth = async () => {
-    toast({
-      title: 'Google authentication',
-      description: 'Google authentication is not configured yet.',
-      variant: 'destructive',
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Google auth initiated:", data);
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      toast({
+        title: 'Google authentication failed',
+        description: error.message || 'Unable to sign in with Google.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

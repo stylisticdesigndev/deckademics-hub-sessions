@@ -1,7 +1,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Session, User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -42,7 +43,7 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-// Mock user data for demo purposes
+// For fallback/testing when there's an issue with Supabase
 const MOCK_USERS = [
   {
     id: '1',
@@ -85,32 +86,6 @@ const MOCK_USERS = [
   }
 ];
 
-// Mock session
-const createMockSession = (user: any): Session => {
-  return {
-    access_token: 'mock-access-token',
-    refresh_token: 'mock-refresh-token',
-    expires_in: 3600,
-    expires_at: new Date().getTime() + 3600000,
-    token_type: 'bearer',
-    user: {
-      id: user.id,
-      app_metadata: {},
-      user_metadata: {},
-      aud: 'authenticated',
-      email: user.email,
-      role: '',
-      email_confirmed_at: new Date().toISOString(),
-      phone: '',
-      confirmed_at: '',
-      last_sign_in_at: '',
-      created_at: '',
-      updated_at: '',
-      factors: null,
-    }
-  };
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [userData, setUserData] = useState<UserData>({
@@ -121,29 +96,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  console.log("Initializing AuthProvider");
+  console.log("Initializing AuthProvider with Supabase");
   
-  // Initialize auth state from localStorage
   useEffect(() => {
-    const storedSession = localStorage.getItem('mock_session');
-    const storedUser = localStorage.getItem('mock_user');
-    const storedProfile = localStorage.getItem('mock_profile');
-    
-    if (storedSession && storedUser && storedProfile) {
-      const parsedSession = JSON.parse(storedSession);
-      const parsedUser = JSON.parse(storedUser);
-      const parsedProfile = JSON.parse(storedProfile);
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log("Auth state changed:", event, newSession?.user?.id);
+        setSession(newSession);
+        
+        if (newSession?.user) {
+          try {
+            // Fetch user profile in a separate execution context to avoid auth deadlocks
+            setTimeout(async () => {
+              await fetchUserProfile(newSession.user.id);
+            }, 0);
+          } catch (error) {
+            console.error("Error in auth state change:", error);
+          }
+        } else {
+          setUserData({
+            user: null,
+            profile: null,
+            role: null
+          });
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      setSession(currentSession);
       
-      setSession(parsedSession);
-      setUserData({
-        user: parsedUser,
-        profile: parsedProfile,
-        role: parsedProfile?.role || null,
+      if (currentSession?.user) {
+        try {
+          await fetchUserProfile(currentSession.user.id);
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      }
+      
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+
+      if (profile) {
+        setUserData({
+          user: session?.user || null,
+          profile: profile as Profile,
+          role: profile.role as UserRole,
+        });
+        
+        console.log("User profile fetched:", profile);
+        return profile;
+      }
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch user profile',
+        variant: 'destructive',
       });
     }
-    
-    setIsLoading(false);
-  }, []);
+  };
 
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
@@ -152,59 +181,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing in with email:", normalizedEmail);
       
-      // Find user in mock data
-      const user = MOCK_USERS.find(u => 
-        u.email.toLowerCase() === normalizedEmail && 
-        u.password === password
-      );
-      
-      if (!user) {
-        console.error("Invalid login credentials");
-        toast({
-          title: 'Login failed',
-          description: 'Invalid email or password. Please try again.',
-          variant: 'destructive',
-        });
-        return { user: null, session: null };
-      }
-
-      // Create mock session
-      const mockSession = createMockSession(user);
-      const mockUser = mockSession.user;
-      
-      // Store in state and localStorage for persistence
-      setSession(mockSession);
-      setUserData({
-        user: mockUser,
-        profile: user.profile,
-        role: user.profile.role
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
       });
       
-      // Store in localStorage
-      localStorage.setItem('mock_session', JSON.stringify(mockSession));
-      localStorage.setItem('mock_user', JSON.stringify(mockUser));
-      localStorage.setItem('mock_profile', JSON.stringify(user.profile));
+      if (error) throw error;
+      
+      console.log("Sign in successful:", data.user?.email);
       
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
       
-      // Route user based on role
-      if (user.profile.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (user.profile.role === 'instructor') {
-        navigate('/instructor/dashboard');
-      } else {
-        navigate('/student/dashboard');
+      // Route user based on role after profile is loaded
+      if (data.session && data.user) {
+        const profile = await fetchUserProfile(data.user.id);
+        
+        if (profile) {
+          if (profile.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (profile.role === 'instructor') {
+            navigate('/instructor/dashboard');
+          } else {
+            navigate('/student/dashboard');
+          }
+        }
       }
       
-      return { user: mockUser, session: mockSession };
+      return { user: data.user, session: data.session };
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast({
-        title: 'Login error',
-        description: error.message || 'An unknown error occurred',
+        title: 'Login failed',
+        description: error.message || 'Invalid email or password. Please try again.',
         variant: 'destructive',
       });
       return { user: null, session: null };
@@ -225,56 +236,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing up with email:", normalizedEmail, "role:", role);
       
-      // Check if user already exists
-      if (MOCK_USERS.some(u => u.email.toLowerCase() === normalizedEmail)) {
-        toast({
-          title: 'Registration failed',
-          description: 'An account with this email already exists.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Create new mock user
-      const newUser = {
-        id: `${MOCK_USERS.length + 1}`,
+      // Add role and other metadata to user metadata for the trigger function
+      const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
-        profile: {
-          id: `${MOCK_USERS.length + 1}`,
-          first_name: metadata.firstName || '',
-          last_name: metadata.lastName || '',
-          email: normalizedEmail,
-          avatar_url: null,
-          role
+        options: {
+          data: {
+            role,
+            first_name: metadata.first_name || metadata.firstName || '',
+            last_name: metadata.last_name || metadata.lastName || '',
+          },
         }
-      };
-      
-      // Add to mock users array (in a real app, this would persist to a database)
-      MOCK_USERS.push(newUser);
-      
-      const mockSession = createMockSession(newUser);
-      const mockUser = mockSession.user;
-      
-      // Store in state and localStorage for persistence
-      setSession(mockSession);
-      setUserData({
-        user: mockUser,
-        profile: newUser.profile,
-        role: newUser.profile.role
       });
       
-      // Store in localStorage
-      localStorage.setItem('mock_session', JSON.stringify(mockSession));
-      localStorage.setItem('mock_user', JSON.stringify(mockUser));
-      localStorage.setItem('mock_profile', JSON.stringify(newUser.profile));
+      if (error) throw error;
       
       toast({
         title: 'Account created!',
         description: 'Your account has been created successfully.',
       });
       
-      // Redirect to profile setup instead of dashboard
+      // Redirect to profile setup
       if (role === 'admin') {
         navigate('/admin/profile-setup');
       } else if (role === 'instructor') {
@@ -282,6 +264,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         navigate('/student/profile-setup');
       }
+      
+      return { user: data.user, session: data.session };
     } catch (error: any) {
       console.error("Sign up error:", error);
       toast({
@@ -289,6 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error.message || 'An unknown error occurred',
         variant: 'destructive',
       });
+      return { user: null, session: null };
     } finally {
       setIsLoading(false);
     }
@@ -296,17 +281,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear session data from state and localStorage
+      await supabase.auth.signOut();
+      
       setSession(null);
       setUserData({
         user: null,
         profile: null,
         role: null,
       });
-      
-      localStorage.removeItem('mock_session');
-      localStorage.removeItem('mock_user');
-      localStorage.removeItem('mock_profile');
       
       navigate('/');
       toast({
@@ -324,34 +306,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<Profile>) => {
     try {
-      if (!userData.profile?.id) {
+      if (!userData.user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // Find and update the mock user's profile
-      const userIndex = MOCK_USERS.findIndex(u => u.id === userData.profile?.id);
-      if (userIndex >= 0) {
-        MOCK_USERS[userIndex].profile = {
-          ...MOCK_USERS[userIndex].profile,
-          ...data
-        };
-        
-        // Update state and localStorage
-        setUserData({
-          ...userData,
-          profile: MOCK_USERS[userIndex].profile,
-          role: MOCK_USERS[userIndex].profile.role,
-        });
-        
-        localStorage.setItem('mock_profile', JSON.stringify(MOCK_USERS[userIndex].profile));
-        
-        toast({
-          title: 'Profile updated',
-          description: 'Your profile has been updated successfully.',
-        });
-      } else {
-        throw new Error('User not found');
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', userData.user.id);
+
+      if (error) throw error;
+      
+      // Refetch user profile to update state
+      await fetchUserProfile(userData.user.id);
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully.',
+      });
     } catch (error: any) {
       toast({
         title: 'Error updating profile',
