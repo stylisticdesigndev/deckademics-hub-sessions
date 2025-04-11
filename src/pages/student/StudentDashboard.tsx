@@ -66,6 +66,7 @@ const StudentDashboard = () => {
         if (studentError) throw studentError;
 
         // Fetch announcements
+        // The key fix: pass an array of strings for the in() method, not a single string
         const { data: announcementsData, error: announcementsError } = await supabase
           .from('announcements')
           .select(`
