@@ -28,24 +28,53 @@ export const SignupForm = ({
     score: 0,
     message: ''
   });
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
   const validatePassword = (password: string) => {
     if (!password) {
       setPasswordStrength({ score: 0, message: '' });
+      setPasswordErrors([]);
       return;
     }
 
     let score = 0;
     let message = '';
+    const errors: string[] = [];
 
     // Length check
-    if (password.length >= 8) score += 1;
+    if (password.length >= 8) {
+      score += 1;
+    } else {
+      errors.push("Password must be at least 8 characters long");
+    }
     
-    // Complexity checks
-    if (/[A-Z]/.test(password)) score += 1;
-    if (/[a-z]/.test(password)) score += 1;
-    if (/[0-9]/.test(password)) score += 1;
-    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    // Uppercase check
+    if (/[A-Z]/.test(password)) {
+      score += 1;
+    } else {
+      errors.push("Missing uppercase letter");
+    }
+    
+    // Lowercase check
+    if (/[a-z]/.test(password)) {
+      score += 1;
+    } else {
+      errors.push("Missing lowercase letter");
+    }
+    
+    // Number check
+    if (/[0-9]/.test(password)) {
+      score += 1;
+    } else {
+      errors.push("Missing number");
+    }
+    
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) {
+      score += 1;
+    } else {
+      errors.push("Missing special character");
+    }
 
     // Set message based on score
     if (score <= 2) {
@@ -57,6 +86,7 @@ export const SignupForm = ({
     }
 
     setPasswordStrength({ score, message });
+    setPasswordErrors(errors);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,9 +175,6 @@ export const SignupForm = ({
               className="pl-10 pr-10"
               value={formData.password}
               onChange={handlePasswordChange}
-              minLength={8}
-              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).*"
-              title="Password must contain at least 8 characters, including uppercase, lowercase, number and special character"
             />
             <Button 
               type="button"
@@ -175,13 +202,22 @@ export const SignupForm = ({
               }`}>
                 {passwordStrength.message}
               </p>
-              <p className="text-xs mt-1 text-gray-500">
+              
+              {passwordErrors.length > 0 && (
+                <ul className="text-xs mt-1 text-red-500 pl-4 list-disc">
+                  {passwordErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              )}
+              
+              <p className="text-xs mt-2 text-gray-500">
                 Password must contain at least 8 characters, including uppercase, lowercase, number and special character
               </p>
             </div>
           )}
         </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading || passwordErrors.length > 0}>
           {isLoading ? "Creating account..." : "Create Account"}
         </Button>
       </div>
