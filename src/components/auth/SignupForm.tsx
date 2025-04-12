@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, LockKeyhole, EyeIcon, EyeOffIcon, User } from 'lucide-react';
+import { Mail, LockKeyhole, EyeIcon, EyeOffIcon, User, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SignupFormProps {
   formData: {
@@ -69,8 +70,8 @@ export const SignupForm = ({
       errors.push("Missing number");
     }
     
-    // Special character check
-    if (/[^A-Za-z0-9]/.test(password)) {
+    // Special character check - make sure this regex matches the one in AuthForm.tsx
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       score += 1;
     } else {
       errors.push("Missing special character (!@#$%^&*(),.?\":{}|<>)");
@@ -161,6 +162,7 @@ export const SignupForm = ({
             />
           </div>
         </div>
+        
         <div className="space-y-2">
           <Label htmlFor="signup-password">Password</Label>
           <div className="relative">
@@ -204,11 +206,16 @@ export const SignupForm = ({
               </p>
               
               {passwordErrors.length > 0 && (
-                <ul className="text-xs mt-1 text-red-500 pl-4 list-disc">
-                  {passwordErrors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
+                <Alert variant="destructive" className="mt-2 py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <ul className="text-xs pl-4 list-disc">
+                      {passwordErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
               )}
               
               <p className="text-xs mt-2 text-gray-500">
@@ -217,9 +224,23 @@ export const SignupForm = ({
             </div>
           )}
         </div>
-        <Button type="submit" className="w-full" disabled={isLoading || passwordErrors.length > 0}>
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading || passwordErrors.length > 0}
+        >
           {isLoading ? "Creating account..." : "Create Account"}
         </Button>
+        
+        {formData.password && passwordErrors.length > 0 && (
+          <Alert className="mt-2 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-800" />
+            <AlertDescription className="text-amber-800">
+              You need to fix the password issues before you can create an account
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </form>
   );
