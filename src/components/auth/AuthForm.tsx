@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -93,34 +92,11 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         return;
       }
 
-      // Basic password validation
-      if (formData.password.length < 8) {
+      // Simplified password validation - only check length
+      if (formData.password.length < 6) {
         toast({
-          title: 'Weak password',
-          description: 'Password must be at least 8 characters long.',
-          variant: 'destructive',
-        });
-        setSignupLoading(false);
-        return;
-      }
-      
-      // Check for password complexity
-      const hasUppercase = /[A-Z]/.test(formData.password);
-      const hasLowercase = /[a-z]/.test(formData.password);
-      const hasNumber = /\d/.test(formData.password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-      
-      // Specific feedback for missing password requirements
-      const missingRequirements = [];
-      if (!hasUppercase) missingRequirements.push('uppercase letter');
-      if (!hasLowercase) missingRequirements.push('lowercase letter');
-      if (!hasNumber) missingRequirements.push('number');
-      if (!hasSpecial) missingRequirements.push('special character (!@#$%^&*(),.?":{}|<>)');
-      
-      if (missingRequirements.length > 0) {
-        toast({
-          title: 'Password requirements not met',
-          description: `Your password is missing: ${missingRequirements.join(', ')}`,
+          title: 'Password too short',
+          description: 'Password must be at least 6 characters long.',
           variant: 'destructive',
         });
         setSignupLoading(false);

@@ -42,48 +42,18 @@ export const SignupForm = ({
     let message = '';
     const errors: string[] = [];
 
-    // Length check
-    if (password.length >= 8) {
-      score += 1;
+    // Only check for minimum length (simplified validation)
+    if (password.length >= 6) {
+      score = 5; // Maximum score for meeting minimum length
     } else {
-      errors.push("Password must be at least 8 characters long");
-    }
-    
-    // Uppercase check
-    if (/[A-Z]/.test(password)) {
-      score += 1;
-    } else {
-      errors.push("Missing uppercase letter");
-    }
-    
-    // Lowercase check
-    if (/[a-z]/.test(password)) {
-      score += 1;
-    } else {
-      errors.push("Missing lowercase letter");
-    }
-    
-    // Number check
-    if (/[0-9]/.test(password)) {
-      score += 1;
-    } else {
-      errors.push("Missing number");
-    }
-    
-    // Special character check - make sure this regex matches the one in AuthForm.tsx
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      score += 1;
-    } else {
-      errors.push("Missing special character (!@#$%^&*(),.?\":{}|<>)");
+      errors.push("Password must be at least 6 characters long");
     }
 
     // Set message based on score
-    if (score <= 2) {
-      message = 'Weak password';
-    } else if (score <= 4) {
-      message = 'Medium strength';
+    if (score === 0) {
+      message = 'Too short';
     } else {
-      message = 'Strong password';
+      message = 'Password acceptable';
     }
 
     setPasswordStrength({ score, message });
@@ -102,8 +72,7 @@ export const SignupForm = ({
 
   // Get the color of the strength bar
   const getStrengthBarColor = () => {
-    if (passwordStrength.score <= 2) return 'bg-red-500';
-    if (passwordStrength.score <= 4) return 'bg-yellow-500';
+    if (passwordStrength.score === 0) return 'bg-red-500';
     return 'bg-green-500';
   };
 
@@ -170,7 +139,7 @@ export const SignupForm = ({
             <Input 
               id="signup-password" 
               name="password"
-              placeholder="••••••••" 
+              placeholder="••••••" 
               type={showPassword ? "text" : "password"} 
               autoComplete="new-password"
               required
@@ -198,9 +167,7 @@ export const SignupForm = ({
                 />
               </div>
               <p className={`text-xs mt-1 ${
-                passwordStrength.score <= 2 ? 'text-red-500' : 
-                passwordStrength.score <= 4 ? 'text-yellow-500' : 
-                'text-green-500'
+                passwordStrength.score === 0 ? 'text-red-500' : 'text-green-500'
               }`}>
                 {passwordStrength.message}
               </p>
@@ -219,7 +186,7 @@ export const SignupForm = ({
               )}
               
               <p className="text-xs mt-2 text-gray-500">
-                Password must contain at least 8 characters, including uppercase, lowercase, number and special character (!@#$%^&*(),.?":{}|&lt;&gt;)
+                Password must be at least 6 characters long
               </p>
             </div>
           )}
@@ -237,7 +204,7 @@ export const SignupForm = ({
           <Alert className="mt-2 bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-800" />
             <AlertDescription className="text-amber-800">
-              You need to fix the password issues before you can create an account
+              Please use a password that is at least 6 characters long
             </AlertDescription>
           </Alert>
         )}
