@@ -48,10 +48,10 @@ const StudentAuth = () => {
               <div>
                 <h3 className="font-medium text-amber-800 dark:text-amber-300">Signup Information</h3>
                 <p className="text-amber-700 dark:text-amber-400 mt-1">
-                  When registering, please use a strong password with at least 8 characters including numbers and special characters.
+                  When registering, please use a password with at least 6 characters.
                 </p>
                 <p className="text-amber-700 dark:text-amber-400 mt-2">
-                  If you're experiencing issues with signup, try using a different email address or contact support.
+                  Each email address can only be used for one account. If you've already registered, please use the login tab instead.
                 </p>
               </div>
             </div>
@@ -75,8 +75,7 @@ const StudentAuth = () => {
               <div>
                 <h3 className="font-medium">Trouble signing up?</h3>
                 <p className="text-sm mt-1 text-slate-600 dark:text-slate-300">
-                  Try using a password with at least 8 characters including numbers, uppercase, lowercase, and special characters. 
-                  If you continue to experience issues, please contact support at support@deckademics.com
+                  Try using a password with at least 6 characters. If you continue to experience issues, please contact support at support@deckademics.com
                 </p>
               </div>
             </div>
