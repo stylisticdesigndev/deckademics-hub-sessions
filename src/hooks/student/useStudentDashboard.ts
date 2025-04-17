@@ -56,6 +56,7 @@ export const useStudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [upcomingClasses, setUpcomingClasses] = useState<ClassSession[]>([]);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [studentData, setStudentData] = useState<StudentData>({
     name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
     level: 'Beginner',
@@ -128,6 +129,14 @@ export const useStudentDashboard = () => {
 
         if (progressError) throw progressError;
 
+        // Check if this is a first-time user (no classes, no progress data)
+        const isFirstLogin = 
+          (!classesData || classesData.length === 0) && 
+          (!progressData || progressData.length === 0) &&
+          (!announcementsData || announcementsData.length === 0);
+          
+        setIsFirstTimeUser(isFirstLogin);
+
         // Update student data
         if (studentInfo) {
           setStudentData(prev => ({
@@ -136,8 +145,8 @@ export const useStudentDashboard = () => {
           }));
         }
 
-        // Format announcements
-        if (announcementsData) {
+        // Format announcements (only if there are any)
+        if (announcementsData && announcementsData.length > 0) {
           const formattedAnnouncements: Announcement[] = announcementsData.map(ann => ({
             id: ann.id,
             title: ann.title,
@@ -152,10 +161,12 @@ export const useStudentDashboard = () => {
             type: 'announcement', // Default type
           }));
           setAnnouncements(formattedAnnouncements);
+        } else {
+          setAnnouncements([]);
         }
 
-        // Format upcoming classes
-        if (classesData) {
+        // Format upcoming classes (only if there are any)
+        if (classesData && classesData.length > 0) {
           const formattedClasses: ClassSession[] = classesData.map(cls => {
             const startTime = new Date(cls.start_time);
             const endTime = new Date(cls.end_time);
@@ -190,6 +201,8 @@ export const useStudentDashboard = () => {
               instructor: formattedClasses[0].instructor
             }));
           }
+        } else {
+          setUpcomingClasses([]);
         }
 
         // Calculate total progress if progress data exists
@@ -245,6 +258,7 @@ export const useStudentDashboard = () => {
     upcomingClasses,
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
-    isEmpty: announcements.length === 0 && upcomingClasses.length === 0
+    isEmpty: announcements.length === 0 && upcomingClasses.length === 0,
+    isFirstTimeUser
   };
 };

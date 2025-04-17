@@ -18,7 +18,8 @@ const StudentDashboard = () => {
     upcomingClasses,
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
-    isEmpty
+    isEmpty,
+    isFirstTimeUser
   } = useStudentDashboard();
 
   return (
@@ -34,7 +35,7 @@ const StudentDashboard = () => {
 
         {loading ? (
           <DashboardSkeleton />
-        ) : isEmpty ? (
+        ) : isEmpty || isFirstTimeUser ? (
           <EmptyDashboard />
         ) : (
           <>
