@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MessageSquare, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
+import { Link } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -28,61 +30,57 @@ interface Message {
 
 const StudentMessages = () => {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: {
-        name: 'DJ Rhythm',
-        role: 'Instructor',
-        initials: 'DR',
-      },
-      subject: 'Feedback on your last session',
-      content: 'Hi Alex, I was impressed by your progress in the last session! Your beat matching has improved significantly. For the next class, please focus on smoother transitions between tracks.',
-      date: '3 hours ago',
-      read: false,
-      requiresResponse: false,
-    },
-    {
-      id: '2',
-      sender: {
-        name: 'Admin',
-        role: 'Administration',
-        initials: 'AD',
-      },
-      subject: 'Equipment reservation confirmed',
-      content: 'Your request to reserve Studio A equipment for practice on Friday, April 10th from 4-6 PM has been approved. Please check in at the front desk 15 minutes before your session.',
-      date: '1 day ago',
-      read: false,
-      requiresResponse: true,
-    },
-    {
-      id: '3',
-      sender: {
-        name: 'DJ Scratch Master',
-        role: 'Instructor',
-        initials: 'SM',
-      },
-      subject: 'Advanced scratching workshop',
-      content: 'Based on your progress, I recommend you join the advanced scratching workshop next week. It will cover techniques that align perfectly with your current skill level.',
-      date: '3 days ago',
-      read: true,
-      requiresResponse: true,
-      responded: true,
-    },
-    {
-      id: '4',
-      sender: {
-        name: 'Tech Support',
-        role: 'Staff',
-        initials: 'TS',
-      },
-      subject: 'Software update available',
-      content: 'We\'ve updated the DJ software in all practice rooms. Please check out the new features during your next practice session. There are new effects that might interest you!',
-      date: '1 week ago',
-      read: true,
-      requiresResponse: false,
-    },
-  ]);
+  const { userData } = useAuth();
+  const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Only load mock data if not a first-time user
+  React.useEffect(() => {
+    if (!isFirstTimeUser) {
+      setMessages([
+        {
+          id: '1',
+          sender: {
+            name: 'DJ Rhythm',
+            role: 'Instructor',
+            initials: 'DR',
+          },
+          subject: 'Feedback on your last session',
+          content: 'Hi Alex, I was impressed by your progress in the last session! Your beat matching has improved significantly. For the next class, please focus on smoother transitions between tracks.',
+          date: '3 hours ago',
+          read: false,
+          requiresResponse: false,
+        },
+        {
+          id: '2',
+          sender: {
+            name: 'Admin',
+            role: 'Administration',
+            initials: 'AD',
+          },
+          subject: 'Equipment reservation confirmed',
+          content: 'Your request to reserve Studio A equipment for practice on Friday, April 10th from 4-6 PM has been approved. Please check in at the front desk 15 minutes before your session.',
+          date: '1 day ago',
+          read: false,
+          requiresResponse: true,
+        },
+        {
+          id: '3',
+          sender: {
+            name: 'DJ Scratch Master',
+            role: 'Instructor',
+            initials: 'SM',
+          },
+          subject: 'Advanced scratching workshop',
+          content: 'Based on your progress, I recommend you join the advanced scratching workshop next week. It will cover techniques that align perfectly with your current skill level.',
+          date: '3 days ago',
+          read: true,
+          requiresResponse: true,
+          responded: true,
+        },
+      ]);
+    }
+  }, [isFirstTimeUser]);
 
   const markAsRead = (id: string) => {
     setMessages(prevMessages =>
@@ -188,10 +186,23 @@ const StudentMessages = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium">No messages</h3>
-            <p className="text-muted-foreground mt-2">
-              You don't have any messages at the moment.
+            <h3 className="text-xl font-medium">No messages yet</h3>
+            <p className="text-muted-foreground mt-2 mb-6">
+              {isFirstTimeUser 
+                ? "Complete your profile to start connecting with instructors."
+                : "You don't have any messages at the moment."}
             </p>
+            
+            {isFirstTimeUser && (
+              <div className="flex gap-4 mt-2">
+                <Button asChild>
+                  <Link to="/student/profile">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Complete Your Profile
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
