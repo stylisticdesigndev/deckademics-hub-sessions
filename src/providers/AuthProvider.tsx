@@ -195,7 +195,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error details:", error);
+        throw error;
+      }
       
       console.log("Sign in successful:", data.user?.email);
       
@@ -245,7 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing up with email:", normalizedEmail, "role:", role);
       
-      // Add role and other metadata to user metadata for the trigger function
+      // Add emailRedirectTo to make sure redirects work properly
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -255,10 +258,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             first_name: metadata.first_name || metadata.firstName || '',
             last_name: metadata.last_name || metadata.lastName || '',
           },
+          emailRedirectTo: window.location.origin
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign up error details:", error);
+        throw error;
+      }
       
       console.log("Sign up response:", data);
       

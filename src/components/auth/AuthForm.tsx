@@ -114,7 +114,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             role: userType,
             first_name: formData.firstName,
             last_name: formData.lastName
-          }
+          },
+          emailRedirectTo: window.location.origin // Add redirect URL explicitly
         }
       });
       
@@ -123,7 +124,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         
         let errorMessage = error.message;
         if (error.message.includes("Database error")) {
-          errorMessage = "There was an issue creating your account. Please try again with a different email address.";
+          // This specific error indicates an issue with the database trigger or existing user
+          errorMessage = "There was an issue creating your account. The email may already be registered or there was a database error.";
         } else if (error.message.includes("User already registered")) {
           errorMessage = "This email is already registered. Please try logging in instead.";
         }
