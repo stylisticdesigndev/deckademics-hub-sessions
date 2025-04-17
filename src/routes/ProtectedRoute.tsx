@@ -3,6 +3,8 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { UserRole } from '@/providers/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -10,6 +12,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { userData, isLoading, session } = useAuth();
+  const [retryCount, setRetryCount] = useState(0);
   
   console.log("Protected route - Session:", !!session);
   console.log("Protected route - Is loading:", isLoading);
@@ -17,8 +20,30 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
   
+  // Handle recovery from missing profile
+  useEffect(() => {
+    if (session && !isLoading && !userData.profile && retryCount < 3) {
+      // If we have a session but no profile, there might be a sync issue
+      // Wait a moment and retry
+      const timer = setTimeout(() => {
+        console.log("No profile found, retrying...");
+        setRetryCount(prev => prev + 1);
+        
+        if (retryCount === 2) {
+          toast({
+            title: 'Profile issue detected',
+            description: 'Having trouble loading your profile. Please try signing out and back in.',
+            variant: 'destructive',
+          });
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [session, userData.profile, isLoading, retryCount]);
+  
   // Show loading state
-  if (isLoading) {
+  if (isLoading || (session && !userData.profile && retryCount < 3)) {
     return (
       <div className="flex h-screen items-center justify-center bg-deckademics-dark">
         <div className="w-full max-w-md space-y-4">

@@ -145,6 +145,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const createProfileIfMissing = async (userId: string) => {
+    try {
+      // Get user metadata from auth
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      
+      if (!authUser?.user) {
+        console.error("Unable to retrieve user metadata");
+        return null;
+      }
+      
+      const metadata = authUser.user.user_metadata;
+      
+      // Create profile record manually
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: authUser.user.email || '',
+          first_name: metadata.first_name || '',
+          last_name: metadata.last_name || '',
+          role: (metadata.role as UserRole) || 'student',
+        })
+        .select()
+        .single();
+        
+      if (insertError) {
+        console.error("Error creating profile:", insertError);
+        return null;
+      }
+      
+      // If user is a student, add to students table
+      if (metadata.role === 'student' || !metadata.role) {
+        await supabase
+          .from('students')
+          .insert({ id: userId });
+      }
+      
+      // If user is an instructor, add to instructors table
+      if (metadata.role === 'instructor') {
+        await supabase
+          .from('instructors')
+          .insert({ id: userId });
+      }
+      
+      console.log("Created missing profile:", newProfile);
+      return newProfile as Profile;
+    } catch (error) {
+      console.error("Failed to create missing profile:", error);
+      return null;
+    }
+  };
+
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for ID:", userId);
@@ -155,8 +207,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
+        if (error.code === 'PGRST116') {
+          console.warn("Profile not found for user, attempting to create it:", userId);
+          
+          // Try to create a profile based on auth metadata
+          const createdProfile = await createProfileIfMissing(userId);
+          
+          if (createdProfile) {
+            setUserData({
+              user: session?.user || null,
+              profile: createdProfile,
+              role: createdProfile.role as UserRole,
+            });
+            return createdProfile;
+          }
+        } else {
+          console.error("Error fetching profile:", error);
+          throw error;
+        }
       }
 
       if (profile) {
