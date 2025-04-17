@@ -145,27 +145,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const createProfileIfMissing = async (userId: string) => {
+  const createProfileIfMissing = async (userId: string, userMetadata?: any) => {
     try {
-      // Get user metadata from auth
-      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      // Use client-side authentication instead of admin methods
+      const { data: user } = await supabase.auth.getUser();
       
-      if (!authUser?.user) {
-        console.error("Unable to retrieve user metadata");
+      if (!user?.user) {
+        console.error("Unable to retrieve current user");
         return null;
       }
       
-      const metadata = authUser.user.user_metadata;
+      // Use the metadata passed from signIn/signUp or from the user object
+      const metadata = userMetadata || user.user.user_metadata;
       
-      // Create profile record manually
+      console.log("Creating profile with metadata:", metadata);
+      
+      // Create profile record
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: userId,
-          email: authUser.user.email || '',
-          first_name: metadata.first_name || '',
-          last_name: metadata.last_name || '',
-          role: (metadata.role as UserRole) || 'student',
+          email: user.user.email || '',
+          first_name: metadata?.first_name || '',
+          last_name: metadata?.last_name || '',
+          role: (metadata?.role as UserRole) || 'student',
         })
         .select()
         .single();
@@ -176,14 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // If user is a student, add to students table
-      if (metadata.role === 'student' || !metadata.role) {
+      if (metadata?.role === 'student' || !metadata?.role) {
         await supabase
           .from('students')
           .insert({ id: userId });
       }
       
       // If user is an instructor, add to instructors table
-      if (metadata.role === 'instructor') {
+      if (metadata?.role === 'instructor') {
         await supabase
           .from('instructors')
           .insert({ id: userId });
@@ -287,6 +290,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             navigate('/student/dashboard');
           }
+        } else {
+          // Create profile if it wasn't found
+          const createdProfile = await createProfileIfMissing(data.user.id, data.user.user_metadata);
+          
+          if (createdProfile) {
+            const role = createdProfile.role || 'student';
+            if (role === 'admin') {
+              navigate('/admin/dashboard');
+            } else if (role === 'instructor') {
+              navigate('/instructor/dashboard');
+            } else {
+              navigate('/student/dashboard');
+            }
+          } else {
+            // If profile creation failed, redirect to profile setup
+            navigate('/student/profile-setup');
+          }
         }
       }
       
@@ -343,6 +363,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Account created!',
         description: 'Your account has been created successfully.',
       });
+      
+      // Create profile immediately after signup
+      if (data.user) {
+        const createdProfile = await createProfileIfMissing(data.user.id, {
+          role,
+          first_name: metadata.first_name || metadata.firstName || '',
+          last_name: metadata.last_name || metadata.lastName || '',
+        });
+        
+        console.log("Profile created during signup:", createdProfile);
+      }
       
       // Redirect to profile setup
       if (data.session && data.user) {

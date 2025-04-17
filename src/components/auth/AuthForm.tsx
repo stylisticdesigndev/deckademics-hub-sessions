@@ -105,68 +105,28 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
-      const normalizedEmail = formData.email.trim().toLowerCase();
-      const redirectTo = window.location.origin + '/auth/' + userType;
-      
-      // Using direct Supabase signup with explicit redirect URL
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password: formData.password,
-        options: {
-          data: {
-            role: userType,
-            first_name: formData.firstName,
-            last_name: formData.lastName
-          },
-          emailRedirectTo: redirectTo
+      // Use the AuthProvider signUp method which handles profile creation
+      const { user, session } = await signUp(
+        formData.email,
+        formData.password,
+        userType,
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName
         }
-      });
+      );
       
-      if (error) {
-        console.error("Signup error details:", error);
-        
-        let errorMessage = error.message;
-        if (error.message.includes("Database error")) {
-          // Improved error message for database issues
-          errorMessage = "There was an issue creating your account. The email may already be registered or there was a database error.";
-        } else if (error.message.includes("User already registered")) {
-          errorMessage = "This email is already registered. Please try logging in instead.";
-        }
-        
-        setSignupError(errorMessage);
-        toast({
-          title: 'Registration failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
+      if (!user) {
+        setSignupError("Registration failed. Please try again.");
         setSignupLoading(false);
         return;
       }
       
-      console.log("Signup response:", data);
-      
-      if (data.user && data.session) {
-        toast({
-          title: 'Account created!',
-          description: 'Your account has been created successfully and you are now logged in.',
-        });
-        
-        // Redirect based on user type after a successful signup with session
-        if (userType === 'admin') {
-          window.location.href = '/admin/profile-setup';
-        } else if (userType === 'instructor') {
-          window.location.href = '/instructor/profile-setup';
-        } else {
-          window.location.href = '/student/profile-setup';
-        }
-      } else if (data.user) {
-        // Email confirmation might be required
+      if (user && !session) {
         toast({
           title: 'Account created!',
           description: 'Please check your email to verify your account before signing in.',
         });
-      } else {
-        setSignupError("Registration succeeded but user data is missing. Please try signing in.");
       }
       
     } catch (error: any) {
