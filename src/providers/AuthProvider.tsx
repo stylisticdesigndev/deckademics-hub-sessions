@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -100,19 +101,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         console.log("Auth state changed:", event, newSession?.user?.id);
         setSession(newSession);
         
         if (newSession?.user) {
-          try {
-            // Fetch user profile in a separate execution context to avoid auth deadlocks
-            setTimeout(async () => {
+          // Fetch user profile in a separate execution context to avoid auth deadlocks
+          setTimeout(async () => {
+            try {
               await fetchUserProfile(newSession.user.id);
-            }, 0);
-          } catch (error) {
-            console.error("Error in auth state change:", error);
-          }
+            } catch (error) {
+              console.error("Error fetching user profile in auth state change:", error);
+            }
+          }, 0);
         } else {
           setUserData({
             user: null,
@@ -125,13 +126,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      console.log("Checking for existing session:", currentSession?.user?.id);
       setSession(currentSession);
       
       if (currentSession?.user) {
         try {
           await fetchUserProfile(currentSession.user.id);
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("Error fetching user profile on init:", error);
         }
       }
       
@@ -145,23 +147,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log("Fetching user profile for ID:", userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
 
       if (profile) {
+        console.log("User profile fetched successfully:", profile);
         setUserData({
           user: session?.user || null,
           profile: profile as Profile,
           role: profile.role as UserRole,
         });
         
-        console.log("User profile fetched:", profile);
         return profile;
+      } else {
+        console.warn("No profile found for user:", userId);
+        return null;
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
@@ -170,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'Failed to fetch user profile',
         variant: 'destructive',
       });
+      return null;
     }
   };
 
@@ -250,18 +260,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
+      console.log("Sign up response:", data);
+      
       toast({
         title: 'Account created!',
         description: 'Your account has been created successfully.',
       });
       
       // Redirect to profile setup
-      if (role === 'admin') {
-        navigate('/admin/profile-setup');
-      } else if (role === 'instructor') {
-        navigate('/instructor/profile-setup');
-      } else {
-        navigate('/student/profile-setup');
+      if (data.session && data.user) {
+        if (role === 'admin') {
+          navigate('/admin/profile-setup');
+        } else if (role === 'instructor') {
+          navigate('/instructor/profile-setup');
+        } else {
+          navigate('/student/profile-setup');
+        }
+      } else if (data.user) {
+        // Email confirmation might be required
+        toast({
+          title: 'Verification required',
+          description: 'Please check your email to verify your account before signing in.',
+        });
       }
       
       return { user: data.user, session: data.session };

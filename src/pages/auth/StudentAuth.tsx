@@ -6,6 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, InfoIcon, HelpCircle, ShieldCheck } from 'lucide-react';
 
 const StudentAuth = () => {
+  console.log("Rendering StudentAuth page");
+  
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">

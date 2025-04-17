@@ -63,7 +63,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       await signIn(formData.email, formData.password);
     } catch (error) {
       console.error("Sign in error in form:", error);
-      // Error toast is already shown in the signIn function
     }
   };
 
@@ -106,75 +105,64 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
-      try {
-        // Try direct Supabase signup with improved error handling
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              role: userType,
-              first_name: formData.firstName,
-              last_name: formData.lastName
-            }
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: userType,
+            first_name: formData.firstName,
+            last_name: formData.lastName
           }
-        });
+        }
+      });
+      
+      if (error) {
+        console.error("Signup error details:", error);
         
-        if (error) {
-          console.error("Signup error details:", error);
-          
-          // More specific error messages based on error code
-          let errorMessage = error.message;
-          if (error.message.includes("Database error")) {
-            errorMessage = "There was an issue creating your account. Please try again with a different email address.";
-          } else if (error.message.includes("User already registered")) {
-            errorMessage = "This email is already registered. Please try logging in instead.";
-          }
-          
-          setSignupError(errorMessage);
-          toast({
-            title: 'Registration failed',
-            description: errorMessage,
-            variant: 'destructive',
-          });
-          return;
+        let errorMessage = error.message;
+        if (error.message.includes("Database error")) {
+          errorMessage = "There was an issue creating your account. Please try again with a different email address.";
+        } else if (error.message.includes("User already registered")) {
+          errorMessage = "This email is already registered. Please try logging in instead.";
         }
         
-        console.log("Signup response:", data);
-        
-        if (data.user && data.session) {
-          toast({
-            title: 'Account created!',
-            description: 'Your account has been created successfully and you are now logged in.',
-          });
-          
-          // Redirect based on user type after a successful signup with session
-          if (userType === 'admin') {
-            window.location.href = '/admin/profile-setup';
-          } else if (userType === 'instructor') {
-            window.location.href = '/instructor/profile-setup';
-          } else {
-            window.location.href = '/student/profile-setup';
-          }
-        } else if (data.user) {
-          // Email confirmation might be required
-          toast({
-            title: 'Account created!',
-            description: 'Please check your email to verify your account before signing in.',
-          });
-        } else {
-          // This shouldn't happen, but handle it just in case
-          setSignupError("Registration succeeded but user data is missing. Please try signing in.");
-        }
-      } catch (error: any) {
-        console.error("Inner signup error:", error);
-        setSignupError(error.message || 'An unexpected error occurred during signup');
+        setSignupError(errorMessage);
         toast({
           title: 'Registration failed',
-          description: error.message || 'An unexpected error occurred during signup',
+          description: errorMessage,
           variant: 'destructive',
         });
+        setSignupLoading(false);
+        return;
       }
+      
+      console.log("Signup response:", data);
+      
+      if (data.user && data.session) {
+        toast({
+          title: 'Account created!',
+          description: 'Your account has been created successfully and you are now logged in.',
+        });
+        
+        // Redirect based on user type after a successful signup with session
+        if (userType === 'admin') {
+          window.location.href = '/admin/profile-setup';
+        } else if (userType === 'instructor') {
+          window.location.href = '/instructor/profile-setup';
+        } else {
+          window.location.href = '/student/profile-setup';
+        }
+      } else if (data.user) {
+        // Email confirmation might be required
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to verify your account before signing in.',
+        });
+      } else {
+        setSignupError("Registration succeeded but user data is missing. Please try signing in.");
+      }
+      
     } catch (error: any) {
       console.error("Outer sign up error:", error);
       setSignupError(error.message || 'An unknown error occurred');
