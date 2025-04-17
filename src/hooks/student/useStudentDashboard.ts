@@ -82,7 +82,9 @@ export const useStudentDashboard = () => {
           .eq('id', userData.user.id)
           .single();
           
-        if (studentError) throw studentError;
+        if (studentError && studentError.code !== 'PGRST116') {
+          console.error("Error fetching student info:", studentError);
+        }
 
         // Fetch announcements
         const { data: announcementsData, error: announcementsError } = await supabase
@@ -98,7 +100,9 @@ export const useStudentDashboard = () => {
           .in('target_role', [['student']])
           .order('published_at', { ascending: false });
 
-        if (announcementsError) throw announcementsError;
+        if (announcementsError) {
+          console.error("Error fetching announcements:", announcementsError);
+        }
 
         // Fetch upcoming classes
         const now = new Date().toISOString();
@@ -119,7 +123,9 @@ export const useStudentDashboard = () => {
           .order('start_time', { ascending: true })
           .limit(3);
 
-        if (classesError) throw classesError;
+        if (classesError) {
+          console.error("Error fetching classes:", classesError);
+        }
 
         // Fetch progress data
         const { data: progressData, error: progressError } = await supabase
@@ -127,13 +133,14 @@ export const useStudentDashboard = () => {
           .select('skill_name, proficiency')
           .eq('student_id', userData.user.id);
 
-        if (progressError) throw progressError;
-
+        if (progressError) {
+          console.error("Error fetching progress:", progressError);
+        }
+        
         // Check if this is a first-time user (no classes, no progress data)
         const isFirstLogin = 
           (!classesData || classesData.length === 0) && 
-          (!progressData || progressData.length === 0) &&
-          (!announcementsData || announcementsData.length === 0);
+          (!progressData || progressData.length === 0);
           
         setIsFirstTimeUser(isFirstLogin);
 
@@ -145,7 +152,7 @@ export const useStudentDashboard = () => {
           }));
         }
 
-        // Format announcements (only if there are any)
+        // Format announcements (if there are any)
         if (announcementsData && announcementsData.length > 0) {
           const formattedAnnouncements: Announcement[] = announcementsData.map(ann => ({
             id: ann.id,
@@ -157,15 +164,15 @@ export const useStudentDashboard = () => {
               initials: ann.profiles ? 
                 `${(ann.profiles.first_name || ' ')[0]}${(ann.profiles.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
             },
-            isNew: true, // Mark as new initially
-            type: 'announcement', // Default type
+            isNew: true,
+            type: 'announcement',
           }));
           setAnnouncements(formattedAnnouncements);
         } else {
           setAnnouncements([]);
         }
 
-        // Format upcoming classes (only if there are any)
+        // Format upcoming classes (if there are any)
         if (classesData && classesData.length > 0) {
           const formattedClasses: ClassSession[] = classesData.map(cls => {
             const startTime = new Date(cls.start_time);
@@ -186,7 +193,7 @@ export const useStudentDashboard = () => {
               time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               duration: `${durationHours}h ${durationMinutes}m`,
               location: cls.location || 'Main Studio',
-              attendees: 0, // This would need another query to count enrollments
+              attendees: 0,
               isUpcoming: true,
             };
           });
@@ -218,18 +225,13 @@ export const useStudentDashboard = () => {
 
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load dashboard data. Please try again.',
-          variant: 'destructive',
-        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [userData.user?.id, toast, userData.profile]);
+  }, [userData.user?.id, userData.profile]);
 
   const handleAcknowledgeAnnouncement = (id: string) => {
     setAnnouncements(prevAnnouncements => 

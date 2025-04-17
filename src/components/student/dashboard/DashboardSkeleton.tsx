@@ -1,15 +1,40 @@
 
 import React from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 export const DashboardSkeleton = () => {
   return (
-    <div className="flex justify-center py-8">
-      <div className="animate-pulse space-y-2 flex flex-col items-center">
-        <div className="h-4 w-32 bg-gray-200 rounded"></div>
-        <div className="h-4 w-24 bg-gray-200 rounded"></div>
-        <p className="text-sm text-muted-foreground mt-2">Loading dashboard data...</p>
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <Skeleton className="h-24 w-full rounded-md" />
+          <Skeleton className="h-24 w-full rounded-md" />
+        </div>
+        
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3 rounded-md" />
+            <Skeleton className="h-36 w-full rounded-md" />
+            
+            <Skeleton className="h-8 w-1/3 rounded-md" />
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              <Skeleton className="h-32 w-full rounded-md" />
+              <Skeleton className="h-32 w-full rounded-md" />
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3 rounded-md" />
+            <Skeleton className="h-32 w-full rounded-md" />
+            <Skeleton className="h-32 w-full rounded-md" />
+          </div>
+        </div>
       </div>
+      
+      <Card className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Loading dashboard data... This may take a moment.</p>
+      </Card>
     </div>
   );
 };

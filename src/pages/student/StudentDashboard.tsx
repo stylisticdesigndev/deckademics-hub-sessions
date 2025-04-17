@@ -22,6 +22,9 @@ const StudentDashboard = () => {
     isFirstTimeUser
   } = useStudentDashboard();
 
+  // Determine what to show - always prioritize the empty state for new users
+  const showEmptyState = isEmpty || isFirstTimeUser;
+
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
@@ -35,7 +38,7 @@ const StudentDashboard = () => {
 
         {loading ? (
           <DashboardSkeleton />
-        ) : isEmpty || isFirstTimeUser ? (
+        ) : showEmptyState ? (
           <EmptyDashboard />
         ) : (
           <>
