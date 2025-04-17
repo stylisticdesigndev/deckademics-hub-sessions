@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,7 +61,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     
     try {
       await signIn(formData.email, formData.password);
-      // The redirect is handled in the AuthProvider now
+      // The redirect is handled in the AuthProvider/ProtectedRoute now
     } catch (error) {
       console.error("Sign in error in form:", error);
     }

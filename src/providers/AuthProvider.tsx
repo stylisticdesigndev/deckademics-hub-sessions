@@ -103,6 +103,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log("Auth state changed:", event, newSession?.user?.id);
+        
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUserData({
+            user: null,
+            profile: null,
+            role: null
+          });
+          return;
+        }
+        
         setSession(newSession);
         
         if (newSession?.user) {
@@ -128,18 +139,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         console.log("Checking for existing session:", currentSession?.user?.id);
-        setSession(currentSession);
         
         if (currentSession?.user) {
+          setSession(currentSession);
           try {
             const profile = await fetchUserProfile(currentSession.user.id);
             
-            // If we got back from fetchUserProfile and still don't have a profile,
-            // try to create one as a fallback
             if (!profile) {
-              await createProfileIfMissing(currentSession.user.id);
-              // Re-fetch profile after attempted creation
-              await fetchUserProfile(currentSession.user.id);
+              console.log("No profile found during initialization, will be handled by auth state change");
             }
           } catch (error) {
             console.error("Error fetching user profile on init:", error);
@@ -160,90 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const createProfileIfMissing = async (userId: string, userMetadata?: any) => {
-    try {
-      console.log("Attempting to create missing profile for user:", userId);
-      
-      // Use client-side authentication
-      const { data: userData } = await supabase.auth.getUser();
-      
-      if (!userData?.user) {
-        console.error("Unable to retrieve current user");
-        return null;
-      }
-      
-      // Use the metadata passed from signIn/signUp or from the user object
-      const metadata = userMetadata || userData.user.user_metadata;
-      const role = (metadata?.role as UserRole) || 'student';
-      
-      console.log("Creating profile with metadata:", metadata, "role:", role);
-      
-      // First check if profile already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (existingProfile) {
-        console.log("Profile already exists:", existingProfile);
-        return existingProfile as Profile;
-      }
-      
-      // Create profile record
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: userData.user.email || '',
-          first_name: metadata?.first_name || '',
-          last_name: metadata?.last_name || '',
-          role: role,
-        })
-        .select()
-        .single();
-        
-      if (insertError) {
-        console.error("Error creating profile:", insertError);
-        return null;
-      }
-      
-      // If user is a student, add to students table
-      if (role === 'student' || !role) {
-        await supabase
-          .from('students')
-          .insert({ id: userId });
-          
-        console.log("Added user to students table");
-      }
-      
-      // If user is an instructor, add to instructors table
-      if (role === 'instructor') {
-        await supabase
-          .from('instructors')
-          .insert({ id: userId });
-          
-        console.log("Added user to instructors table");
-      }
-      
-      console.log("Created missing profile:", newProfile);
-      
-      // Update userData state with the new profile
-      if (newProfile) {
-        setUserData({
-          user: userData.user,
-          profile: newProfile as Profile,
-          role: (newProfile as Profile).role,
-        });
-      }
-      
-      return newProfile as Profile;
-    } catch (error) {
-      console.error("Failed to create missing profile:", error);
-      return null;
-    }
-  };
-
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for ID:", userId);
@@ -254,20 +177,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.warn("Profile not found for user, attempting to create it:", userId);
-          
-          // Try to create a profile based on auth metadata
-          const createdProfile = await createProfileIfMissing(userId);
-          
-          if (createdProfile) {
-            setUserData({
-              user: session?.user || null,
-              profile: createdProfile,
-              role: createdProfile.role,
-            });
-            return createdProfile;
-          }
+        if (error.code === 'PGRST116') { // No data found
+          console.warn("Profile not found for user:", userId);
+          return null;
         } else {
           console.error("Error fetching profile:", error);
           throw error;
@@ -322,30 +234,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'You have successfully logged in.',
       });
       
-      // Immediately fetch the user profile
-      if (data.user) {
-        try {
-          const profile = await fetchUserProfile(data.user.id);
-          
-          if (!profile) {
-            console.log("No profile found after login, creating one");
-            const createdProfile = await createProfileIfMissing(data.user.id);
-            
-            if (createdProfile) {
-              // Navigate based on the created profile's role
-              redirectBasedOnRole(createdProfile.role);
-            } else {
-              // If profile creation failed, redirect to profile setup
-              navigate('/student/profile-setup');
-            }
-          } else {
-            // Navigate based on the fetched profile's role
-            redirectBasedOnRole(profile.role);
-          }
-        } catch (error) {
-          console.error("Error handling profile after login:", error);
-        }
-      }
+      // Don't redirect here - let the auth state change handle it
+      // The redirect will happen in ProtectedRoute
       
       return { user: data.user, session: data.session };
     } catch (error: any) {
@@ -414,21 +304,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'Your account has been created successfully.',
       });
       
-      // Create profile immediately after signup
-      if (data.user) {
-        const profileData = {
-          role,
-          first_name: metadata.first_name || metadata.firstName || '',
-          last_name: metadata.last_name || metadata.lastName || '',
-        };
-        
-        const createdProfile = await createProfileIfMissing(data.user.id, profileData);
-        console.log("Profile created during signup:", createdProfile);
-        
-        // If we have a session, redirect to the appropriate dashboard
-        if (data.session) {
+      // Don't create profile here - let the database trigger handle it
+      
+      // If we have a session, redirect to the appropriate dashboard
+      if (data.session) {
+        // Still need some delay here as the trigger needs time to create the profile
+        setTimeout(() => {
           redirectBasedOnRole(role);
-        }
+        }, 500);
       }
       
       return { user: data.user, session: data.session };
@@ -449,12 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut();
       
-      setSession(null);
-      setUserData({
-        user: null,
-        profile: null,
-        role: null,
-      });
+      // No need to set these manually anymore, auth state change will handle it
       
       navigate('/');
       toast({
