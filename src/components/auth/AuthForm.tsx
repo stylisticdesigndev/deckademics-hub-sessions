@@ -105,6 +105,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
+      // Using direct Supabase signup instead of the Auth provider to get direct access to the response
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
