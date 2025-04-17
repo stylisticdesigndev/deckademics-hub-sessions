@@ -170,33 +170,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for ID:", userId);
-      const { data: profile, error } = await supabase
+      
+      // Fix: Don't use single() or specify the accept header
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', userId);
       
       if (error) {
-        if (error.code === 'PGRST116') { // No data found
-          console.warn("Profile not found for user:", userId);
-          return null;
-        } else {
-          console.error("Error fetching profile:", error);
-          throw error;
-        }
+        console.error("Error fetching profile:", error);
+        throw error;
       }
 
-      if (profile) {
+      // Check if we got any profile data
+      if (data && data.length > 0) {
+        const profile = data[0] as Profile;
         console.log("User profile fetched successfully:", profile);
+        
         setUserData({
           user: session?.user || null,
-          profile: profile as Profile,
+          profile: profile,
           role: profile.role as UserRole,
         });
         
-        return profile as Profile;
+        return profile;
       } else {
         console.warn("No profile found for user:", userId);
+        
+        // If we have user metadata with role, try to create a profile
+        if (session?.user?.user_metadata?.role) {
+          try {
+            return await createProfileFromMetadata(userId);
+          } catch (createError) {
+            console.error("Failed to create profile from metadata:", createError);
+          }
+        }
+        
         return null;
       }
     } catch (error) {
@@ -207,6 +216,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         variant: 'destructive',
       });
       return null;
+    }
+  };
+
+  // Create a profile from user metadata if it doesn't exist
+  const createProfileFromMetadata = async (userId: string) => {
+    if (!session?.user) return null;
+    
+    try {
+      const { user_metadata } = session.user;
+      
+      // Extract data from user metadata
+      const role = (user_metadata.role || 'student') as UserRole;
+      const firstName = user_metadata.first_name || user_metadata.firstName || '';
+      const lastName = user_metadata.last_name || user_metadata.lastName || '';
+      const email = session.user.email || '';
+      
+      console.log("Creating profile from metadata:", { role, firstName, lastName, email });
+      
+      // Create new profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            role: role,
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error creating profile:", error);
+        throw error;
+      }
+      
+      console.log("Profile created successfully:", profile);
+      
+      // Update userData state
+      setUserData({
+        user: session.user,
+        profile: profile as Profile,
+        role: profile.role as UserRole,
+      });
+      
+      return profile as Profile;
+    } catch (error) {
+      console.error("Failed to create profile from metadata:", error);
+      throw error;
     }
   };
 
@@ -331,8 +391,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      
-      // No need to set these manually anymore, auth state change will handle it
       
       navigate('/');
       toast({

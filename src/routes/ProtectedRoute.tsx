@@ -5,7 +5,6 @@ import { UserRole } from '@/providers/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -23,76 +22,47 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
 
-  // Check if we have a session but no profile yet
+  // Simply wait for loading to complete
   useEffect(() => {
-    if (!isLoading && session && !userData.profile) {
-      // If we have a session but no profile, check if it exists in database
-      const checkForProfile = async () => {
-        try {
-          // Try to get the profile directly from database
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error("Error checking for profile:", error);
-            return;
-          }
-          
-          if (data) {
-            console.log("Found profile after retry:", data);
-            // If we found a profile, reload the page to refresh auth state
-            window.location.reload();
-            return;
-          }
-          
-          // If no profile found, wait and increment timer
-          if (waitTime < 5000) {
-            setTimeout(() => {
-              setWaitTime(prev => prev + 1000);
-            }, 1000);
-          } else {
-            // After 5 seconds of waiting, show message and stop waiting
-            setIsWaitingForProfile(false);
-            toast({
-              title: 'Profile issue detected',
-              description: 'Having trouble loading your profile. Please try signing out and back in.',
-              variant: 'destructive',
-            });
-          }
-        } catch (err) {
-          console.error("Error in checkForProfile:", err);
-          setIsWaitingForProfile(false);
-        }
-      };
-      
-      checkForProfile();
-    } else if (!isLoading) {
-      // If loading is done and we have profile data or no session, stop waiting
+    if (!isLoading) {
+      // Once loading is done, we can stop waiting
       setIsWaitingForProfile(false);
     }
-  }, [isLoading, session, userData.profile, waitTime]);
+  }, [isLoading]);
   
   // Handle profile-based routing decisions
   useEffect(() => {
-    // Only run this effect when we have session and profile
-    if (session && userData.profile && userData.role) {
-      // Redirect to appropriate dashboard based on role if not allowed here
-      if (!allowedRoles.includes(userData.role)) {
-        console.log("Access denied - redirecting to appropriate dashboard");
-        
-        if (userData.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (userData.role === 'instructor') {
-          navigate('/instructor/dashboard');
-        } else if (userData.role === 'student') {
-          navigate('/student/dashboard');
+    // Only run this effect when we have session and profile data is loaded
+    if (!isLoading && session) {
+      if (userData.profile && userData.role) {
+        // If user has a profile and a role, check if they're allowed on this route
+        if (!allowedRoles.includes(userData.role)) {
+          console.log("Access denied - redirecting to appropriate dashboard");
+          
+          if (userData.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (userData.role === 'instructor') {
+            navigate('/instructor/dashboard');
+          } else if (userData.role === 'student') {
+            navigate('/student/dashboard');
+          }
         }
+      } else if (waitTime >= 3000) {
+        // After waiting and still no profile, show error and redirect to auth
+        toast({
+          title: 'Profile issue detected',
+          description: 'Having trouble loading your profile. Please try signing out and back in.',
+          variant: 'destructive',
+        });
+        signOut();
+      } else if (userData.user && !userData.profile) {
+        // If we have a user but no profile, increment wait timer
+        setTimeout(() => {
+          setWaitTime(prev => prev + 1000);
+        }, 1000);
       }
     }
-  }, [session, userData.profile, userData.role, allowedRoles, navigate]);
+  }, [isLoading, session, userData, allowedRoles, navigate, waitTime, signOut]);
   
   // Show loading state
   if (isLoading || (session && !userData.profile && isWaitingForProfile)) {
@@ -133,7 +103,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       return <Navigate to="/student/dashboard" replace />;
     } else {
       // If still no role after retries, sign the user out
-      if (waitTime >= 5000) {
+      if (waitTime >= 3000) {
         signOut();
       }
       // Fallback to login if role is missing
