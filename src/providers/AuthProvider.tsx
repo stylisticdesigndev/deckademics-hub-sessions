@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -143,11 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession?.user) {
           setSession(currentSession);
           try {
-            const profile = await fetchUserProfile(currentSession.user.id);
-            
-            if (!profile) {
-              console.log("No profile found during initialization, will be handled by auth state change");
-            }
+            await fetchUserProfile(currentSession.user.id);
           } catch (error) {
             console.error("Error fetching user profile on init:", error);
           }
@@ -171,12 +166,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Don't use single() as it can cause errors if no profile is found
-      // Also, ensure we're using proper filter parameter format
+      // Fix the query format to correctly fetch the profile by ID
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId);
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle instead of single to handle missing profiles
       
       if (error) {
         console.error("Error fetching profile:", error);
@@ -184,8 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check if we got any profile data
-      if (data && data.length > 0) {
-        const profile = data[0] as Profile;
+      if (data) {
+        const profile = data as Profile;
         console.log("User profile fetched successfully:", profile);
         
         setUserData({
@@ -198,8 +193,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.warn("No profile found for user:", userId);
         
-        // If we have user metadata with role, try to create a profile
-        if (session?.user?.user_metadata?.role) {
+        // If no profile exists but we have user metadata, try to create one
+        if (session?.user?.user_metadata) {
           try {
             return await createProfileFromMetadata(userId);
           } catch (createError) {
@@ -232,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { user_metadata } = session.user;
       
-      // Extract data from user metadata
+      // Extract data from user metadata with safer fallbacks
       const role = (user_metadata.role || 'student') as UserRole;
       const firstName = user_metadata.first_name || user_metadata.firstName || '';
       const lastName = user_metadata.last_name || user_metadata.lastName || '';
@@ -240,8 +235,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Creating profile from metadata:", { role, firstName, lastName, email });
       
-      // Create new profile
-      const { data: profile, error } = await supabase
+      // Create new profile with proper error handling
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Session error:", error);
+        throw error;
+      }
+      
+      // Perform authenticated profile insertion
+      const { data: profile, error: insertError } = await supabase
         .from('profiles')
         .insert([
           {
@@ -249,31 +252,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             first_name: firstName,
             last_name: lastName,
             email: email,
-            role: role,
+            role: role
           }
         ])
-        .select();
+        .select()
+        .single();
       
-      if (error) {
-        console.error("Error creating profile:", error);
-        throw error;
+      if (insertError) {
+        console.error("Error creating profile:", insertError);
+        throw insertError;
       }
       
-      // Since we used .select() after .insert(), we should get back the inserted row
-      if (profile && profile.length > 0) {
-        console.log("Profile created successfully:", profile[0]);
-        
-        // Update userData state
-        setUserData({
-          user: session.user,
-          profile: profile[0] as Profile,
-          role: profile[0].role as UserRole,
-        });
-        
-        return profile[0] as Profile;
-      } else {
-        throw new Error("No profile returned after creation");
-      }
+      console.log("Profile created successfully:", profile);
+      
+      // Update userData state
+      setUserData({
+        user: session.user,
+        profile: profile as Profile,
+        role: profile.role as UserRole,
+      });
+      
+      return profile as Profile;
     } catch (error) {
       console.error("Failed to create profile from metadata:", error);
       throw error;

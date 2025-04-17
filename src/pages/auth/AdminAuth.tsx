@@ -3,7 +3,7 @@ import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { AuthProvider } from '@/providers/AuthProvider';
 
 const AdminAuth = () => {

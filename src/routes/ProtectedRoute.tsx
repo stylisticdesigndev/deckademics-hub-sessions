@@ -25,13 +25,17 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   // Simply wait for loading to complete
   useEffect(() => {
     if (!isLoading) {
-      // Once loading is done, we can stop waiting
-      setIsWaitingForProfile(false);
+      // Set a small additional delay to ensure profile has time to load
+      setTimeout(() => {
+        setIsWaitingForProfile(false);
+      }, 500);
     }
   }, [isLoading]);
   
   // Handle profile-based routing decisions
   useEffect(() => {
+    let waitInterval: number | undefined;
+    
     // Only run this effect when we have session and profile data is loaded
     if (!isLoading && session) {
       if (userData.profile && userData.role) {
@@ -47,7 +51,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
             navigate('/student/dashboard');
           }
         }
-      } else if (waitTime >= 3000) {
+      } else if (waitTime >= 5000) {
         // After waiting and still no profile, show error and redirect to auth
         toast({
           title: 'Profile issue detected',
@@ -56,12 +60,20 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         });
         signOut();
       } else if (userData.user && !userData.profile) {
-        // If we have a user but no profile, increment wait timer
-        setTimeout(() => {
-          setWaitTime(prev => prev + 1000);
-        }, 1000);
+        // If we have a user but no profile, start interval timer
+        if (!waitInterval) {
+          waitInterval = window.setInterval(() => {
+            setWaitTime(prev => prev + 500);
+          }, 500);
+        }
       }
     }
+    
+    return () => {
+      if (waitInterval) {
+        clearInterval(waitInterval);
+      }
+    };
   }, [isLoading, session, userData, allowedRoles, navigate, waitTime, signOut]);
   
   // Show loading state
@@ -103,7 +115,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       return <Navigate to="/student/dashboard" replace />;
     } else {
       // If still no role after retries, sign the user out
-      if (waitTime >= 3000) {
+      if (waitTime >= 5000) {
         signOut();
       }
       // Fallback to login if role is missing

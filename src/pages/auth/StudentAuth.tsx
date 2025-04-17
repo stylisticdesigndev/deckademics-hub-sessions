@@ -43,7 +43,6 @@ const StudentAuth = () => {
             </AlertDescription>
           </Alert>
           
-          {/* The AuthForm must be used inside an AuthProvider */}
           <AuthProvider>
             <AuthForm userType="student" disableSignup={false} />
           </AuthProvider>

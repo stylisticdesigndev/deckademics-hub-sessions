@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/providers/AuthProvider';
@@ -10,6 +10,8 @@ import { SocialAuthButton } from './SocialAuthButton';
 import { AuthFormDivider } from './AuthFormDivider';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AuthFormProps {
   userType: UserRole;
@@ -27,9 +29,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   const [debugMode, setDebugMode] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // For testing - pre-fill credentials if on admin login
-  React.useEffect(() => {
+  useEffect(() => {
     if (userType === 'admin') {
       setFormData(prev => ({
         ...prev,
@@ -44,10 +47,12 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     setFormData(prev => ({ ...prev, [name]: value }));
     // Clear error when user types
     if (signupError) setSignupError(null);
+    if (loginError) setLoginError(null);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     console.log("Attempting sign in with:", formData.email, "for user type:", userType);
     
     if (!formData.email || !formData.password) {
@@ -56,14 +61,24 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         description: 'Please provide your email and password.',
         variant: 'destructive',
       });
+      setLoginError('Please provide your email and password.');
       return;
     }
     
     try {
-      await signIn(formData.email, formData.password);
+      const result = await signIn(formData.email, formData.password);
+      if (!result.user) {
+        setLoginError('Invalid email or password. Please try again.');
+      }
       // The redirect is handled in the AuthProvider/ProtectedRoute now
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error in form:", error);
+      setLoginError(error.message || 'Authentication failed. Please try again.');
+      toast({
+        title: 'Login failed',
+        description: error.message || 'Authentication failed. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -79,6 +94,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           description: 'Please provide your first and last name.',
           variant: 'destructive',
         });
+        setSignupError('Please provide your first and last name.');
         setSignupLoading(false);
         return;
       }
@@ -89,6 +105,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           description: 'Please provide your email and password.',
           variant: 'destructive',
         });
+        setSignupError('Please provide your email and password.');
         setSignupLoading(false);
         return;
       }
@@ -100,6 +117,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           description: 'Password must be at least 6 characters long.',
           variant: 'destructive',
         });
+        setSignupError('Password must be at least 6 characters long.');
         setSignupLoading(false);
         return;
       }
@@ -210,6 +228,16 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
               handleChange={handleChange}
               handleSubmit={handleSignIn}
             />
+            
+            {loginError && (
+              <Alert className="mt-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {loginError}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {userType === 'admin' && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
                 <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
