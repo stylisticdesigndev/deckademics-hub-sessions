@@ -11,8 +11,9 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { userData, isLoading, session } = useAuth();
+  const { userData, isLoading, session, signOut } = useAuth();
   const [retryCount, setRetryCount] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   console.log("Protected route - Session:", !!session);
   console.log("Protected route - Is loading:", isLoading);
@@ -40,7 +41,12 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       
       return () => clearTimeout(timer);
     }
-  }, [session, userData.profile, isLoading, retryCount]);
+    
+    // Mark initial load as complete after we've finished loading
+    if (!isLoading && isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [session, userData.profile, isLoading, retryCount, isInitialLoad]);
   
   // Show loading state
   if (isLoading || (session && !userData.profile && retryCount < 3)) {
@@ -80,6 +86,10 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     } else if (userData.role === 'student') {
       return <Navigate to="/student/dashboard" replace />;
     } else {
+      // If still no role after retries, sign the user out
+      if (retryCount >= 3) {
+        signOut();
+      }
       // Fallback to login if role is missing
       return <Navigate to="/auth/student" replace />;
     }

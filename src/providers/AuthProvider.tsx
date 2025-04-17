@@ -101,18 +101,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
+      async (event, newSession) => {
         console.log("Auth state changed:", event, newSession?.user?.id);
         setSession(newSession);
         
         if (newSession?.user) {
-          // Fetch user profile in a separate execution context to avoid auth deadlocks
-          setTimeout(async () => {
-            try {
-              await fetchUserProfile(newSession.user.id);
-            } catch (error) {
-              console.error("Error fetching user profile in auth state change:", error);
-            }
+          // Use setTimeout to avoid auth deadlocks
+          setTimeout(() => {
+            fetchUserProfile(newSession.user.id)
+              .catch(error => {
+                console.error("Error fetching user profile in auth state change:", error);
+              });
           }, 0);
         } else {
           setUserData({
@@ -125,20 +124,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      console.log("Checking for existing session:", currentSession?.user?.id);
-      setSession(currentSession);
-      
-      if (currentSession?.user) {
-        try {
-          await fetchUserProfile(currentSession.user.id);
-        } catch (error) {
-          console.error("Error fetching user profile on init:", error);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Checking for existing session:", currentSession?.user?.id);
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          try {
+            const profile = await fetchUserProfile(currentSession.user.id);
+            
+            // If we got back from fetchUserProfile and still don't have a profile,
+            // try to create one as a fallback
+            if (!profile) {
+              await createProfileIfMissing(currentSession.user.id);
+              // Re-fetch profile after attempted creation
+              await fetchUserProfile(currentSession.user.id);
+            }
+          } catch (error) {
+            console.error("Error fetching user profile on init:", error);
+          }
         }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
+    
+    initializeAuth();
 
     return () => {
       subscription?.unsubscribe();
@@ -147,28 +162,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createProfileIfMissing = async (userId: string, userMetadata?: any) => {
     try {
-      // Use client-side authentication instead of admin methods
-      const { data: user } = await supabase.auth.getUser();
+      console.log("Attempting to create missing profile for user:", userId);
       
-      if (!user?.user) {
+      // Use client-side authentication
+      const { data: userData } = await supabase.auth.getUser();
+      
+      if (!userData?.user) {
         console.error("Unable to retrieve current user");
         return null;
       }
       
       // Use the metadata passed from signIn/signUp or from the user object
-      const metadata = userMetadata || user.user.user_metadata;
+      const metadata = userMetadata || userData.user.user_metadata;
+      const role = (metadata?.role as UserRole) || 'student';
       
-      console.log("Creating profile with metadata:", metadata);
+      console.log("Creating profile with metadata:", metadata, "role:", role);
+      
+      // First check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (existingProfile) {
+        console.log("Profile already exists:", existingProfile);
+        return existingProfile as Profile;
+      }
       
       // Create profile record
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: userId,
-          email: user.user.email || '',
+          email: userData.user.email || '',
           first_name: metadata?.first_name || '',
           last_name: metadata?.last_name || '',
-          role: (metadata?.role as UserRole) || 'student',
+          role: role,
         })
         .select()
         .single();
@@ -179,20 +209,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // If user is a student, add to students table
-      if (metadata?.role === 'student' || !metadata?.role) {
+      if (role === 'student' || !role) {
         await supabase
           .from('students')
           .insert({ id: userId });
+          
+        console.log("Added user to students table");
       }
       
       // If user is an instructor, add to instructors table
-      if (metadata?.role === 'instructor') {
+      if (role === 'instructor') {
         await supabase
           .from('instructors')
           .insert({ id: userId });
+          
+        console.log("Added user to instructors table");
       }
       
       console.log("Created missing profile:", newProfile);
+      
+      // Update userData state with the new profile
+      if (newProfile) {
+        setUserData({
+          user: userData.user,
+          profile: newProfile as Profile,
+          role: (newProfile as Profile).role,
+        });
+      }
+      
       return newProfile as Profile;
     } catch (error) {
       console.error("Failed to create missing profile:", error);
@@ -220,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserData({
               user: session?.user || null,
               profile: createdProfile,
-              role: createdProfile.role as UserRole,
+              role: createdProfile.role,
             });
             return createdProfile;
           }
@@ -238,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: profile.role as UserRole,
         });
         
-        return profile;
+        return profile as Profile;
       } else {
         console.warn("No profile found for user:", userId);
         return null;
@@ -278,35 +322,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'You have successfully logged in.',
       });
       
-      // Route user based on role after profile is loaded
-      if (data.session && data.user) {
-        const profile = await fetchUserProfile(data.user.id);
-        
-        if (profile) {
-          if (profile.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else if (profile.role === 'instructor') {
-            navigate('/instructor/dashboard');
-          } else {
-            navigate('/student/dashboard');
-          }
-        } else {
-          // Create profile if it wasn't found
-          const createdProfile = await createProfileIfMissing(data.user.id, data.user.user_metadata);
+      // Immediately fetch the user profile
+      if (data.user) {
+        try {
+          const profile = await fetchUserProfile(data.user.id);
           
-          if (createdProfile) {
-            const role = createdProfile.role || 'student';
-            if (role === 'admin') {
-              navigate('/admin/dashboard');
-            } else if (role === 'instructor') {
-              navigate('/instructor/dashboard');
+          if (!profile) {
+            console.log("No profile found after login, creating one");
+            const createdProfile = await createProfileIfMissing(data.user.id);
+            
+            if (createdProfile) {
+              // Navigate based on the created profile's role
+              redirectBasedOnRole(createdProfile.role);
             } else {
-              navigate('/student/dashboard');
+              // If profile creation failed, redirect to profile setup
+              navigate('/student/profile-setup');
             }
           } else {
-            // If profile creation failed, redirect to profile setup
-            navigate('/student/profile-setup');
+            // Navigate based on the fetched profile's role
+            redirectBasedOnRole(profile.role);
           }
+        } catch (error) {
+          console.error("Error handling profile after login:", error);
         }
       }
       
@@ -321,6 +358,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { user: null, session: null };
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Helper function to redirect based on role
+  const redirectBasedOnRole = (role: UserRole) => {
+    console.log("Redirecting based on role:", role);
+    
+    if (role === 'admin') {
+      navigate('/admin/dashboard');
+    } else if (role === 'instructor') {
+      navigate('/instructor/dashboard');
+    } else {
+      navigate('/student/dashboard');
     }
   };
 
@@ -366,30 +416,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Create profile immediately after signup
       if (data.user) {
-        const createdProfile = await createProfileIfMissing(data.user.id, {
+        const profileData = {
           role,
           first_name: metadata.first_name || metadata.firstName || '',
           last_name: metadata.last_name || metadata.lastName || '',
-        });
+        };
         
+        const createdProfile = await createProfileIfMissing(data.user.id, profileData);
         console.log("Profile created during signup:", createdProfile);
-      }
-      
-      // Redirect to profile setup
-      if (data.session && data.user) {
-        if (role === 'admin') {
-          navigate('/admin/profile-setup');
-        } else if (role === 'instructor') {
-          navigate('/instructor/profile-setup');
-        } else {
-          navigate('/student/profile-setup');
+        
+        // If we have a session, redirect to the appropriate dashboard
+        if (data.session) {
+          redirectBasedOnRole(role);
         }
-      } else if (data.user) {
-        // Email confirmation might be required
-        toast({
-          title: 'Verification required',
-          description: 'Please check your email to verify your account before signing in.',
-        });
       }
       
       return { user: data.user, session: data.session };
