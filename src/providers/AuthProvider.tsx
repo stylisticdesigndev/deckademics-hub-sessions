@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -41,49 +42,6 @@ interface AuthContextProps {
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
-
-// For fallback/testing when there's an issue with Supabase
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    password: 'Admin123!',
-    profile: {
-      id: '1',
-      first_name: 'Admin',
-      last_name: 'User',
-      email: 'admin@example.com',
-      avatar_url: null,
-      role: 'admin' as UserRole
-    }
-  },
-  {
-    id: '2',
-    email: 'instructor@example.com',
-    password: 'Instructor123!',
-    profile: {
-      id: '2',
-      first_name: 'John',
-      last_name: 'Doe',
-      email: 'instructor@example.com',
-      avatar_url: null,
-      role: 'instructor' as UserRole
-    }
-  },
-  {
-    id: '3',
-    email: 'student@example.com',
-    password: 'Student123!',
-    profile: {
-      id: '3',
-      first_name: 'Jane',
-      last_name: 'Smith',
-      email: 'student@example.com',
-      avatar_url: null,
-      role: 'student' as UserRole
-    }
-  }
-];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -166,12 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Fix the query format to correctly fetch the profile by ID
+      // Use the security definer function to fetch profiles safely without RLS conflicts
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to handle missing profiles
+        .rpc('get_user_profile', { user_id: userId });
       
       if (error) {
         console.error("Error fetching profile:", error);
@@ -179,8 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check if we got any profile data
-      if (data) {
-        const profile = data as Profile;
+      if (data && data.length > 0) {
+        const profile = data[0] as Profile;
         console.log("User profile fetched successfully:", profile);
         
         setUserData({
@@ -235,15 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Creating profile from metadata:", { role, firstName, lastName, email });
       
-      // Create new profile with proper error handling
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Session error:", error);
-        throw error;
-      }
-      
-      // Perform authenticated profile insertion
+      // Insert profile with the current user's ID to satisfy RLS policies
       const { data: profile, error: insertError } = await supabase
         .from('profiles')
         .insert([
@@ -303,8 +250,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'You have successfully logged in.',
       });
       
-      // Don't redirect here - let the auth state change handle it
-      // The redirect will happen in ProtectedRoute
+      // Fetch the user profile immediately after login
+      if (data.user) {
+        try {
+          await fetchUserProfile(data.user.id);
+          
+          // Redirect the user based on role
+          if (userData.role) {
+            redirectBasedOnRole(userData.role);
+          }
+        } catch (profileError) {
+          console.error("Error fetching profile after login:", profileError);
+        }
+      }
       
       return { user: data.user, session: data.session };
     } catch (error: any) {
@@ -373,11 +331,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'Your account has been created successfully.',
       });
       
-      // Don't create profile here - let the database trigger handle it
-      
-      // If we have a session, redirect to the appropriate dashboard
-      if (data.session) {
-        // Still need some delay here as the trigger needs time to create the profile
+      // If we have a session, explicitly create the profile
+      if (data.session && data.user) {
+        try {
+          await createProfileFromMetadata(data.user.id);
+        } catch (profileError) {
+          console.error("Error creating profile after signup:", profileError);
+        }
+        
+        // Redirect to the appropriate dashboard
         setTimeout(() => {
           redirectBasedOnRole(role);
         }, 500);
