@@ -17,20 +17,11 @@ const StudentProfile = () => {
   const { userData, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   
-  // Use real user data for profile, fallback to default values if needed
   const [profile, setProfile] = useState({
     name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : '',
     email: userData.profile?.email || '',
     phone: userData.profile?.phone || '',
     bio: userData.profile?.bio || 'No bio provided yet.',
-    startDate: 'January 15, 2025',
-    level: 'Intermediate',
-    instructor: {
-      name: 'DJ Rhythm',
-      email: 'dj.rhythm@deckademics.com',
-      phone: '(555) 987-6543',
-      scheduleLink: '#'
-    }
   });
 
   const [formData, setFormData] = useState({...profile});
@@ -209,13 +200,13 @@ const StudentProfile = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Start Date</p>
-                  <p className="font-medium">{profile.startDate}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Current Level</p>
-                  <p className="font-medium">{profile.level}</p>
+                <div className="flex items-center justify-center flex-col py-8 text-center">
+                  <p className="text-muted-foreground">
+                    No course information available yet.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Course details will appear here once you're enrolled.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -228,31 +219,14 @@ const StudentProfile = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback className="bg-deckademics-accent/20 text-deckademics-accent">
-                      DR
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{profile.instructor.name}</p>
-                    <p className="text-xs text-muted-foreground">Primary Instructor</p>
-                  </div>
+                <div className="flex items-center justify-center flex-col py-8 text-center">
+                  <p className="text-muted-foreground">
+                    No instructor assigned yet.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Instructor information will appear here once assigned.
+                  </p>
                 </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{profile.instructor.email}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{profile.instructor.phone}</p>
-                </div>
-                
-                <Button variant="outline" className="w-full">
-                  View Schedule
-                </Button>
               </CardContent>
             </Card>
           </div>
