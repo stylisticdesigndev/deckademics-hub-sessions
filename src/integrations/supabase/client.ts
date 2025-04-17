@@ -10,9 +10,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false, // Changed from true to false to prevent potential redirect issues
+    detectSessionInUrl: false, // Keep this false to prevent redirect issues
     storage: localStorage,
     flowType: 'pkce',
-    debug: true // Enable debug mode to help troubleshoot auth issues
+    debug: true // Maintain debug mode to help with troubleshooting
   }
 });

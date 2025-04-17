@@ -105,9 +105,12 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
-      // Using direct Supabase signup instead of the Auth provider to get direct access to the response
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      const redirectTo = window.location.origin + '/auth/' + userType;
+      
+      // Using direct Supabase signup with explicit redirect URL
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         options: {
           data: {
@@ -115,7 +118,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             first_name: formData.firstName,
             last_name: formData.lastName
           },
-          emailRedirectTo: window.location.origin // Add redirect URL explicitly
+          emailRedirectTo: redirectTo
         }
       });
       
@@ -124,7 +127,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         
         let errorMessage = error.message;
         if (error.message.includes("Database error")) {
-          // This specific error indicates an issue with the database trigger or existing user
+          // Improved error message for database issues
           errorMessage = "There was an issue creating your account. The email may already be registered or there was a database error.";
         } else if (error.message.includes("User already registered")) {
           errorMessage = "This email is already registered. Please try logging in instead.";

@@ -248,7 +248,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing up with email:", normalizedEmail, "role:", role);
       
-      // Add emailRedirectTo to make sure redirects work properly
+      // Generate appropriate redirect URL based on role
+      const redirectTo = `${window.location.origin}/${role}/profile-setup`;
+      
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -258,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             first_name: metadata.first_name || metadata.firstName || '',
             last_name: metadata.last_name || metadata.lastName || '',
           },
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: redirectTo
         }
       });
       
