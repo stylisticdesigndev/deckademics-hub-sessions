@@ -171,7 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Fix: Don't use single() or specify the accept header
+      // Don't use single() as it can cause errors if no profile is found
+      // Also, ensure we're using proper filter parameter format
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -203,6 +204,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return await createProfileFromMetadata(userId);
           } catch (createError) {
             console.error("Failed to create profile from metadata:", createError);
+            toast({
+              title: 'Profile Error',
+              description: 'Could not create user profile. Please try logging out and back in.',
+              variant: 'destructive',
+            });
           }
         }
         
@@ -246,24 +252,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: role,
           }
         ])
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error("Error creating profile:", error);
         throw error;
       }
       
-      console.log("Profile created successfully:", profile);
-      
-      // Update userData state
-      setUserData({
-        user: session.user,
-        profile: profile as Profile,
-        role: profile.role as UserRole,
-      });
-      
-      return profile as Profile;
+      // Since we used .select() after .insert(), we should get back the inserted row
+      if (profile && profile.length > 0) {
+        console.log("Profile created successfully:", profile[0]);
+        
+        // Update userData state
+        setUserData({
+          user: session.user,
+          profile: profile[0] as Profile,
+          role: profile[0].role as UserRole,
+        });
+        
+        return profile[0] as Profile;
+      } else {
+        throw new Error("No profile returned after creation");
+      }
     } catch (error) {
       console.error("Failed to create profile from metadata:", error);
       throw error;

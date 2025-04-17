@@ -2,13 +2,17 @@
 import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
+import { AuthProvider } from '@/providers/AuthProvider';
 
 const InstructorAuth = () => {
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        {/* Header logo removed */}
+        {/* Header content */}
       </header>
+      
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center flex flex-col items-center space-y-2">
@@ -23,24 +27,30 @@ const InstructorAuth = () => {
               Instructor Sign In
             </h1>
             <p className="text-muted-foreground max-w-xs mx-auto">
-              Access your teaching dashboard and manage your students
+              Access your instructor dashboard to manage classes and students
             </p>
           </div>
-          <AuthForm userType="instructor" disableSignup={true} />
+          
+          <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Instructor Access</AlertTitle>
+            <AlertDescription>
+              This area is restricted to authorized instructors. Please sign in with your credentials.
+            </AlertDescription>
+          </Alert>
+          
+          <AuthProvider>
+            <AuthForm userType="instructor" disableSignup={true} />
+          </AuthProvider>
+          
           <div className="text-center">
             <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
             </Link>
           </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Instructor accounts can only be created by administrators.
-              <br />
-              Please contact the school if you need access.
-            </p>
-          </div>
         </div>
       </main>
+      
       <footer className="py-6 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
       </footer>

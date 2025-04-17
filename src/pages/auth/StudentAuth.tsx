@@ -4,6 +4,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, InfoIcon, HelpCircle, ShieldCheck } from 'lucide-react';
+import { AuthProvider } from '@/providers/AuthProvider';
 
 const StudentAuth = () => {
   console.log("Rendering StudentAuth page");
@@ -42,7 +43,10 @@ const StudentAuth = () => {
             </AlertDescription>
           </Alert>
           
-          <AuthForm userType="student" disableSignup={false} />
+          {/* The AuthForm must be used inside an AuthProvider */}
+          <AuthProvider>
+            <AuthForm userType="student" disableSignup={false} />
+          </AuthProvider>
           
           <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-4 text-sm">
             <div className="flex items-start">
