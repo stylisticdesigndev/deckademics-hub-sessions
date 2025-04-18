@@ -1,7 +1,6 @@
 
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
-import { UserRole } from '@/providers/AuthProvider';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth, UserRole } from '@/providers/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -12,7 +11,6 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { userData, isLoading, session, signOut } = useAuth();
-  const navigate = useNavigate();
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
   const [waitTime, setWaitTime] = useState(0);
   
@@ -43,13 +41,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         if (!allowedRoles.includes(userData.role)) {
           console.log("Access denied - redirecting to appropriate dashboard");
           
-          if (userData.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else if (userData.role === 'instructor') {
-            navigate('/instructor/dashboard');
-          } else if (userData.role === 'student') {
-            navigate('/student/dashboard');
-          }
+          // We'll handle redirection in the render section instead of using navigate
+          // This helps prevent issues with navigation during render
         }
       } else if (waitTime >= 5000) {
         // After waiting and still no profile, show error and redirect to auth
@@ -74,7 +67,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         clearInterval(waitInterval);
       }
     };
-  }, [isLoading, session, userData, allowedRoles, navigate, waitTime, signOut]);
+  }, [isLoading, session, userData, allowedRoles, waitTime, signOut]);
   
   // Show loading state
   if (isLoading || (session && !userData.profile && isWaitingForProfile)) {
