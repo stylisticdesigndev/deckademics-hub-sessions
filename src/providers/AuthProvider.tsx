@@ -124,18 +124,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Use the security definer function to fetch profiles safely without RLS conflicts
-      const { data, error } = await supabase
+      // First try to get the profile using get_user_profile function
+      const { data: funcData, error: funcError } = await supabase
         .rpc('get_user_profile', { user_id: userId });
       
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
+      if (funcError) {
+        console.error("Error fetching profile with RPC:", funcError);
+        // Fall back to direct query if RPC fails
+        const { data: directData, error: directError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (directError) {
+          console.error("Error fetching profile directly:", directError);
+          throw directError;
+        }
+        
+        if (directData) {
+          console.log("User profile fetched directly:", directData);
+          setUserData({
+            user: session?.user || null,
+            profile: directData as Profile,
+            role: directData.role as UserRole,
+          });
+          return directData as Profile;
+        }
       }
 
-      // Check if we got any profile data
-      if (data && data.length > 0) {
-        const profile = data[0] as Profile;
+      // Check if we got any profile data from the RPC call
+      if (funcData && funcData.length > 0) {
+        const profile = funcData[0] as Profile;
         console.log("User profile fetched successfully:", profile);
         
         setUserData({
@@ -145,25 +165,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         
         return profile;
-      } else {
-        console.warn("No profile found for user:", userId);
-        
-        // If no profile exists but we have user metadata, try to create one
-        if (session?.user?.user_metadata) {
-          try {
-            return await createProfileFromMetadata(userId);
-          } catch (createError) {
-            console.error("Failed to create profile from metadata:", createError);
-            toast({
-              title: 'Profile Error',
-              description: 'Could not create user profile. Please try logging out and back in.',
-              variant: 'destructive',
-            });
-          }
-        }
-        
-        return null;
       }
+      
+      console.warn("No profile found for user:", userId);
+      
+      // If no profile exists but we have user metadata, create one
+      if (session?.user?.user_metadata) {
+        try {
+          return await createProfileFromMetadata(userId);
+        } catch (createError) {
+          console.error("Failed to create profile from metadata:", createError);
+          toast({
+            title: 'Profile Error',
+            description: 'Could not create user profile. Please try logging out and back in.',
+            variant: 'destructive',
+          });
+        }
+      }
+      
+      return null;
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
       toast({
@@ -190,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Creating profile from metadata:", { role, firstName, lastName, email });
       
-      // Insert profile with the current user's ID to satisfy RLS policies
+      // Insert profile with the current user's ID
       const { data: profile, error: insertError } = await supabase
         .from('profiles')
         .insert([
@@ -211,6 +231,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log("Profile created successfully:", profile);
+      
+      // If user is a student, add entry to students table
+      if (role === 'student') {
+        const { error: studentError } = await supabase
+          .from('students')
+          .insert([{ id: userId }]);
+          
+        if (studentError) {
+          console.error("Error creating student record:", studentError);
+        }
+      }
+      
+      // If user is an instructor, add entry to instructors table
+      if (role === 'instructor') {
+        const { error: instructorError } = await supabase
+          .from('instructors')
+          .insert([{ id: userId }]);
+          
+        if (instructorError) {
+          console.error("Error creating instructor record:", instructorError);
+        }
+      }
       
       // Update userData state
       setUserData({

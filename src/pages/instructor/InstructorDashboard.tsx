@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -53,13 +54,20 @@ const InstructorDashboard = () => {
       try {
         setLoading(true);
         
+        console.log("Fetching dashboard data for instructor:", userData.user.id);
+        
         // Fetch instructor's assigned students (through classes)
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
           .eq('instructor_id', userData.user.id);
           
-        if (classesError) throw classesError;
+        if (classesError) {
+          console.error("Error fetching assigned classes:", classesError);
+          throw classesError;
+        }
+        
+        console.log("Assigned classes:", assignedClasses);
         
         // If instructor has classes, fetch students enrolled in those classes
         if (assignedClasses && assignedClasses.length > 0) {
@@ -79,7 +87,12 @@ const InstructorDashboard = () => {
             `)
             .in('class_id', classIds);
             
-          if (enrollmentsError) throw enrollmentsError;
+          if (enrollmentsError) {
+            console.error("Error fetching enrollments:", enrollmentsError);
+            throw enrollmentsError;
+          }
+          
+          console.log("Enrollments data:", enrollmentsData);
           
           // Get progress data for these students
           if (enrollmentsData && enrollmentsData.length > 0) {
@@ -91,7 +104,10 @@ const InstructorDashboard = () => {
               .select('student_id, proficiency')
               .in('student_id', studentIds);
               
-            if (progressError) throw progressError;
+            if (progressError) {
+              console.error("Error fetching student progress:", progressError);
+              throw progressError;
+            }
             
             // Process and format student data
             const formattedStudents = enrollmentsData.map(enrollment => {
@@ -134,8 +150,14 @@ const InstructorDashboard = () => {
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             
-          if (todayClassesError) throw todayClassesError;
+          if (todayClassesError) {
+            console.error("Error counting today's classes:", todayClassesError);
+            throw todayClassesError;
+          }
+          
           setTodayClasses(count || 0);
+        } else {
+          console.log("Instructor has no assigned classes yet");
         }
       } catch (error) {
         console.error('Error fetching instructor dashboard data:', error);
@@ -144,7 +166,11 @@ const InstructorDashboard = () => {
       }
     };
     
-    fetchDashboardData();
+    if (userData.user?.id) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
   }, [userData.user?.id]);
   
   // Filter students based on search term
