@@ -66,18 +66,10 @@ export const StudentNavigation = () => {
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.title}</span>
-                {item.badge && (
-                  <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             </TooltipTrigger>
             <TooltipContent>
               <p>{item.tooltip}</p>
-              {item.badgeTooltip && item.badge ? (
-                <p className="text-xs text-muted">{item.badgeTooltip}: {item.badge}</p>
-              ) : null}
             </TooltipContent>
           </Tooltip>
         ))}
