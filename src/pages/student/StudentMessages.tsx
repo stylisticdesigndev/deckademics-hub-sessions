@@ -1,62 +1,18 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, ChevronRight, MessageSquare, PlusCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { MessageSquare, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
-
-interface Message {
-  id: string;
-  sender: {
-    name: string;
-    role: string;
-    avatar?: string;
-    initials: string;
-  };
-  subject: string;
-  content: string;
-  date: string;
-  read: boolean;
-  requiresResponse: boolean;
-  responded?: boolean;
-}
+import { Button } from '@/components/ui/button';
 
 const StudentMessages = () => {
-  const { toast } = useToast();
   const { userData } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
   
   // Check if user has completed their profile
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   
-  const markAsRead = (id: string) => {
-    setMessages(prevMessages =>
-      prevMessages.map(message =>
-        message.id === id ? { ...message, read: true } : message
-      )
-    );
-  };
-
-  const respondToMessage = (id: string) => {
-    setMessages(prevMessages =>
-      prevMessages.map(message =>
-        message.id === id ? { ...message, responded: true } : message
-      )
-    );
-    
-    toast({
-      title: 'Response sent',
-      description: 'Your confirmation has been sent.',
-    });
-  };
-
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">

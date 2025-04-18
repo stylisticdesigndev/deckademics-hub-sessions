@@ -38,8 +38,6 @@ export const StudentNavigation = () => {
       icon: MessageSquare,
       href: "/student/messages",
       active: pathname === "/student/messages",
-      badge: 2, // Example unread messages count
-      badgeTooltip: "Unread messages",
       tooltip: "Access your messages"
     },
     {
