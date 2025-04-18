@@ -35,12 +35,12 @@ const InstructorAuth = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Instructor Access</AlertTitle>
             <AlertDescription>
-              This area is restricted to authorized instructors. Please sign in with your credentials.
+              This area is restricted to authorized instructors. Please sign in with your credentials or create a new account.
             </AlertDescription>
           </Alert>
           
           <AuthProvider>
-            <AuthForm userType="instructor" disableSignup={true} />
+            <AuthForm userType="instructor" />
           </AuthProvider>
           
           <div className="text-center">

@@ -19,10 +19,6 @@ import {
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
 
-  // Define the counts to use across the navigation
-  const pendingStudentsCount = 5; // This would normally come from an API or state
-  const progressUpdatesCount = 3; // Students needing progress updates
-
   const navItems = [
     {
       title: "Dashboard",
@@ -36,8 +32,6 @@ export const InstructorNavigation = () => {
       icon: Users,
       href: "/instructor/students",
       active: pathname === "/instructor/students",
-      badge: pendingStudentsCount,
-      badgeTooltip: "Students needing action",
       tooltip: "Manage your student roster"
     },
     {
@@ -80,18 +74,10 @@ export const InstructorNavigation = () => {
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.title}</span>
-                {item.badge && (
-                  <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             </TooltipTrigger>
             <TooltipContent>
               <p>{item.tooltip}</p>
-              {item.badgeTooltip && item.badge ? (
-                <p className="text-xs text-muted">{item.badgeTooltip}: {item.badge}</p>
-              ) : null}
             </TooltipContent>
           </Tooltip>
         ))}
