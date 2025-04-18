@@ -9,8 +9,10 @@ import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingC
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
 import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
+import { useAuth } from '@/providers/AuthProvider';
 
 const StudentDashboard = () => {
+  const { userData } = useAuth();
   const {
     loading,
     studentData,
@@ -22,6 +24,11 @@ const StudentDashboard = () => {
     isFirstTimeUser
   } = useStudentDashboard();
 
+  // Generate the name from profile data
+  const studentName = userData.profile ? 
+    `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 
+    'Student';
+
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;
 
@@ -29,7 +36,7 @@ const StudentDashboard = () => {
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
         <section className="space-y-3">
-          <h1 className="text-2xl font-bold">Welcome, {studentData.name}</h1>
+          <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
           <p className="text-muted-foreground">
             You're currently at <span className="text-deckademics-primary font-medium">{studentData.level}</span> level. 
             {isEmpty && " Complete your profile and enroll in classes to get started."}

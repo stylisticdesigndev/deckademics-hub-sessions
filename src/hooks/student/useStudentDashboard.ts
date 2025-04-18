@@ -144,13 +144,12 @@ export const useStudentDashboard = () => {
           
         setIsFirstTimeUser(isFirstLogin);
 
-        // Update student data
-        if (studentInfo) {
-          setStudentData(prev => ({
-            ...prev,
-            level: studentInfo.level || 'Beginner'
-          }));
-        }
+        // Update student data with current user's name from profile
+        setStudentData(prev => ({
+          ...prev,
+          name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
+          level: studentInfo?.level || 'Beginner'
+        }));
 
         // Format announcements (if there are any)
         if (announcementsData && announcementsData.length > 0) {
@@ -231,7 +230,7 @@ export const useStudentDashboard = () => {
     };
 
     fetchData();
-  }, [userData.user?.id, userData.profile]);
+  }, [userData]);
 
   const handleAcknowledgeAnnouncement = (id: string) => {
     setAnnouncements(prevAnnouncements => 

@@ -47,17 +47,20 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <TooltipProvider>
         <AuthProvider>
           <Toaster />
           <Sonner />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/auth/student" element={<StudentAuth />} />
-            <Route path="/auth/instructor" element={<InstructorAuth />} />
-            <Route path="/auth/admin" element={<AdminAuth />} />
+            <Route path="/auth">
+              <Route index element={<Navigate to="/auth/student" replace />} />
+              <Route path="student" element={<StudentAuth />} />
+              <Route path="instructor" element={<InstructorAuth />} />
+              <Route path="admin" element={<AdminAuth />} />
+            </Route>
             
             {/* Profile Setup Routes */}
             <Route element={<ProtectedRoute allowedRoles={['student']} />}>
@@ -105,8 +108,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+      </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
