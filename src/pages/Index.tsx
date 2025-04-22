@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 
 const Index = () => {
+  // You can replace this YouTube URL with any DJ background video you prefer
+  const youtubeVideoUrl = "https://www.youtube.com/watch?v=n4RjJKxsamQ"; // Example: DJ background video
+
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      <VideoBackground videoSrc="/lovable-uploads/dj-background.mp4" />
+      <VideoBackground videoSrc={youtubeVideoUrl} isYouTube={true} />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header logo removed */}
       </header>
