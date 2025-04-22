@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -339,6 +338,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Helper function to redirect based on role
+  const redirectBasedOnRole = (role: UserRole) => {
+    console.log("Redirecting based on role:", role);
+    
+    if (role === 'admin') {
+      navigate('/admin/dashboard');
+    } else if (role === 'instructor') {
+      navigate('/instructor/dashboard');
+    } else {
+      navigate('/student/dashboard');
+    }
+  };
+
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     
@@ -378,16 +390,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           title: 'Welcome Admin!',
           description: 'You have successfully logged in as an administrator.',
         });
-        
-        return { user: data.user, session: data.session };
+      } else {
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.',
+        });
       }
       
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-      
-      // Return early with success, redirection will be handled by auth state change
       return { user: data.user, session: data.session };
     } catch (error: any) {
       console.error("Sign in error:", error);
@@ -399,19 +408,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { user: null, session: null, error };
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  // Helper function to redirect based on role
-  const redirectBasedOnRole = (role: UserRole) => {
-    console.log("Redirecting based on role:", role);
-    
-    if (role === 'admin') {
-      navigate('/admin/dashboard');
-    } else if (role === 'instructor') {
-      navigate('/instructor/dashboard');
-    } else {
-      navigate('/student/dashboard');
     }
   };
 

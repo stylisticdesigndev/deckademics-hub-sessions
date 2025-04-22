@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -75,69 +74,18 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      // For admin login, bypass the verification check flow completely
-      if (userType === 'admin' && formData.email === 'admin@deckademics.com') {
-        console.log("Admin login detected, using direct admin flow");
-        
-        // Proceed with direct login to create session
-        const result = await signIn(formData.email, formData.password);
-        
-        if (result.error) {
-          throw new Error(result.error.message);
-        }
-        
-        toast({
-          title: 'Login successful',
-          description: 'You have been logged in as an admin.',
-        });
-        
-        navigate('/admin/dashboard');
-        return;
-      }
-      
-      // For non-admin logins, continue with the verification flow
-      // First verify the credentials without creating a persistent session
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-      
-      if (error || !data.user) {
-        throw new Error(error?.message || 'Invalid email or password. Please try again.');
-      }
-      
-      // Now check if the user has the correct role for this login page
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-      
-      if (profileError || !profileData) {
-        console.error("Error fetching profile:", profileError);
-        // Sign out since we just verified them
-        await supabase.auth.signOut();
-        throw new Error('Unable to verify account type. Please try again.');
-      }
-      
-      // Verify that the user's role matches the page they're on
-      if (profileData.role !== userType) {
-        // Sign out to clean up the auth state
-        await supabase.auth.signOut();
-        
-        throw new Error(`This login page is for ${userType}s only. Please use the appropriate login page.`);
-      }
-      
-      // If we reach here, the role matches, so we proceed with the actual login
+      // Simplified direct login approach for all users, including admin
       const result = await signIn(formData.email, formData.password);
       
       if (result.error) {
         throw new Error(result.error.message);
       }
       
+      console.log("Login successful with result:", result);
+      
       toast({
         title: 'Login successful',
-        description: 'You have been logged in successfully.',
+        description: `You have been logged in as ${userType}.`,
       });
       
       // Redirect based on role
@@ -148,7 +96,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       } else if (userType === 'admin') {
         navigate('/admin/dashboard');
       }
-      
     } catch (error: any) {
       console.error("Sign in error in form:", error);
       setLoginError(error.message || 'Authentication failed. Please try again.');
@@ -323,7 +270,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             {userType === 'admin' && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
                 <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
-                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: admin@example.com</p>
+                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: admin@deckademics.com</p>
                 <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
               </div>
             )}
