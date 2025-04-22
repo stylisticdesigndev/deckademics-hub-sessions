@@ -1,8 +1,7 @@
+
 import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from 'lucide-react';
 import { AuthProvider } from '@/providers/AuthProvider';
 
 const InstructorAuth = () => {
@@ -29,14 +28,6 @@ const InstructorAuth = () => {
               Access your instructor dashboard to manage classes and students
             </p>
           </div>
-          
-          <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Instructor Access</AlertTitle>
-            <AlertDescription>
-              This area is restricted to authorized instructors. Please sign in with your credentials or create a new account.
-            </AlertDescription>
-          </Alert>
           
           <AuthProvider>
             <AuthForm userType="instructor" />
