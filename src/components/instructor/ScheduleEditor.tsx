@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { Database } from '@/integrations/supabase/types';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -87,7 +88,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', instructorId as string);
 
       if (deleteError) {
         // Check for auth error
@@ -105,18 +106,17 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
 
       // Only insert if there are schedule items
       if (schedule.length > 0) {
-        // Create an array of objects with the correct type for Supabase
-        const scheduleData = schedule.map(item => ({
-          instructor_id: instructorId,
-          day: item.day,
-          hours: item.hours
-        }));
-        
-        // Insert new schedule items one by one to avoid type issues
-        for (const item of scheduleData) {
+        // Process each item one by one for better type safety
+        for (const item of schedule) {
+          const scheduleData: Database['public']['Tables']['instructor_schedules']['Insert'] = {
+            instructor_id: instructorId,
+            day: item.day,
+            hours: item.hours
+          };
+          
           const { error: insertError } = await supabase
             .from('instructor_schedules')
-            .insert(item);
+            .insert(scheduleData);
 
           if (insertError) {
             // Check for auth error

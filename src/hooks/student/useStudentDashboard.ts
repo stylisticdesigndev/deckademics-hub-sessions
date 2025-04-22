@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { PostgrestError } from '@supabase/supabase-js';
 
 interface Announcement {
   id: string;
@@ -128,9 +129,12 @@ export const useStudentDashboard = () => {
         // If we have classes, fetch the instructor profiles separately
         if (classesData && Array.isArray(classesData) && classesData.length > 0) {
           // Get unique instructor IDs with null check
-          const instructorIds = classesData
-            .filter(cls => cls && typeof cls === 'object' && cls.instructor_id)
-            .map(cls => cls.instructor_id as string);
+          const instructorIds: string[] = [];
+          classesData.forEach(cls => {
+            if (cls && cls.instructor_id) {
+              instructorIds.push(cls.instructor_id);
+            }
+          });
             
           if (instructorIds.length > 0) {
             // Fetch instructor profiles
@@ -193,16 +197,24 @@ export const useStudentDashboard = () => {
 
       // Format announcements (if there are any)
       if (announcementsData && Array.isArray(announcementsData) && announcementsData.length > 0) {
-        const formattedAnnouncements: Announcement[] = announcementsData.map(ann => {
+        const formattedAnnouncements: Announcement[] = [];
+        
+        for (const ann of announcementsData) {
           // Safely handle potentially missing data
-          if (!ann) return null;
+          if (!ann) continue;
           
-          const firstName = ann.profiles?.first_name || '';
-          const lastName = ann.profiles?.last_name || '';
-          const fullName = `${firstName} ${lastName}`.trim() || 'Admin';
-          const initials = `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'A';
+          // Safely access profiles data with type checking
+          let fullName = 'Admin';
+          let initials = 'A';
           
-          return {
+          if (ann.profiles) {
+            const firstName = ann.profiles.first_name || '';
+            const lastName = ann.profiles.last_name || '';
+            fullName = `${firstName} ${lastName}`.trim() || 'Admin';
+            initials = `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'A';
+          }
+          
+          formattedAnnouncements.push({
             id: ann.id || '',
             title: ann.title || '',
             content: ann.content || '',
@@ -213,8 +225,8 @@ export const useStudentDashboard = () => {
             },
             isNew: true,
             type: 'announcement',
-          };
-        }).filter(Boolean) as Announcement[];
+          });
+        }
         
         setAnnouncements(formattedAnnouncements);
       } else {
@@ -223,8 +235,10 @@ export const useStudentDashboard = () => {
 
       // Format upcoming classes (if there are any)
       if (classesData && Array.isArray(classesData) && classesData.length > 0) {
-        const formattedClasses: ClassSession[] = classesData.map(cls => {
-          if (!cls) return null;
+        const formattedClasses: ClassSession[] = [];
+        
+        for (const cls of classesData) {
+          if (!cls) continue;
           
           const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
           const endTime = cls.end_time ? new Date(cls.end_time) : new Date();
@@ -238,7 +252,7 @@ export const useStudentDashboard = () => {
             ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
             : 'Not assigned';
             
-          return {
+          formattedClasses.push({
             id: cls.id || '',
             title: cls.title || '',
             instructor: instructorName,
@@ -248,8 +262,8 @@ export const useStudentDashboard = () => {
             location: cls.location || 'Main Studio',
             attendees: 0,
             isUpcoming: true,
-          };
-        }).filter(Boolean) as ClassSession[];
+          });
+        }
         
         setUpcomingClasses(formattedClasses);
         
