@@ -28,14 +28,14 @@ const StudentDashboard = () => {
   // Get current user ID from session
   const userId = session?.user?.id;
   
-  // Generate the name from profile data
-  const studentName = userData?.profile ? 
-    `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 
+  // Generate the name from session user metadata instead of profile data
+  const studentName = session?.user?.user_metadata ? 
+    `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim() : 
     'Student';
   
   console.log("Rendering dashboard for:", studentName);
-  console.log("Current user profile:", userData.profile);
-  console.log("Current session user:", session?.user);
+  console.log("Current user metadata:", session?.user?.user_metadata);
+  console.log("Current user profile:", userData?.profile);
 
   // Force refresh data if user ID changes
   useEffect(() => {

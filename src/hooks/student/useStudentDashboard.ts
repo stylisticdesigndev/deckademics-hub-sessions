@@ -104,7 +104,7 @@ export const useStudentDashboard = () => {
         console.log("Announcements fetched:", announcementsData?.length || 0);
       }
 
-      // Fetch upcoming classes - fix the relationship query
+      // Fetch upcoming classes - FIX: properly join with profiles table
       const now = new Date().toISOString();
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -114,11 +114,7 @@ export const useStudentDashboard = () => {
           location,
           start_time,
           end_time,
-          instructor_id,
-          profiles:instructor_id (
-            first_name,
-            last_name
-          )
+          instructor_id
         `)
         .gt('start_time', now)
         .order('start_time', { ascending: true })
@@ -128,6 +124,43 @@ export const useStudentDashboard = () => {
         console.error("Error fetching classes:", classesError);
       } else {
         console.log("Classes fetched:", classesData?.length || 0);
+        
+        // If we have classes, fetch the instructor profiles separately
+        // This avoids the join issue with the profiles table
+        if (classesData && classesData.length > 0) {
+          // Get unique instructor IDs
+          const instructorIds = classesData
+            .map(cls => cls.instructor_id)
+            .filter(id => id !== null) as string[];
+            
+          if (instructorIds.length > 0) {
+            // Fetch instructor profiles
+            const { data: instructorProfiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, first_name, last_name')
+              .in('id', instructorIds);
+              
+            if (profilesError) {
+              console.error("Error fetching instructor profiles:", profilesError);
+            } else {
+              // Create a map of instructor profiles for easy lookup
+              const profilesMap = new Map();
+              instructorProfiles?.forEach(profile => {
+                profilesMap.set(profile.id, profile);
+              });
+              
+              // Enhance class data with instructor profiles
+              classesData.forEach(cls => {
+                if (cls.instructor_id) {
+                  const profile = profilesMap.get(cls.instructor_id);
+                  if (profile) {
+                    (cls as any).instructorProfile = profile;
+                  }
+                }
+              });
+            }
+          }
+        }
       }
 
       // Fetch progress data
@@ -184,8 +217,10 @@ export const useStudentDashboard = () => {
           const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
           const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
           
-          const instructorName = cls.profiles 
-            ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim()
+          // Use the instructorProfile we've added during the separate query
+          const instructorProfile = (cls as any).instructorProfile;
+          const instructorName = instructorProfile 
+            ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
             : 'Not assigned';
             
           return {
