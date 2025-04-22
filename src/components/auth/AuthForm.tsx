@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,8 +19,12 @@ interface AuthFormProps {
   disableSignup?: boolean;
 }
 
+// Admin credentials for direct login
+const ADMIN_EMAIL = 'admin@deckademics.com';
+const ADMIN_PASSWORD = 'Admin123!';
+
 export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
-  const { signIn, signUp, isLoading } = useAuth();
+  const { signIn, signUp, setAdminSession, isLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -38,8 +43,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     if (userType === 'admin') {
       setFormData(prev => ({
         ...prev,
-        email: 'admin@deckademics.com',
-        password: 'Admin123!'
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD
       }));
     }
   }, [userType]);
@@ -50,6 +55,20 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     // Clear error when user types
     if (signupError) setSignupError(null);
     if (loginError) setLoginError(null);
+  };
+
+  const handleAdminDirectLogin = () => {
+    console.log("Using direct admin login path");
+    
+    // Create admin session manually
+    setAdminSession();
+    
+    toast({
+      title: 'Welcome Admin!',
+      description: 'You have been logged in as an administrator.',
+    });
+    
+    navigate('/admin/dashboard');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -74,7 +93,16 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      // Simplified direct login approach for all users, including admin
+      // Special handling for admin login
+      if (userType === 'admin' && 
+          formData.email === ADMIN_EMAIL && 
+          formData.password === ADMIN_PASSWORD) {
+        handleAdminDirectLogin();
+        setLoginProcessing(false);
+        return;
+      }
+      
+      // Regular Supabase authentication for non-admin or incorrect admin credentials
       const result = await signIn(formData.email, formData.password);
       
       if (result.error) {
@@ -270,8 +298,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             {userType === 'admin' && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
                 <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
-                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: admin@deckademics.com</p>
-                <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
+                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: {ADMIN_EMAIL}</p>
+                <p className="text-amber-700 dark:text-amber-400">Password: {ADMIN_PASSWORD}</p>
               </div>
             )}
             

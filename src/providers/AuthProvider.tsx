@@ -39,12 +39,51 @@ interface AuthContextProps {
   signUp: (email: string, password: string, role?: UserRole, metadata?: Record<string, any>) => Promise<{ user: User | null; session: Session | null; }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  setAdminSession: () => void; // New method for direct admin login
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 // Single instance for auth state storage
 let authChangeSubscription: { unsubscribe: () => void } | null = null;
+
+// Admin user mock
+const createAdminUser = (): User => {
+  return {
+    id: "admin-user-id",
+    app_metadata: {},
+    user_metadata: {
+      role: 'admin',
+      first_name: 'Admin',
+      last_name: 'User'
+    },
+    aud: "authenticated",
+    created_at: new Date().toISOString(),
+    email: "admin@deckademics.com",
+    phone: "",
+    role: "",
+    updated_at: new Date().toISOString(),
+    identities: [],
+    phone_confirmed_at: null,
+    confirmed_at: new Date().toISOString(),
+    email_confirmed_at: new Date().toISOString(),
+    last_sign_in_at: new Date().toISOString(),
+    banned_until: null,
+    factors: null
+  };
+};
+
+// Create a mock session for admin
+const createAdminSession = (): Session => {
+  return {
+    access_token: "mock-admin-token",
+    refresh_token: "mock-admin-refresh-token",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    token_type: "bearer",
+    user: createAdminUser()
+  };
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -58,7 +97,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   console.log("Initializing AuthProvider with Supabase");
   
+  // Method to set up admin session without Supabase authentication
+  const setAdminSession = () => {
+    const adminSession = createAdminSession();
+    const adminUser = adminSession.user;
+    
+    setSession(adminSession);
+    
+    setUserData({
+      user: adminUser,
+      profile: {
+        id: adminUser.id,
+        first_name: 'Admin',
+        last_name: 'User',
+        email: 'admin@deckademics.com',
+        avatar_url: null,
+        role: 'admin',
+      },
+      role: 'admin',
+    });
+    
+    // Store in localStorage to persist the admin session
+    localStorage.setItem('deckademics-admin-session', JSON.stringify(adminSession));
+  };
+  
   useEffect(() => {
+    // Check for admin session in localStorage first
+    const storedAdminSession = localStorage.getItem('deckademics-admin-session');
+    if (storedAdminSession) {
+      try {
+        const adminSession = JSON.parse(storedAdminSession) as Session;
+        // Check if admin session is still valid
+        if (adminSession.expires_at > Math.floor(Date.now() / 1000)) {
+          setSession(adminSession);
+          setUserData({
+            user: adminSession.user,
+            profile: {
+              id: adminSession.user.id,
+              first_name: 'Admin',
+              last_name: 'User',
+              email: 'admin@deckademics.com',
+              avatar_url: null,
+              role: 'admin',
+            },
+            role: 'admin',
+          });
+          
+          // If on an auth page, redirect to admin dashboard
+          if (window.location.pathname.includes('/auth/')) {
+            navigate('/admin/dashboard');
+          }
+          
+          setIsLoading(false);
+          return;
+        } else {
+          // Clear expired admin session
+          localStorage.removeItem('deckademics-admin-session');
+        }
+      } catch (error) {
+        console.error("Error parsing stored admin session:", error);
+        localStorage.removeItem('deckademics-admin-session');
+      }
+    }
+  
     // Only create a new subscription if one doesn't exist
     if (!authChangeSubscription) {
       // Set up auth state listener first
@@ -188,7 +289,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Don't unsubscribe - we want to keep the subscription for the app lifetime
       // This prevents multiple GoTrueClient instances
     };
-  }, []);
+  }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -481,7 +582,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Check if this is an admin session and clear localStorage if so
+      if (userData.role === 'admin' && userData.user?.email === 'admin@deckademics.com') {
+        localStorage.removeItem('deckademics-admin-session');
+        setSession(null);
+        setUserData({
+          user: null,
+          profile: null,
+          role: null
+        });
+      } else {
+        // Regular Supabase signout
+        await supabase.auth.signOut();
+      }
       
       navigate('/');
       toast({
@@ -534,6 +647,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     updateProfile,
+    setAdminSession, // Add the new method to the context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
