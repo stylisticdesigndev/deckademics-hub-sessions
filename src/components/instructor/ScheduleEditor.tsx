@@ -87,7 +87,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId as string);
+        .eq('instructor_id', instructorId);
 
       if (deleteError) {
         // Check for auth error
@@ -105,30 +105,32 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
 
       // Only insert if there are schedule items
       if (schedule.length > 0) {
-        // Create an array of objects with the correct type
+        // Create an array of objects with the correct type for Supabase
         const scheduleData = schedule.map(item => ({
           instructor_id: instructorId,
           day: item.day,
           hours: item.hours
         }));
         
-        // Insert new schedule items
-        const { error: insertError } = await supabase
-          .from('instructor_schedules')
-          .insert(scheduleData);
+        // Insert new schedule items one by one to avoid type issues
+        for (const item of scheduleData) {
+          const { error: insertError } = await supabase
+            .from('instructor_schedules')
+            .insert(item);
 
-        if (insertError) {
-          // Check for auth error
-          if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
-            toast({
-              title: "Authentication Error",
-              description: "Your session has expired. Please sign in again.",
-              variant: "destructive"
-            });
-            setTimeout(() => signOut(), 2000);
-            return;
+          if (insertError) {
+            // Check for auth error
+            if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
+              toast({
+                title: "Authentication Error",
+                description: "Your session has expired. Please sign in again.",
+                variant: "destructive"
+              });
+              setTimeout(() => signOut(), 2000);
+              return;
+            }
+            throw insertError;
           }
-          throw insertError;
         }
       }
 

@@ -76,7 +76,7 @@ export const useStudentDashboard = () => {
         .from('students')
         .select('level, enrollment_status, notes')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (studentError && studentError.code !== 'PGRST116') {
         console.error("Error fetching student info:", studentError);
@@ -104,7 +104,7 @@ export const useStudentDashboard = () => {
         console.log("Announcements fetched:", announcementsData?.length || 0);
       }
 
-      // Fetch upcoming classes - FIX: properly join with profiles table
+      // Fetch upcoming classes - with proper error handling
       const now = new Date().toISOString();
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -126,12 +126,11 @@ export const useStudentDashboard = () => {
         console.log("Classes fetched:", classesData?.length || 0);
         
         // If we have classes, fetch the instructor profiles separately
-        // This avoids the join issue with the profiles table
-        if (classesData && classesData.length > 0) {
-          // Get unique instructor IDs
+        if (classesData && Array.isArray(classesData) && classesData.length > 0) {
+          // Get unique instructor IDs with null check
           const instructorIds = classesData
-            .map(cls => cls.instructor_id)
-            .filter(id => id !== null) as string[];
+            .filter(cls => cls && typeof cls === 'object' && cls.instructor_id)
+            .map(cls => cls.instructor_id as string);
             
           if (instructorIds.length > 0) {
             // Fetch instructor profiles
@@ -142,16 +141,18 @@ export const useStudentDashboard = () => {
               
             if (profilesError) {
               console.error("Error fetching instructor profiles:", profilesError);
-            } else {
+            } else if (instructorProfiles && Array.isArray(instructorProfiles)) {
               // Create a map of instructor profiles for easy lookup
               const profilesMap = new Map();
-              instructorProfiles?.forEach(profile => {
-                profilesMap.set(profile.id, profile);
+              instructorProfiles.forEach(profile => {
+                if (profile && profile.id) {
+                  profilesMap.set(profile.id, profile);
+                }
               });
               
               // Enhance class data with instructor profiles
               classesData.forEach(cls => {
-                if (cls.instructor_id) {
+                if (cls && cls.instructor_id) {
                   const profile = profilesMap.get(cls.instructor_id);
                   if (profile) {
                     (cls as any).instructorProfile = profile;
@@ -177,42 +178,56 @@ export const useStudentDashboard = () => {
       
       // Check if this is a first-time user (no classes, no progress data)
       const isFirstLogin = 
-        (!classesData || classesData.length === 0) && 
-        (!progressData || progressData.length === 0);
+        (!classesData || !Array.isArray(classesData) || classesData.length === 0) && 
+        (!progressData || !Array.isArray(progressData) || progressData.length === 0);
         
       setIsFirstTimeUser(isFirstLogin);
 
       // Update student data with level from student data
-      setStudentData(prev => ({
-        ...prev,
-        level: studentInfo?.level || 'Beginner'
-      }));
+      if (studentInfo && typeof studentInfo === 'object') {
+        setStudentData(prev => ({
+          ...prev,
+          level: studentInfo.level || 'Beginner'
+        }));
+      }
 
       // Format announcements (if there are any)
-      if (announcementsData && announcementsData.length > 0) {
-        const formattedAnnouncements: Announcement[] = announcementsData.map(ann => ({
-          id: ann.id,
-          title: ann.title,
-          content: ann.content,
-          date: new Date(ann.published_at).toLocaleDateString(),
-          instructor: {
-            name: ann.profiles ? `${ann.profiles.first_name || ''} ${ann.profiles.last_name || ''}`.trim() : 'Admin',
-            initials: ann.profiles ? 
-              `${(ann.profiles.first_name || ' ')[0]}${(ann.profiles.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
-          },
-          isNew: true,
-          type: 'announcement',
-        }));
+      if (announcementsData && Array.isArray(announcementsData) && announcementsData.length > 0) {
+        const formattedAnnouncements: Announcement[] = announcementsData.map(ann => {
+          // Safely handle potentially missing data
+          if (!ann) return null;
+          
+          const firstName = ann.profiles?.first_name || '';
+          const lastName = ann.profiles?.last_name || '';
+          const fullName = `${firstName} ${lastName}`.trim() || 'Admin';
+          const initials = `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'A';
+          
+          return {
+            id: ann.id || '',
+            title: ann.title || '',
+            content: ann.content || '',
+            date: ann.published_at ? new Date(ann.published_at).toLocaleDateString() : 'Unknown date',
+            instructor: {
+              name: fullName,
+              initials: initials
+            },
+            isNew: true,
+            type: 'announcement',
+          };
+        }).filter(Boolean) as Announcement[];
+        
         setAnnouncements(formattedAnnouncements);
       } else {
         setAnnouncements([]);
       }
 
       // Format upcoming classes (if there are any)
-      if (classesData && classesData.length > 0) {
+      if (classesData && Array.isArray(classesData) && classesData.length > 0) {
         const formattedClasses: ClassSession[] = classesData.map(cls => {
-          const startTime = new Date(cls.start_time);
-          const endTime = new Date(cls.end_time);
+          if (!cls) return null;
+          
+          const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
+          const endTime = cls.end_time ? new Date(cls.end_time) : new Date();
           const durationMs = endTime.getTime() - startTime.getTime();
           const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
           const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -224,8 +239,8 @@ export const useStudentDashboard = () => {
             : 'Not assigned';
             
           return {
-            id: cls.id,
-            title: cls.title,
+            id: cls.id || '',
+            title: cls.title || '',
             instructor: instructorName,
             date: startTime.toLocaleDateString(),
             time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -234,7 +249,7 @@ export const useStudentDashboard = () => {
             attendees: 0,
             isUpcoming: true,
           };
-        });
+        }).filter(Boolean) as ClassSession[];
         
         setUpcomingClasses(formattedClasses);
         
@@ -251,8 +266,11 @@ export const useStudentDashboard = () => {
       }
 
       // Calculate total progress if progress data exists
-      if (progressData && progressData.length > 0) {
-        const totalProficiency = progressData.reduce((sum, item) => sum + (item.proficiency || 0), 0);
+      if (progressData && Array.isArray(progressData) && progressData.length > 0) {
+        const totalProficiency = progressData.reduce((sum, item) => {
+          if (!item) return sum;
+          return sum + (item.proficiency || 0);
+        }, 0);
         const avgProgress = Math.round(totalProficiency / progressData.length);
         
         setStudentData(prev => ({
