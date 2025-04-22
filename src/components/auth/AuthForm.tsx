@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -75,52 +74,51 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      // Check if this user exists and has the correct role BEFORE signing them in
-      const { data: { user: checkUser } } = await supabase.auth.signInWithPassword({
+      // First verify the credentials and role without creating a persistent session
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
+        options: {
+          // This prevents the session from persisting across page reloads
+          persistSession: false
+        }
       });
       
-      if (!checkUser) {
-        setLoginError('Invalid email or password. Please try again.');
-        setLoginProcessing(false);
-        return;
+      if (error || !data.user) {
+        throw new Error(error?.message || 'Invalid email or password. Please try again.');
       }
       
-      // Check role before proceeding with login
+      // Now check if the user has the correct role for this login page
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', checkUser.id)
+        .eq('id', data.user.id)
         .single();
       
       if (profileError || !profileData) {
         console.error("Error fetching profile:", profileError);
-        setLoginError('Unable to verify account type. Please try again.');
-        setLoginProcessing(false);
-        
-        // Sign out since we already signed them in to check their role
-        await supabase.auth.signOut();
-        return;
+        throw new Error('Unable to verify account type. Please try again.');
       }
       
       // Verify that the user's role matches the page they're on
       if (profileData.role !== userType) {
-        // Wrong role for this page - immediately log out and show error
+        // Sign out to clean up the temporary auth state
         await supabase.auth.signOut();
         
-        setLoginError(`This login page is for ${userType}s only. Please use the appropriate login page.`);
-        toast({
-          title: 'Incorrect account type',
-          description: `This login page is for ${userType}s only. Please use the appropriate login page.`,
-          variant: 'destructive',
-        });
-        
-        setLoginProcessing(false);
-        return;
+        throw new Error(`This login page is for ${userType}s only. Please use the appropriate login page.`);
       }
       
-      // If we reach here, the role matches, so we proceed with the login (user is already logged in)
+      // If we reach here, the role matches, so we proceed with the actual login
+      // that will persist the session
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (loginError) {
+        throw new Error(loginError.message);
+      }
+      
       toast({
         title: 'Login successful',
         description: 'You have been logged in successfully.',
