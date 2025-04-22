@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
+import { useAuth } from '@/providers/AuthProvider';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -29,6 +30,14 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
   const { toast } = useToast();
   const [schedule, setSchedule] = useState<TeachingScheduleItem[]>([...scheduleItems]);
   const [loading, setLoading] = useState(false);
+  const { session, signOut } = useAuth();
+
+  // Reset schedule items when props change
+  useEffect(() => {
+    if (open) {
+      setSchedule([...scheduleItems]);
+    }
+  }, [open, scheduleItems]);
 
   const handleAddDay = () => {
     setSchedule([...schedule, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }]);
@@ -62,6 +71,16 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       return;
     }
 
+    if (!session) {
+      toast({
+        title: "Authentication Error",
+        description: "Your session has expired. Please sign in again.",
+        variant: "destructive"
+      });
+      setTimeout(() => signOut(), 2000);
+      return;
+    }
+
     setLoading(true);
     try {
       // First delete all existing schedule items
@@ -70,7 +89,19 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
         .delete()
         .eq('instructor_id', instructorId);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        // Check for auth error
+        if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please sign in again.",
+            variant: "destructive"
+          });
+          setTimeout(() => signOut(), 2000);
+          return;
+        }
+        throw deleteError;
+      }
 
       // Only insert if there are schedule items
       if (schedule.length > 0) {
@@ -85,7 +116,19 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
             }))
           );
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          // Check for auth error
+          if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
+            toast({
+              title: "Authentication Error",
+              description: "Your session has expired. Please sign in again.",
+              variant: "destructive"
+            });
+            setTimeout(() => signOut(), 2000);
+            return;
+          }
+          throw insertError;
+        }
       }
 
       // Success!
