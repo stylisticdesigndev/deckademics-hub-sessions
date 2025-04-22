@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      <VideoBackground videoSrc={youtubeVideoUrl} isYouTube={true} />
+      <VideoBackground videoSrc="/lovable-uploads/dj-background.mp4" />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header logo removed */}
       </header>
