@@ -10,54 +10,157 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Plus, Megaphone, Calendar, Info } from 'lucide-react';
+import { Edit, Plus, Megaphone, Calendar, Info, Trash } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+type AnnouncementDb = {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string | null;
+  published_at: string | null;
+  author_id: string | null;
+  // backend doesn't have 'type', so we infer it below
+};
+
+type InstructorProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+};
+
+function getInitials(first: string | null, last: string | null) {
+  return (first?.[0] ?? '') + (last?.[0] ?? '');
+}
+
+// Helper: determine announcement type heuristically from title/content or add a future backend mapping
+function inferType(title: string, content: string): 'event' | 'announcement' | 'update' {
+  // This can be improved if database includes a proper type column.
+  if (/event|workshop/i.test(title + content)) return 'event';
+  if (/update/i.test(title + content)) return 'update';
+  return 'announcement';
+}
+
+const getInstructor = async (author_id: string): Promise<InstructorProfile | null> => {
+  if (!author_id) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id,first_name,last_name,avatar_url')
+    .eq('id', author_id)
+    .maybeSingle();
+  if (error) return null;
+  return data;
+};
+
+const fetchAnnouncements = async () => {
+  // Only pull announcements for instructor's students if needed- for now assume all announcements.
+  const { data, error } = await supabase
+    .from('announcements')
+    .select('*')
+    .order('published_at', { ascending: false });
+  if (error) throw error;
+  return data as AnnouncementDb[];
+};
 
 const InstructorAnnouncements = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [isCreating, setIsCreating] = useState(false);
   const [announcementType, setAnnouncementType] = useState<'announcement' | 'event' | 'update'>('announcement');
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     content: '',
   });
-  
-  const [announcements, setAnnouncements] = useState<Announcement[]>([
-    {
-      id: '1',
-      title: 'New Scratching Workshop',
-      content: 'Join us this weekend for an intensive scratching workshop with DJ Precision. All levels welcome!',
-      date: '2 hours ago',
-      instructor: {
-        name: 'DJ Smith',
-        initials: 'DS',
-      },
-      type: 'event',
-    },
-    {
-      id: '2',
-      title: 'Studio Access Updates',
-      content: 'The practice studio hours have been extended to 10 PM on weekdays. Make sure to book your slot!',
-      date: '2 days ago',
-      instructor: {
-        name: 'DJ Smith',
-        initials: 'DS',
-      },
-      type: 'announcement',
-    },
-    {
-      id: '3',
-      title: 'Vinyl Maintenance Session',
-      content: 'Learn how to properly clean and store your vinyl records in next week\'s maintenance session.',
-      date: '5 days ago',
-      instructor: {
-        name: 'DJ Smith',
-        initials: 'DS',
-      },
-      type: 'update',
-    },
-  ]);
 
-  const handleCreateAnnouncement = () => {
+  // Fetch announcements
+  const { data: announcementsDb, isLoading: loadingAnnouncements, error: errorAnnouncements } = useQuery({
+    queryKey: ['announcements'],
+    queryFn: fetchAnnouncements,
+  });
+
+  // Cache of instructor info (reduce repeated requests)
+  const [instructorCache, setInstructorCache] = useState<Record<string, InstructorProfile>>({});
+
+  // Helper: get instructor details and cache
+  const getInstructorInfo = async (author_id: string | null) => {
+    if (!author_id) return null;
+    if (instructorCache[author_id]) return instructorCache[author_id];
+    const profile = await getInstructor(author_id);
+    if (profile) {
+      setInstructorCache((prev) => ({ ...prev, [author_id]: profile }));
+    }
+    return profile;
+  };
+
+  // Create announcement mutation
+  const createAnnouncementMutation = useMutation({
+    mutationFn: async ({
+      title,
+      content,
+      type,
+    }: {
+      title: string;
+      content: string;
+      type: 'announcement' | 'event' | 'update';
+    }) => {
+      // Get current user (should be instructor)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      // Insert into announcements
+      const { data, error } = await supabase.from('announcements').insert([
+        {
+          title,
+          content,
+          author_id: user.id,
+        },
+      ]).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      setIsCreating(false);
+      setNewAnnouncement({ title: '', content: '' });
+      toast({
+        title: 'Announcement Created',
+        description: 'Your announcement has been published to students.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error Creating Announcement',
+        description: 'Could not publish announcement.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete announcement mutation
+  const deleteAnnouncementMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      toast({
+        title: 'Announcement Deleted',
+        description: 'The announcement has been removed.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error Deleting Announcement',
+        description: 'Could not delete announcement.',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const handleCreateAnnouncement = async () => {
     if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
       toast({
         title: 'Missing Information',
@@ -66,37 +169,71 @@ const InstructorAnnouncements = () => {
       });
       return;
     }
-    
-    const announcement: Announcement = {
-      id: (announcements.length + 1).toString(),
+    createAnnouncementMutation.mutate({
       title: newAnnouncement.title,
       content: newAnnouncement.content,
-      date: 'Just now',
-      instructor: {
-        name: 'DJ Smith',
-        initials: 'DS',
-      },
-      isNew: true,
       type: announcementType,
-    };
-    
-    setAnnouncements([announcement, ...announcements]);
-    setNewAnnouncement({ title: '', content: '' });
-    setIsCreating(false);
-    
-    toast({
-      title: 'Announcement Created',
-      description: 'Your announcement has been published to students.',
     });
   };
 
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter(a => a.id !== id));
-    toast({
-      title: 'Announcement Deleted',
-      description: 'The announcement has been removed.',
-    });
-  };
+  // UI: transform DB items to AnnouncementCard items with instructor info
+  const [announcementCards, setAnnouncementCards] = useState<Announcement[]>([]);
+
+  React.useEffect(() => {
+    if (!announcementsDb) return;
+    let cancelled = false;
+
+    async function process() {
+      const results: Announcement[] = [];
+      for (let dbAnn of announcementsDb) {
+        // Use cache or fetch for instructor
+        let instructor: InstructorProfile | null = null;
+        if (dbAnn.author_id) {
+          instructor = instructorCache[dbAnn.author_id] || (await getInstructor(dbAnn.author_id));
+          if (instructor && !instructorCache[dbAnn.author_id]) {
+            setInstructorCache((prev) => ({ ...prev, [dbAnn.author_id!]: instructor! }));
+          }
+        }
+        results.push({
+          id: dbAnn.id,
+          title: dbAnn.title,
+          content: dbAnn.content,
+          date: dbAnn.published_at
+            ? timeAgo(dbAnn.published_at)
+            : dbAnn.created_at
+              ? timeAgo(dbAnn.created_at)
+              : '',
+          instructor: {
+            name:
+              ((instructor?.first_name ?? '') + ' ' + (instructor?.last_name ?? '')).trim() || 'Unknown',
+            initials: getInitials(instructor?.first_name ?? '', instructor?.last_name ?? ''),
+            avatar: instructor?.avatar_url ?? undefined,
+          },
+          type: inferType(dbAnn.title, dbAnn.content),
+          isNew: false,
+        });
+      }
+      if (!cancelled) setAnnouncementCards(results);
+    }
+    process();
+    return () => {
+      cancelled = true;
+    };
+    // we want to rerun when announcementsDb or instructorCache changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [announcementsDb, Object.keys(instructorCache).join(',')]);
+
+  // Helper: timeAgo formatter
+  function timeAgo(dateString: string) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = (now.getTime() - date.getTime()) / 1000;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' days ago';
+    return date.toLocaleDateString();
+  }
 
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
@@ -108,7 +245,6 @@ const InstructorAnnouncements = () => {
               Create and manage announcements for your students
             </p>
           </div>
-          
           {!isCreating && (
             <Button onClick={() => setIsCreating(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -116,7 +252,6 @@ const InstructorAnnouncements = () => {
             </Button>
           )}
         </section>
-
         {isCreating ? (
           <Card>
             <CardHeader>
@@ -128,8 +263,8 @@ const InstructorAnnouncements = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Announcement Type</label>
-                <Select 
-                  value={announcementType} 
+                <Select
+                  value={announcementType}
                   onValueChange={(value: 'announcement' | 'event' | 'update') => setAnnouncementType(value)}
                 >
                   <SelectTrigger>
@@ -157,29 +292,29 @@ const InstructorAnnouncements = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Title</label>
                 <Input
                   placeholder="Announcement title"
                   value={newAnnouncement.title}
-                  onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
+                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Content</label>
                 <Textarea
                   placeholder="Write your announcement here..."
                   rows={5}
                   value={newAnnouncement.content}
-                  onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
+                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
                 />
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setIsCreating(false);
                   setNewAnnouncement({ title: '', content: '' });
@@ -187,8 +322,11 @@ const InstructorAnnouncements = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateAnnouncement}>
-                Publish Announcement
+              <Button
+                onClick={handleCreateAnnouncement}
+                disabled={createAnnouncementMutation.isPending}
+              >
+                {createAnnouncementMutation.isPending ? 'Publishing...' : 'Publish Announcement'}
               </Button>
             </CardFooter>
           </Card>
@@ -199,30 +337,17 @@ const InstructorAnnouncements = () => {
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="announcements">Announcements</TabsTrigger>
             </TabsList>
-            
+
+            {/* ALL */}
             <TabsContent value="all">
               <div className="space-y-4">
-                {announcements.length > 0 ? (
-                  announcements.map(announcement => (
-                    <div key={announcement.id} className="relative">
-                      <AnnouncementCard announcement={announcement} />
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleDelete(announcement.id)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
-                          </svg>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
+                {loadingAnnouncements ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                      <span className="animate-pulse">Loading...</span>
+                    </CardContent>
+                  </Card>
+                ) : !announcementCards.length ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                       <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
@@ -232,35 +357,38 @@ const InstructorAnnouncements = () => {
                       </p>
                     </CardContent>
                   </Card>
+                ) : (
+                  announcementCards.map((announcement) => (
+                    <div key={announcement.id} className="relative">
+                      <AnnouncementCard announcement={announcement} />
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                          disabled={deleteAnnouncementMutation.isPending}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </TabsContent>
-            
+            {/* EVENTS */}
             <TabsContent value="events">
               <div className="space-y-4">
-                {announcements.filter(a => a.type === 'event').length > 0 ? (
-                  announcements
-                    .filter(a => a.type === 'event')
-                    .map(announcement => (
-                      <div key={announcement.id} className="relative">
-                        <AnnouncementCard announcement={announcement} />
-                        <div className="absolute top-4 right-4 flex gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDelete(announcement.id)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                ) : (
+                {loadingAnnouncements ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                      <span className="animate-pulse">Loading...</span>
+                    </CardContent>
+                  </Card>
+                ) : !announcementCards.filter((a) => a.type === 'event').length ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                       <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
@@ -270,35 +398,40 @@ const InstructorAnnouncements = () => {
                       </p>
                     </CardContent>
                   </Card>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="announcements">
-              <div className="space-y-4">
-                {announcements.filter(a => a.type === 'announcement' || a.type === 'update').length > 0 ? (
-                  announcements
-                    .filter(a => a.type === 'announcement' || a.type === 'update')
-                    .map(announcement => (
+                ) : (
+                  announcementCards
+                    .filter((a) => a.type === 'event')
+                    .map((announcement) => (
                       <div key={announcement.id} className="relative">
                         <AnnouncementCard announcement={announcement} />
                         <div className="absolute top-4 right-4 flex gap-2">
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(announcement.id)}
+                            onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                            disabled={deleteAnnouncementMutation.isPending}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
-                            </svg>
+                            <Trash className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     ))
-                ) : (
+                )}
+              </div>
+            </TabsContent>
+            {/* ANNOUNCEMENTS/UPDATES */}
+            <TabsContent value="announcements">
+              <div className="space-y-4">
+                {loadingAnnouncements ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                      <span className="animate-pulse">Loading...</span>
+                    </CardContent>
+                  </Card>
+                ) : !announcementCards.filter((a) => a.type === 'announcement' || a.type === 'update').length ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                       <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
@@ -308,6 +441,27 @@ const InstructorAnnouncements = () => {
                       </p>
                     </CardContent>
                   </Card>
+                ) : (
+                  announcementCards
+                    .filter((a) => a.type === 'announcement' || a.type === 'update')
+                    .map((announcement) => (
+                      <div key={announcement.id} className="relative">
+                        <AnnouncementCard announcement={announcement} />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                            disabled={deleteAnnouncementMutation.isPending}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
                 )}
               </div>
             </TabsContent>
