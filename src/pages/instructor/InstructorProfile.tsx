@@ -13,13 +13,20 @@ import { AtSign, Phone, Save, User, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 
+const fallbackSchedule = [
+  { day: 'Monday', hours: '2:00 PM - 8:00 PM' },
+  { day: 'Wednesday', hours: '2:00 PM - 8:00 PM' },
+  { day: 'Friday', hours: '3:00 PM - 9:00 PM' },
+];
+
 const InstructorProfile = () => {
   const { toast } = useToast();
   const { userData, session, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [instructorData, setInstructorData] = useState<any>(null);
-  
+  const [teachingSchedule, setTeachingSchedule] = useState(fallbackSchedule);
+
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -27,45 +34,49 @@ const InstructorProfile = () => {
     bio: '',
     startDate: '',
     expertiseAreas: '',
-    schedule: [
-      { day: 'Monday', hours: '2:00 PM - 8:00 PM' },
-      { day: 'Wednesday', hours: '2:00 PM - 8:00 PM' },
-      { day: 'Friday', hours: '3:00 PM - 9:00 PM' },
-    ]
   });
 
-  const [formData, setFormData] = useState({...profile});
-  
+  const [formData, setFormData] = useState({ ...profile });
+
   useEffect(() => {
     const fetchInstructorData = async () => {
       if (!session?.user?.id) return;
-      
+
       try {
         setLoading(true);
-        
+
         // Fetch instructor specific data
         const { data: instructorData, error: instructorError } = await supabase
           .from('instructors')
           .select('*')
           .eq('id', session.user.id)
-          .single();
-          
+          .maybeSingle();
+
         if (instructorError && instructorError.code !== 'PGRST116') {
           console.error('Error fetching instructor data:', instructorError);
         }
-        
+
         // Set instructor data if available
         if (instructorData) {
           setInstructorData(instructorData);
+
+          // Teaching schedule: if a schedule column is implemented/future-proofed, you could store per-user JSON schedule.
+          // Fallback to hardcoded (mock) otherwise.
+          if (instructorData.schedule && Array.isArray(instructorData.schedule)) {
+            setTeachingSchedule(instructorData.schedule);
+          } else {
+            setTeachingSchedule(fallbackSchedule);
+          }
+        } else {
+          setTeachingSchedule(fallbackSchedule);
         }
-        
-        // Set profile data from user metadata and/or profile data
-        const name = userData?.profile 
-          ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() 
+
+        const name = userData?.profile
+          ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim()
           : session.user?.user_metadata
             ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
             : '';
-            
+
         setProfile(prev => ({
           ...prev,
           name: name || 'Instructor',
@@ -74,7 +85,7 @@ const InstructorProfile = () => {
           bio: instructorData?.bio || 'No bio provided yet.',
           expertiseAreas: instructorData?.specialties ? instructorData.specialties.join(', ') : '',
         }));
-        
+
         setFormData(prev => ({
           ...prev,
           name: name || 'Instructor',
@@ -89,10 +100,11 @@ const InstructorProfile = () => {
         setLoading(false);
       }
     };
-    
+
     fetchInstructorData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, userData]);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -100,23 +112,23 @@ const InstructorProfile = () => {
       [name]: value
     }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Extract first and last name from the full name
       const nameParts = formData.name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       // Update user profile
       await updateProfile({
         first_name: firstName,
         last_name: lastName,
         phone: formData.phone,
       });
-      
+
       // Update instructor specific data
       if (session?.user?.id) {
         const { error: instructorError } = await supabase
@@ -126,16 +138,16 @@ const InstructorProfile = () => {
             specialties: formData.expertiseAreas.split(',').map(s => s.trim()).filter(s => s !== '')
           })
           .eq('id', session.user.id);
-          
+
         if (instructorError) {
           console.error('Error updating instructor data:', instructorError);
           throw instructorError;
         }
       }
-      
-      setProfile({...formData});
+
+      setProfile({ ...formData });
       setIsEditing(false);
-      
+
       toast({
         title: 'Profile updated',
         description: 'Your profile has been updated successfully.',
@@ -190,79 +202,79 @@ const InstructorProfile = () => {
                           {getInitials(profile.name)}
                         </AvatarFallback>
                       </Avatar>
-                      
+
                       {isEditing ? (
                         <Button type="button" variant="outline">
                           Upload New Photo
                         </Button>
                       ) : null}
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="name">Full Name</Label>
                           <div className="relative">
                             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                            <Input 
-                              id="name" 
-                              name="name" 
-                              placeholder="Your name" 
-                              className="pl-10" 
-                              value={formData.name} 
-                              onChange={handleChange} 
-                              disabled={!isEditing} 
+                            <Input
+                              id="name"
+                              name="name"
+                              placeholder="Your name"
+                              className="pl-10"
+                              value={formData.name}
+                              onChange={handleChange}
+                              disabled={!isEditing}
                             />
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label htmlFor="email">Email</Label>
                           <div className="relative">
                             <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                            <Input 
-                              id="email" 
-                              name="email" 
-                              type="email" 
-                              placeholder="Your email" 
-                              className="pl-10" 
-                              value={formData.email} 
-                              onChange={handleChange} 
-                              disabled={true} 
+                            <Input
+                              id="email"
+                              name="email"
+                              type="email"
+                              placeholder="Your email"
+                              className="pl-10"
+                              value={formData.email}
+                              onChange={handleChange}
+                              disabled={true}
                             />
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input 
-                            id="phone" 
-                            name="phone" 
-                            placeholder="Your phone number" 
-                            className="pl-10" 
-                            value={formData.phone} 
-                            onChange={handleChange} 
-                            disabled={!isEditing} 
+                          <Input
+                            id="phone"
+                            name="phone"
+                            placeholder="Your phone number"
+                            className="pl-10"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            disabled={!isEditing}
                           />
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
-                        <Textarea 
-                          id="bio" 
-                          name="bio" 
-                          placeholder="Tell us about your DJ experience and teaching philosophy" 
-                          rows={4} 
-                          value={formData.bio} 
-                          onChange={handleChange} 
-                          disabled={!isEditing} 
+                        <Textarea
+                          id="bio"
+                          name="bio"
+                          placeholder="Tell us about your DJ experience and teaching philosophy"
+                          rows={4}
+                          value={formData.bio}
+                          onChange={handleChange}
+                          disabled={!isEditing}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="expertiseAreas">Areas of Expertise</Label>
                         <Input
@@ -281,7 +293,7 @@ const InstructorProfile = () => {
                       <>
                         <Button type="button" variant="outline" onClick={() => {
                           setIsEditing(false);
-                          setFormData({...profile});
+                          setFormData({ ...profile });
                         }}>
                           Cancel
                         </Button>
@@ -299,7 +311,7 @@ const InstructorProfile = () => {
                 </Card>
               </form>
             </div>
-            
+
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -310,7 +322,7 @@ const InstructorProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {profile.schedule.map((slot, index) => (
+                    {teachingSchedule.map((slot, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
@@ -319,7 +331,7 @@ const InstructorProfile = () => {
                         </div>
                       </div>
                     ))}
-                    
+
                     <Button variant="outline" className="w-full">
                       Edit Schedule
                     </Button>
@@ -335,3 +347,4 @@ const InstructorProfile = () => {
 };
 
 export default InstructorProfile;
+
