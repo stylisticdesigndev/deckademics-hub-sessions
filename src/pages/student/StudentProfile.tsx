@@ -59,26 +59,25 @@ const StudentProfile = () => {
         } else {
           console.log('Student data fetched:', student);
           setStudentData(student);
-          
-          // Fetch student bio
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('bio')
-            .eq('id', studentId)
-            .single();
-            
-          if (profileData) {
-            setProfile(prev => ({
-              ...prev,
-              bio: profileData.bio || 'No bio provided yet.'
-            }));
-            
-            setFormData(prev => ({
-              ...prev,
-              bio: profileData.bio || 'No bio provided yet.'
-            }));
-          }
         }
+        
+        // Since bio is not directly in profiles table (according to the error), we need to handle it differently
+        // We could have it stored in students table, or we can use the notes field as bio for now
+        let bioText = '';
+        if (student && student.notes) {
+          bioText = student.notes;
+        }
+        
+        // Update the profile state with the bio
+        setProfile(prev => ({
+          ...prev,
+          bio: bioText || 'No bio provided yet.'
+        }));
+        
+        setFormData(prev => ({
+          ...prev,
+          bio: bioText || 'No bio provided yet.'
+        }));
         
         // Try to fetch course and instructor data
         if (student) {
@@ -169,9 +168,21 @@ const StudentProfile = () => {
       await updateProfile({
         first_name: firstName,
         last_name: lastName,
-        phone: formData.phone,
-        bio: formData.bio
+        phone: formData.phone
       });
+      
+      // Update the bio/notes in the students table
+      if (studentId) {
+        const { error: updateError } = await supabase
+          .from('students')
+          .update({ notes: formData.bio })
+          .eq('id', studentId);
+          
+        if (updateError) {
+          console.error('Error updating student notes:', updateError);
+          throw new Error('Failed to update bio');
+        }
+      }
       
       setProfile({...formData});
       setIsEditing(false);
