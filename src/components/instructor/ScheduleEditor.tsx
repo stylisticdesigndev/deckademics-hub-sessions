@@ -88,7 +88,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId as string);
+        .eq('instructor_id', instructorId);
 
       if (deleteError) {
         // Check for auth error

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { PostgrestError } from '@supabase/supabase-js';
+import { Database } from '@/integrations/supabase/types';
 
 interface Announcement {
   id: string;
@@ -40,6 +41,44 @@ interface StudentData {
   instructor: string;
   nextClass: string;
 }
+
+type StudentInfo = {
+  level: string;
+  enrollment_status: string;
+  notes: string | null;
+};
+
+type ClassInfo = {
+  id: string;
+  title: string;
+  location: string;
+  start_time: string;
+  end_time: string;
+  instructor_id: string;
+  instructorProfile?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+};
+
+type InstructorProfile = {
+  id: string;
+  first_name: string;
+  last_name: string;
+};
+
+type AnnouncementData = {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+  author_id: string;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+  };
+};
 
 export const useStudentDashboard = () => {
   const { toast } = useToast();
@@ -85,7 +124,7 @@ export const useStudentDashboard = () => {
         console.log("Student data fetched:", studentInfo);
       }
 
-      // Fetch announcements - fix the target_role query format
+      // Fetch announcements with proper type handling
       const { data: announcementsData, error: announcementsError } = await supabase
         .from('announcements')
         .select(`
@@ -96,8 +135,7 @@ export const useStudentDashboard = () => {
           author_id,
           profiles:author_id (first_name, last_name)
         `)
-        .contains('target_role', ['student'])
-        .order('published_at', { ascending: false });
+        .contains('target_role', ['student']);
 
       if (announcementsError) {
         console.error("Error fetching announcements:", announcementsError);
@@ -105,7 +143,7 @@ export const useStudentDashboard = () => {
         console.log("Announcements fetched:", announcementsData?.length || 0);
       }
 
-      // Fetch upcoming classes - with proper error handling
+      // Fetch upcoming classes with proper error handling
       const now = new Date().toISOString();
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -128,7 +166,7 @@ export const useStudentDashboard = () => {
         
         // If we have classes, fetch the instructor profiles separately
         if (classesData && Array.isArray(classesData) && classesData.length > 0) {
-          // Get unique instructor IDs with null check
+          // Get unique instructor IDs with type checking
           const instructorIds: string[] = [];
           classesData.forEach(cls => {
             if (cls && cls.instructor_id) {
@@ -137,7 +175,7 @@ export const useStudentDashboard = () => {
           });
             
           if (instructorIds.length > 0) {
-            // Fetch instructor profiles
+            // Fetch instructor profiles with proper type handling
             const { data: instructorProfiles, error: profilesError } = await supabase
               .from('profiles')
               .select('id, first_name, last_name')
@@ -147,7 +185,7 @@ export const useStudentDashboard = () => {
               console.error("Error fetching instructor profiles:", profilesError);
             } else if (instructorProfiles && Array.isArray(instructorProfiles)) {
               // Create a map of instructor profiles for easy lookup
-              const profilesMap = new Map();
+              const profilesMap = new Map<string, InstructorProfile>();
               instructorProfiles.forEach(profile => {
                 if (profile && profile.id) {
                   profilesMap.set(profile.id, profile);
@@ -155,11 +193,12 @@ export const useStudentDashboard = () => {
               });
               
               // Enhance class data with instructor profiles
-              classesData.forEach(cls => {
+              const typedClassData = classesData as ClassInfo[];
+              typedClassData.forEach(cls => {
                 if (cls && cls.instructor_id) {
                   const profile = profilesMap.get(cls.instructor_id);
                   if (profile) {
-                    (cls as any).instructorProfile = profile;
+                    cls.instructorProfile = profile;
                   }
                 }
               });
@@ -168,7 +207,7 @@ export const useStudentDashboard = () => {
         }
       }
 
-      // Fetch progress data
+      // Fetch progress data with proper type handling
       const { data: progressData, error: progressError } = await supabase
         .from('student_progress')
         .select('skill_name, proficiency')
@@ -207,18 +246,20 @@ export const useStudentDashboard = () => {
           let fullName = 'Admin';
           let initials = 'A';
           
-          if (ann.profiles) {
-            const firstName = ann.profiles.first_name || '';
-            const lastName = ann.profiles.last_name || '';
+          const typedAnn = ann as AnnouncementData;
+          
+          if (typedAnn.profiles) {
+            const firstName = typedAnn.profiles.first_name || '';
+            const lastName = typedAnn.profiles.last_name || '';
             fullName = `${firstName} ${lastName}`.trim() || 'Admin';
             initials = `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'A';
           }
           
           formattedAnnouncements.push({
-            id: ann.id || '',
-            title: ann.title || '',
-            content: ann.content || '',
-            date: ann.published_at ? new Date(ann.published_at).toLocaleDateString() : 'Unknown date',
+            id: typedAnn.id || '',
+            title: typedAnn.title || '',
+            content: typedAnn.content || '',
+            date: typedAnn.published_at ? new Date(typedAnn.published_at).toLocaleDateString() : 'Unknown date',
             instructor: {
               name: fullName,
               initials: initials
@@ -236,8 +277,9 @@ export const useStudentDashboard = () => {
       // Format upcoming classes (if there are any)
       if (classesData && Array.isArray(classesData) && classesData.length > 0) {
         const formattedClasses: ClassSession[] = [];
+        const typedClassData = classesData as ClassInfo[];
         
-        for (const cls of classesData) {
+        for (const cls of typedClassData) {
           if (!cls) continue;
           
           const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
@@ -247,7 +289,7 @@ export const useStudentDashboard = () => {
           const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
           
           // Use the instructorProfile we've added during the separate query
-          const instructorProfile = (cls as any).instructorProfile;
+          const instructorProfile = cls.instructorProfile;
           const instructorName = instructorProfile 
             ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
             : 'Not assigned';
