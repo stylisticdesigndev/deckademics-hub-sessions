@@ -13,7 +13,13 @@ import { AtSign, Phone, Save, User, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 
-const fallbackSchedule = [
+// Define a type for the teaching schedule
+type TeachingScheduleItem = {
+  day: string;
+  hours: string;
+};
+
+const fallbackSchedule: TeachingScheduleItem[] = [
   { day: 'Monday', hours: '2:00 PM - 8:00 PM' },
   { day: 'Wednesday', hours: '2:00 PM - 8:00 PM' },
   { day: 'Friday', hours: '3:00 PM - 9:00 PM' },
@@ -25,7 +31,7 @@ const InstructorProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [instructorData, setInstructorData] = useState<any>(null);
-  const [teachingSchedule, setTeachingSchedule] = useState(fallbackSchedule);
+  const [teachingSchedule, setTeachingSchedule] = useState<TeachingScheduleItem[]>(fallbackSchedule);
 
   const [profile, setProfile] = useState({
     name: '',
@@ -60,13 +66,9 @@ const InstructorProfile = () => {
         if (instructorData) {
           setInstructorData(instructorData);
 
-          // Teaching schedule: if a schedule column is implemented/future-proofed, you could store per-user JSON schedule.
-          // Fallback to hardcoded (mock) otherwise.
-          if (instructorData.schedule && Array.isArray(instructorData.schedule)) {
-            setTeachingSchedule(instructorData.schedule);
-          } else {
-            setTeachingSchedule(fallbackSchedule);
-          }
+          // For now, we'll always use the fallback schedule since the schedule column doesn't exist
+          // in the instructors table according to the TypeScript error
+          setTeachingSchedule(fallbackSchedule);
         } else {
           setTeachingSchedule(fallbackSchedule);
         }
@@ -347,4 +349,3 @@ const InstructorProfile = () => {
 };
 
 export default InstructorProfile;
-
