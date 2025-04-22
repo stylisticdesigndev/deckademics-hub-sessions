@@ -45,7 +45,7 @@ const AdminAuth = () => {
           </AuthProvider>
           
           <div className="text-center">
-            <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
+            <Link to="/" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
             </Link>
           </div>
