@@ -98,7 +98,7 @@ const StudentProgress = () => {
                     <span>Proficiency</span>
                     <span className="font-medium">{averageProgress}%</span>
                   </div>
-                  <ProgressBar value={averageProgress} />
+                  <ProgressBar value={averageProgress} max={100} />
                 </div>
               </CardContent>
             </Card>
@@ -117,7 +117,7 @@ const StudentProgress = () => {
                       <span>{skill.skill_name}</span>
                       <span className="font-medium">{skill.proficiency || 0}%</span>
                     </div>
-                    <ProgressBar value={skill.proficiency || 0} />
+                    <ProgressBar value={skill.proficiency || 0} max={100} />
                   </div>
                 ))}
               </CardContent>
