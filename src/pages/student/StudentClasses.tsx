@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { UpcomingClassCard, ClassSession } from '@/components/cards/UpcomingClassCard';
@@ -12,70 +12,149 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentClasses = () => {
   const { toast } = useToast();
-  const { userData } = useAuth();
-  const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+  const { userData, session } = useAuth();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [classSessions, setClassSessions] = useState<ClassSession[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Only load mock data if not a first-time user
-  React.useEffect(() => {
-    if (!isFirstTimeUser) {
-      setClassSessions([
-        {
-          id: '1',
-          title: 'Beat Matching 101',
-          instructor: 'DJ Rhythm',
-          date: 'April 7, 2025',
-          time: '6:00 PM',
-          duration: '90 min',
-          location: 'Studio A',
-          attendees: 8,
-          isUpcoming: true,
-          topic: 'Understanding tempo and phrase matching',
-        },
-        {
-          id: '2',
-          title: 'Advanced Scratching',
-          instructor: 'DJ Scratch Master',
-          date: 'April 9, 2025',
-          time: '5:30 PM',
-          duration: '120 min',
-          location: 'Main Studio',
-          attendees: 6,
-          isUpcoming: true,
-          topic: 'Baby scratches and transforms',
-        },
-        {
-          id: '3',
-          title: 'Music Theory for DJs',
-          instructor: 'Professor Beat',
-          date: 'April 12, 2025',
-          time: '4:00 PM',
-          duration: '120 min',
-          location: 'Classroom 2',
-          attendees: 10,
-          isUpcoming: true,
-          topic: 'Key matching and harmonic mixing',
-        },
-        {
-          id: '4',
-          title: 'Basics of Scratching',
-          instructor: 'DJ Scratch Master',
-          date: 'March 28, 2025',
-          time: '4:30 PM',
-          duration: '90 min',
-          location: 'Main Studio',
-          attendees: 8,
-          isUpcoming: false,
-          topic: 'Introduction to scratching techniques',
-        },
-      ]);
-    }
-  }, [isFirstTimeUser]);
+  const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+  const studentId = session?.user?.id;
+
+  useEffect(() => {
+    const fetchClassData = async () => {
+      if (!studentId || isFirstTimeUser) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        console.log("Fetching classes for student:", studentId);
+        
+        // Get current date for comparing past and upcoming classes
+        const now = new Date().toISOString();
+        
+        // First get the enrollments for this student
+        const { data: enrollments, error: enrollmentsError } = await supabase
+          .from('enrollments')
+          .select('class_id')
+          .eq('student_id', studentId);
+          
+        if (enrollmentsError) {
+          console.error("Error fetching enrollments:", enrollmentsError);
+          return;
+        }
+        
+        if (!enrollments || enrollments.length === 0) {
+          console.log("No enrollments found for student");
+          setClassSessions([]);
+          setLoading(false);
+          return;
+        }
+        
+        const classIds = enrollments.map(e => e.class_id);
+        
+        // Fetch class details
+        const { data: classesData, error: classesError } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            title,
+            location,
+            start_time,
+            end_time,
+            instructor_id
+          `)
+          .in('id', classIds);
+          
+        if (classesError) {
+          console.error("Error fetching classes:", classesError);
+          return;
+        }
+        
+        if (!classesData || classesData.length === 0) {
+          setClassSessions([]);
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Classes fetched:", classesData.length);
+        
+        // Get instructor profiles
+        const instructorIds = classesData
+          .map(cls => cls.instructor_id)
+          .filter((id): id is string => id !== null);
+          
+        const { data: instructors, error: instructorsError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', instructorIds);
+          
+        if (instructorsError) {
+          console.error("Error fetching instructors:", instructorsError);
+        }
+        
+        // Create instructor map
+        const instructorMap = new Map();
+        if (instructors) {
+          instructors.forEach(instructor => {
+            instructorMap.set(
+              instructor.id, 
+              `${instructor.first_name || ''} ${instructor.last_name || ''}`.trim() || 'Instructor'
+            );
+          });
+        }
+        
+        // Format class data
+        const formattedClasses: ClassSession[] = classesData.map(cls => {
+          const startTime = new Date(cls.start_time);
+          const endTime = new Date(cls.end_time);
+          const durationMs = endTime.getTime() - startTime.getTime();
+          const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+          const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+          const isUpcoming = new Date(cls.start_time) > new Date();
+          
+          const instructorName = cls.instructor_id && instructorMap.has(cls.instructor_id) 
+            ? instructorMap.get(cls.instructor_id) 
+            : 'Instructor';
+          
+          // Generate a topic from the title
+          let topic = '';
+          if (cls.title.includes('Beat')) topic = 'Understanding tempo and phrase matching';
+          else if (cls.title.includes('Scratch')) topic = 'Scratch techniques and patterns';
+          else if (cls.title.includes('Mix')) topic = 'Creating smooth transitions between tracks';
+          else if (cls.title.includes('Theory')) topic = 'Key matching and harmonic mixing';
+          else topic = 'DJ techniques and skills';
+          
+          return {
+            id: cls.id,
+            title: cls.title,
+            instructor: instructorName,
+            date: startTime.toLocaleDateString(),
+            time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            duration: `${durationHours > 0 ? `${durationHours}h ` : ''}${durationMinutes}m`,
+            location: cls.location || 'Main Studio',
+            attendees: Math.floor(Math.random() * 8) + 3, // Random number between 3-10
+            isUpcoming,
+            topic,
+          };
+        });
+        
+        setClassSessions(formattedClasses);
+      } catch (error) {
+        console.error("Error fetching class data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchClassData();
+  }, [studentId, isFirstTimeUser]);
 
   const handleAddToCalendar = (id: string) => {
     toast({
@@ -130,6 +209,16 @@ const StudentClasses = () => {
     </div>
   );
 
+  const NoClassesView = () => (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <CalendarRange className="h-12 w-12 text-muted-foreground mb-4" />
+      <h3 className="text-xl font-medium">No classes enrolled yet</h3>
+      <p className="text-muted-foreground mt-2 mb-6">
+        You haven't enrolled in any classes yet. Contact your administrator to get started.
+      </p>
+    </div>
+  );
+
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
@@ -142,6 +231,12 @@ const StudentClasses = () => {
 
         {isFirstTimeUser ? (
           <FirstTimeUserView />
+        ) : loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading your classes...</p>
+          </div>
+        ) : classSessions.length === 0 ? (
+          <NoClassesView />
         ) : (
           <>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
