@@ -19,38 +19,53 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Video, Trash, RefreshCw } from 'lucide-react';
+import { Video, Trash, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const AdminSettings = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState(localStorage.getItem('backgroundVideoUrl') || '/lovable-uploads/dj-background.mp4');
-  const { clearLocalStorage } = useAuth();
+  const { clearLocalStorage, session } = useAuth();
   
   // Check if the storage bucket exists
-  const [bucketExists, setBucketExists] = useState(true);
+  const [bucketExists, setBucketExists] = useState(false);
+  const [bucketError, setBucketError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if the bucket exists
     async function checkBucket() {
       try {
+        if (!session?.user) {
+          setBucketError("You must be logged in to access storage features");
+          setBucketExists(false);
+          return;
+        }
+
         const { data, error } = await supabase.storage.getBucket('background-videos');
         
         if (error) {
           console.error('Error checking bucket:', error);
+          if (error.message === "Bucket not found") {
+            setBucketError("Storage bucket 'background-videos' not found. Please check Supabase configuration.");
+          } else {
+            setBucketError(error.message);
+          }
           setBucketExists(false);
         } else {
           setBucketExists(true);
+          setBucketError(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error checking bucket:', error);
+        setBucketError(error.message || "An error occurred while checking the storage bucket");
         setBucketExists(false);
       }
     }
     
     checkBucket();
-  }, []);
+  }, [session]);
 
   const form = useForm({
     defaultValues: {
@@ -70,6 +85,15 @@ const AdminSettings = () => {
   };
 
   const handleVideoUpload = async () => {
+    if (!session?.user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You must be logged in to upload videos.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (!videoFile) {
       toast({
         title: 'No Video Selected',
@@ -94,7 +118,7 @@ const AdminSettings = () => {
     if (!bucketExists) {
       toast({
         title: 'Storage Not Available',
-        description: 'The video storage is not configured correctly. Please contact support.',
+        description: bucketError || 'The video storage is not configured correctly. Please check Supabase configuration.',
         variant: 'destructive'
       });
       return;
@@ -103,16 +127,14 @@ const AdminSettings = () => {
     setIsUploading(true);
 
     try {
-      // Get the session to ensure we're authenticated
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session?.session) {
+      // Make sure we have a valid session before uploading
+      if (!session?.user?.id) {
         throw new Error('You must be logged in to upload videos');
       }
 
       const fileExt = videoFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${uniqueFileName}`;
 
       // Upload to Supabase storage
       const { data, error: uploadError } = await supabase.storage
@@ -123,6 +145,7 @@ const AdminSettings = () => {
         });
 
       if (uploadError) {
+        console.error('Upload error details:', uploadError);
         throw uploadError;
       }
 
@@ -141,9 +164,19 @@ const AdminSettings = () => {
       });
     } catch (error: any) {
       console.error('Error uploading video:', error);
+      
+      let errorMessage = 'There was an error uploading the video.';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error_description) {
+        errorMessage = error.error_description;
+      } else if (error.statusCode === 403 || error.statusCode === 401) {
+        errorMessage = 'You do not have permission to upload videos. Please check your account permissions.';
+      }
+
       toast({
         title: 'Upload Failed',
-        description: error.message || 'There was an error uploading the video.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -250,6 +283,17 @@ const AdminSettings = () => {
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Background Video</h3>
+                  
+                  {bucketError && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Storage Configuration Error</AlertTitle>
+                      <AlertDescription>
+                        {bucketError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
                   <div className="flex items-center space-x-4">
                     <Input 
                       type="file" 
@@ -263,7 +307,7 @@ const AdminSettings = () => {
                     <Button 
                       type="button"
                       onClick={handleVideoUpload}
-                      disabled={isUploading || !bucketExists}
+                      disabled={isUploading || !bucketExists || !session?.user}
                     >
                       {isUploading ? 'Uploading...' : 'Upload Video'}
                       <Video className="ml-2 h-4 w-4" />
@@ -272,11 +316,6 @@ const AdminSettings = () => {
                   <FormDescription>
                     Upload a new background video for the landing page. 
                     Recommended size: 1920x1080, max 50MB.
-                    {!bucketExists && (
-                      <span className="text-destructive block mt-1">
-                        Storage bucket not available. Please check Supabase configuration.
-                      </span>
-                    )}
                   </FormDescription>
                 </div>
 
