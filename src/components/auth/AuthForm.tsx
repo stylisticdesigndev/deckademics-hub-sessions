@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthFormProps {
   userType: UserRole;
@@ -19,6 +21,7 @@ interface AuthFormProps {
 
 export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
   const { signIn, signUp, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -73,10 +76,50 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     
     try {
       const result = await signIn(formData.email, formData.password);
+      
       if (!result.user) {
         setLoginError('Invalid email or password. Please try again.');
         setLoginProcessing(false);
+        return;
       }
+      
+      // Check if the user has the correct role for this login page
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', result.user.id)
+        .single();
+      
+      if (profileError || !profileData) {
+        console.error("Error fetching profile:", profileError);
+        setLoginError('Unable to verify account type. Please try again.');
+        setLoginProcessing(false);
+        return;
+      }
+      
+      // Verify that the user's role matches the page they're on
+      if (profileData.role !== userType) {
+        // Wrong role for this page
+        toast({
+          title: 'Incorrect account type',
+          description: `This login page is for ${userType}s only. Please use the appropriate login page.`,
+          variant: 'destructive',
+        });
+        
+        setLoginError(`This login page is for ${userType}s only. Please log in using the appropriate page.`);
+        
+        // Sign out the user since they logged in with the wrong role
+        await supabase.auth.signOut();
+        setLoginProcessing(false);
+        return;
+      }
+      
+      // Correct role, continue with login process
+      toast({
+        title: 'Login successful',
+        description: 'You have been logged in successfully.',
+      });
+      
       // Auth state change will handle the redirect
     } catch (error: any) {
       console.error("Sign in error in form:", error);
@@ -86,6 +129,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         description: error.message || 'Authentication failed. Please try again.',
         variant: 'destructive',
       });
+    } finally {
       setLoginProcessing(false);
     }
   };
@@ -171,6 +215,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
 
   const handleGoogleAuth = async () => {
     try {
+      // Add role to the query params to be extracted after redirect
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -178,6 +223,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            role: userType // Add role as a query param
           },
         },
       });
@@ -186,7 +232,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         throw error;
       }
       
-      console.log("Google auth initiated:", data);
+      console.log(`Google auth initiated for ${userType}:`, data);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       toast({

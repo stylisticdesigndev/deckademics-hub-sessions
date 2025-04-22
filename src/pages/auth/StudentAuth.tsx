@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -10,7 +11,7 @@ const StudentAuth = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
-      <header className="container flex h-16 items-center px-4 sm:px:6 lg:px-8">
+      <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
         {/* Header logo removed */}
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">

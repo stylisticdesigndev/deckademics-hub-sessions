@@ -14,6 +14,13 @@ const InstructorAuthContent = () => {
   useEffect(() => {
     if (session && userData.role === 'instructor') {
       navigate('/instructor/dashboard');
+    } else if (session && userData.role !== 'instructor') {
+      // If logged in but not an instructor, redirect to appropriate dashboard
+      if (userData.role === 'student') {
+        navigate('/student/dashboard');
+      } else if (userData.role === 'admin') {
+        navigate('/admin/dashboard');
+      }
     }
   }, [session, userData.role, navigate]);
   
@@ -60,7 +67,7 @@ const InstructorAuth = () => {
           </AuthProvider>
           
           <div className="text-center">
-            <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
+            <Link to="/" className="text-sm text-deckademics-primary hover:underline">
               Back to sign in options
             </Link>
           </div>
