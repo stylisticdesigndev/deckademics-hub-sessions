@@ -1,31 +1,33 @@
-
-import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { InstructorNavigation } from "@/components/navigation/InstructorNavigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, X, Edit, User, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
-import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import { StudentNoteDialog } from '@/components/notes/StudentNoteDialog';
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
+// --------- TYPES ---------
 interface Student {
   id: string;
   name: string;
@@ -52,8 +54,162 @@ interface ModuleProgress {
   }[];
 }
 
+// --------- DATA FETCHING ---------
+// All logic in a hook for clarity
+function useInstructorStudents(instructorId: string | undefined) {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!instructorId) return;
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // 1. Find all classes taught by this instructor
+        const { data: classes, error: classesError } = await supabase
+          .from("classes")
+          .select("id, start_time, title")
+          .eq("instructor_id", instructorId);
+
+        if (classesError) {
+          console.error("Error loading classes:", classesError);
+          setLoading(false);
+          return;
+        }
+
+        const classIds = (classes ?? []).map((c) => c.id);
+        if (!classIds.length) {
+          setStudents([]);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Find all enrollments for those classes (= assigned students)
+        const { data: enrollments, error: enrollmentsError } = await supabase
+          .from("enrollments")
+          .select("student_id, enrollment_date, class_id")
+          .in("class_id", classIds);
+
+        if (enrollmentsError) {
+          console.error("Error loading enrollments:", enrollmentsError);
+          setLoading(false);
+          return;
+        }
+        const uniqueStudentIds = [
+          ...new Set((enrollments ?? []).map((e) => e.student_id)),
+        ];
+
+        if (!uniqueStudentIds.length) {
+          setStudents([]);
+          setLoading(false);
+          return;
+        }
+
+        // 3. Load profile (name/email) for each student (in public.profiles)
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email, avatar_url")
+          .in("id", uniqueStudentIds);
+
+        if (profilesError) {
+          console.error("Error loading profiles:", profilesError);
+          setLoading(false);
+          return;
+        }
+        const profilesById: { [id: string]: any } = {};
+        profiles?.forEach((p) => {
+          profilesById[p.id] = p;
+        });
+
+        // 4. Load student "level" from students table
+        const { data: studentsTbl, error: studentsErr } = await supabase
+          .from("students")
+          .select("id, level")
+          .in("id", uniqueStudentIds);
+
+        if (studentsErr) {
+          console.error("Error loading students:", studentsErr);
+          setLoading(false);
+          return;
+        }
+        const levelById: { [id: string]: string } = {};
+        studentsTbl?.forEach((s) => {
+          levelById[s.id] = s.level ?? "Novice";
+        });
+
+        // 5. For each student, compute average progress from all their skills
+        // (skill proficiencies stored in student_progress)
+        // We'll batch with .in()
+        const { data: rawProgress, error: progressError } = await supabase
+          .from("student_progress")
+          .select("student_id, proficiency")
+          .in("student_id", uniqueStudentIds);
+
+        if (progressError) {
+          console.error("Error loading student progress:", progressError);
+          setLoading(false);
+          return;
+        }
+        // Aggregate all progress by student_id
+        const progressById: { [id: string]: number } = {};
+        uniqueStudentIds.forEach((id) => {
+          const records = (rawProgress ?? []).filter((row) => row.student_id === id);
+          const profs = records.map((r) => r.proficiency || 0);
+          // Average, fallback to 0 if no skills
+          progressById[id] = profs.length
+            ? Math.round(profs.reduce((a, b) => a + b, 0) / profs.length)
+            : 0;
+        });
+
+        // 6. Compose Student objects (minimal dataset, no modules/notes)
+        const dbStudents: Student[] = uniqueStudentIds.map((id) => {
+          const prof = profilesById[id];
+          return {
+            id,
+            name: [
+              prof?.first_name ?? "",
+              prof?.last_name ?? "",
+            ].join(" ").trim() || prof?.email,
+            email: prof?.email,
+            avatar: prof?.avatar_url,
+            progress: progressById[id] ?? 0,
+            level: levelById[id] ?? "Novice",
+            initials: (prof?.first_name?.[0] ?? "") + (prof?.last_name?.[0] ?? ""),
+            // Use start_time of earliest enrollment as "enrollment date"
+            enrollmentDate:
+              enrollments
+                ?.filter((e) => e.student_id === id)
+                .sort((a, b) =>
+                  (a.enrollment_date ?? "") > (b.enrollment_date ?? "") ? 1 : -1
+                )[0]?.enrollment_date?.slice(0, 10) ?? "",
+            // No real lastActive, nextClass in DB currently
+            lastActive: "",
+            nextClass: "",
+          };
+        });
+
+        setStudents(dbStudents);
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [instructorId]);
+
+  return { students, loading };
+}
+
 const InstructorStudents = () => {
   const { toast } = useToast();
+  const { userData, session } = useAuth();
+  const instructorId = session?.user?.id;
+
+  // fetch students for this instructor from supabase
+  const { students: fetchedStudents, loading } = useInstructorStudents(instructorId);
+  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -124,280 +280,12 @@ const InstructorStudents = () => {
     },
   ];
   
-  // Mock students data with notes array and module progress
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: '1',
-      name: 'Alex Johnson',
-      email: 'alex.j@example.com',
-      level: 'Intermediate',
-      progress: 68,
-      lastActive: 'Today',
-      initials: 'AJ',
-      enrollmentDate: 'Jan 15, 2025',
-      nextClass: 'April 7, 2025',
-      notes: [
-        'April 1: Showing good progress with beat matching skills.',
-        'March 28: Needs to work on timing.'
-      ],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 100,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: true },
-            { id: '1-4', title: 'Software Overview', completed: true },
-          ]
-        },
-        {
-          moduleId: '2',
-          moduleName: 'Beat Matching Fundamentals',
-          progress: 80,
-          lessons: [
-            { id: '2-1', title: 'Understanding BPM', completed: true },
-            { id: '2-2', title: 'Manual Beat Matching', completed: true },
-            { id: '2-3', title: 'Beat Matching with Software', completed: true },
-            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
-          ]
-        },
-        {
-          moduleId: '3',
-          moduleName: 'Basic Mixing Techniques',
-          progress: 20,
-          lessons: [
-            { id: '3-1', title: 'EQ Mixing', completed: true },
-            { id: '3-2', title: 'Volume Fading', completed: false },
-            { id: '3-3', title: 'Filter Effects', completed: false },
-            { id: '3-4', title: 'Intro to Phrase Mixing', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Taylor Smith',
-      email: 'tsmith@example.com',
-      level: 'Novice',
-      progress: 32,
-      lastActive: 'Yesterday',
-      initials: 'TS',
-      enrollmentDate: 'Feb 3, 2025',
-      nextClass: 'April 8, 2025',
-      notes: [],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 60,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: false },
-            { id: '1-4', title: 'Software Overview', completed: false },
-          ]
-        },
-        {
-          moduleId: '2',
-          moduleName: 'Beat Matching Fundamentals',
-          progress: 10,
-          lessons: [
-            { id: '2-1', title: 'Understanding BPM', completed: false },
-            { id: '2-2', title: 'Manual Beat Matching', completed: false },
-            { id: '2-3', title: 'Beat Matching with Software', completed: false },
-            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '3',
-      name: 'Jordan Lee',
-      email: 'jlee@example.com',
-      level: 'Advanced',
-      progress: 87,
-      lastActive: '3 days ago',
-      initials: 'JL',
-      enrollmentDate: 'Nov 10, 2024',
-      nextClass: 'April 9, 2025',
-      notes: [
-        'April 2: Ready to move to performance techniques.',
-        'March 25: Excellent work on transition techniques.'
-      ],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 100,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: true },
-            { id: '1-4', title: 'Software Overview', completed: true },
-          ]
-        },
-        {
-          moduleId: '2',
-          moduleName: 'Beat Matching Fundamentals',
-          progress: 100,
-          lessons: [
-            { id: '2-1', title: 'Understanding BPM', completed: true },
-            { id: '2-2', title: 'Manual Beat Matching', completed: true },
-            { id: '2-3', title: 'Beat Matching with Software', completed: true },
-            { id: '2-4', title: 'Troubleshooting Common Issues', completed: true },
-          ]
-        },
-        {
-          moduleId: '3',
-          moduleName: 'Basic Mixing Techniques',
-          progress: 90,
-          lessons: [
-            { id: '3-1', title: 'EQ Mixing', completed: true },
-            { id: '3-2', title: 'Volume Fading', completed: true },
-            { id: '3-3', title: 'Filter Effects', completed: true },
-            { id: '3-4', title: 'Intro to Phrase Mixing', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '4',
-      name: 'Morgan Rivera',
-      email: 'morgan.r@example.com',
-      level: 'Novice',
-      progress: 15,
-      lastActive: '1 week ago',
-      initials: 'MR',
-      enrollmentDate: 'Feb 20, 2025',
-      notes: [],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 30,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: false },
-            { id: '1-3', title: 'Headphones & Monitors', completed: false },
-            { id: '1-4', title: 'Software Overview', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '5',
-      name: 'Casey Williams',
-      email: 'c.williams@example.com',
-      level: 'Intermediate',
-      progress: 52,
-      lastActive: '2 days ago',
-      initials: 'CW',
-      enrollmentDate: 'Dec 12, 2024',
-      nextClass: 'April 12, 2025',
-      notes: [],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 80,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: true },
-            { id: '1-4', title: 'Software Overview', completed: false },
-          ]
-        },
-        {
-          moduleId: '2',
-          moduleName: 'Beat Matching Fundamentals',
-          progress: 40,
-          lessons: [
-            { id: '2-1', title: 'Understanding BPM', completed: true },
-            { id: '2-2', title: 'Manual Beat Matching', completed: false },
-            { id: '2-3', title: 'Beat Matching with Software', completed: false },
-            { id: '2-4', title: 'Troubleshooting Common Issues', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '6',
-      name: 'Jamie Roberts',
-      email: 'jroberts@example.com',
-      level: 'Novice',
-      progress: 28,
-      lastActive: 'Yesterday',
-      initials: 'JR',
-      enrollmentDate: 'Mar 5, 2025',
-      notes: [],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 50,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: false },
-            { id: '1-4', title: 'Software Overview', completed: false },
-          ]
-        }
-      ]
-    },
-    {
-      id: '7',
-      name: 'Drew Parker',
-      email: 'dparker@example.com',
-      level: 'Advanced',
-      progress: 92,
-      lastActive: 'Today',
-      initials: 'DP',
-      enrollmentDate: 'Oct 3, 2024',
-      nextClass: 'April 10, 2025',
-      notes: [
-        'March 29: Excellent turntable control.',
-        'March 22: Working well with complex transitions.',
-        'March 15: Showing mastery of beat juggling techniques.'
-      ],
-      moduleProgress: [
-        {
-          moduleId: '1',
-          moduleName: 'Introduction to DJ Equipment',
-          progress: 100,
-          lessons: [
-            { id: '1-1', title: 'Turntables & CDJs', completed: true },
-            { id: '1-2', title: 'DJ Mixers & Controllers', completed: true },
-            { id: '1-3', title: 'Headphones & Monitors', completed: true },
-            { id: '1-4', title: 'Software Overview', completed: true },
-          ]
-        },
-        {
-          moduleId: '2',
-          moduleName: 'Beat Matching Fundamentals',
-          progress: 100,
-          lessons: [
-            { id: '2-1', title: 'Understanding BPM', completed: true },
-            { id: '2-2', title: 'Manual Beat Matching', completed: true },
-            { id: '2-3', title: 'Beat Matching with Software', completed: true },
-            { id: '2-4', title: 'Troubleshooting Common Issues', completed: true },
-          ]
-        },
-        {
-          moduleId: '3',
-          moduleName: 'Basic Mixing Techniques',
-          progress: 100,
-          lessons: [
-            { id: '3-1', title: 'EQ Mixing', completed: true },
-            { id: '3-2', title: 'Volume Fading', completed: true },
-            { id: '3-3', title: 'Filter Effects', completed: true },
-            { id: '3-4', title: 'Intro to Phrase Mixing', completed: true },
-          ]
-        }
-      ]
-    },
-  ]);
+  // Update students when fetched data changes
+  useEffect(() => {
+    if (fetchedStudents.length > 0) {
+      setStudents(fetchedStudents);
+    }
+  }, [fetchedStudents]);
 
   // Filter students based on search and filters
   const filteredStudents = students.filter(student => {
@@ -681,7 +569,11 @@ const InstructorStudents = () => {
                     <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
-                  {filteredStudents.length > 0 ? (
+                  {loading ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      Loading students...
+                    </div>
+                  ) : filteredStudents.length > 0 ? (
                     <div>
                       {filteredStudents.map((student) => (
                         <div 
