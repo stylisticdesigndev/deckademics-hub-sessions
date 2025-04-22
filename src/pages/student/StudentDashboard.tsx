@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { useStudentDashboard } from '@/hooks/student/useStudentDashboard';
@@ -10,9 +10,10 @@ import { AnnouncementsSection } from '@/components/student/dashboard/Announcemen
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
 import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentDashboard = () => {
-  const { userData } = useAuth();
+  const { userData, session } = useAuth();
   const {
     loading,
     studentData,
@@ -21,9 +22,13 @@ const StudentDashboard = () => {
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
     isEmpty,
-    isFirstTimeUser
+    isFirstTimeUser,
+    refreshData
   } = useStudentDashboard();
 
+  // Get current user ID from session
+  const userId = session?.user?.id;
+  
   // Generate the name from profile data
   const studentName = userData.profile ? 
     `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 
@@ -31,6 +36,14 @@ const StudentDashboard = () => {
   
   console.log("Rendering dashboard for:", studentName);
   console.log("Current user profile:", userData.profile);
+  console.log("Current session user:", session?.user);
+
+  // Force refresh data if user ID changes
+  useEffect(() => {
+    if (userId) {
+      refreshData();
+    }
+  }, [userId, refreshData]);
 
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;
