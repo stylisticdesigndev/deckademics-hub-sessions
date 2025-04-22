@@ -10,7 +10,6 @@ import { AnnouncementsSection } from '@/components/student/dashboard/Announcemen
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
 import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
 
 const StudentDashboard = () => {
   const { userData, session } = useAuth();
@@ -30,7 +29,7 @@ const StudentDashboard = () => {
   const userId = session?.user?.id;
   
   // Generate the name from profile data
-  const studentName = userData.profile ? 
+  const studentName = userData?.profile ? 
     `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 
     'Student';
   

@@ -4,14 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 
-interface Instructor {
-  id: string;
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
-}
-
 interface Announcement {
   id: string;
   title: string;
@@ -92,7 +84,7 @@ export const useStudentDashboard = () => {
         console.log("Student data fetched:", studentInfo);
       }
 
-      // Fetch announcements
+      // Fetch announcements - fix the target_role query format
       const { data: announcementsData, error: announcementsError } = await supabase
         .from('announcements')
         .select(`
@@ -103,7 +95,7 @@ export const useStudentDashboard = () => {
           author_id,
           profiles:author_id (first_name, last_name)
         `)
-        .in('target_role', [['student']])
+        .contains('target_role', ['student'])
         .order('published_at', { ascending: false });
 
       if (announcementsError) {
@@ -112,7 +104,7 @@ export const useStudentDashboard = () => {
         console.log("Announcements fetched:", announcementsData?.length || 0);
       }
 
-      // Fetch upcoming classes
+      // Fetch upcoming classes - fix the relationship query
       const now = new Date().toISOString();
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -122,9 +114,10 @@ export const useStudentDashboard = () => {
           location,
           start_time,
           end_time,
-          instructors:instructor_id (
-            id,
-            profiles:id (first_name, last_name)
+          instructor_id,
+          profiles:instructor_id (
+            first_name,
+            last_name
           )
         `)
         .gt('start_time', now)
@@ -191,8 +184,8 @@ export const useStudentDashboard = () => {
           const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
           const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
           
-          const instructorName = cls.instructors?.profiles 
-            ? `${cls.instructors.profiles.first_name || ''} ${cls.instructors.profiles.last_name || ''}`.trim()
+          const instructorName = cls.profiles 
+            ? `${cls.profiles.first_name || ''} ${cls.profiles.last_name || ''}`.trim()
             : 'Not assigned';
             
           return {
