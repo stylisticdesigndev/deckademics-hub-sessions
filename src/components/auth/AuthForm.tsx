@@ -108,10 +108,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       }
       
       // If we reach here, the role matches, so we proceed with the actual login
-      const { data: loginData, error: loginError } = await signIn(formData.email, formData.password);
+      const result = await signIn(formData.email, formData.password);
       
-      if (loginError) {
-        throw new Error(loginError.message);
+      if (result.error) {
+        throw new Error(result.error.message);
       }
       
       toast({
