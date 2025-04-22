@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -112,7 +111,7 @@ export const useStudentDashboard = () => {
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
         .select('level, enrollment_status, notes')
-        .eq('id', userId as any)
+        .eq('id', userId as string)
         .maybeSingle();
         
       if (studentError && studentError.code !== 'PGRST116') {
@@ -121,7 +120,7 @@ export const useStudentDashboard = () => {
         console.log("Student data fetched:", studentInfo);
       }
 
-      // Fetch announcements with proper type handling
+      // Fetch announcements
       const { data: announcementsData, error: announcementsError } = await supabase
         .from('announcements')
         .select(`
@@ -137,10 +136,10 @@ export const useStudentDashboard = () => {
       if (announcementsError) {
         console.error("Error fetching announcements:", announcementsError);
       } else {
-        console.log("Announcements fetched:", announcementsData?.length || 0);
+        console.log("Announcements fetched:", Array.isArray(announcementsData) ? announcementsData.length : 'none');
       }
 
-      // Fetch upcoming classes with proper error handling
+      // Fetch upcoming classes
       const now = new Date().toISOString();
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -156,47 +155,40 @@ export const useStudentDashboard = () => {
         .order('start_time', { ascending: true })
         .limit(3);
 
+      let validClasses: any[] = [];
       if (classesError) {
         console.error("Error fetching classes:", classesError);
-      } else {
-        console.log("Classes fetched:", classesData?.length || 0);
+      } else if (Array.isArray(classesData)) {
+        validClasses = classesData.filter((cls: any) => cls && typeof cls === "object" && "instructor_id" in cls);
+        console.log("Classes fetched:", validClasses.length);
         
-        // If we have classes, fetch the instructor profiles separately
-        if (classesData && Array.isArray(classesData) && classesData.length > 0) {
-          // Get unique instructor IDs with type checking
-          const instructorIds: string[] = [];
-          classesData.forEach(cls => {
-            if (cls && cls.instructor_id) {
-              instructorIds.push(cls.instructor_id);
-            }
-          });
+        // If we have classes, fetch the instructor profiles
+        if (validClasses.length > 0) {
+          // Get unique instructor IDs
+          const instructorIds: string[] = validClasses
+            .map(cls => cls.instructor_id)
+            .filter(id => typeof id === "string");
             
           if (instructorIds.length > 0) {
-            // Fetch instructor profiles with proper type handling
             const { data: instructorProfiles, error: profilesError } = await supabase
               .from('profiles')
               .select('id, first_name, last_name')
-              .in('id', instructorIds as any);
+              .in('id', instructorIds as string[]);
               
             if (profilesError) {
               console.error("Error fetching instructor profiles:", profilesError);
-            } else if (instructorProfiles && Array.isArray(instructorProfiles)) {
-              // Create a map of instructor profiles for easy lookup
-              const profilesMap = new Map<string, InstructorProfile>();
+            } else if (Array.isArray(instructorProfiles)) {
+              // Create a map of instructor profiles
+              const profilesMap = new Map<string, any>();
               instructorProfiles.forEach(profile => {
-                if (profile && profile.id) {
-                  profilesMap.set(profile.id, profile as InstructorProfile);
+                if (profile && typeof profile === "object" && profile.id) {
+                  profilesMap.set(profile.id, profile);
                 }
               });
               
-              // Enhance class data with instructor profiles
-              const typedClassData = classesData as unknown as ClassInfo[];
-              typedClassData.forEach(cls => {
-                if (cls && cls.instructor_id) {
-                  const profile = profilesMap.get(cls.instructor_id);
-                  if (profile) {
-                    cls.instructorProfile = profile;
-                  }
+              validClasses.forEach(cls => {
+                if (cls && cls.instructor_id && profilesMap.has(cls.instructor_id)) {
+                  cls.instructorProfile = profilesMap.get(cls.instructor_id);
                 }
               });
             }
@@ -204,21 +196,21 @@ export const useStudentDashboard = () => {
         }
       }
 
-      // Fetch progress data with proper type handling
+      // Fetch progress data
       const { data: progressData, error: progressError } = await supabase
         .from('student_progress')
         .select('skill_name, proficiency')
-        .eq('student_id', userId as any);
+        .eq('student_id', userId as string);
 
       if (progressError) {
         console.error("Error fetching progress:", progressError);
       } else {
-        console.log("Progress data fetched:", progressData?.length || 0);
+        console.log("Progress data fetched:", Array.isArray(progressData) ? progressData.length : 'none');
       }
       
-      // Check if this is a first-time user (no classes, no progress data)
+      // Check if this is a first-time user
       const isFirstLogin = 
-        (!classesData || !Array.isArray(classesData) || classesData.length === 0) && 
+        (!validClasses || validClasses.length === 0) && 
         (!progressData || !Array.isArray(progressData) || progressData.length === 0);
         
       setIsFirstTimeUser(isFirstLogin);
@@ -231,68 +223,57 @@ export const useStudentDashboard = () => {
         }));
       }
 
-      // Format announcements (if there are any)
-      if (announcementsData && Array.isArray(announcementsData) && announcementsData.length > 0) {
+      // Format announcements
+      if (Array.isArray(announcementsData) && announcementsData.length > 0) {
         const formattedAnnouncements: Announcement[] = [];
         
-        for (const ann of announcementsData) {
-          // Safely handle potentially missing data
-          if (!ann) continue;
-          
-          // Type-safe access to data
-          const typedAnn = ann as unknown as AnnouncementData;
-          
-          // Safely access profiles data with type checking
-          let fullName = 'Admin';
-          let initials = 'A';
-          
-          if (typedAnn.profiles) {
-            const firstName = typedAnn.profiles.first_name || '';
-            const lastName = typedAnn.profiles.last_name || '';
-            fullName = `${firstName} ${lastName}`.trim() || 'Admin';
-            initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
+        for (const annRaw of announcementsData) {
+          if (annRaw && typeof annRaw === "object" && "id" in annRaw) {
+            // Use casting with proper type check
+            const ann: any = annRaw;
+            let fullName = 'Admin';
+            let initials = 'A';
+            if (ann.profiles) {
+              const pf = Array.isArray(ann.profiles) ? ann.profiles[0] : ann.profiles;
+              if (pf) {
+                const firstName = pf.first_name ?? '';
+                const lastName = pf.last_name ?? '';
+                fullName = `${firstName} ${lastName}`.trim() || 'Admin';
+                initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
+              }
+            }
+            formattedAnnouncements.push({
+              id: ann.id || '',
+              title: ann.title || '',
+              content: ann.content || '',
+              date: ann.published_at ? new Date(ann.published_at).toLocaleDateString() : 'Unknown date',
+              instructor: {
+                name: fullName,
+                initials: initials
+              },
+              isNew: true,
+              type: 'announcement',
+            });
           }
-          
-          formattedAnnouncements.push({
-            id: typedAnn.id || '',
-            title: typedAnn.title || '',
-            content: typedAnn.content || '',
-            date: typedAnn.published_at ? new Date(typedAnn.published_at).toLocaleDateString() : 'Unknown date',
-            instructor: {
-              name: fullName,
-              initials: initials
-            },
-            isNew: true,
-            type: 'announcement',
-          });
         }
-        
         setAnnouncements(formattedAnnouncements);
       } else {
         setAnnouncements([]);
       }
 
-      // Format upcoming classes (if there are any)
-      if (classesData && Array.isArray(classesData) && classesData.length > 0) {
-        const formattedClasses: ClassSession[] = [];
-        const typedClassData = classesData as unknown as ClassInfo[];
-        
-        for (const cls of typedClassData) {
-          if (!cls) continue;
-          
+      // Format upcoming classes (if any)
+      if (validClasses && validClasses.length > 0) {
+        const formattedClasses: ClassSession[] = validClasses.map(cls => {
           const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
           const endTime = cls.end_time ? new Date(cls.end_time) : new Date();
           const durationMs = endTime.getTime() - startTime.getTime();
           const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
           const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-          
-          // Use the instructorProfile we've added during the separate query
           const instructorProfile = cls.instructorProfile;
           const instructorName = instructorProfile 
             ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
             : 'Not assigned';
-            
-          formattedClasses.push({
+          return {
             id: cls.id || '',
             title: cls.title || '',
             instructor: instructorName,
@@ -302,12 +283,9 @@ export const useStudentDashboard = () => {
             location: cls.location || 'Main Studio',
             attendees: 0,
             isUpcoming: true,
-          });
-        }
-        
+          };
+        });
         setUpcomingClasses(formattedClasses);
-        
-        // Update next class info if available
         if (formattedClasses.length > 0) {
           setStudentData(prev => ({
             ...prev,
@@ -321,7 +299,7 @@ export const useStudentDashboard = () => {
 
       // Calculate total progress if progress data exists
       if (progressData && Array.isArray(progressData) && progressData.length > 0) {
-        const totalProficiency = progressData.reduce((sum, item) => {
+        const totalProficiency = progressData.reduce((sum: number, item: any) => {
           if (!item) return sum;
           return sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0);
         }, 0);

@@ -88,10 +88,9 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId as any);
+        .eq('instructor_id', instructorId);
 
       if (deleteError) {
-        // Check for auth error
         if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
           toast({
             title: "Authentication Error",
@@ -106,43 +105,37 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
 
       // Only insert if there are schedule items
       if (schedule.length > 0) {
-        // Process each item one by one for better type safety
-        for (const item of schedule) {
-          const scheduleData: Database['public']['Tables']['instructor_schedules']['Insert'] = {
-            instructor_id: instructorId,
-            day: item.day,
-            hours: item.hours
-          };
-          
-          const { error: insertError } = await supabase
-            .from('instructor_schedules')
-            .insert([scheduleData]);
+        // Prepare data for bulk insert using Supabase types
+        const scheduleData: Database['public']['Tables']['instructor_schedules']['Insert'][] = schedule.map(item => ({
+          instructor_id: instructorId,
+          day: item.day,
+          hours: item.hours
+        }));
 
-          if (insertError) {
-            // Check for auth error
-            if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
-              toast({
-                title: "Authentication Error",
-                description: "Your session has expired. Please sign in again.",
-                variant: "destructive"
-              });
-              setTimeout(() => signOut(), 2000);
-              return;
-            }
-            throw insertError;
+        const { error: insertError } = await supabase
+          .from('instructor_schedules')
+          .insert(scheduleData);
+
+        if (insertError) {
+          if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
+            toast({
+              title: "Authentication Error",
+              description: "Your session has expired. Please sign in again.",
+              variant: "destructive"
+            });
+            setTimeout(() => signOut(), 2000);
+            return;
           }
+          throw insertError;
         }
       }
 
-      // Success!
       toast({
         title: "Schedule updated",
         description: "Your teaching schedule has been saved successfully."
       });
 
-      // Update the parent component
       onScheduleUpdated(schedule);
-      // Close the dialog
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving schedule:', error);
