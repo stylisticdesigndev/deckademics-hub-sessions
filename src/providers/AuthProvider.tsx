@@ -82,8 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (newSession?.user) {
             // Use setTimeout to avoid auth deadlocks
             setTimeout(() => {
-              // Special handling for admin@example.com in development
-              if (newSession.user.email === 'admin@example.com') {
+              // Special handling for admin@deckademics.com
+              if (newSession.user.email === 'admin@deckademics.com') {
                 console.log("Admin user detected, using direct role assignment");
                 setUserData({
                   user: newSession.user,
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     id: newSession.user.id,
                     first_name: 'Admin',
                     last_name: 'User',
-                    email: 'admin@example.com',
+                    email: 'admin@deckademics.com',
                     avatar_url: null,
                     role: 'admin',
                   },
@@ -140,8 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession?.user) {
           setSession(currentSession);
           
-          // Special handling for admin@example.com in development
-          if (currentSession.user.email === 'admin@example.com') {
+          // Special handling for admin@deckademics.com
+          if (currentSession.user.email === 'admin@deckademics.com') {
             console.log("Admin user detected, using direct role assignment");
             setUserData({
               user: currentSession.user,
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: currentSession.user.id,
                 first_name: 'Admin',
                 last_name: 'User',
-                email: 'admin@example.com',
+                email: 'admin@deckademics.com',
                 avatar_url: null,
                 role: 'admin',
               },
@@ -358,8 +358,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Sign in successful:", data.user?.email);
       
-      // Special handling for admin@example.com in development
-      if (normalizedEmail === 'admin@example.com') {
+      // Special handling for admin@deckademics.com
+      if (normalizedEmail === 'admin@deckademics.com') {
         console.log("Admin user detected, using direct role assignment");
         setUserData({
           user: data.user,
@@ -367,7 +367,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: data.user?.id || '',
             first_name: 'Admin',
             last_name: 'User',
-            email: 'admin@example.com',
+            email: 'admin@deckademics.com',
             avatar_url: null,
             role: 'admin',
           },

@@ -39,7 +39,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     if (userType === 'admin') {
       setFormData(prev => ({
         ...prev,
-        email: 'admin@example.com',
+        email: 'admin@deckademics.com',
         password: 'Admin123!'
       }));
     }
@@ -75,21 +75,11 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      // First verify the credentials without creating a persistent session
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-      
-      if (error || !data.user) {
-        throw new Error(error?.message || 'Invalid email or password. Please try again.');
-      }
-      
-      // For admin login, bypass the role check in development
-      if (userType === 'admin' && formData.email === 'admin@example.com') {
-        console.log("Admin login detected, bypassing role check for development");
+      // For admin login, bypass the verification check flow completely
+      if (userType === 'admin' && formData.email === 'admin@deckademics.com') {
+        console.log("Admin login detected, using direct admin flow");
         
-        // Proceed with actual login to create session
+        // Proceed with direct login to create session
         const result = await signIn(formData.email, formData.password);
         
         if (result.error) {
@@ -105,7 +95,17 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         return;
       }
       
-      // For non-admin roles, continue with the normal flow
+      // For non-admin logins, continue with the verification flow
+      // First verify the credentials without creating a persistent session
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      if (error || !data.user) {
+        throw new Error(error?.message || 'Invalid email or password. Please try again.');
+      }
+      
       // Now check if the user has the correct role for this login page
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
