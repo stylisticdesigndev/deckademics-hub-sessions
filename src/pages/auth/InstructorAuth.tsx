@@ -1,33 +1,9 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
-import { AuthProvider, useAuth } from '@/providers/AuthProvider';
-
-const InstructorAuthContent = () => {
-  const { session, userData } = useAuth();
-  const navigate = useNavigate();
-  
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (session && userData.role === 'instructor') {
-      navigate('/instructor/dashboard');
-    } else if (session && userData.role !== 'instructor') {
-      // If logged in but not an instructor, redirect to appropriate dashboard
-      if (userData.role === 'student') {
-        navigate('/student/dashboard');
-      } else if (userData.role === 'admin') {
-        navigate('/admin/dashboard');
-      }
-    }
-  }, [session, userData.role, navigate]);
-  
-  return (
-    <AuthForm userType="instructor" />
-  );
-};
+import { AuthProvider } from '@/providers/AuthProvider';
 
 const InstructorAuth = () => {
   return (
@@ -63,7 +39,7 @@ const InstructorAuth = () => {
           </Alert>
           
           <AuthProvider>
-            <InstructorAuthContent />
+            <AuthForm userType="instructor" />
           </AuthProvider>
           
           <div className="text-center">

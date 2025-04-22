@@ -75,52 +75,66 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      const result = await signIn(formData.email, formData.password);
+      // Check if this user exists and has the correct role BEFORE signing them in
+      const { data: { user: checkUser } } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
       
-      if (!result.user) {
+      if (!checkUser) {
         setLoginError('Invalid email or password. Please try again.');
         setLoginProcessing(false);
         return;
       }
       
-      // Check if the user has the correct role for this login page
+      // Check role before proceeding with login
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', result.user.id)
+        .eq('id', checkUser.id)
         .single();
       
       if (profileError || !profileData) {
         console.error("Error fetching profile:", profileError);
         setLoginError('Unable to verify account type. Please try again.');
         setLoginProcessing(false);
+        
+        // Sign out since we already signed them in to check their role
+        await supabase.auth.signOut();
         return;
       }
       
       // Verify that the user's role matches the page they're on
       if (profileData.role !== userType) {
-        // Wrong role for this page
+        // Wrong role for this page - immediately log out and show error
+        await supabase.auth.signOut();
+        
+        setLoginError(`This login page is for ${userType}s only. Please use the appropriate login page.`);
         toast({
           title: 'Incorrect account type',
           description: `This login page is for ${userType}s only. Please use the appropriate login page.`,
           variant: 'destructive',
         });
         
-        setLoginError(`This login page is for ${userType}s only. Please log in using the appropriate page.`);
-        
-        // Sign out the user since they logged in with the wrong role
-        await supabase.auth.signOut();
         setLoginProcessing(false);
         return;
       }
       
-      // Correct role, continue with login process
+      // If we reach here, the role matches, so we proceed with the login (user is already logged in)
       toast({
         title: 'Login successful',
         description: 'You have been logged in successfully.',
       });
       
-      // Auth state change will handle the redirect
+      // Redirect based on role
+      if (userType === 'student') {
+        navigate('/student/dashboard');
+      } else if (userType === 'instructor') {
+        navigate('/instructor/dashboard');
+      } else if (userType === 'admin') {
+        navigate('/admin/dashboard');
+      }
+      
     } catch (error: any) {
       console.error("Sign in error in form:", error);
       setLoginError(error.message || 'Authentication failed. Please try again.');
