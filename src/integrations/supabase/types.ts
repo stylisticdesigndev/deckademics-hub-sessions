@@ -259,6 +259,41 @@ export type Database = {
           },
         ]
       }
+      instructor_schedules: {
+        Row: {
+          created_at: string | null
+          day: string
+          hours: string
+          id: string
+          instructor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day: string
+          hours: string
+          id?: string
+          instructor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day?: string
+          hours?: string
+          id?: string
+          instructor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_schedules_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructors: {
         Row: {
           bio: string | null

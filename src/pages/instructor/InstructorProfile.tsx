@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -62,14 +61,32 @@ const InstructorProfile = () => {
           console.error('Error fetching instructor data:', instructorError);
         }
 
-        // Set instructor data if available
-        if (instructorData) {
-          setInstructorData(instructorData);
+        setInstructorData(instructorData);
 
-          // For now, we'll always use the fallback schedule since the schedule column doesn't exist
-          // in the instructors table according to the TypeScript error
-          setTeachingSchedule(fallbackSchedule);
-        } else {
+        // Fetch instructor schedule from instructor_schedules table
+        let realSchedule: TeachingScheduleItem[] | undefined;
+        try {
+          const { data: scheduleRows, error: scheduleError } = await supabase
+            .from('instructor_schedules')
+            .select('day,hours')
+            .eq('instructor_id', session.user.id);
+
+          if (scheduleError) {
+            console.error('Error fetching instructor schedule:', scheduleError);
+          }
+
+          if (scheduleRows && Array.isArray(scheduleRows) && scheduleRows.length > 0) {
+            realSchedule = scheduleRows.map(s => ({
+              day: s.day,
+              hours: s.hours,
+            }));
+            setTeachingSchedule(realSchedule);
+          } else {
+            // Fallback if no rows exist for this instructor
+            setTeachingSchedule(fallbackSchedule);
+          }
+        } catch (scheduleFetchError) {
+          // In case of fetch error, still fall back to default
           setTeachingSchedule(fallbackSchedule);
         }
 
