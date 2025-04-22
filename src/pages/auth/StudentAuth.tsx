@@ -1,7 +1,6 @@
-
 import React from 'react';
-import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
+import { AuthForm } from '@/components/auth/AuthForm';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, InfoIcon, HelpCircle, ShieldCheck } from 'lucide-react';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -11,7 +10,7 @@ const StudentAuth = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-deckademics-dark">
-      <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
+      <header className="container flex h-16 items-center px-4 sm:px:6 lg:px-8">
         {/* Header logo removed */}
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
@@ -87,12 +86,16 @@ const StudentAuth = () => {
           </div>
           
           <div className="text-center">
-            <Link to="/auth" className="text-sm text-deckademics-primary hover:underline">
+            <Link 
+              to="/" 
+              className="text-sm text-deckademics-primary hover:underline"
+            >
               Back to sign in options
             </Link>
           </div>
         </div>
       </main>
+      
       <footer className="py-6 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
       </footer>
