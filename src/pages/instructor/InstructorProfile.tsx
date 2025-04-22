@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
+import { ScheduleEditor } from '@/components/instructor/ScheduleEditor';
 
 // Define a type for the teaching schedule
 type TeachingScheduleItem = {
@@ -31,6 +32,7 @@ const InstructorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [instructorData, setInstructorData] = useState<any>(null);
   const [teachingSchedule, setTeachingSchedule] = useState<TeachingScheduleItem[]>(fallbackSchedule);
+  const [isScheduleEditorOpen, setIsScheduleEditorOpen] = useState(false);
 
   const [profile, setProfile] = useState({
     name: '',
@@ -189,6 +191,10 @@ const InstructorProfile = () => {
       .toUpperCase();
   };
 
+  const handleScheduleUpdated = (newSchedule: TeachingScheduleItem[]) => {
+    setTeachingSchedule(newSchedule);
+  };
+
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
       <div className="space-y-6">
@@ -341,17 +347,27 @@ const InstructorProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {teachingSchedule.map((slot, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{slot.day}</p>
-                          <p className="text-sm text-muted-foreground">{slot.hours}</p>
+                    {teachingSchedule.length > 0 ? (
+                      teachingSchedule.map((slot, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{slot.day}</p>
+                            <p className="text-sm text-muted-foreground">{slot.hours}</p>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-2 text-muted-foreground">
+                        No teaching schedule set up yet.
                       </div>
-                    ))}
+                    )}
 
-                    <Button variant="outline" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setIsScheduleEditorOpen(true)}
+                    >
                       Edit Schedule
                     </Button>
                   </div>
@@ -360,6 +376,15 @@ const InstructorProfile = () => {
             </div>
           </div>
         )}
+
+        {/* Schedule Editor Dialog */}
+        <ScheduleEditor
+          open={isScheduleEditorOpen}
+          onOpenChange={setIsScheduleEditorOpen}
+          scheduleItems={teachingSchedule}
+          instructorId={session?.user?.id || ''}
+          onScheduleUpdated={handleScheduleUpdated}
+        />
       </div>
     </DashboardLayout>
   );
