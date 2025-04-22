@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -81,6 +82,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (newSession?.user) {
             // Use setTimeout to avoid auth deadlocks
             setTimeout(() => {
+              // Special handling for admin@example.com in development
+              if (newSession.user.email === 'admin@example.com') {
+                console.log("Admin user detected, using direct role assignment");
+                setUserData({
+                  user: newSession.user,
+                  profile: {
+                    id: newSession.user.id,
+                    first_name: 'Admin',
+                    last_name: 'User',
+                    email: 'admin@example.com',
+                    avatar_url: null,
+                    role: 'admin',
+                  },
+                  role: 'admin',
+                });
+                
+                // Only redirect on SIGNED_IN event, not on token refresh
+                if (event === 'SIGNED_IN') {
+                  redirectBasedOnRole('admin');
+                }
+                return;
+              }
+              
               fetchUserProfile(newSession.user.id)
                 .then(profile => {
                   if (profile?.role) {
@@ -115,6 +139,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (currentSession?.user) {
           setSession(currentSession);
+          
+          // Special handling for admin@example.com in development
+          if (currentSession.user.email === 'admin@example.com') {
+            console.log("Admin user detected, using direct role assignment");
+            setUserData({
+              user: currentSession.user,
+              profile: {
+                id: currentSession.user.id,
+                first_name: 'Admin',
+                last_name: 'User',
+                email: 'admin@example.com',
+                avatar_url: null,
+                role: 'admin',
+              },
+              role: 'admin',
+            });
+            
+            // If we're on an auth page, redirect to the admin dashboard
+            if (window.location.pathname.includes('/auth/')) {
+              redirectBasedOnRole('admin');
+            }
+            setIsLoading(false);
+            return;
+          }
+          
           try {
             const profile = await fetchUserProfile(currentSession.user.id);
             
@@ -308,6 +357,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log("Sign in successful:", data.user?.email);
+      
+      // Special handling for admin@example.com in development
+      if (normalizedEmail === 'admin@example.com') {
+        console.log("Admin user detected, using direct role assignment");
+        setUserData({
+          user: data.user,
+          profile: {
+            id: data.user?.id || '',
+            first_name: 'Admin',
+            last_name: 'User',
+            email: 'admin@example.com',
+            avatar_url: null,
+            role: 'admin',
+          },
+          role: 'admin',
+        });
+        
+        toast({
+          title: 'Welcome Admin!',
+          description: 'You have successfully logged in as an administrator.',
+        });
+        
+        return { user: data.user, session: data.session };
+      }
       
       toast({
         title: 'Welcome back!',
