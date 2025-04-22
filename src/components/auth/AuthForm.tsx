@@ -74,14 +74,11 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
     
     try {
-      // First verify the credentials and role without creating a persistent session
+      // First verify the credentials without creating a persistent session
+      // Note: we're not using the persistSession option here since it's not available in this context
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
-        options: {
-          // This prevents the session from persisting across page reloads
-          persistSession: false
-        }
       });
       
       if (error || !data.user) {
@@ -97,12 +94,14 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       if (profileError || !profileData) {
         console.error("Error fetching profile:", profileError);
+        // Sign out since we just verified them
+        await supabase.auth.signOut();
         throw new Error('Unable to verify account type. Please try again.');
       }
       
       // Verify that the user's role matches the page they're on
       if (profileData.role !== userType) {
-        // Sign out to clean up the temporary auth state
+        // Sign out to clean up the auth state
         await supabase.auth.signOut();
         
         throw new Error(`This login page is for ${userType}s only. Please use the appropriate login page.`);
