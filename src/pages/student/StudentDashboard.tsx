@@ -28,6 +28,9 @@ const StudentDashboard = () => {
   const studentName = userData.profile ? 
     `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 
     'Student';
+  
+  console.log("Rendering dashboard for:", studentName);
+  console.log("Current user profile:", userData.profile);
 
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;

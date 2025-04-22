@@ -39,7 +39,6 @@ interface ClassSession {
 }
 
 interface StudentData {
-  name: string;
   level: string;
   totalProgress: number;
   currentModule: string;
@@ -58,7 +57,6 @@ export const useStudentDashboard = () => {
   const [upcomingClasses, setUpcomingClasses] = useState<ClassSession[]>([]);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [studentData, setStudentData] = useState<StudentData>({
-    name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
     level: 'Beginner',
     totalProgress: 0,
     currentModule: 'Not started',
@@ -74,6 +72,8 @@ export const useStudentDashboard = () => {
 
       try {
         setLoading(true);
+        console.log("Fetching data for user:", userData.user.id);
+        console.log("Current user profile:", userData.profile);
         
         // Fetch student information
         const { data: studentInfo, error: studentError } = await supabase
@@ -84,6 +84,8 @@ export const useStudentDashboard = () => {
           
         if (studentError && studentError.code !== 'PGRST116') {
           console.error("Error fetching student info:", studentError);
+        } else {
+          console.log("Student data fetched:", studentInfo);
         }
 
         // Fetch announcements
@@ -102,6 +104,8 @@ export const useStudentDashboard = () => {
 
         if (announcementsError) {
           console.error("Error fetching announcements:", announcementsError);
+        } else {
+          console.log("Announcements fetched:", announcementsData?.length || 0);
         }
 
         // Fetch upcoming classes
@@ -125,6 +129,8 @@ export const useStudentDashboard = () => {
 
         if (classesError) {
           console.error("Error fetching classes:", classesError);
+        } else {
+          console.log("Classes fetched:", classesData?.length || 0);
         }
 
         // Fetch progress data
@@ -135,6 +141,8 @@ export const useStudentDashboard = () => {
 
         if (progressError) {
           console.error("Error fetching progress:", progressError);
+        } else {
+          console.log("Progress data fetched:", progressData?.length || 0);
         }
         
         // Check if this is a first-time user (no classes, no progress data)
@@ -144,10 +152,9 @@ export const useStudentDashboard = () => {
           
         setIsFirstTimeUser(isFirstLogin);
 
-        // Update student data with current user's name from profile
+        // Update student data with level from student data
         setStudentData(prev => ({
           ...prev,
-          name: userData.profile ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() : 'Student',
           level: studentInfo?.level || 'Beginner'
         }));
 
