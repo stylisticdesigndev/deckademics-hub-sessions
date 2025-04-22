@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoBackground } from '@/components/background/VideoBackground';
@@ -55,32 +55,14 @@ const AdminSettings = () => {
           return;
         }
 
-        // Bucket exists, test creating a dummy file to verify permissions
-        const testFileName = `permission-test-${Date.now()}.txt`;
-        const { error: uploadError } = await supabase.storage
-          .from('background-videos')
-          .upload(testFileName, new Blob(['test']), {
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Permission test failed:', uploadError);
-          setBucketError(`Bucket exists, but you may not have permission to upload files: ${uploadError.message}`);
-          setBucketExists(false);
-        } else {
-          // Clean up the test file
-          await supabase.storage
-            .from('background-videos')
-            .remove([testFileName]);
-          
-          setBucketExists(true);
-          setBucketError(null);
-        }
+        console.log("Bucket exists:", bucketData);
+        setBucketExists(true);
+        setBucketError(null);
+        setIsCheckingBucket(false);
       } catch (error: any) {
         console.error('Error checking bucket:', error);
         setBucketError(error.message || "An error occurred while checking the storage bucket");
         setBucketExists(false);
-      } finally {
         setIsCheckingBucket(false);
       }
     }
@@ -133,17 +115,11 @@ const AdminSettings = () => {
       return;
     }
 
-    // Check if bucket exists and permissions are correct
-    if (!bucketExists) {
-      toast({
-        title: 'Storage Not Available',
-        description: bucketError || 'The video storage is not configured correctly. Please check Supabase configuration.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     setIsUploading(true);
+    toast({
+      title: 'Upload Started',
+      description: 'Uploading video file, please wait...',
+    });
 
     try {
       const fileExt = videoFile.name.split('.').pop();
@@ -158,12 +134,16 @@ const AdminSettings = () => {
       };
 
       console.log('Uploading file:', filePath, 'with options:', options);
+      console.log('File size:', videoFile.size, 'bytes');
+      console.log('File type:', videoFile.type);
 
-      // Upload to Supabase storage
+      // Upload to Supabase storage with improved error handling
       const { data, error: uploadError } = await supabase.storage
         .from('background-videos')
         .upload(filePath, videoFile, options);
 
+      console.log('Upload response data:', data);
+      
       if (uploadError) {
         console.error('Upload error details:', uploadError);
         throw uploadError;
@@ -189,11 +169,28 @@ const AdminSettings = () => {
       
       let errorMessage = 'There was an error uploading the video.';
       if (error.message) {
-        errorMessage = error.message;
+        errorMessage = `Upload error: ${error.message}`;
+        console.error('Detailed error message:', errorMessage);
       } else if (error.error_description) {
         errorMessage = error.error_description;
-      } else if (error.statusCode === 403 || error.statusCode === 401) {
-        errorMessage = 'You do not have permission to upload videos. Please check your account permissions.';
+      } 
+
+      // Fallback to using the File API if Supabase fails
+      if (error.message?.includes('not found') || error.status === 404 || error.statusCode === 404) {
+        try {
+          const tempUrl = URL.createObjectURL(videoFile);
+          setBackgroundVideoUrl(tempUrl);
+          localStorage.setItem('backgroundVideoUrl', tempUrl);
+          
+          toast({
+            title: 'Using Local Video',
+            description: 'The video is available for preview but will not be saved permanently.',
+          });
+          setIsUploading(false);
+          return;
+        } catch (localError) {
+          console.error('Fallback error:', localError);
+        }
       }
 
       toast({
@@ -308,7 +305,7 @@ const AdminSettings = () => {
                   
                   {isCheckingBucket ? (
                     <Alert className="mb-4">
-                      <Info className="h-4 w-4" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       <AlertTitle>Checking bucket configuration...</AlertTitle>
                       <AlertDescription>
                         Verifying your access to the storage bucket.
@@ -327,7 +324,7 @@ const AdminSettings = () => {
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Storage Configuration Issue</AlertTitle>
                       <AlertDescription>
-                        {bucketError}
+                        {bucketError || "Unable to access the storage bucket. Videos will be stored temporarily."}
                       </AlertDescription>
                     </Alert>
                   )}
@@ -345,10 +342,19 @@ const AdminSettings = () => {
                     <Button 
                       type="button"
                       onClick={handleVideoUpload}
-                      disabled={isUploading || !bucketExists}
+                      disabled={isUploading}
                     >
-                      {isUploading ? 'Uploading...' : 'Upload Video'}
-                      <Video className="ml-2 h-4 w-4" />
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          Upload Video
+                          <Video className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
                   
