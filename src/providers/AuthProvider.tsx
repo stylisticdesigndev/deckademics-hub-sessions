@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -68,8 +69,8 @@ const createAdminUser = (): User => {
     confirmed_at: new Date().toISOString(),
     email_confirmed_at: new Date().toISOString(),
     last_sign_in_at: new Date().toISOString(),
-    banned_until: null,
     factors: null
+    // Removed the 'banned_until' property that was causing the TypeScript error
   };
 };
 
