@@ -77,6 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Use setTimeout to avoid auth deadlocks
           setTimeout(() => {
             fetchUserProfile(newSession.user.id)
+              .then(profile => {
+                if (profile?.role) {
+                  // Only redirect on SIGNED_IN event, not on token refresh
+                  if (event === 'SIGNED_IN') {
+                    redirectBasedOnRole(profile.role);
+                  }
+                }
+              })
               .catch(error => {
                 console.error("Error fetching user profile in auth state change:", error);
               });
@@ -100,7 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession?.user) {
           setSession(currentSession);
           try {
-            await fetchUserProfile(currentSession.user.id);
+            const profile = await fetchUserProfile(currentSession.user.id);
+            
+            // If we have a profile and we're on an auth page, redirect to the appropriate dashboard
+            if (profile?.role && window.location.pathname.includes('/auth/')) {
+              redirectBasedOnRole(profile.role);
+            }
           } catch (error) {
             console.error("Error fetching user profile on init:", error);
           }
@@ -292,20 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'You have successfully logged in.',
       });
       
-      // Fetch the user profile immediately after login
-      if (data.user) {
-        try {
-          await fetchUserProfile(data.user.id);
-          
-          // Redirect the user based on role
-          if (userData.role) {
-            redirectBasedOnRole(userData.role);
-          }
-        } catch (profileError) {
-          console.error("Error fetching profile after login:", profileError);
-        }
-      }
-      
+      // Return early with success, redirection will be handled by auth state change
       return { user: data.user, session: data.session };
     } catch (error: any) {
       console.error("Sign in error:", error);

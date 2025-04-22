@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,6 +29,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginProcessing, setLoginProcessing] = useState(false);
 
   // For testing - pre-fill credentials if on admin login
   useEffect(() => {
@@ -52,7 +52,12 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Prevent double submission
+    if (loginProcessing) return;
+    
+    setLoginProcessing(true);
     setLoginError(null);
+    
     console.log("Attempting sign in with:", formData.email, "for user type:", userType);
     
     if (!formData.email || !formData.password) {
@@ -62,6 +67,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         variant: 'destructive',
       });
       setLoginError('Please provide your email and password.');
+      setLoginProcessing(false);
       return;
     }
     
@@ -69,8 +75,9 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       const result = await signIn(formData.email, formData.password);
       if (!result.user) {
         setLoginError('Invalid email or password. Please try again.');
+        setLoginProcessing(false);
       }
-      // The redirect is handled in the AuthProvider/ProtectedRoute now
+      // Auth state change will handle the redirect
     } catch (error: any) {
       console.error("Sign in error in form:", error);
       setLoginError(error.message || 'Authentication failed. Please try again.');
@@ -79,6 +86,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         description: error.message || 'Authentication failed. Please try again.',
         variant: 'destructive',
       });
+      setLoginProcessing(false);
     }
   };
 
@@ -224,7 +232,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             <LoginForm
               userType={userType}
               formData={formData}
-              isLoading={isLoading}
+              isLoading={isLoading || loginProcessing}
               handleChange={handleChange}
               handleSubmit={handleSignIn}
             />

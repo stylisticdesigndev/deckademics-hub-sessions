@@ -87,7 +87,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', instructorId as string);
 
       if (deleteError) {
         // Check for auth error
@@ -105,16 +105,17 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
 
       // Only insert if there are schedule items
       if (schedule.length > 0) {
+        // Create an array of objects with the correct type
+        const scheduleData = schedule.map(item => ({
+          instructor_id: instructorId,
+          day: item.day,
+          hours: item.hours
+        }));
+        
         // Insert new schedule items
         const { error: insertError } = await supabase
           .from('instructor_schedules')
-          .insert(
-            schedule.map(item => ({
-              instructor_id: instructorId,
-              day: item.day,
-              hours: item.hours
-            }))
-          );
+          .insert(scheduleData);
 
         if (insertError) {
           // Check for auth error
