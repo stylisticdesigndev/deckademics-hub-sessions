@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
@@ -48,10 +47,10 @@ const getInstructor = async (author_id: string): Promise<InstructorProfile | nul
   const { data, error } = await supabase
     .from('profiles')
     .select('id,first_name,last_name,avatar_url')
-    .eq('id', author_id)
+    .eq('id', author_id as any)
     .maybeSingle();
   if (error) return null;
-  return data;
+  return data as InstructorProfile;
 };
 
 const fetchAnnouncements = async () => {

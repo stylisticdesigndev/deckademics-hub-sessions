@@ -88,7 +88,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', instructorId as any);
 
       if (deleteError) {
         // Check for auth error
@@ -116,7 +116,7 @@ export const ScheduleEditor = ({ open, onOpenChange, scheduleItems, instructorId
           
           const { error: insertError } = await supabase
             .from('instructor_schedules')
-            .insert(scheduleData);
+            .insert([scheduleData]);
 
           if (insertError) {
             // Check for auth error

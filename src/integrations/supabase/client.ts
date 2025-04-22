@@ -14,9 +14,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     flowType: 'pkce',
     debug: true,
-    storageKey: 'supabase.auth.token',
-    // Adding retry configuration for token refresh
-    retryAttempts: 3,
-    retryInterval: 1000
+    storageKey: 'supabase.auth.token'
   }
 });

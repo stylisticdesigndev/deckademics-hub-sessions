@@ -55,28 +55,25 @@ type ClassInfo = {
   start_time: string;
   end_time: string;
   instructor_id: string;
-  instructorProfile?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
+  instructorProfile?: InstructorProfile;
 };
 
 type InstructorProfile = {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url?: string | null;
 };
 
 type AnnouncementData = {
   id: string;
   title: string;
   content: string;
-  published_at: string;
-  author_id: string;
+  published_at: string | null;
+  author_id: string | null;
   profiles?: {
-    first_name: string;
-    last_name: string;
+    first_name: string | null;
+    last_name: string | null;
   };
 };
 
@@ -115,7 +112,7 @@ export const useStudentDashboard = () => {
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
         .select('level, enrollment_status, notes')
-        .eq('id', userId)
+        .eq('id', userId as any)
         .maybeSingle();
         
       if (studentError && studentError.code !== 'PGRST116') {
@@ -179,7 +176,7 @@ export const useStudentDashboard = () => {
             const { data: instructorProfiles, error: profilesError } = await supabase
               .from('profiles')
               .select('id, first_name, last_name')
-              .in('id', instructorIds);
+              .in('id', instructorIds as any);
               
             if (profilesError) {
               console.error("Error fetching instructor profiles:", profilesError);
@@ -188,12 +185,12 @@ export const useStudentDashboard = () => {
               const profilesMap = new Map<string, InstructorProfile>();
               instructorProfiles.forEach(profile => {
                 if (profile && profile.id) {
-                  profilesMap.set(profile.id, profile);
+                  profilesMap.set(profile.id, profile as InstructorProfile);
                 }
               });
               
               // Enhance class data with instructor profiles
-              const typedClassData = classesData as ClassInfo[];
+              const typedClassData = classesData as unknown as ClassInfo[];
               typedClassData.forEach(cls => {
                 if (cls && cls.instructor_id) {
                   const profile = profilesMap.get(cls.instructor_id);
@@ -211,7 +208,7 @@ export const useStudentDashboard = () => {
       const { data: progressData, error: progressError } = await supabase
         .from('student_progress')
         .select('skill_name, proficiency')
-        .eq('student_id', userId);
+        .eq('student_id', userId as any);
 
       if (progressError) {
         console.error("Error fetching progress:", progressError);
@@ -242,17 +239,18 @@ export const useStudentDashboard = () => {
           // Safely handle potentially missing data
           if (!ann) continue;
           
+          // Type-safe access to data
+          const typedAnn = ann as unknown as AnnouncementData;
+          
           // Safely access profiles data with type checking
           let fullName = 'Admin';
           let initials = 'A';
-          
-          const typedAnn = ann as AnnouncementData;
           
           if (typedAnn.profiles) {
             const firstName = typedAnn.profiles.first_name || '';
             const lastName = typedAnn.profiles.last_name || '';
             fullName = `${firstName} ${lastName}`.trim() || 'Admin';
-            initials = `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'A';
+            initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
           }
           
           formattedAnnouncements.push({
@@ -277,7 +275,7 @@ export const useStudentDashboard = () => {
       // Format upcoming classes (if there are any)
       if (classesData && Array.isArray(classesData) && classesData.length > 0) {
         const formattedClasses: ClassSession[] = [];
-        const typedClassData = classesData as ClassInfo[];
+        const typedClassData = classesData as unknown as ClassInfo[];
         
         for (const cls of typedClassData) {
           if (!cls) continue;
@@ -325,7 +323,7 @@ export const useStudentDashboard = () => {
       if (progressData && Array.isArray(progressData) && progressData.length > 0) {
         const totalProficiency = progressData.reduce((sum, item) => {
           if (!item) return sum;
-          return sum + (item.proficiency || 0);
+          return sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0);
         }, 0);
         const avgProgress = Math.round(totalProficiency / progressData.length);
         
