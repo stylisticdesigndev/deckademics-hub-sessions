@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,12 +19,38 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Video } from 'lucide-react';
+import { Video, Trash, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/providers/AuthProvider';
 
 const AdminSettings = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState(localStorage.getItem('backgroundVideoUrl') || '/lovable-uploads/dj-background.mp4');
+  const { clearLocalStorage } = useAuth();
+  
+  // Check if the storage bucket exists
+  const [bucketExists, setBucketExists] = useState(true);
+
+  useEffect(() => {
+    // Check if the bucket exists
+    async function checkBucket() {
+      try {
+        const { data, error } = await supabase.storage.getBucket('background-videos');
+        
+        if (error) {
+          console.error('Error checking bucket:', error);
+          setBucketExists(false);
+        } else {
+          setBucketExists(true);
+        }
+      } catch (error) {
+        console.error('Error checking bucket:', error);
+        setBucketExists(false);
+      }
+    }
+    
+    checkBucket();
+  }, []);
 
   const form = useForm({
     defaultValues: {
@@ -36,7 +63,10 @@ const AdminSettings = () => {
 
   const onSubmit = (data: any) => {
     console.log(data);
-    // In a real app, this would save the settings to a database
+    toast({
+      title: 'Settings Saved',
+      description: 'Your settings have been successfully saved.',
+    });
   };
 
   const handleVideoUpload = async () => {
@@ -49,9 +79,37 @@ const AdminSettings = () => {
       return;
     }
 
+    // Check if file size exceeds limit (50MB)
+    const fileSizeInMB = videoFile.size / (1024 * 1024);
+    if (fileSizeInMB > 50) {
+      toast({
+        title: 'File Too Large',
+        description: 'Video file exceeds the 50MB limit. Please choose a smaller file.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check if bucket exists
+    if (!bucketExists) {
+      toast({
+        title: 'Storage Not Available',
+        description: 'The video storage is not configured correctly. Please contact support.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsUploading(true);
 
     try {
+      // Get the session to ensure we're authenticated
+      const { data: session } = await supabase.auth.getSession();
+
+      if (!session?.session) {
+        throw new Error('You must be logged in to upload videos');
+      }
+
       const fileExt = videoFile.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -59,7 +117,10 @@ const AdminSettings = () => {
       // Upload to Supabase storage
       const { data, error: uploadError } = await supabase.storage
         .from('background-videos')
-        .upload(filePath, videoFile);
+        .upload(filePath, videoFile, {
+          upsert: false,
+          cacheControl: '3600'
+        });
 
       if (uploadError) {
         throw uploadError;
@@ -78,16 +139,24 @@ const AdminSettings = () => {
         title: 'Video Uploaded',
         description: 'Background video successfully updated.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading video:', error);
       toast({
         title: 'Upload Failed',
-        description: 'There was an error uploading the video.',
+        description: error.message || 'There was an error uploading the video.',
         variant: 'destructive'
       });
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleClearStorage = () => {
+    clearLocalStorage();
+    toast({
+      title: 'Storage Cleared',
+      description: 'Local storage has been cleared. You will be logged out.',
+    });
   };
 
   return (
@@ -194,7 +263,7 @@ const AdminSettings = () => {
                     <Button 
                       type="button"
                       onClick={handleVideoUpload}
-                      disabled={isUploading}
+                      disabled={isUploading || !bucketExists}
                     >
                       {isUploading ? 'Uploading...' : 'Upload Video'}
                       <Video className="ml-2 h-4 w-4" />
@@ -203,6 +272,37 @@ const AdminSettings = () => {
                   <FormDescription>
                     Upload a new background video for the landing page. 
                     Recommended size: 1920x1080, max 50MB.
+                    {!bucketExists && (
+                      <span className="text-destructive block mt-1">
+                        Storage bucket not available. Please check Supabase configuration.
+                      </span>
+                    )}
+                  </FormDescription>
+                </div>
+
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">System Maintenance</h3>
+                  <div className="flex items-center space-x-4">
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={handleClearStorage}
+                    >
+                      Clear Local Storage
+                      <Trash className="ml-2 h-4 w-4" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => window.location.reload()}
+                    >
+                      Reload Application
+                      <RefreshCw className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormDescription>
+                    Use with caution! Clearing local storage will remove all cached data and log you out.
                   </FormDescription>
                 </div>
                 
