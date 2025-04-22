@@ -19,9 +19,10 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Video, Trash, RefreshCw, AlertCircle, Info } from 'lucide-react';
+import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
 const AdminSettings = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -39,20 +40,13 @@ const AdminSettings = () => {
     async function checkBucket() {
       setIsCheckingBucket(true);
       try {
-        if (!session?.user) {
-          setBucketError("You must be logged in to access storage features");
-          setBucketExists(false);
-          setIsCheckingBucket(false);
-          return;
-        }
-
         // First check if the bucket exists
         const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('background-videos');
         
         if (bucketError) {
           console.error('Error checking bucket:', bucketError);
           if (bucketError.message.includes("Bucket not found")) {
-            setBucketError("Storage bucket 'background-videos' exists but may not be accessible to your account. Please check permissions.");
+            setBucketError("Storage bucket 'background-videos' exists but may not be accessible. Please check the Supabase storage configuration.");
           } else {
             setBucketError(bucketError.message);
           }
@@ -92,7 +86,14 @@ const AdminSettings = () => {
     }
     
     checkBucket();
-  }, [session]);
+  }, []);
+
+  // Preview the current video
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  
+  const handlePreviewToggle = () => {
+    setIsPreviewVisible(!isPreviewVisible);
+  };
 
   const form = useForm({
     defaultValues: {
@@ -112,15 +113,6 @@ const AdminSettings = () => {
   };
 
   const handleVideoUpload = async () => {
-    if (!session?.user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'You must be logged in to upload videos.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     if (!videoFile) {
       toast({
         title: 'No Video Selected',
@@ -154,20 +146,15 @@ const AdminSettings = () => {
     setIsUploading(true);
 
     try {
-      // Make sure we have a valid session before uploading
-      if (!session?.user?.id) {
-        throw new Error('You must be logged in to upload videos');
-      }
-
       const fileExt = videoFile.name.split('.').pop();
       const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `${uniqueFileName}`;
 
       // Set cache control and content type
       const options = {
-        upsert: false,
         cacheControl: '3600',
-        contentType: videoFile.type
+        contentType: videoFile.type,
+        upsert: true
       };
 
       console.log('Uploading file:', filePath, 'with options:', options);
@@ -327,20 +314,20 @@ const AdminSettings = () => {
                         Verifying your access to the storage bucket.
                       </AlertDescription>
                     </Alert>
-                  ) : bucketError ? (
+                  ) : bucketExists ? (
+                    <Alert className="mb-4 bg-green-50 border-green-300">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-800">Storage bucket configured correctly</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        You can upload videos to the background-videos bucket.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
                     <Alert variant="destructive" className="mb-4">
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Storage Configuration Issue</AlertTitle>
                       <AlertDescription>
                         {bucketError}
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Alert className="mb-4 bg-green-50 border-green-300">
-                      <Info className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-800">Storage bucket configured correctly</AlertTitle>
-                      <AlertDescription className="text-green-700">
-                        You can upload videos to the background-videos bucket.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -358,7 +345,7 @@ const AdminSettings = () => {
                     <Button 
                       type="button"
                       onClick={handleVideoUpload}
-                      disabled={isUploading || !bucketExists || !session?.user}
+                      disabled={isUploading || !bucketExists}
                     >
                       {isUploading ? 'Uploading...' : 'Upload Video'}
                       <Video className="ml-2 h-4 w-4" />
@@ -386,6 +373,29 @@ const AdminSettings = () => {
                           controls
                           muted
                         />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={handlePreviewToggle} 
+                        className="mt-2"
+                      >
+                        {isPreviewVisible ? 'Hide' : 'Show'} Full Preview
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Full-screen preview */}
+                  {isPreviewVisible && backgroundVideoUrl && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+                      <div className="relative max-w-4xl w-full h-full max-h-[80vh]">
+                        <Button 
+                          variant="outline" 
+                          onClick={handlePreviewToggle}
+                          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white border-none"
+                        >
+                          Close Preview
+                        </Button>
+                        <VideoBackground videoSrc={backgroundVideoUrl} />
                       </div>
                     </div>
                   )}
