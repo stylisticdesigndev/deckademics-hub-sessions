@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -41,6 +40,7 @@ interface AuthContextProps {
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
   setAdminSession: () => void; // New method for direct admin login
+  clearLocalStorage: () => void; // New method for clearing local storage
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -640,6 +640,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Method to clear local storage
+  const clearLocalStorage = () => {
+    try {
+      localStorage.clear();
+      
+      // Optional: Clear specific keys related to your app
+      localStorage.removeItem('deckademics-admin-session');
+      localStorage.removeItem('supabase.auth.token');
+      
+      toast({
+        title: 'Local Storage Cleared',
+        description: 'Browser local storage has been cleared successfully.',
+      });
+      
+      // Optional: Perform sign out to reset the entire auth state
+      signOut();
+    } catch (error) {
+      console.error('Error clearing local storage:', error);
+      toast({
+        title: 'Clear Storage Error',
+        description: 'Failed to clear local storage.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const value = {
     session,
     userData,
@@ -649,6 +675,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     updateProfile,
     setAdminSession, // Add the new method to the context value
+    clearLocalStorage, // Add the new method to the context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
