@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -75,7 +76,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     
     try {
       // First verify the credentials without creating a persistent session
-      // Note: we're not using the persistSession option here since it's not available in this context
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -108,11 +108,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       }
       
       // If we reach here, the role matches, so we proceed with the actual login
-      // that will persist the session
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password
-      });
+      const { data: loginData, error: loginError } = await signIn(formData.email, formData.password);
       
       if (loginError) {
         throw new Error(loginError.message);

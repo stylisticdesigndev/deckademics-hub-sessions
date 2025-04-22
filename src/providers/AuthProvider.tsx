@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -29,6 +28,7 @@ interface UserData {
 type SignInResult = {
   user: User | null;
   session: Session | null;
+  error?: Error;
 }
 
 interface AuthContextProps {
@@ -43,6 +43,9 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
+// Single instance for auth state storage
+let authChangeSubscription: { unsubscribe: () => void } | null = null;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [userData, setUserData] = useState<UserData>({
@@ -56,48 +59,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   console.log("Initializing AuthProvider with Supabase");
   
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log("Auth state changed:", event, newSession?.user?.id);
-        
-        if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUserData({
-            user: null,
-            profile: null,
-            role: null
-          });
-          return;
-        }
-        
-        setSession(newSession);
-        
-        if (newSession?.user) {
-          // Use setTimeout to avoid auth deadlocks
-          setTimeout(() => {
-            fetchUserProfile(newSession.user.id)
-              .then(profile => {
-                if (profile?.role) {
-                  // Only redirect on SIGNED_IN event, not on token refresh
-                  if (event === 'SIGNED_IN') {
-                    redirectBasedOnRole(profile.role);
+    // Only create a new subscription if one doesn't exist
+    if (!authChangeSubscription) {
+      // Set up auth state listener first
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log("Auth state changed:", event, newSession?.user?.id);
+          
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+            setUserData({
+              user: null,
+              profile: null,
+              role: null
+            });
+            return;
+          }
+          
+          setSession(newSession);
+          
+          if (newSession?.user) {
+            // Use setTimeout to avoid auth deadlocks
+            setTimeout(() => {
+              fetchUserProfile(newSession.user.id)
+                .then(profile => {
+                  if (profile?.role) {
+                    // Only redirect on SIGNED_IN event, not on token refresh
+                    if (event === 'SIGNED_IN') {
+                      redirectBasedOnRole(profile.role);
+                    }
                   }
-                }
-              })
-              .catch(error => {
-                console.error("Error fetching user profile in auth state change:", error);
-              });
-          }, 0);
-        } else {
-          setUserData({
-            user: null,
-            profile: null,
-            role: null
-          });
+                })
+                .catch(error => {
+                  console.error("Error fetching user profile in auth state change:", error);
+                });
+            }, 0);
+          } else {
+            setUserData({
+              user: null,
+              profile: null,
+              role: null
+            });
+          }
         }
-      }
-    );
+      );
+
+      authChangeSubscription = subscription;
+    }
 
     // Check for existing session
     const initializeAuth = async () => {
@@ -129,7 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     return () => {
-      subscription?.unsubscribe();
+      // Don't unsubscribe - we want to keep the subscription for the app lifetime
+      // This prevents multiple GoTrueClient instances
     };
   }, []);
 
@@ -295,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error("Sign in error details:", error);
-        throw error;
+        return { user: null, session: null, error };
       }
       
       console.log("Sign in successful:", data.user?.email);
@@ -314,7 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error.message || 'Invalid email or password. Please try again.',
         variant: 'destructive',
       });
-      return { user: null, session: null };
+      return { user: null, session: null, error };
     } finally {
       setIsLoading(false);
     }
