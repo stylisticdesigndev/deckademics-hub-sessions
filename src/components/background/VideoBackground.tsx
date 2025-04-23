@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VideoBackgroundProps {
   videoSrc: string;
@@ -13,16 +14,70 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState<string>(videoSrc);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isMobile = useIsMobile();
   
+  // Reset video state when source changes
   useEffect(() => {
     setIsLoading(true);
     setHasError(false);
     setCurrentSrc(videoSrc);
   }, [videoSrc]);
   
+  // Handle resizing and ensure playback continues
+  useEffect(() => {
+    const handleResize = () => {
+      // Attempt to restart playback if video exists and is paused
+      if (videoRef.current && videoRef.current.paused) {
+        const playPromise = videoRef.current.play();
+        
+        // Handle the play promise properly
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Successfully restarted video playback after resize');
+            })
+            .catch(err => {
+              console.warn('Could not play video after resize:', err);
+              // Don't set error state here, just log warning
+            });
+        }
+      }
+    };
+
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Try to enforce video playback
+  useEffect(() => {
+    if (!isLoading && !hasError && videoRef.current) {
+      const playPromise = videoRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('Auto-play attempt failed:', err);
+          // Many browsers require user interaction before autoplay
+        });
+      }
+    }
+  }, [isLoading, hasError]);
+  
   const handleVideoLoaded = () => {
     console.log('Video loaded successfully:', currentSrc);
     setIsLoading(false);
+    
+    // Try to play the video immediately after loading
+    if (videoRef.current) {
+      const playPromise = videoRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn('Video autoplay prevented by browser:', error);
+        });
+      }
+    }
   };
   
   const handleVideoError = () => {
@@ -47,6 +102,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
         </div>
       )}
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 const Index = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     async function getLatestVideo() {
@@ -37,18 +39,27 @@ const Index = () => {
         }
       } catch (err) {
         console.error('Failed to fetch background video:', err);
-        toast({
-          title: "Video Load Error",
-          description: "Could not load background video. Using default instead.",
-          variant: "destructive"
-        });
+        
+        // If we've tried less than 3 times, retry after a delay
+        if (retryCount < 3) {
+          console.log(`Retrying video fetch. Attempt ${retryCount + 1}/3`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 2000);
+        } else {
+          toast({
+            title: "Video Load Error",
+            description: "Could not load background video. Using default instead.",
+            variant: "destructive"
+          });
+        }
       } finally {
         setIsLoading(false);
       }
     }
     
     getLatestVideo();
-  }, []);
+  }, [retryCount]);
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
