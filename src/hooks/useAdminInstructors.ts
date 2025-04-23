@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -84,183 +85,138 @@ export const useAdminInstructors = () => {
   const { data: activeInstructors, isLoading: isLoadingActive } = useQuery({
     queryKey: ['admin', 'instructors', 'active'],
     queryFn: async () => {
-      console.log('Fetching active instructors...');
-      
-      // Fetch all active instructors directly
-      const { data: instructorsData, error: instructorsError } = await supabase
-        .from('instructors')
-        .select('*')
-        .eq('status', 'active');
-      
-      console.log('Active Instructors Raw Query Result:', { instructorsData, instructorsError });
-      
-      if (instructorsError) {
-        console.error('Error fetching active instructors:', instructorsError);
-        throw instructorsError;
-      }
-      
-      if (!instructorsData || instructorsData.length === 0) {
-        console.log('No active instructors found');
-        return [] as Instructor[];
-      }
-
-      // For each instructor, fetch their profile in a separate call
-      const instructorsWithProfiles: Instructor[] = await Promise.all(
-        instructorsData.map(async (instructor) => {
-          // Get profile data
-          console.log(`Fetching profile for instructor ${instructor.id}`);
-          
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, email')
-            .eq('id', instructor.id)
-            .single();
-          
-          console.log(`Profile data for ${instructor.id}:`, profileData);
-          
-          if (profileError) {
-            console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
-            // Return instructor with placeholder profile data
-            return {
-              ...instructor,
-              profile: {
-                first_name: 'Unknown',
-                last_name: 'User',
-                email: 'unknown@example.com'
-              }
-            };
+      try {
+        console.log('Fetching active instructors...');
+        
+        // Fetch all active instructors with profile data in a single query
+        const { data: instructorsWithProfiles, error } = await supabase
+          .from('instructors')
+          .select(`
+            *,
+            profile:profiles(first_name, last_name, email)
+          `)
+          .eq('status', 'active');
+        
+        console.log('Active Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        
+        if (error) {
+          console.error('Error fetching active instructors:', error);
+          throw error;
+        }
+        
+        // Transform the data to match our expected Instructor interface
+        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
+          id: instructor.id,
+          status: instructor.status,
+          specialties: instructor.specialties || [],
+          bio: instructor.bio || '',
+          hourly_rate: instructor.hourly_rate || 0,
+          years_experience: instructor.years_experience || 0,
+          profile: {
+            first_name: instructor.profile?.first_name || 'Unknown',
+            last_name: instructor.profile?.last_name || 'User',
+            email: instructor.profile?.email || 'unknown@example.com'
           }
-          
-          // Return instructor with profile data
-          return {
-            ...instructor,
-            profile: profileData
-          };
-        })
-      );
-      
-      console.log('Active instructors with profiles:', instructorsWithProfiles);
-      return instructorsWithProfiles;
+        }));
+        
+        console.log('Formatted active instructors:', formattedInstructors);
+        return formattedInstructors;
+      } catch (error) {
+        console.error('Error in activeInstructors query:', error);
+        throw error;
+      }
     }
   });
 
   const { data: pendingInstructors, isLoading: isLoadingPending } = useQuery({
     queryKey: ['admin', 'instructors', 'pending'],
     queryFn: async () => {
-      console.log('Fetching pending instructors...');
-      
-      // Fetch all pending instructors directly
-      const { data: instructorsData, error: instructorsError } = await supabase
-        .from('instructors')
-        .select('*')
-        .eq('status', 'pending');
-      
-      console.log('Pending Instructors Raw Query Result:', { instructorsData, instructorsError });
-      
-      if (instructorsError) {
-        console.error('Error fetching pending instructors:', instructorsError);
-        throw instructorsError;
-      }
-      
-      if (!instructorsData || instructorsData.length === 0) {
-        console.log('No pending instructors found');
-        return [] as Instructor[];
-      }
-
-      // For each instructor, fetch their profile in a separate call
-      const instructorsWithProfiles: Instructor[] = await Promise.all(
-        instructorsData.map(async (instructor) => {
-          // Get profile data
-          console.log(`Fetching profile for instructor ${instructor.id}`);
-          
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, email')
-            .eq('id', instructor.id)
-            .single();
-          
-          console.log(`Profile data for ${instructor.id}:`, profileData);
-          
-          if (profileError) {
-            console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
-            return {
-              ...instructor,
-              profile: {
-                first_name: 'Unknown',
-                last_name: 'User',
-                email: 'unknown@example.com'
-              }
-            };
+      try {
+        console.log('Fetching pending instructors...');
+        
+        // Fetch all pending instructors with profile data in a single query
+        const { data: instructorsWithProfiles, error } = await supabase
+          .from('instructors')
+          .select(`
+            *,
+            profile:profiles(first_name, last_name, email)
+          `)
+          .eq('status', 'pending');
+        
+        console.log('Pending Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        
+        if (error) {
+          console.error('Error fetching pending instructors:', error);
+          throw error;
+        }
+        
+        // Transform the data to match our expected Instructor interface
+        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
+          id: instructor.id,
+          status: instructor.status,
+          specialties: instructor.specialties || [],
+          bio: instructor.bio || '',
+          hourly_rate: instructor.hourly_rate || 0,
+          years_experience: instructor.years_experience || 0,
+          profile: {
+            first_name: instructor.profile?.first_name || 'Unknown',
+            last_name: instructor.profile?.last_name || 'User',
+            email: instructor.profile?.email || 'unknown@example.com'
           }
-          
-          return {
-            ...instructor,
-            profile: profileData
-          };
-        })
-      );
-      
-      return instructorsWithProfiles;
+        }));
+        
+        console.log('Formatted pending instructors:', formattedInstructors);
+        return formattedInstructors;
+      } catch (error) {
+        console.error('Error in pendingInstructors query:', error);
+        throw error;
+      }
     }
   });
 
   const { data: inactiveInstructors, isLoading: isLoadingInactive } = useQuery({
     queryKey: ['admin', 'instructors', 'inactive'],
     queryFn: async () => {
-      console.log('Fetching inactive instructors...');
-      
-      // Fetch all inactive instructors directly
-      const { data: instructorsData, error: instructorsError } = await supabase
-        .from('instructors')
-        .select('*')
-        .eq('status', 'inactive');
-      
-      console.log('Inactive Instructors Raw Query Result:', { instructorsData, instructorsError });
-      
-      if (instructorsError) {
-        console.error('Error fetching inactive instructors:', instructorsError);
-        throw instructorsError;
-      }
-      
-      if (!instructorsData || instructorsData.length === 0) {
-        console.log('No inactive instructors found');
-        return [] as Instructor[];
-      }
-
-      // For each instructor, fetch their profile in a separate call
-      const instructorsWithProfiles: Instructor[] = await Promise.all(
-        instructorsData.map(async (instructor) => {
-          // Get profile data
-          console.log(`Fetching profile for instructor ${instructor.id}`);
-          
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, email')
-            .eq('id', instructor.id)
-            .single();
-          
-          console.log(`Profile data for ${instructor.id}:`, profileData);
-          
-          if (profileError) {
-            console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
-            return {
-              ...instructor,
-              profile: {
-                first_name: 'Unknown',
-                last_name: 'User',
-                email: 'unknown@example.com'
-              }
-            };
+      try {
+        console.log('Fetching inactive instructors...');
+        
+        // Fetch all inactive instructors with profile data in a single query
+        const { data: instructorsWithProfiles, error } = await supabase
+          .from('instructors')
+          .select(`
+            *,
+            profile:profiles(first_name, last_name, email)
+          `)
+          .eq('status', 'inactive');
+        
+        console.log('Inactive Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        
+        if (error) {
+          console.error('Error fetching inactive instructors:', error);
+          throw error;
+        }
+        
+        // Transform the data to match our expected Instructor interface
+        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
+          id: instructor.id,
+          status: instructor.status,
+          specialties: instructor.specialties || [],
+          bio: instructor.bio || '',
+          hourly_rate: instructor.hourly_rate || 0,
+          years_experience: instructor.years_experience || 0,
+          profile: {
+            first_name: instructor.profile?.first_name || 'Unknown',
+            last_name: instructor.profile?.last_name || 'User',
+            email: instructor.profile?.email || 'unknown@example.com'
           }
-          
-          return {
-            ...instructor,
-            profile: profileData
-          };
-        })
-      );
-      
-      return instructorsWithProfiles;
+        }));
+        
+        console.log('Formatted inactive instructors:', formattedInstructors);
+        return formattedInstructors;
+      } catch (error) {
+        console.error('Error in inactiveInstructors query:', error);
+        throw error;
+      }
     }
   });
 
@@ -272,13 +228,14 @@ export const useAdminInstructors = () => {
         .eq('id', instructorId);
 
       if (error) throw error;
+      return { success: true, instructorId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       toast.success('Instructor approved successfully');
     },
-    onError: (error) => {
-      toast.error('Failed to approve instructor: ' + error.message);
+    onError: (error: Error) => {
+      toast.error(`Failed to approve instructor: ${error.message}`);
     }
   });
 
@@ -290,13 +247,14 @@ export const useAdminInstructors = () => {
         .eq('id', instructorId);
 
       if (error) throw error;
+      return { success: true, instructorId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       toast.success('Instructor declined successfully');
     },
-    onError: (error) => {
-      toast.error('Failed to decline instructor: ' + error.message);
+    onError: (error: Error) => {
+      toast.error(`Failed to decline instructor: ${error.message}`);
     }
   });
 
@@ -308,13 +266,14 @@ export const useAdminInstructors = () => {
         .eq('id', instructorId);
 
       if (error) throw error;
+      return { success: true, instructorId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       toast.success('Instructor deactivated successfully');
     },
-    onError: (error) => {
-      toast.error('Failed to deactivate instructor: ' + error.message);
+    onError: (error: Error) => {
+      toast.error(`Failed to deactivate instructor: ${error.message}`);
     }
   });
 
@@ -326,13 +285,14 @@ export const useAdminInstructors = () => {
         .eq('id', instructorId);
 
       if (error) throw error;
+      return { success: true, instructorId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       toast.success('Instructor activated successfully');
     },
-    onError: (error) => {
-      toast.error('Failed to activate instructor: ' + error.message);
+    onError: (error: Error) => {
+      toast.error(`Failed to activate instructor: ${error.message}`);
     }
   });
 
@@ -346,9 +306,9 @@ export const useAdminInstructors = () => {
         .from('instructors')
         .select('id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('Error checking for existing instructor:', checkError);
         throw checkError;
       }
@@ -384,7 +344,7 @@ export const useAdminInstructors = () => {
       toast.success('Instructor record created successfully');
     },
     onError: (error: Error) => {
-      toast.error('Failed to create instructor record: ' + error.message);
+      toast.error(`Failed to create instructor record: ${error.message}`);
     }
   });
 

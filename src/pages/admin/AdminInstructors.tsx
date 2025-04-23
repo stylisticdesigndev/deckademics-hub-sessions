@@ -142,7 +142,7 @@ const AdminInstructors = () => {
 
   const handleCreateInstructor = () => {
     if (!selectedUserId) {
-      toast("Error: Please select a user to convert to instructor.");
+      toast.error("Please select a user to convert to instructor.");
       return;
     }
     
@@ -202,7 +202,7 @@ const AdminInstructors = () => {
     
     // Validate input
     if (!newInstructor.name || !newInstructor.email) {
-      toast("Missing Information: Please fill in all required fields.");
+      toast.error("Missing Information: Please fill in all required fields.");
       return;
     }
     
@@ -210,7 +210,7 @@ const AdminInstructors = () => {
     setNewInstructor({ name: '', email: '', specialization: '' });
     setAddInstructorOpen(false);
     
-    toast(`Instructor Added: ${newInstructor.name} has been added as an instructor.`);
+    toast.success(`Instructor Added: ${newInstructor.name} has been added as an instructor.`);
   };
 
   const viewInstructor = (id: string) => {
@@ -224,7 +224,7 @@ const AdminInstructors = () => {
   // New function to handle assigning students to an instructor
   const handleAssignStudents = () => {
     if (!instructorToAssign) {
-      toast("Error: No instructor selected for assignment.");
+      toast.error("No instructor selected for assignment.");
       return;
     }
     
@@ -233,7 +233,7 @@ const AdminInstructors = () => {
     setInstructorToAssign(null);
     setStudentAssignments({});
     
-    toast("Students Assigned: Students have been assigned successfully.");
+    toast.success("Students Assigned: Students have been assigned successfully.");
   };
 
   // New function to manually open the student assignment dialog for any instructor
@@ -245,7 +245,7 @@ const AdminInstructors = () => {
   // Function to handle reassigning students when deactivating an instructor
   const handleReassignStudents = () => {
     if (!instructorToDeactivate) {
-      toast("Error: No instructor selected for deactivation.");
+      toast.error("No instructor selected for deactivation.");
       return;
     }
     
@@ -253,7 +253,7 @@ const AdminInstructors = () => {
     confirmDeactivate();
     setShowStudentReassignment(false);
     
-    toast("Students Reassigned: Students have been reassigned successfully.");
+    toast.success("Students Reassigned: Students have been reassigned successfully.");
   };
 
   const showNoInstructorsMessage = () => {
