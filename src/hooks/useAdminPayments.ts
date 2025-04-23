@@ -4,6 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addWeeks } from 'date-fns';
 
+export interface PaymentStats {
+  missedPaymentsCount: number;
+  upcomingPaymentsCount: number;
+  totalMissedAmount: number;
+  totalUpcomingAmount: number;
+}
+
 export interface Payment {
   id: string;
   studentName: string;
@@ -68,11 +75,11 @@ export const useAdminPayments = () => {
           daysTillDue: status === 'upcoming' ? daysTillDue : undefined,
           partiallyPaid: payment.status === 'partially_paid'
         };
-      });
+      }) as Payment[];
     }
   });
 
-  const calculateStats = () => {
+  const calculateStats = (): PaymentStats => {
     if (!payments || payments.length === 0) {
       return {
         missedPaymentsCount: 0,
