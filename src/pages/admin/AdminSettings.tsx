@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -27,15 +26,30 @@ import { VideoBackground } from '@/components/background/VideoBackground';
 const AdminSettings = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState(localStorage.getItem('backgroundVideoUrl') || '/lovable-uploads/dj-background.mp4');
+  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string | null>(null);
   const { clearLocalStorage, session } = useAuth();
-  
-  // Preview the current video
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-  
-  const handlePreviewToggle = () => {
-    setIsPreviewVisible(!isPreviewVisible);
-  };
+
+  // Fetch latest background video from Supabase storage on mount
+  useEffect(() => {
+    async function fetchBackgroundVideo() {
+      const { data, error } = await supabase.storage.from('background-videos').list('', { sortBy: { column: 'created_at', order: 'desc' }, limit: 1 });
+      if (error) {
+        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+        return;
+      }
+      const latestFile = data?.[0];
+      if (latestFile) {
+        const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(latestFile.name);
+        setBackgroundVideoUrl(publicUrl?.publicUrl || '/lovable-uploads/dj-background.mp4');
+      } else {
+        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+      }
+    }
+    fetchBackgroundVideo();
+  }, []);
+
+  const handlePreviewToggle = () => setIsPreviewVisible(!isPreviewVisible);
 
   const form = useForm({
     defaultValues: {
@@ -54,6 +68,7 @@ const AdminSettings = () => {
     });
   };
 
+  // NEW: Uploads video to Supabase Storage
   const handleVideoUpload = async () => {
     if (!videoFile) {
       toast({
@@ -63,8 +78,6 @@ const AdminSettings = () => {
       });
       return;
     }
-
-    // Check if file size exceeds limit (50MB)
     const fileSizeInMB = videoFile.size / (1024 * 1024);
     if (fileSizeInMB > 50) {
       toast({
@@ -74,31 +87,33 @@ const AdminSettings = () => {
       });
       return;
     }
-
     setIsUploading(true);
-    toast({
-      title: 'Upload Started',
-      description: 'Processing video file, please wait...',
-    });
+    toast({ title: 'Upload Started', description: 'Uploading and processing video...' });
 
     try {
-      // Create a local URL for the video file
-      const localUrl = URL.createObjectURL(videoFile);
-      
-      // Save URL to localStorage
-      localStorage.setItem('backgroundVideoUrl', localUrl);
-      setBackgroundVideoUrl(localUrl);
+      // Give each upload a unique name (timestamp + admin id + original name)
+      const fileExt = videoFile.name.split('.').pop();
+      const fileName = `background-${session?.user?.id || 'admin'}-${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadErr } = await supabase.storage.from('background-videos').upload(fileName, videoFile, { upsert: true, cacheControl: '3600' });
+      if (uploadErr) {
+        throw uploadErr;
+      }
+
+      // Get public URL
+      const { data: publicUrlRes } = supabase.storage.from('background-videos').getPublicUrl(fileName);
+      setBackgroundVideoUrl(publicUrlRes?.publicUrl || '/lovable-uploads/dj-background.mp4');
 
       toast({
-        title: 'Video Applied',
-        description: 'Background video has been set for this session. Note: The video will need to be re-selected if you refresh the page.',
+        title: 'Video Uploaded',
+        description: 'Background video was uploaded and set. It’s now shared for all users!',
       });
     } catch (error: any) {
-      console.error('Error processing video:', error);
-      
+      console.error('Error uploading video:', error);
       toast({
         title: 'Upload Failed',
-        description: error.message || 'There was an error processing the video.',
+        description: error.message || 'There was an error uploading the video.',
         variant: 'destructive'
       });
     } finally {
@@ -205,15 +220,13 @@ const AdminSettings = () => {
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Background Video</h3>
-                  
                   <Alert className="mb-4">
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Local Video Mode</AlertTitle>
+                    <AlertTitle>Cloud Video Mode</AlertTitle>
                     <AlertDescription>
-                      Videos are stored locally in your browser. They will need to be re-uploaded if you clear your browser data or switch devices.
+                      Videos are now stored in the cloud! After uploading here, all users will see the same background video instantly on any device.
                     </AlertDescription>
                   </Alert>
-                  
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <Input 
                       type="file" 
@@ -232,28 +245,25 @@ const AdminSettings = () => {
                       {isUploading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
+                          Uploading...
                         </>
                       ) : (
                         <>
-                          Apply Video
+                          Upload &amp; Apply Video
                           <Video className="ml-2 h-4 w-4" />
                         </>
                       )}
                     </Button>
                   </div>
-                  
                   {videoFile && (
                     <p className="text-sm text-muted-foreground">
                       Selected file: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} MB)
                     </p>
                   )}
-                  
                   <FormDescription>
-                    Upload a new background video for the landing page. 
+                    Upload a new background video for the landing page.<br />
                     Recommended size: 1920x1080, max 50MB.
                   </FormDescription>
-                  
                   {backgroundVideoUrl && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium mb-2">Current video:</h4>
@@ -274,8 +284,6 @@ const AdminSettings = () => {
                       </Button>
                     </div>
                   )}
-                  
-                  {/* Full-screen preview */}
                   {isPreviewVisible && backgroundVideoUrl && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
                       <div className="relative max-w-4xl w-full h-full max-h-[80vh]">
