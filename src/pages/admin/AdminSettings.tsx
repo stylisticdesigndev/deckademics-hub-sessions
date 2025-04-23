@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -30,8 +31,8 @@ const AdminSettings = () => {
   const { clearLocalStorage, session } = useAuth();
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
-  // Increase max allowable video size to 500MB
-  const MAX_VIDEO_MB = 500;
+  // Reduce max allowable video size to 50MB due to Supabase limits
+  const MAX_VIDEO_MB = 50;
 
   // Fetch latest background video from Supabase storage on mount
   useEffect(() => {
@@ -71,7 +72,7 @@ const AdminSettings = () => {
     });
   };
 
-  // NEW: Uploads video to Supabase Storage
+  // Uploads video to Supabase Storage
   const handleVideoUpload = async () => {
     if (!videoFile) {
       toast({
@@ -230,6 +231,13 @@ const AdminSettings = () => {
                       Videos are now stored in the cloud! After uploading here, all users will see the same background video instantly on any device.
                     </AlertDescription>
                   </Alert>
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Upload Size Restriction</AlertTitle>
+                    <AlertDescription>
+                      Due to Supabase storage limitations, video uploads are limited to {MAX_VIDEO_MB}MB maximum.
+                    </AlertDescription>
+                  </Alert>
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <Input 
                       type="file" 
@@ -261,11 +269,16 @@ const AdminSettings = () => {
                   {videoFile && (
                     <p className="text-sm text-muted-foreground">
                       Selected file: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} MB)
+                      {videoFile.size / (1024 * 1024) > MAX_VIDEO_MB && (
+                        <span className="text-destructive ml-2 font-medium">
+                          File exceeds {MAX_VIDEO_MB}MB limit!
+                        </span>
+                      )}
                     </p>
                   )}
                   <FormDescription>
                     Upload a new background video for the landing page.<br />
-                    Recommended size: 1920x1080, max 500MB.
+                    Recommended size: 1920x1080, max {MAX_VIDEO_MB}MB.
                   </FormDescription>
                   {backgroundVideoUrl && (
                     <div className="mt-4">
