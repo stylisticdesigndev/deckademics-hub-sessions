@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
@@ -17,6 +18,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   const [playAttempts, setPlayAttempts] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
+  const initialLoadAttemptedRef = useRef(false);
   
   // Reset video state when source changes
   useEffect(() => {
@@ -24,9 +26,10 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     setHasError(false);
     setCurrentSrc(videoSrc);
     setPlayAttempts(0);
+    initialLoadAttemptedRef.current = false;
   }, [videoSrc]);
   
-  // Enhanced resize handler with debouncing
+  // Enhanced resize handler with better error recovery
   useEffect(() => {
     let resizeTimer: number | null = null;
     
@@ -40,112 +43,173 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       resizeTimer = window.setTimeout(() => {
         if (!videoRef.current) return;
         
-        // Force reload the video element if it's not playing
-        if (videoRef.current.paused || videoRef.current.ended) {
-          console.log('Attempting to restart video after resize...');
+        const video = videoRef.current;
+        
+        // If video is paused or ended, try to play it again
+        if (video.paused || video.ended) {
+          console.log('Video paused after resize, attempting to restart playback');
           
-          // Try several approaches to restart playback
+          // Try to play without reloading first
           try {
-            // First try: reload the video source
-            const currentTime = videoRef.current.currentTime;
-            videoRef.current.load();
-            videoRef.current.currentTime = currentTime;
-            
-            // Second try: play the video
-            const playPromise = videoRef.current.play();
+            const playPromise = video.play();
             if (playPromise !== undefined) {
-              playPromise.then(() => {
-                console.log('Successfully restarted video after resize');
-              }).catch(err => {
-                console.warn('Failed to restart video after resize:', err);
-                // Mark as error only after multiple attempts
-                if (playAttempts > 2) {
-                  setHasError(true);
-                } else {
-                  setPlayAttempts(prev => prev + 1);
+              playPromise.catch(err => {
+                console.warn('Failed to restart video after resize, will try reloading:', err);
+                
+                // If direct play fails, try reloading the video element
+                try {
+                  // Set current time to where it was
+                  const currentTime = video.currentTime;
+                  // Force reload the video
+                  video.load();
+                  // Restore playback position
+                  video.currentTime = currentTime;
+                  
+                  // Try playing again after reload
+                  const reloadPlayPromise = video.play();
+                  if (reloadPlayPromise !== undefined) {
+                    reloadPlayPromise.catch(reloadErr => {
+                      console.warn('Failed to play after reload:', reloadErr);
+                      // Only increment attempts if we're still having problems
+                      setPlayAttempts(prev => prev + 1);
+                    });
+                  }
+                } catch (reloadErr) {
+                  console.error('Error during video reload:', reloadErr);
                 }
               });
             }
           } catch (err) {
-            console.error('Error during video restart:', err);
+            console.error('Error during initial play attempt:', err);
           }
         }
       }, 500); // 500ms debounce
     };
 
+    // Listen for window resize events
     window.addEventListener('resize', handleResize);
+    
+    // Listen for orientation changes (especially important on mobile)
+    window.addEventListener('orientationchange', handleResize);
+    
+    // Check if the video is playing when entering/leaving fullscreen
+    document.addEventListener('fullscreenchange', handleResize);
+    
     return () => {
       if (resizeTimer) {
         window.clearTimeout(resizeTimer);
       }
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
     };
   }, [playAttempts]);
   
-  // Attempt to play video when not loading and no errors
+  // More robust playback attempt system
   useEffect(() => {
-    if (!isLoading && !hasError && videoRef.current) {
-      const attemptPlay = () => {
-        if (!videoRef.current) return;
+    if (!videoRef.current || hasError) return;
+    
+    // Function to attempt playback with multiple strategies
+    const attemptPlayback = async () => {
+      if (!videoRef.current) return;
+      
+      const video = videoRef.current;
+      
+      try {
+        // Mark that we've tried initial load
+        initialLoadAttemptedRef.current = true;
         
-        const playPromise = videoRef.current.play();
+        console.log(`Attempt ${playAttempts + 1} to play video from: ${currentSrc}`);
         
-        if (playPromise !== undefined) {
-          playPromise.catch(err => {
-            console.warn('Auto-play attempt failed:', err);
+        // First ensure video is ready to play
+        if (video.readyState < 2) { // HAVE_CURRENT_DATA or better
+          // Wait for metadata to load first
+          await new Promise<void>((resolve) => {
+            const handleCanPlay = () => {
+              video.removeEventListener('canplay', handleCanPlay);
+              resolve();
+            };
+            video.addEventListener('canplay', handleCanPlay);
             
-            // Retry with user interaction simulation if browser blocks autoplay
-            if (playAttempts < 3) {
-              console.log(`Retry attempt ${playAttempts + 1}/3`);
-              setPlayAttempts(prev => prev + 1);
-              
-              // Slight delay before retry
-              setTimeout(attemptPlay, 1000);
-            } else if (!hasError) {
-              // After multiple failed attempts, show a silent warning
-              console.error('Multiple play attempts failed');
-              // We don't set hasError here to keep trying to play without showing error UI
-            }
+            // Set a timeout in case metadata never loads
+            setTimeout(() => {
+              video.removeEventListener('canplay', handleCanPlay);
+              resolve(); // Continue anyway after timeout
+            }, 3000);
           });
         }
-      };
-      
-      attemptPlay();
-    }
-  }, [isLoading, hasError, playAttempts]);
-  
-  const handleVideoLoaded = () => {
-    console.log('Video loaded successfully:', currentSrc);
-    setIsLoading(false);
-    setPlayAttempts(0);
-    
-    // Try to play the video immediately after loading
-    if (videoRef.current) {
-      const playPromise = videoRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn('Video autoplay prevented by browser:', error);
-          // We'll retry in the useEffect
-        });
+        
+        // Attempt to play the video
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+          await playPromise;
+          console.log('Video started playing successfully');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.warn(`Playback attempt ${playAttempts + 1} failed:`, err);
+        
+        // Implement exponential backoff for retry attempts
+        if (playAttempts < 3) {
+          const delay = Math.pow(2, playAttempts) * 500; // 500ms, 1s, 2s
+          console.log(`Scheduling retry ${playAttempts + 1} in ${delay}ms`);
+          
+          setTimeout(() => {
+            setPlayAttempts(prev => prev + 1);
+          }, delay);
+        } else if (currentSrc !== fallbackSrc) {
+          // After multiple failures, try the fallback video
+          console.log('Multiple play attempts failed, switching to fallback video');
+          setCurrentSrc(fallbackSrc);
+          setPlayAttempts(0);
+        } else {
+          // If we're already using the fallback and still failing, show error state
+          console.error('All video playback attempts failed, showing error UI');
+          setHasError(true);
+          setIsLoading(false);
+          
+          toast({
+            title: "Video Playback Issue",
+            description: "We couldn't play the background video. You may try refreshing the page.",
+            variant: "destructive"
+          });
+        }
       }
+    };
+    
+    // Only attempt playback if the video isn't already playing
+    if ((videoRef.current.paused || videoRef.current.ended) && !isLoading) {
+      attemptPlayback();
+    }
+  }, [currentSrc, playAttempts, hasError, isLoading, fallbackSrc]);
+
+  // Handler for when video metadata is loaded
+  const handleVideoLoaded = () => {
+    console.log('Video metadata loaded successfully:', currentSrc);
+    setIsLoading(false);
+    
+    // If this is the first load and video is not playing, trigger play attempt
+    if (!initialLoadAttemptedRef.current && videoRef.current && 
+        (videoRef.current.paused || videoRef.current.ended)) {
+      setPlayAttempts(prev => prev + 1);
     }
   };
   
-  const handleVideoError = () => {
-    console.error('Error loading video from source:', currentSrc);
+  // Handler for video loading errors
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    console.error('Error loading video from source:', currentSrc, e);
     
-    // If current source failed and it's not already the fallback, try the fallback
+    // If we haven't tried the fallback yet, switch to it
     if (currentSrc !== fallbackSrc) {
-      console.log('Attempting to load fallback video:', fallbackSrc);
+      console.log('Video loading failed, trying fallback:', fallbackSrc);
       setCurrentSrc(fallbackSrc);
-      // Reset play attempts for fallback
-      setPlayAttempts(0);
+      setPlayAttempts(0); // Reset attempts for the new source
     } else {
-      setIsLoading(false);
+      // If even the fallback fails, show error state
       setHasError(true);
+      setIsLoading(false);
       
-      // Notify the user about the error
       toast({
         title: "Video Background Issue",
         description: "We couldn't load the background video. Please try refreshing the page.",
@@ -187,12 +251,13 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
                 setIsLoading(true);
                 setPlayAttempts(0);
                 
-                // Try loading from either the original source or fallback
+                // Try loading from either the original source or fallback with cache busting
+                const cacheBuster = `?t=${Date.now()}`;
                 if (currentSrc === fallbackSrc && videoSrc !== fallbackSrc) {
-                  setCurrentSrc(videoSrc);
+                  setCurrentSrc(videoSrc + cacheBuster);
                 } else {
-                  // Force reload the current source with cache busting
-                  setCurrentSrc(`${currentSrc.split('?')[0]}?t=${Date.now()}`);
+                  // Force reload with a cache buster
+                  setCurrentSrc(fallbackSrc + cacheBuster);
                 }
               }}
             >
