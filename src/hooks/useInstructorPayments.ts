@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface InstructorPayment {
-  id: string;
+  id: number;
+  instructorId?: number;
   instructorName: string;
   hourlyRate: number;
   hoursLogged: number;
@@ -85,8 +86,7 @@ export const useInstructorPayments = () => {
   const stats = calculateStats();
 
   return {
-    pendingPayments: payments?.filter(p => p.status === 'pending') || [],
-    completedPayments: payments?.filter(p => p.status === 'paid') || [],
+    payments,
     isLoading,
     stats
   };

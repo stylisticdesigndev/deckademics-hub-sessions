@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Clock } from "lucide-react";
 
-interface InstructorPaymentStats {
+export interface InstructorPaymentStats {
   pendingPaymentsCount: number;
   totalPendingAmount: number;
   instructorRatesCount: number;

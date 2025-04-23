@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -5,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
@@ -14,27 +16,13 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
-import { DollarSign, PlusCircle, Clock, Save, Edit } from 'lucide-react';
+import { DollarSign, Save, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
 import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
 import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/InstructorPaymentSearch';
-import { useInstructorPayments } from '@/hooks/useInstructorPayments';
-
-// Define instructor payment type
-interface InstructorPayment {
-  id: number;
-  instructorId: number;
-  instructorName: string;
-  hourlyRate: number;
-  hoursLogged: number;
-  totalAmount: number;
-  payPeriodStart: string;
-  payPeriodEnd: string;
-  status: 'pending' | 'paid';
-  lastUpdated: string;
-}
+import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 
 // Define instructor type
 interface Instructor {
@@ -48,7 +36,7 @@ interface Instructor {
 const AdminInstructorPayments = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const { pendingPayments, completedPayments, stats, isLoading } = useInstructorPayments();
+  const { stats, isLoading } = useInstructorPayments();
   const [editPaymentId, setEditPaymentId] = useState<number | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
@@ -130,6 +118,7 @@ const AdminInstructorPayments = () => {
     }
   ]);
   
+  // Define payments lists from the mock data
   const pendingPayments = payments.filter(payment => payment.status === 'pending');
   const completedPayments = payments.filter(payment => payment.status === 'paid');
   
@@ -266,7 +255,11 @@ const AdminInstructorPayments = () => {
         </div>
 
         <InstructorPaymentStatsCards
-          stats={stats}
+          stats={{
+            pendingPaymentsCount: pendingPayments.length,
+            totalPendingAmount: totalPendingAmount,
+            instructorRatesCount: instructors.length
+          }}
           instructors={instructors}
         />
 
