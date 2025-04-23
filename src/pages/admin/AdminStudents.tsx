@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -352,44 +353,45 @@ const AdminStudents = () => {
             </TabsContent>
           </Tabs>
 
-        {/* View Student Dialog */}
-        <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Student Details</DialogTitle>
-            </DialogHeader>
-            {selectedStudent && (
-              <div className="py-4">
-                {/* Student details will be displayed here */}
-                <p>Student ID: {selectedStudent}</p>
-                {/* Add more details as needed */}
-              </div>
-            )}
-            <DialogFooter>
-              <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          {/* View Student Dialog */}
+          <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Student Details</DialogTitle>
+              </DialogHeader>
+              {selectedStudent && (
+                <div className="py-4">
+                  {/* Student details will be displayed here */}
+                  <p>Student ID: {selectedStudent}</p>
+                  {/* Add more details as needed */}
+                </div>
+              )}
+              <DialogFooter>
+                <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-        {/* Deactivate Confirmation Dialog */}
-        <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Deactivate Student</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to deactivate this student account? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDeactivate}>
-                Deactivate
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          {/* Deactivate Confirmation Dialog */}
+          <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Deactivate Student</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to deactivate this student account? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={confirmDeactivate}>
+                  Deactivate
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </TooltipProvider>
     </DashboardLayout>
   );
