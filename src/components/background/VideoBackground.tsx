@@ -21,7 +21,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   
   // Reset video error state when videoSrc changes
   useEffect(() => {
-    if (videoSrc) {
+    if (videoSrc && !disableVideo) {
       setVideoError(false);
       setIsVideoLoaded(false);
       console.log("Attempting to load video from:", videoSrc);
@@ -45,7 +45,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
         preloadVideo.onerror = null;
       };
     }
-  }, [videoSrc]);
+  }, [videoSrc, disableVideo]);
 
   // Handle video load success
   const handleVideoLoad = () => {
@@ -61,6 +61,15 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
 
   // Determine if we should show the static image fallback
   const shouldShowFallback = !videoSrc || videoError || disableVideo;
+  
+  console.log("VideoBackground render state:", { 
+    shouldShowFallback, 
+    videoSrc, 
+    fallbackSrc, 
+    disableVideo,
+    videoError,
+    isVideoLoaded 
+  });
 
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
@@ -84,12 +93,12 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
         </video>
       )}
       
-      {/* Always render the fallback image (it will be hidden if video loads) */}
+      {/* Always render the fallback image (it will be shown if video is disabled or fails to load) */}
       <div 
-        className={`absolute inset-0 bg-cover bg-center z-5 ${!shouldShowFallback && isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+        className="absolute inset-0 bg-cover bg-center z-5"
         style={{ 
           backgroundImage: `url('${fallbackSrc}')`,
-          transition: 'opacity 0.5s ease-in-out'
+          opacity: 1
         }}
       />
     </div>
