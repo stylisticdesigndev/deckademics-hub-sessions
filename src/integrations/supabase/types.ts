@@ -50,6 +50,44 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_channels: Database["public"]["Enums"]["notification_channel"]
+          notifications_enabled: boolean
+          school_name: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_channels?: Database["public"]["Enums"]["notification_channel"]
+          notifications_enabled?: boolean
+          school_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_channels?: Database["public"]["Enums"]["notification_channel"]
+          notifications_enabled?: boolean
+          school_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           class_id: string
@@ -562,6 +600,7 @@ export type Database = {
       }
     }
     Enums: {
+      notification_channel: "email" | "push" | "all" | "none"
       user_role: "student" | "instructor" | "admin"
     }
     CompositeTypes: {
@@ -678,6 +717,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      notification_channel: ["email", "push", "all", "none"],
       user_role: ["student", "instructor", "admin"],
     },
   },

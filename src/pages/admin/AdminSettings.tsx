@@ -16,6 +16,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle, Loader2 } from 'lucide-react';
@@ -35,22 +36,57 @@ const AdminSettings = () => {
 
   const handlePreviewToggle = () => setIsPreviewVisible(!isPreviewVisible);
 
+  const { settings, isLoading, updateSettings } = useAppSettings();
+  
   const form = useForm({
     defaultValues: {
-      schoolName: 'Deckademics DJ School',
+      schoolName: '',
       notificationsEnabled: true,
-      emailNotifications: true,
+      emailNotifications: false,
       pushNotifications: false,
     },
   });
 
-  const onSubmit = (data: any) => {
-    console.log(data);
-    toast({
-      title: 'Settings Saved',
-      description: 'Your settings have been successfully saved.',
+  // Update form when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        schoolName: settings.school_name,
+        notificationsEnabled: settings.notifications_enabled,
+        emailNotifications: settings.notification_channels === 'email' || settings.notification_channels === 'all',
+        pushNotifications: settings.notification_channels === 'push' || settings.notification_channels === 'all',
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: any) => {
+    const notificationChannels = 
+      data.notificationsEnabled
+        ? (data.emailNotifications && data.pushNotifications 
+            ? 'all' 
+            : data.emailNotifications 
+              ? 'email' 
+              : data.pushNotifications 
+                ? 'push' 
+                : 'none')
+        : 'none';
+
+    await updateSettings.mutateAsync({
+      school_name: data.schoolName,
+      notifications_enabled: data.notificationsEnabled,
+      notification_channels: notificationChannels,
     });
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Fetch latest background video from Supabase storage on mount
   useEffect(() => {
@@ -251,6 +287,28 @@ const AdminSettings = () => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="pushNotifications"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Push Notifications</FormLabel>
+                          <FormDescription>
+                            Receive notifications in your browser
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!form.watch('notificationsEnabled')}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <Separator />
@@ -382,7 +440,20 @@ const AdminSettings = () => {
                   </div>
                 </div>
                 
-                <Button type="submit" className="mt-4">Save Settings</Button>
+                <Button 
+                  type="submit" 
+                  className="mt-4"
+                  disabled={updateSettings.isPending}
+                >
+                  {updateSettings.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Settings'
+                  )}
+                </Button>
               </form>
             </Form>
           </CardContent>
