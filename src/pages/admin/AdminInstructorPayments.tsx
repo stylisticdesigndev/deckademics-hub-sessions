@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
@@ -19,6 +18,9 @@ import { DollarSign, PlusCircle, Clock, Save, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
+import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
+import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/InstructorPaymentSearch';
+import { useInstructorPayments } from '@/hooks/useInstructorPayments';
 
 // Define instructor payment type
 interface InstructorPayment {
@@ -46,6 +48,7 @@ interface Instructor {
 const AdminInstructorPayments = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const { pendingPayments, completedPayments, stats, isLoading } = useInstructorPayments();
   const [editPaymentId, setEditPaymentId] = useState<number | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
@@ -262,59 +265,15 @@ const AdminInstructorPayments = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Pending Payments
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingPayments.length}</div>
-              <p className="text-xs text-muted-foreground">
-                ${totalPendingAmount} pending
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Instructor Hourly Rates
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm space-y-1">
-                {instructors.slice(0, 3).map(instructor => (
-                  <div key={instructor.id} className="flex justify-between items-center">
-                    <span>{instructor.name}</span>
-                    <span className="font-semibold">${instructor.hourlyRate}/hr</span>
-                  </div>
-                ))}
-                {instructors.length > 3 && (
-                  <div className="text-xs text-muted-foreground text-right mt-1">
-                    +{instructors.length - 3} more instructors
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <InstructorPaymentStatsCards
+          stats={stats}
+          instructors={instructors}
+        />
 
-        <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Input
-              type="search"
-              placeholder="Search instructors..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+        <InstructorPaymentSearch
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
         {/* Instructor Rate Management */}
         <Card>
