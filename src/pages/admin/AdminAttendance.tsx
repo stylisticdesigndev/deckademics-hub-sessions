@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { Check, X, Clock, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Check, X, Clock, Calendar as CalendarIcon, Loader2, UserCheck, UserX, Clock3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAdminAttendance } from '@/hooks/useAdminAttendance';
+import { StatsCard } from '@/components/cards/StatsCard';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -49,44 +50,26 @@ const AdminAttendance = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Weekly Attendance</CardTitle>
-              <CardDescription>Attendance records for this week</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <div className="text-2xl font-bold">{stats.attendanceRate}%</div>
-                <span className="ml-2 text-muted-foreground">attendance rate</span>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Weekly Attendance"
+            value={`${stats.attendanceRate}%`}
+            icon={<UserCheck className="h-4 w-4" />}
+            description="Attendance rate for this week"
+          />
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Missed Classes</CardTitle>
-              <CardDescription>Students with missed classes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <div className="text-2xl font-bold">{stats.missedCount}</div>
-                <span className="ml-2 text-muted-foreground">missed classes this week</span>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Missed Classes"
+            value={stats.missedCount}
+            icon={<UserX className="h-4 w-4" />}
+            description="Students with missed classes this week"
+          />
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Make-ups</CardTitle>
-              <CardDescription>Upcoming make-up sessions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <div className="text-2xl font-bold">{stats.scheduledMakeups}</div>
-                <span className="ml-2 text-muted-foreground">scheduled make-ups</span>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Scheduled Make-ups"
+            value={stats.scheduledMakeups}
+            icon={<Clock3 className="h-4 w-4" />}
+            description="Upcoming make-up sessions"
+          />
         </div>
 
         <Card>

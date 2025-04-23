@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -20,6 +20,28 @@ export interface Student {
 
 export const useAdminAttendance = () => {
   const queryClient = useQueryClient();
+  const today = new Date();
+  const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Week starts on Monday
+  const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 });
+
+  // Fetch all attendance records for current week to calculate stats
+  const { data: weeklyAttendance } = useQuery({
+    queryKey: ['admin', 'attendance', 'weekly'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance')
+        .select(`
+          id,
+          date,
+          status
+        `)
+        .gte('date', format(startOfCurrentWeek, 'yyyy-MM-dd'))
+        .lte('date', format(endOfCurrentWeek, 'yyyy-MM-dd'));
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   // Fetch missed attendance records
   const { data: missedAttendance, isLoading } = useQuery({
@@ -145,12 +167,42 @@ export const useAdminAttendance = () => {
     }
   });
 
-  // Calculate stats
-  const missedCount = missedAttendance?.filter(s => s.status === 'missed').length || 0;
-  const scheduledMakeups = missedAttendance?.filter(s => s.makeupDate !== null).length || 0;
-  
-  // Calculate attendance rate (assuming 90% is baseline if no missed classes)
-  const attendanceRate = missedCount > 0 ? 90 - (missedCount * 5) : 90;
+  // Calculate stats from actual data
+  const calculateStats = () => {
+    if (!weeklyAttendance) {
+      return {
+        missedCount: 0,
+        scheduledMakeups: 0,
+        attendanceRate: 90 // Default value
+      };
+    }
+
+    // Count total classes for the week
+    const totalClasses = weeklyAttendance.length;
+    
+    // Count missed classes
+    const missedCount = weeklyAttendance.filter(record => record.status === 'missed').length;
+    
+    // Count scheduled makeups
+    const scheduledMakeups = weeklyAttendance.filter(record => record.status === 'makeup').length;
+    
+    // Calculate attendance rate
+    let attendanceRate = 100;
+    if (totalClasses > 0) {
+      const attendedClasses = weeklyAttendance.filter(
+        record => record.status === 'attended' || record.status === 'made-up'
+      ).length;
+      attendanceRate = Math.round((attendedClasses / totalClasses) * 100);
+    }
+
+    return {
+      missedCount,
+      scheduledMakeups,
+      attendanceRate
+    };
+  };
+
+  const stats = calculateStats();
 
   return {
     missedAttendance,
@@ -159,10 +211,6 @@ export const useAdminAttendance = () => {
       updateStatus.mutate({ studentId, attendanceId, status }),
     scheduleMakeup: (studentId: string, date: Date, missedClassId: string) => 
       scheduleMakeup.mutate({ studentId, date, missedClassId }),
-    stats: {
-      missedCount,
-      scheduledMakeups,
-      attendanceRate
-    }
+    stats
   };
 };
