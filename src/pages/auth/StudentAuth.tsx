@@ -7,16 +7,16 @@ import { VideoBackground } from '@/components/background/VideoBackground';
 
 const StudentAuth = () => {
   console.log("Rendering StudentAuth page");
-  // Add a key to force VideoBackground remounting
+  // Adding a unique key based on both timestamp and route to force remount
   const [videoKey] = useState<number>(Date.now());
   
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Video Background (behind everything) with key to force remount */}
+      {/* Video Background with cache busting parameter */}
       <VideoBackground 
         key={videoKey}
-        videoSrc="/lovable-uploads/dj-background.mp4" 
-        fallbackSrc="/lovable-uploads/dj-background.mp4"
+        videoSrc={`/lovable-uploads/dj-background.mp4?nocache=${videoKey}`} 
+        fallbackSrc={`/lovable-uploads/dj-background.mp4?nocache=${videoKey}`}
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
