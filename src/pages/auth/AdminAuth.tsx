@@ -5,16 +5,20 @@ import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from 'lucide-react';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
 const AdminAuth = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-deckademics-dark">
-      <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col bg-transparent relative">
+      {/* Static background image */}
+      <VideoBackground fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" />
+      
+      <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header content */}
       </header>
       
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md space-y-6">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
+        <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
           <div className="text-center flex flex-col items-center space-y-2">
             <div className="mb-4">
               <img 
@@ -52,7 +56,7 @@ const AdminAuth = () => {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-sm text-muted-foreground">
+      <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
       </footer>
     </div>
