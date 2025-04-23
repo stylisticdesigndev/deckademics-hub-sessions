@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
@@ -11,55 +11,61 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    async function getLatestVideo() {
-      setIsLoading(true);
-      try {
-        // List files in the bucket and pick the newest one:
-        const { data, error } = await supabase.storage.from('background-videos').list('', { 
-          sortBy: { column: 'created_at', order: 'desc' }, 
-          limit: 1 
-        });
-        
-        if (error) {
-          console.error('Error fetching videos:', error);
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
-          if (publicUrl?.publicUrl) {
-            console.log('Found video URL:', publicUrl.publicUrl);
-            // Append a timestamp to bust browser cache
-            const cacheBuster = `?timestamp=${Date.now()}`;
-            setBackgroundVideoUrl(publicUrl.publicUrl + cacheBuster);
-          }
-        } else {
-          console.log('No videos found, using default');
-        }
-      } catch (err) {
-        console.error('Failed to fetch background video:', err);
-        
-        // If we've tried less than 3 times, retry after a delay
-        if (retryCount < 3) {
-          console.log(`Retrying video fetch. Attempt ${retryCount + 1}/3`);
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 2000);
-        } else {
-          toast({
-            title: "Video Load Error",
-            description: "Could not load background video. Using default instead.",
-            variant: "destructive"
-          });
-        }
-      } finally {
-        setIsLoading(false);
+  // Function to fetch the latest video, with improved error handling
+  const getLatestVideo = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // List files in the bucket and pick the newest one:
+      const { data, error } = await supabase.storage.from('background-videos').list('', { 
+        sortBy: { column: 'created_at', order: 'desc' }, 
+        limit: 1 
+      });
+      
+      if (error) {
+        console.error('Error fetching videos:', error);
+        throw error;
       }
+      
+      if (data && data.length > 0) {
+        const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
+        if (publicUrl?.publicUrl) {
+          console.log('Found video URL:', publicUrl.publicUrl);
+          // Append a timestamp to bust browser cache
+          const cacheBuster = `?timestamp=${Date.now()}`;
+          setBackgroundVideoUrl(publicUrl.publicUrl + cacheBuster);
+        } else {
+          throw new Error('Could not get public URL for video');
+        }
+      } else {
+        console.log('No videos found, using default');
+        // Clear any timestamp that might be in the URL
+        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+      }
+    } catch (err) {
+      console.error('Failed to fetch background video:', err);
+      
+      // If we've tried less than 3 times, retry after a delay
+      if (retryCount < 3) {
+        console.log(`Retrying video fetch. Attempt ${retryCount + 1}/3`);
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+        }, 2000);
+      } else {
+        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+        toast({
+          title: "Video Load Error",
+          description: "Could not load background video. Using default instead.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
-    
-    getLatestVideo();
   }, [retryCount]);
+  
+  useEffect(() => {
+    getLatestVideo();
+  }, [retryCount, getLatestVideo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
@@ -69,8 +75,9 @@ const Index = () => {
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        {/* Header logo removed */}
+        {/* Header content */}
       </header>
+      
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
         <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
           <div className="text-center flex flex-col items-center space-y-2">
@@ -118,6 +125,7 @@ const Index = () => {
           </p>
         </div>
       </main>
+      
       <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
         <div className="mt-4">
