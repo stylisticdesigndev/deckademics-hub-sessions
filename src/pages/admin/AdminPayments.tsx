@@ -2,14 +2,11 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, CreditCard, Calendar } from 'lucide-react';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
+import { PaymentStatsCards } from '@/components/admin/payments/PaymentStatsCards';
+import { PaymentSearch } from '@/components/admin/payments/PaymentSearch';
+import { PaymentsTable } from '@/components/admin/payments/PaymentsTable';
 
 const AdminPayments = () => {
   const { missedPayments, upcomingPayments, isLoading, stats } = useAdminPayments();
@@ -55,186 +52,22 @@ const AdminPayments = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Missed Payments
-              </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.missedPaymentsCount}</div>
-              <p className="text-xs text-muted-foreground">
-                ${stats.totalMissedAmount} past due
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Upcoming Payments
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.upcomingPaymentsCount}</div>
-              <p className="text-xs text-muted-foreground">
-                ${stats.totalUpcomingAmount} due within 2 weeks
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <PaymentStatsCards stats={stats} />
+        <PaymentSearch searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-        <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Input
-              type="search"
-              placeholder="Search students..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <CreditCard className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+        <PaymentsTable
+          title="Missed Payments"
+          description="Students with past due payments"
+          payments={filteredMissedPayments}
+          onMarkAsPaid={handleMarkAsPaid}
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Missed Payments</CardTitle>
-            <CardDescription>Students with past due payments</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredMissedPayments.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMissedPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">{payment.studentName}</TableCell>
-                      <TableCell>{payment.email}</TableCell>
-                      <TableCell>${payment.amount}</TableCell>
-                      <TableCell>{payment.dueDate}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="destructive">
-                            {payment.daysPastDue} days past due
-                          </Badge>
-                          {payment.partiallyPaid && (
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                              Partially Paid
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1 text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => handleMarkAsPaid(payment.id, 'full')}
-                          >
-                            <Check className="h-3 w-3" />
-                            Fully Paid
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleMarkAsPaid(payment.id, 'partial')}
-                          >
-                            Partial
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground">No missed payments.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Payments</CardTitle>
-            <CardDescription>Payments due within the next two weeks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredUpcomingPayments.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Days Until Due</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUpcomingPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">{payment.studentName}</TableCell>
-                      <TableCell>{payment.email}</TableCell>
-                      <TableCell>${payment.amount}</TableCell>
-                      <TableCell>{payment.dueDate}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-                            Due in {payment.daysTillDue} days
-                          </Badge>
-                          {payment.partiallyPaid && (
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                              Partially Paid
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1 text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => handleMarkAsPaid(payment.id, 'full')}
-                          >
-                            <Check className="h-3 w-3" />
-                            Fully Paid
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleMarkAsPaid(payment.id, 'partial')}
-                          >
-                            Partial
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground">No upcoming payments within the next two weeks.</p>
-            )}
-          </CardContent>
-        </Card>
+        <PaymentsTable
+          title="Payment History"
+          description="Previous payments"
+          payments={filteredUpcomingPayments}
+          showActions={false}
+        />
       </div>
     </DashboardLayout>
   );
