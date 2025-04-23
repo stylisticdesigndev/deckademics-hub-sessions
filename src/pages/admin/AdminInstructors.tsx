@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -52,16 +52,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminInstructors = () => {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewInstructorId, setViewInstructorId] = useState<string | null>(null);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<string | null>(null);
@@ -72,6 +72,10 @@ const AdminInstructors = () => {
     email: '',
     specialization: '',
   });
+  
+  // New state for manual instructor creation
+  const [showCreateInstructorDialog, setShowCreateInstructorDialog] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   
   // New state for student assignment
   const [studentAssignments, setStudentAssignments] = useState<{[key: number]: string}>({});
@@ -91,12 +95,26 @@ const AdminInstructors = () => {
     activeInstructors,
     pendingInstructors,
     inactiveInstructors,
+    rawInstructorCount,
+    rawProfileCount,
+    allUsers,
     isLoading,
     approveInstructor,
     declineInstructor,
     deactivateInstructor,
-    activateInstructor
+    activateInstructor,
+    createInstructor
   } = useAdminInstructors();
+
+  // Log debugging information when data changes
+  useEffect(() => {
+    console.log("Debug - Raw instructor count:", rawInstructorCount);
+    console.log("Debug - Raw profile count:", rawProfileCount);
+    console.log("Debug - All users:", allUsers);
+    console.log("Debug - Active instructors:", activeInstructors);
+    console.log("Debug - Pending instructors:", pendingInstructors);
+    console.log("Debug - Inactive instructors:", inactiveInstructors);
+  }, [rawInstructorCount, rawProfileCount, allUsers, activeInstructors, pendingInstructors, inactiveInstructors]);
 
   const handleApprove = (id: string) => {
     approveInstructor.mutate(id);
@@ -120,6 +138,20 @@ const AdminInstructors = () => {
     deactivateInstructor.mutate(instructorToDeactivate);
     setShowDeactivateDialog(false);
     setInstructorToDeactivate(null);
+  };
+
+  const handleCreateInstructor = () => {
+    if (!selectedUserId) {
+      toast({
+        title: "Error",
+        description: "Please select a user to convert to instructor."
+      });
+      return;
+    }
+    
+    createInstructor.mutate(selectedUserId);
+    setShowCreateInstructorDialog(false);
+    setSelectedUserId('');
   };
 
   const getInstructorById = (id: string) => {
@@ -151,6 +183,17 @@ const AdminInstructors = () => {
       instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
   ) || [];
+
+  // Get eligible users who don't have instructor records yet
+  const eligibleUsers = (allUsers || []).filter(user => {
+    // Check if this user doesn't already have an instructor record
+    const isAlreadyInstructor = 
+      (activeInstructors || []).some(instructor => instructor.id === user.id) ||
+      (pendingInstructors || []).some(instructor => instructor.id === user.id) ||
+      (inactiveInstructors || []).some(instructor => instructor.id === user.id);
+    
+    return !isAlreadyInstructor;
+  });
 
   // Get active instructors for reassignment dropdown (exclude the one being deactivated)
   const availableInstructors = activeInstructors
@@ -237,6 +280,19 @@ const AdminInstructors = () => {
     });
   };
 
+  const showNoInstructorsMessage = () => {
+    return (
+      <Alert className="mt-4 mb-2">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>No instructor records found</AlertTitle>
+        <AlertDescription>
+          There are {rawProfileCount || 'no'} user profiles in the database, but no instructor records. 
+          Use the "Convert User to Instructor" feature to create instructor records for existing users.
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
@@ -262,60 +318,123 @@ const AdminInstructors = () => {
               </p>
             </div>
             
-            <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Instructor
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={handleAddInstructor}>
+            <div className="flex gap-2">
+              <Dialog open={showCreateInstructorDialog} onOpenChange={setShowCreateInstructorDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <UserRound className="mr-2 h-4 w-4" />
+                    Convert User to Instructor
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>Add New Instructor</DialogTitle>
+                    <DialogTitle>Convert User to Instructor</DialogTitle>
                     <DialogDescription>
-                      Create a new instructor account. The instructor will receive an email to set up their password.
+                      Create an instructor record for an existing user account.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name" className="text-left">Name</Label>
-                      <Input
-                        id="name"
-                        value={newInstructor.name}
-                        onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
-                        placeholder="Enter full name"
-                      />
+                  
+                  {eligibleUsers && eligibleUsers.length > 0 ? (
+                    <div className="py-4">
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="userId">Select User</Label>
+                          <Select 
+                            value={selectedUserId} 
+                            onValueChange={setSelectedUserId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {eligibleUsers.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.first_name} {user.last_name} ({user.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="email" className="text-left">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newInstructor.email}
-                        onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
-                        placeholder="Enter email address"
-                      />
+                  ) : (
+                    <div className="py-4 text-center text-muted-foreground">
+                      No eligible users found. All users already have instructor records.
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="specialization" className="text-left">Specialization</Label>
-                      <Input
-                        id="specialization"
-                        value={newInstructor.specialization}
-                        onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
-                        placeholder="E.g., Turntablism, Scratching, Beat Mixing"
-                      />
-                    </div>
-                  </div>
+                  )}
+                  
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowCreateInstructorDialog(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit">Add Instructor</Button>
+                    <Button 
+                      onClick={handleCreateInstructor} 
+                      disabled={!selectedUserId || !eligibleUsers || eligibleUsers.length === 0}
+                    >
+                      Create Instructor
+                    </Button>
                   </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Instructor
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <form onSubmit={handleAddInstructor}>
+                    <DialogHeader>
+                      <DialogTitle>Add New Instructor</DialogTitle>
+                      <DialogDescription>
+                        Create a new instructor account. The instructor will receive an email to set up their password.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="name" className="text-left">Name</Label>
+                        <Input
+                          id="name"
+                          value={newInstructor.name}
+                          onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
+                          placeholder="Enter full name"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="email" className="text-left">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newInstructor.email}
+                          onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="specialization" className="text-left">Specialization</Label>
+                        <Input
+                          id="specialization"
+                          value={newInstructor.specialization}
+                          onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
+                          placeholder="E.g., Turntablism, Scratching, Beat Mixing"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">Add Instructor</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
             
             {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
             <Dialog open={showStudentReassignment} onOpenChange={setShowStudentReassignment}>
@@ -419,6 +538,8 @@ const AdminInstructors = () => {
             </Dialog>
           </div>
 
+          {rawInstructorCount === 0 && showNoInstructorsMessage()}
+
           <div className="flex items-center space-x-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -435,13 +556,13 @@ const AdminInstructors = () => {
           <Tabs defaultValue="active">
             <TabsList>
               <TabsTrigger value="active">
-                Active Instructors ({filteredActiveInstructors.length})
+                Active Instructors ({filteredActiveInstructors?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="pending">
-                Pending Approval ({filteredPendingInstructors.length})
+                Pending Approval ({filteredPendingInstructors?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="inactive">
-                Inactive Instructors ({filteredInactiveInstructors.length})
+                Inactive Instructors ({filteredInactiveInstructors?.length || 0})
               </TabsTrigger>
             </TabsList>
 
@@ -465,74 +586,75 @@ const AdminInstructors = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredActiveInstructors.map((instructor) => (
-                          <tr key={instructor.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {instructor.profile.first_name} {instructor.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {instructor.profile.email}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500">
-                                Active
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleOpenAssignStudents(Number(instructor.id))}
-                                      className="h-8 w-8"
-                                    >
-                                      <UserRound className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Assign Students</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => viewInstructor(instructor.id)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View Details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleDeactivate(instructor.id)}
-                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Deactivate Instructor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredActiveInstructors.length === 0 && (
+                        {filteredActiveInstructors && filteredActiveInstructors.length > 0 ? (
+                          filteredActiveInstructors.map((instructor) => (
+                            <tr key={instructor.id} className="border-b last:border-0">
+                              <td className="px-4 py-3 font-medium">
+                                {instructor.profile.first_name} {instructor.profile.last_name}
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground">
+                                {instructor.profile.email}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500">
+                                  Active
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleOpenAssignStudents(Number(instructor.id))}
+                                        className="h-8 w-8"
+                                      >
+                                        <UserRound className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Assign Students</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => viewInstructor(instructor.id)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View Details</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleDeactivate(instructor.id)}
+                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Deactivate Instructor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
                           <tr>
                             <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                              No instructors found matching your search.
+                              No active instructors found.
                             </td>
                           </tr>
                         )}
@@ -563,74 +685,75 @@ const AdminInstructors = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredPendingInstructors.map((instructor) => (
-                          <tr key={instructor.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {instructor.profile.first_name} {instructor.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {instructor.profile.email}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
-                                Pending
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => viewInstructor(instructor.id)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View Details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleApprove(instructor.id)}
-                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Approve Instructor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleDecline(instructor.id)}
-                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Decline Instructor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredPendingInstructors.length === 0 && (
+                        {filteredPendingInstructors && filteredPendingInstructors.length > 0 ? (
+                          filteredPendingInstructors.map((instructor) => (
+                            <tr key={instructor.id} className="border-b last:border-0">
+                              <td className="px-4 py-3 font-medium">
+                                {instructor.profile.first_name} {instructor.profile.last_name}
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground">
+                                {instructor.profile.email}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
+                                  Pending
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => viewInstructor(instructor.id)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View Details</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleApprove(instructor.id)}
+                                        className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Approve Instructor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleDecline(instructor.id)}
+                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Decline Instructor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
                           <tr>
                             <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                              No pending instructors found matching your search.
+                              No pending instructors found.
                             </td>
                           </tr>
                         )}
@@ -661,59 +784,60 @@ const AdminInstructors = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredInactiveInstructors.map((instructor) => (
-                          <tr key={instructor.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {instructor.profile.first_name} {instructor.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {instructor.profile.email}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500">
-                                Inactive
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => viewInstructor(instructor.id)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View Details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleActivate(instructor.id)}
-                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Activate Instructor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredInactiveInstructors.length === 0 && (
+                        {filteredInactiveInstructors && filteredInactiveInstructors.length > 0 ? (
+                          filteredInactiveInstructors.map((instructor) => (
+                            <tr key={instructor.id} className="border-b last:border-0">
+                              <td className="px-4 py-3 font-medium">
+                                {instructor.profile.first_name} {instructor.profile.last_name}
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground">
+                                {instructor.profile.email}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500">
+                                  Inactive
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => viewInstructor(instructor.id)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View Details</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleActivate(instructor.id)}
+                                        className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Activate Instructor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
                           <tr>
                             <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                              No inactive instructors found matching your search.
+                              No inactive instructors found.
                             </td>
                           </tr>
                         )}
@@ -740,3 +864,4 @@ interface Student {
 }
 
 export default AdminInstructors;
+
