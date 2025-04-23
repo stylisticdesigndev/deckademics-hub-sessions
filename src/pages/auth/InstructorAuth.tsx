@@ -8,9 +8,9 @@ import { VideoBackground } from '@/components/background/VideoBackground';
 const InstructorAuth = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Static video URL with cache-busting query parameter */}
+      {/* Using static image as fallback since video is causing issues */}
       <VideoBackground 
-        videoSrc="https://storage.googleapis.com/lovable-static-assets/static/sample-videos/turntable-video.mp4" 
+        videoSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png"
       />
       

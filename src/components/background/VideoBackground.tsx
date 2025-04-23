@@ -8,33 +8,41 @@ interface VideoBackgroundProps {
 
 export const VideoBackground: React.FC<VideoBackgroundProps> = ({ 
   videoSrc,
-  fallbackSrc = '/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png' // Using the provided image as fallback
+  fallbackSrc = '/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png' 
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState<string>(videoSrc);
   
-  // Reset video state when source changes
   useEffect(() => {
     setIsLoading(true);
     setHasError(false);
-    setCurrentSrc(videoSrc);
     
     console.log('Video source set to:', videoSrc);
-  }, [videoSrc]);
-
-  // Handler for when video metadata is loaded
-  const handleVideoLoaded = () => {
-    console.log('Video metadata loaded successfully:', currentSrc);
-    setIsLoading(false);
-  };
-  
-  // Handler for video loading errors
-  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    console.error('Video error occurred, switching to fallback:', e);
-    setHasError(true);
-    setIsLoading(false);
-  };
+    
+    // Attempt to preload the video to check if it's accessible
+    const preloadVideo = new Image();
+    preloadVideo.src = fallbackSrc; // Preload the fallback image in case we need it
+    
+    const testVideo = document.createElement('video');
+    testVideo.src = videoSrc;
+    testVideo.onloadeddata = () => {
+      console.log('Video preload successful');
+      setIsLoading(false);
+    };
+    
+    testVideo.onerror = () => {
+      console.error('Video preload failed, switching to fallback');
+      setHasError(true);
+      setIsLoading(false);
+    };
+    
+    // Clean up
+    return () => {
+      testVideo.src = '';
+      testVideo.onloadeddata = null;
+      testVideo.onerror = null;
+    };
+  }, [videoSrc, fallbackSrc]);
 
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
@@ -54,11 +62,9 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
           playsInline
           loop
           className="absolute w-full h-full object-cover"
-          onLoadedData={handleVideoLoaded}
-          onError={handleVideoError}
           preload="auto"
         >
-          <source src={currentSrc} type="video/mp4" />
+          <source src={videoSrc} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       ) : (

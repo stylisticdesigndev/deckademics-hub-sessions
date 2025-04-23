@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -10,9 +9,9 @@ const StudentAuth = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Static video URL with cache-busting query parameter */}
+      {/* Using a different video source with timestamp to prevent caching issues */}
       <VideoBackground 
-        videoSrc="https://storage.googleapis.com/lovable-static-assets/static/sample-videos/turntable-video.mp4" 
+        videoSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png"
       />
       
