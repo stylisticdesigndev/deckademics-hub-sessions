@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,11 +31,9 @@ const AdminSettings = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string | null>(null);
   const { clearLocalStorage, session } = useAuth();
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-
+  
   // Reduce max allowable video size to 50MB due to Supabase limits
   const MAX_VIDEO_MB = 50;
-
-  const handlePreviewToggle = () => setIsPreviewVisible(!isPreviewVisible);
 
   const { settings, isLoading, updateSettings } = useAppSettings();
   
@@ -47,49 +46,10 @@ const AdminSettings = () => {
     },
   });
 
-  // Update form when settings are loaded
-  useEffect(() => {
-    if (settings) {
-      form.reset({
-        schoolName: settings.school_name,
-        notificationsEnabled: settings.notifications_enabled,
-        emailNotifications: settings.notification_channels === 'email' || settings.notification_channels === 'all',
-        pushNotifications: settings.notification_channels === 'push' || settings.notification_channels === 'all',
-      });
-    }
-  }, [settings, form]);
+  const handlePreviewToggle = () => setIsPreviewVisible(!isPreviewVisible);
 
-  const onSubmit = async (data: any) => {
-    const notificationChannels = 
-      data.notificationsEnabled
-        ? (data.emailNotifications && data.pushNotifications 
-            ? 'all' 
-            : data.emailNotifications 
-              ? 'email' 
-              : data.pushNotifications 
-                ? 'push' 
-                : 'none')
-        : 'none';
-
-    await updateSettings.mutateAsync({
-      school_name: data.schoolName,
-      notifications_enabled: data.notificationsEnabled,
-      notification_channels: notificationChannels,
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Fetch latest background video from Supabase storage on mount
-  useEffect(() => {
+  // Effect for fetching background video moved inside component body to avoid hook ordering issues
+  React.useEffect(() => {
     async function fetchBackgroundVideo() {
       try {
         const { data, error } = await supabase.storage.from('background-videos').list('', { 
@@ -125,6 +85,37 @@ const AdminSettings = () => {
     }
     fetchBackgroundVideo();
   }, []);
+
+  // Effect for updating form when settings are loaded
+  React.useEffect(() => {
+    if (settings) {
+      form.reset({
+        schoolName: settings.school_name,
+        notificationsEnabled: settings.notifications_enabled,
+        emailNotifications: settings.notification_channels === 'email' || settings.notification_channels === 'all',
+        pushNotifications: settings.notification_channels === 'push' || settings.notification_channels === 'all',
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: any) => {
+    const notificationChannels = 
+      data.notificationsEnabled
+        ? (data.emailNotifications && data.pushNotifications 
+            ? 'all' 
+            : data.emailNotifications 
+              ? 'email' 
+              : data.pushNotifications 
+                ? 'push' 
+                : 'none')
+        : 'none';
+
+    await updateSettings.mutateAsync({
+      school_name: data.schoolName,
+      notifications_enabled: data.notificationsEnabled,
+      notification_channels: notificationChannels,
+    });
+  };
 
   // Uploads video to Supabase Storage
   const handleVideoUpload = async () => {
@@ -200,6 +191,16 @@ const AdminSettings = () => {
       description: 'Local storage has been cleared. You will be logged out.',
     });
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
