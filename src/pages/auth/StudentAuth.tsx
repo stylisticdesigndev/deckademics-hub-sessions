@@ -10,9 +10,9 @@ const StudentAuth = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Background video with fallback image */}
+      {/* Static background image instead of video due to loading issues */}
       <VideoBackground 
-        videoSrc="/lovable-uploads/dj-background.mp4"
+        disableVideo={true}
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
       />
       

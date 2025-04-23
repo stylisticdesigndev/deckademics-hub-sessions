@@ -25,6 +25,25 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       setVideoError(false);
       setIsVideoLoaded(false);
       console.log("Attempting to load video from:", videoSrc);
+      
+      // Preload the video to test if it's accessible
+      const preloadVideo = document.createElement('video');
+      preloadVideo.src = videoSrc;
+      preloadVideo.onloadeddata = () => {
+        console.log("Video preloaded successfully:", videoSrc);
+        setIsVideoLoaded(true);
+        setVideoError(false);
+      };
+      preloadVideo.onerror = () => {
+        console.error("Video preload failed for:", videoSrc);
+        setVideoError(true);
+      };
+      
+      return () => {
+        preloadVideo.src = '';
+        preloadVideo.onloadeddata = null;
+        preloadVideo.onerror = null;
+      };
     }
   }, [videoSrc]);
 
