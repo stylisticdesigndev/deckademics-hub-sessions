@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,15 +15,6 @@ interface Instructor {
     last_name: string;
     email: string;
   };
-  students: {
-    id: string;
-    profile: {
-      first_name: string;
-      last_name: string;
-      email: string;
-    };
-    level: string;
-  }[];
 }
 
 export const useAdminInstructors = () => {
@@ -40,16 +32,10 @@ export const useAdminInstructors = () => {
           bio,
           hourly_rate,
           years_experience,
-          profile:profiles(first_name, last_name, email),
-          students:students(
-            id,
-            level,
-            profile:profiles(first_name, last_name, email)
-          )
+          profile:profiles(first_name, last_name, email)
         `)
         .eq('status', 'active');
 
-      // Add console logging to help diagnose the issue
       console.log('Active Instructors Query Result:', { data, error });
 
       if (error) {

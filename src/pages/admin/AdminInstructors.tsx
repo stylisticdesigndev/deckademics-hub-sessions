@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -459,8 +460,6 @@ const AdminInstructors = () => {
                         <tr className="border-b bg-muted/50">
                           <th className="px-4 py-3 text-left font-medium">Name</th>
                           <th className="px-4 py-3 text-left font-medium">Email</th>
-                          <th className="px-4 py-3 text-center font-medium">Students</th>
-                          <th className="px-4 py-3 text-center font-medium">Classes</th>
                           <th className="px-4 py-3 text-center font-medium">Status</th>
                           <th className="px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
@@ -473,13 +472,6 @@ const AdminInstructors = () => {
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
                               {instructor.profile.email}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {instructor.students?.length || 0}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {/* You might want to implement class count */}
-                              0
                             </td>
                             <td className="px-4 py-3 text-center">
                               <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500">
@@ -539,7 +531,7 @@ const AdminInstructors = () => {
                         ))}
                         {filteredActiveInstructors.length === 0 && (
                           <tr>
-                            <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
                               No instructors found matching your search.
                             </td>
                           </tr>
