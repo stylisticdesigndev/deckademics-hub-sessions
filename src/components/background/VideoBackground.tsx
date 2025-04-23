@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 interface VideoBackgroundProps {
   videoSrc?: string;
   fallbackSrc?: string;
+  disableVideo?: boolean;
 }
 
 /**
@@ -12,11 +13,12 @@ interface VideoBackgroundProps {
  */
 export const VideoBackground: React.FC<VideoBackgroundProps> = ({ 
   videoSrc,
-  fallbackSrc = '/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png' 
+  fallbackSrc = '/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png',
+  disableVideo = false
 }) => {
   const [videoError, setVideoError] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-
+  
   // Reset video error state when videoSrc changes
   useEffect(() => {
     if (videoSrc) {
@@ -34,17 +36,18 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   // Handle video load error
   const handleVideoError = () => {
     setVideoError(true);
-    console.error("Failed to load video:", videoSrc);
+    console.log("Using fallback image due to video load error");
   };
 
   // Determine if we should show the static image fallback
-  const shouldShowFallback = !videoSrc || videoError;
+  const shouldShowFallback = !videoSrc || videoError || disableVideo;
 
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
       {/* Semi-transparent overlay */}
       <div className="absolute inset-0 bg-black/50 z-10" />
       
+      {/* Only try to load video if not disabled and a source is provided */}
       {!shouldShowFallback && (
         <video
           autoPlay
