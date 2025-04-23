@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -227,42 +226,22 @@ export const useAdminInstructors = () => {
     }
   });
 
-  // Add a mutation to create a new instructor record for an existing user
+  // Update the createInstructor mutation to use the admin_create_instructor DB function
   const createInstructor = useMutation({
     mutationFn: async (userId: string) => {
-      console.log(`Creating instructor record for user ${userId}`);
+      console.log(`Creating instructor record for user ${userId} using admin function`);
       
       try {
-        // First check if this instructor record already exists
-        const { data: existingInstructor, error: checkError } = await supabase
-          .from('instructors')
-          .select('id')
-          .eq('id', userId)
-          .maybeSingle();
+        // Use the admin_create_instructor function
+        const { data, error } = await supabase.rpc(
+          'admin_create_instructor',
+          {
+            user_id: userId,
+            initial_status: 'pending',
+            initial_hourly_rate: 25
+          }
+        );
           
-        if (checkError) {
-          console.error('Error checking for existing instructor:', checkError);
-          throw new Error(`Failed to check for existing instructor: ${checkError.message}`);
-        }
-          
-        if (existingInstructor) {
-          console.log('Instructor record already exists for this user');
-          throw new Error('Instructor record already exists for this user');
-        }
-
-        // Create the instructor record
-        const { data, error } = await supabase
-          .from('instructors')
-          .insert([{
-            id: userId,
-            status: 'pending',
-            hourly_rate: 25,
-            specialties: [],
-            years_experience: 0
-          }])
-          .select()
-          .single();
-
         if (error) {
           console.error('Error creating instructor record:', error);
           throw new Error(`Failed to create instructor: ${error.message}`);
@@ -277,6 +256,7 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-users'] });
       toast.success('Instructor record created successfully');
     },
     onError: (error: Error) => {
