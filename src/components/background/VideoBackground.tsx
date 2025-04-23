@@ -25,25 +25,6 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       setVideoError(false);
       setIsVideoLoaded(false);
       console.log("Attempting to load video from:", videoSrc);
-      
-      // Preload the video to test if it's accessible
-      const preloadVideo = document.createElement('video');
-      preloadVideo.src = videoSrc;
-      preloadVideo.onloadeddata = () => {
-        console.log("Video preloaded successfully:", videoSrc);
-        setIsVideoLoaded(true);
-        setVideoError(false);
-      };
-      preloadVideo.onerror = () => {
-        console.error("Video preload failed for:", videoSrc);
-        setVideoError(true);
-      };
-      
-      return () => {
-        preloadVideo.src = '';
-        preloadVideo.onloadeddata = null;
-        preloadVideo.onerror = null;
-      };
     }
   }, [videoSrc, disableVideo]);
 
@@ -56,21 +37,12 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   // Handle video load error
   const handleVideoError = () => {
     setVideoError(true);
-    console.log("Using fallback image due to video load error for:", videoSrc);
+    console.log("Video load error for:", videoSrc);
   };
 
   // Determine if we should show the static image fallback
   const shouldShowFallback = !videoSrc || videoError || disableVideo;
   
-  console.log("VideoBackground render state:", { 
-    shouldShowFallback, 
-    videoSrc, 
-    fallbackSrc, 
-    disableVideo,
-    videoError,
-    isVideoLoaded 
-  });
-
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
       {/* Semi-transparent overlay */}
@@ -83,10 +55,9 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
           muted
           loop
           playsInline
-          className={`absolute inset-0 w-full h-full object-cover z-5 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className="absolute inset-0 w-full h-full object-cover z-5"
           onLoadedData={handleVideoLoad}
           onError={handleVideoError}
-          style={{ transition: 'opacity 0.5s ease-in-out' }}
         >
           <source src={videoSrc} type="video/mp4" />
           Your browser does not support the video tag.
@@ -95,10 +66,10 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       
       {/* Always render the fallback image (it will be shown if video is disabled or fails to load) */}
       <div 
-        className="absolute inset-0 bg-cover bg-center z-5"
+        className={`absolute inset-0 bg-cover bg-center z-5 ${!shouldShowFallback && isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
         style={{ 
           backgroundImage: `url('${fallbackSrc}')`,
-          opacity: 1
+          transition: 'opacity 0.3s ease-in-out'
         }}
       />
     </div>
