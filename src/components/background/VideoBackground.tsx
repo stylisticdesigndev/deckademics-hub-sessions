@@ -24,6 +24,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     if (videoSrc) {
       setVideoError(false);
       setIsVideoLoaded(false);
+      console.log("Attempting to load video from:", videoSrc);
     }
   }, [videoSrc]);
 
@@ -36,7 +37,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   // Handle video load error
   const handleVideoError = () => {
     setVideoError(true);
-    console.log("Using fallback image due to video load error");
+    console.log("Using fallback image due to video load error for:", videoSrc);
   };
 
   // Determine if we should show the static image fallback

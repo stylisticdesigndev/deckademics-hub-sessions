@@ -6,6 +6,8 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { VideoBackground } from '@/components/background/VideoBackground';
 
 const InstructorAuth = () => {
+  console.log("Rendering InstructorAuth page");
+  
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       {/* Background video with fallback image */}
