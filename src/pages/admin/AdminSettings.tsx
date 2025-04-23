@@ -342,7 +342,7 @@ const AdminSettings = () => {
                         >
                           Close Preview
                         </Button>
-                        <VideoBackground videoSrc={backgroundVideoUrl} />
+                        <VideoBackground videoSrc={backgroundVideoUrl} fallbackSrc={backgroundVideoUrl} />
                       </div>
                     </div>
                   )}

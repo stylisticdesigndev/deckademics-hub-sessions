@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -97,9 +96,9 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       <VideoBackground 
-        key={videoKey} // Add key to force remount when URL changes
+        key={videoKey} // Key to force remount when URL changes
         videoSrc={backgroundVideoUrl} 
-        fallbackSrc="/lovable-uploads/dj-background.mp4" 
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
