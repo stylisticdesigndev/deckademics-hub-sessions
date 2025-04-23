@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -24,12 +25,14 @@ const AdminPayments = () => {
 
   const handleMarkAsPaid = (paymentId: string, paymentType: 'full' | 'partial') => {
     // Implementation will be added when we integrate with the payment processing system
-    toast({
-      title: paymentType === 'full' ? "Payment Marked as Paid" : "Payment Marked as Partially Paid",
-      description: paymentType === 'full' 
-        ? "The payment has been marked as fully paid and removed from the list." 
-        : "The payment has been marked as partially paid.",
-    });
+    toast(
+      paymentType === 'full' ? "Payment Marked as Paid" : "Payment Marked as Partially Paid", 
+      { 
+        description: paymentType === 'full' 
+          ? "The payment has been marked as fully paid and removed from the list." 
+          : "The payment has been marked as partially paid."
+      }
+    );
   };
 
   if (isLoading) {
