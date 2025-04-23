@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -50,7 +49,13 @@ export const useAdminInstructors = () => {
         `)
         .eq('status', 'active');
 
-      if (error) throw error;
+      // Add console logging to help diagnose the issue
+      console.log('Active Instructors Query Result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching active instructors:', error);
+        throw error;
+      }
       return data as Instructor[];
     }
   });
