@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -111,7 +110,7 @@ const AdminSettings = () => {
 
       toast({
         title: 'Video Uploaded',
-        description: 'Background video was uploaded and set. It's now shared for all users!',
+        description: "Background video was uploaded and set. It's now shared for all users!"
       });
     } catch (error: any) {
       console.error('Error uploading video:', error);
