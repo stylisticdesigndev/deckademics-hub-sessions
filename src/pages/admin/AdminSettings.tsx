@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -34,25 +33,6 @@ const AdminSettings = () => {
   // Reduce max allowable video size to 50MB due to Supabase limits
   const MAX_VIDEO_MB = 50;
 
-  // Fetch latest background video from Supabase storage on mount
-  useEffect(() => {
-    async function fetchBackgroundVideo() {
-      const { data, error } = await supabase.storage.from('background-videos').list('', { sortBy: { column: 'created_at', order: 'desc' }, limit: 1 });
-      if (error) {
-        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
-        return;
-      }
-      const latestFile = data?.[0];
-      if (latestFile) {
-        const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(latestFile.name);
-        setBackgroundVideoUrl(publicUrl?.publicUrl || '/lovable-uploads/dj-background.mp4');
-      } else {
-        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
-      }
-    }
-    fetchBackgroundVideo();
-  }, []);
-
   const handlePreviewToggle = () => setIsPreviewVisible(!isPreviewVisible);
 
   const form = useForm({
@@ -72,6 +52,44 @@ const AdminSettings = () => {
     });
   };
 
+  // Fetch latest background video from Supabase storage on mount
+  useEffect(() => {
+    async function fetchBackgroundVideo() {
+      try {
+        const { data, error } = await supabase.storage.from('background-videos').list('', { 
+          sortBy: { column: 'created_at', order: 'desc' }, 
+          limit: 1 
+        });
+        
+        if (error) {
+          console.error('Error fetching background video list:', error);
+          setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+          return;
+        }
+        
+        const latestFile = data?.[0];
+        if (latestFile) {
+          console.log('Latest background video file:', latestFile);
+          const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(latestFile.name);
+          if (publicUrl?.publicUrl) {
+            console.log('Setting background video URL to:', publicUrl.publicUrl);
+            setBackgroundVideoUrl(publicUrl.publicUrl);
+          } else {
+            console.log('No public URL available, using default');
+            setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+          }
+        } else {
+          console.log('No video files found in storage, using default');
+          setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+        }
+      } catch (err) {
+        console.error('Unexpected error in fetchBackgroundVideo:', err);
+        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4');
+      }
+    }
+    fetchBackgroundVideo();
+  }, []);
+
   // Uploads video to Supabase Storage
   const handleVideoUpload = async () => {
     if (!videoFile) {
@@ -82,6 +100,7 @@ const AdminSettings = () => {
       });
       return;
     }
+    
     const fileSizeInMB = videoFile.size / (1024 * 1024);
     if (fileSizeInMB > MAX_VIDEO_MB) {
       toast({
@@ -91,6 +110,7 @@ const AdminSettings = () => {
       });
       return;
     }
+    
     setIsUploading(true);
     toast({ title: 'Upload Started', description: 'Uploading and processing video...' });
 
@@ -98,16 +118,28 @@ const AdminSettings = () => {
       // Give each upload a unique name (timestamp + admin id + original name)
       const fileExt = videoFile.name.split('.').pop();
       const fileName = `background-${session?.user?.id || 'admin'}-${Date.now()}.${fileExt}`;
+      
+      console.log('Uploading video file:', fileName);
 
       // Upload to Supabase Storage
-      const { error: uploadErr } = await supabase.storage.from('background-videos').upload(fileName, videoFile, { upsert: true, cacheControl: '3600' });
+      const { data, error: uploadErr } = await supabase.storage.from('background-videos').upload(fileName, videoFile, { 
+        upsert: true, 
+        cacheControl: '3600'
+      });
+      
       if (uploadErr) {
+        console.error('Upload error:', uploadErr);
         throw uploadErr;
       }
+      
+      console.log('Upload successful:', data);
 
       // Get public URL
       const { data: publicUrlRes } = supabase.storage.from('background-videos').getPublicUrl(fileName);
-      setBackgroundVideoUrl(publicUrlRes?.publicUrl || '/lovable-uploads/dj-background.mp4');
+      const videoUrl = publicUrlRes?.publicUrl || '/lovable-uploads/dj-background.mp4';
+      
+      console.log('Setting new background video URL:', videoUrl);
+      setBackgroundVideoUrl(videoUrl);
 
       toast({
         title: 'Video Uploaded',

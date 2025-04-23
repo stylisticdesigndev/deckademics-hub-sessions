@@ -7,16 +7,39 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function getLatestVideo() {
-      // List files in the bucket and pick the newest one:
-      const { data, error } = await supabase.storage.from('background-videos').list('', { sortBy: { column: 'created_at', order: 'desc' }, limit: 1 });
-      if (!error && data?.[0]) {
-        const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
-        if (publicUrl?.publicUrl) setBackgroundVideoUrl(publicUrl.publicUrl);
+      setIsLoading(true);
+      try {
+        // List files in the bucket and pick the newest one:
+        const { data, error } = await supabase.storage.from('background-videos').list('', { 
+          sortBy: { column: 'created_at', order: 'desc' }, 
+          limit: 1 
+        });
+        
+        if (error) {
+          console.error('Error fetching videos:', error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
+          if (publicUrl?.publicUrl) {
+            console.log('Found video URL:', publicUrl.publicUrl);
+            setBackgroundVideoUrl(publicUrl.publicUrl);
+          }
+        } else {
+          console.log('No videos found, using default');
+        }
+      } catch (err) {
+        console.error('Failed to fetch background video:', err);
+      } finally {
+        setIsLoading(false);
       }
     }
+    
     getLatestVideo();
   }, []);
 
