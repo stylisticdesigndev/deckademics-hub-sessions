@@ -7,7 +7,7 @@ import { AuthProvider } from '@/providers/AuthProvider';
 
 const AdminAuth = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-deckademics-dark relative">
+    <div className="min-h-screen flex flex-col bg-black/70 relative">
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header content */}
       </header>
