@@ -48,7 +48,18 @@ export const useAdminStudents = () => {
         .eq('enrollment_status', 'active');
 
       if (error) throw error;
-      return data as Student[];
+      
+      // Process the data to extract the first instructor from the array
+      const processedData = data?.map(student => {
+        return {
+          ...student,
+          instructor: student.instructor && student.instructor.length > 0 
+            ? student.instructor[0] 
+            : undefined
+        };
+      });
+      
+      return processedData as Student[];
     }
   });
 
