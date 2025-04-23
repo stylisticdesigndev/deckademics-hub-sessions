@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -142,10 +141,7 @@ const AdminInstructors = () => {
 
   const handleCreateInstructor = () => {
     if (!selectedUserId) {
-      toast({
-        title: "Error",
-        description: "Please select a user to convert to instructor."
-      });
+      toast("Error: Please select a user to convert to instructor.");
       return;
     }
     
@@ -205,11 +201,7 @@ const AdminInstructors = () => {
     
     // Validate input
     if (!newInstructor.name || !newInstructor.email) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
+      toast("Missing Information: Please fill in all required fields.");
       return;
     }
     
@@ -217,10 +209,7 @@ const AdminInstructors = () => {
     setNewInstructor({ name: '', email: '', specialization: '' });
     setAddInstructorOpen(false);
     
-    toast({
-      title: 'Instructor Added',
-      description: `${newInstructor.name} has been added as an instructor.`,
-    });
+    toast(`Instructor Added: ${newInstructor.name} has been added as an instructor.`);
   };
 
   const viewInstructor = (id: string) => {
@@ -234,11 +223,7 @@ const AdminInstructors = () => {
   // New function to handle assigning students to an instructor
   const handleAssignStudents = () => {
     if (!instructorToAssign) {
-      toast({
-        title: 'Error',
-        description: 'No instructor selected for assignment.',
-        variant: 'destructive',
-      });
+      toast("Error: No instructor selected for assignment.");
       return;
     }
     
@@ -247,10 +232,7 @@ const AdminInstructors = () => {
     setInstructorToAssign(null);
     setStudentAssignments({});
     
-    toast({
-      title: 'Students Assigned',
-      description: `Students have been assigned successfully.`,
-    });
+    toast("Students Assigned: Students have been assigned successfully.");
   };
 
   // New function to manually open the student assignment dialog for any instructor
@@ -262,11 +244,7 @@ const AdminInstructors = () => {
   // Function to handle reassigning students when deactivating an instructor
   const handleReassignStudents = () => {
     if (!instructorToDeactivate) {
-      toast({
-        title: 'Error',
-        description: 'No instructor selected for deactivation.',
-        variant: 'destructive',
-      });
+      toast("Error: No instructor selected for deactivation.");
       return;
     }
     
@@ -274,10 +252,7 @@ const AdminInstructors = () => {
     confirmDeactivate();
     setShowStudentReassignment(false);
     
-    toast({
-      title: 'Students Reassigned',
-      description: 'Students have been reassigned successfully.',
-    });
+    toast("Students Reassigned: Students have been reassigned successfully.");
   };
 
   const showNoInstructorsMessage = () => {
@@ -293,6 +268,7 @@ const AdminInstructors = () => {
     );
   };
 
+  
   if (isLoading) {
     return (
       <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
@@ -553,6 +529,7 @@ const AdminInstructors = () => {
             </div>
           </div>
 
+          
           <Tabs defaultValue="active">
             <TabsList>
               <TabsTrigger value="active">
@@ -674,6 +651,7 @@ const AdminInstructors = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  
                   <div className="rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
@@ -773,6 +751,7 @@ const AdminInstructors = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  
                   <div className="rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
@@ -864,4 +843,3 @@ interface Student {
 }
 
 export default AdminInstructors;
-
