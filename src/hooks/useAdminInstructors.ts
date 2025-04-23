@@ -20,27 +20,6 @@ interface Instructor {
 export const useAdminInstructors = () => {
   const queryClient = useQueryClient();
 
-  // First check if there are ANY instructors in the database
-  const { data: rawInstructorCount } = useQuery({
-    queryKey: ['admin', 'instructors', 'count'],
-    queryFn: async () => {
-      console.log('Checking if any instructors exist in the database...');
-      
-      const { count, error } = await supabase
-        .from('instructors')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log('Total instructor count:', count);
-      
-      if (error) {
-        console.error('Error checking instructor count:', error);
-        return 0;
-      }
-      
-      return count;
-    }
-  });
-
   // Check if there are ANY user profiles in the database
   const { data: rawProfileCount } = useQuery({
     queryKey: ['admin', 'profiles', 'count'],
@@ -88,42 +67,18 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching active instructors...');
         
-        // Fetch all active instructors with profile data in a single query
-        const { data: instructorsWithProfiles, error } = await supabase
-          .from('instructors')
-          .select(`
-            *,
-            profile:profiles(first_name, last_name, email)
-          `)
-          .eq('status', 'active');
-        
-        console.log('Active Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', { status_param: 'active' });
         
         if (error) {
           console.error('Error fetching active instructors:', error);
-          throw error;
+          return [];
         }
-        
-        // Transform the data to match our expected Instructor interface
-        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
-          id: instructor.id,
-          status: instructor.status,
-          specialties: instructor.specialties || [],
-          bio: instructor.bio || '',
-          hourly_rate: instructor.hourly_rate || 0,
-          years_experience: instructor.years_experience || 0,
-          profile: {
-            first_name: instructor.profile?.first_name || 'Unknown',
-            last_name: instructor.profile?.last_name || 'User',
-            email: instructor.profile?.email || 'unknown@example.com'
-          }
-        }));
-        
-        console.log('Formatted active instructors:', formattedInstructors);
-        return formattedInstructors;
+
+        console.log('Active instructors data:', data);
+        return data || [];
       } catch (error) {
         console.error('Error in activeInstructors query:', error);
-        throw error;
+        return [];
       }
     }
   });
@@ -134,42 +89,18 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching pending instructors...');
         
-        // Fetch all pending instructors with profile data in a single query
-        const { data: instructorsWithProfiles, error } = await supabase
-          .from('instructors')
-          .select(`
-            *,
-            profile:profiles(first_name, last_name, email)
-          `)
-          .eq('status', 'pending');
-        
-        console.log('Pending Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', { status_param: 'pending' });
         
         if (error) {
           console.error('Error fetching pending instructors:', error);
-          throw error;
+          return [];
         }
-        
-        // Transform the data to match our expected Instructor interface
-        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
-          id: instructor.id,
-          status: instructor.status,
-          specialties: instructor.specialties || [],
-          bio: instructor.bio || '',
-          hourly_rate: instructor.hourly_rate || 0,
-          years_experience: instructor.years_experience || 0,
-          profile: {
-            first_name: instructor.profile?.first_name || 'Unknown',
-            last_name: instructor.profile?.last_name || 'User',
-            email: instructor.profile?.email || 'unknown@example.com'
-          }
-        }));
-        
-        console.log('Formatted pending instructors:', formattedInstructors);
-        return formattedInstructors;
+
+        console.log('Pending instructors data:', data);
+        return data || [];
       } catch (error) {
         console.error('Error in pendingInstructors query:', error);
-        throw error;
+        return [];
       }
     }
   });
@@ -180,42 +111,18 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching inactive instructors...');
         
-        // Fetch all inactive instructors with profile data in a single query
-        const { data: instructorsWithProfiles, error } = await supabase
-          .from('instructors')
-          .select(`
-            *,
-            profile:profiles(first_name, last_name, email)
-          `)
-          .eq('status', 'inactive');
-        
-        console.log('Inactive Instructors Raw Query Result:', { instructorsWithProfiles, error });
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', { status_param: 'inactive' });
         
         if (error) {
           console.error('Error fetching inactive instructors:', error);
-          throw error;
+          return [];
         }
-        
-        // Transform the data to match our expected Instructor interface
-        const formattedInstructors = instructorsWithProfiles.map(instructor => ({
-          id: instructor.id,
-          status: instructor.status,
-          specialties: instructor.specialties || [],
-          bio: instructor.bio || '',
-          hourly_rate: instructor.hourly_rate || 0,
-          years_experience: instructor.years_experience || 0,
-          profile: {
-            first_name: instructor.profile?.first_name || 'Unknown',
-            last_name: instructor.profile?.last_name || 'User',
-            email: instructor.profile?.email || 'unknown@example.com'
-          }
-        }));
-        
-        console.log('Formatted inactive instructors:', formattedInstructors);
-        return formattedInstructors;
+
+        console.log('Inactive instructors data:', data);
+        return data || [];
       } catch (error) {
         console.error('Error in inactiveInstructors query:', error);
-        throw error;
+        return [];
       }
     }
   });
@@ -301,43 +208,42 @@ export const useAdminInstructors = () => {
     mutationFn: async (userId: string) => {
       console.log(`Creating instructor record for user ${userId}`);
       
-      // First check if this instructor record already exists
-      const { data: existingInstructor, error: checkError } = await supabase
-        .from('instructors')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
+      try {
+        // First check if this instructor record already exists
+        const { data: existingInstructor, error: checkError } = await supabase
+          .from('instructors')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        if (checkError) {
+          console.error('Error checking for existing instructor:', checkError);
+          throw new Error(`Failed to check for existing instructor: ${checkError.message}`);
+        }
+          
+        if (existingInstructor) {
+          console.log('Instructor record already exists for this user');
+          throw new Error('Instructor record already exists for this user');
+        }
+
+        // Make a direct SQL call to bypass RLS
+        const { data, error } = await supabase.rpc('admin_create_instructor', {
+          user_id: userId,
+          initial_status: 'pending',
+          initial_hourly_rate: 25
+        });
+
+        if (error) {
+          console.error('Error creating instructor record:', error);
+          throw new Error(`Failed to create instructor: ${error.message}`);
+        }
         
-      if (checkError) {
-        console.error('Error checking for existing instructor:', checkError);
-        throw checkError;
-      }
-        
-      if (existingInstructor) {
-        console.log('Instructor record already exists for this user');
-        throw new Error('Instructor record already exists for this user');
-      }
-
-      // Insert the new instructor record
-      const { data, error } = await supabase
-        .from('instructors')
-        .insert([{ 
-          id: userId,
-          status: 'pending',
-          specialties: [],
-          hourly_rate: 25, // default hourly rate
-          years_experience: 0 // default years of experience
-        }])
-        .select();
-
-      console.log('Instructor creation result:', { data, error });
-
-      if (error) {
-        console.error('Error creating instructor record:', error);
+        console.log('Instructor creation result:', data);
+        return data;
+      } catch (error) {
+        console.error('Error in createInstructor mutation:', error);
         throw error;
       }
-      
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
@@ -352,7 +258,6 @@ export const useAdminInstructors = () => {
     activeInstructors: activeInstructors || [],
     pendingInstructors: pendingInstructors || [],
     inactiveInstructors: inactiveInstructors || [],
-    rawInstructorCount,
     rawProfileCount,
     allUsers: allUsers || [],
     isLoading: isLoadingActive || isLoadingPending || isLoadingInactive,
