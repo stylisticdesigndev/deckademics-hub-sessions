@@ -8,11 +8,14 @@ type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
 export interface Student {
   id: string;
+  studentId: string;
   name: string;
   email: string;
   classDate: Date;
   status: AttendanceStatus;
   makeupDate: Date | null;
+  classTitle: string;
+  notes: string | null;
 }
 
 export const useAdminAttendance = () => {
@@ -111,11 +114,21 @@ export const useAdminAttendance = () => {
   // Schedule makeup class
   const scheduleMakeup = useMutation({
     mutationFn: async ({ studentId, date, missedClassId }: { studentId: string, date: Date, missedClassId: string }) => {
-      // Create a new attendance record for the makeup class
+      // First, get the class_id from the missed attendance record
+      const { data: missedAttendance, error: fetchError } = await supabase
+        .from('attendance')
+        .select('class_id')
+        .eq('id', missedClassId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Create a new attendance record for the makeup class using the same class_id
       const { error } = await supabase
         .from('attendance')
         .insert({
           student_id: studentId,
+          class_id: missedAttendance.class_id, // Include the class_id from the missed class
           date: format(date, 'yyyy-MM-dd'),
           status: 'makeup',
           notes: `Makeup class for missed class on ${missedClassId}`
