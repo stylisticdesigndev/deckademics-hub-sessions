@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -36,8 +35,8 @@ interface Instructor {
 const AdminInstructorPayments = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const { stats, isLoading } = useInstructorPayments();
-  const [editPaymentId, setEditPaymentId] = useState<number | null>(null);
+  const { payments, stats, isLoading } = useInstructorPayments();
+  const [editPaymentId, setEditPaymentId] = useState<string | null>(null); // Updated to string
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
@@ -54,11 +53,12 @@ const AdminInstructorPayments = () => {
     { id: 5, name: 'Laura Thompson', email: 'laura@example.com', hourlyRate: 27, specialization: 'Music Theory' },
   ]);
   
-  // Mock data for payments
-  const [payments, setPayments] = useState<InstructorPayment[]>([
+  // Use local payments data since the hook might return empty results
+  // for testing purposes
+  const [localPayments, setLocalPayments] = useState<InstructorPayment[]>([
     { 
-      id: 1, 
-      instructorId: 1, 
+      id: "1", // Updated to string to match our interface 
+      instructorId: "1",  // Updated to string
       instructorName: 'Professor Smith', 
       hourlyRate: 30, 
       hoursLogged: 24, 
@@ -69,8 +69,8 @@ const AdminInstructorPayments = () => {
       lastUpdated: '2025-04-01'
     },
     { 
-      id: 2, 
-      instructorId: 2, 
+      id: "2", // Updated to string
+      instructorId: "2", // Updated to string
       instructorName: 'DJ Mike', 
       hourlyRate: 28, 
       hoursLogged: 20, 
@@ -81,8 +81,8 @@ const AdminInstructorPayments = () => {
       lastUpdated: '2025-04-01'
     },
     { 
-      id: 3, 
-      instructorId: 3, 
+      id: "3", // Updated to string
+      instructorId: "3", // Updated to string
       instructorName: 'Sarah Jones', 
       hourlyRate: 32, 
       hoursLogged: 22, 
@@ -93,8 +93,8 @@ const AdminInstructorPayments = () => {
       lastUpdated: '2025-04-02'
     },
     { 
-      id: 4, 
-      instructorId: 1, 
+      id: "4", // Updated to string
+      instructorId: "1", // Updated to string
       instructorName: 'Professor Smith', 
       hourlyRate: 30, 
       hoursLogged: 25, 
@@ -105,8 +105,8 @@ const AdminInstructorPayments = () => {
       lastUpdated: '2025-03-16'
     },
     { 
-      id: 5, 
-      instructorId: 2, 
+      id: "5", // Updated to string
+      instructorId: "2", // Updated to string
       instructorName: 'DJ Mike', 
       hourlyRate: 28, 
       hoursLogged: 18, 
@@ -118,9 +118,12 @@ const AdminInstructorPayments = () => {
     }
   ]);
   
-  // Define payments lists from the mock data
-  const pendingPayments = payments.filter(payment => payment.status === 'pending');
-  const completedPayments = payments.filter(payment => payment.status === 'paid');
+  // Use API data if available, otherwise fallback to mock data
+  const effectivePayments = payments && payments.length > 0 ? payments : localPayments;
+
+  // Define payments lists from the data
+  const pendingPayments = effectivePayments.filter(payment => payment.status === 'pending');
+  const completedPayments = effectivePayments.filter(payment => payment.status === 'paid');
   
   const totalPendingAmount = pendingPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
   
@@ -132,8 +135,8 @@ const AdminInstructorPayments = () => {
     payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleMarkAsPaid = (paymentId: number) => {
-    setPayments(payments.map(payment => 
+  const handleMarkAsPaid = (paymentId: string) => { // Updated to string
+    setLocalPayments(localPayments.map(payment => 
       payment.id === paymentId ? { ...payment, status: 'paid' } : payment
     ));
     
@@ -177,8 +180,8 @@ const AdminInstructorPayments = () => {
     ));
     
     // Update any pending payments for this instructor
-    setPayments(payments.map(payment => {
-      if (payment.instructorId === selectedInstructor.id && payment.status === 'pending') {
+    setLocalPayments(localPayments.map(payment => {
+      if (payment.instructorId === selectedInstructor.id.toString() && payment.status === 'pending') {
         const newTotal = payment.hoursLogged * rate;
         return {
           ...payment,
@@ -212,7 +215,7 @@ const AdminInstructorPayments = () => {
       return;
     }
     
-    setPayments(payments.map(payment => {
+    setLocalPayments(localPayments.map(payment => {
       if (payment.id === editPaymentId) {
         const newHours = hoursOperation === 'add' 
           ? payment.hoursLogged + hours 

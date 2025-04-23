@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface InstructorPayment {
-  id: number;
-  instructorId?: number;
+  id: string; // Changed from number to string to match Supabase's UUID
+  instructorId?: string; // Changed from number to string to match Supabase's UUID
   instructorName: string;
   hourlyRate: number;
   hoursLogged: number;
@@ -53,6 +53,7 @@ export const useInstructorPayments = () => {
 
       return paymentsData.map(payment => ({
         id: payment.id,
+        instructorId: payment.instructor_id,
         instructorName: `${payment.instructors.profiles.first_name} ${payment.instructors.profiles.last_name}`,
         hourlyRate: payment.instructors.hourly_rate || 0,
         hoursLogged: payment.hours_worked || 0,
