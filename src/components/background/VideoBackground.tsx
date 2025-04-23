@@ -40,16 +40,16 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     console.log("Video load error for:", videoSrc);
   };
 
-  // Determine if we should show the static image fallback
-  const shouldShowFallback = !videoSrc || videoError || disableVideo;
+  // Determine if we should show the video
+  const shouldShowVideo = videoSrc && !videoError && !disableVideo;
   
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
       {/* Semi-transparent overlay */}
       <div className="absolute inset-0 bg-black/50 z-10" />
       
-      {/* Only try to load video if not disabled and a source is provided */}
-      {!shouldShowFallback && (
+      {/* Video element */}
+      {shouldShowVideo && (
         <video
           autoPlay
           muted
@@ -63,15 +63,6 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
           Your browser does not support the video tag.
         </video>
       )}
-      
-      {/* Always render the fallback image (it will be shown if video is disabled or fails to load) */}
-      <div 
-        className={`absolute inset-0 bg-cover bg-center z-5 ${!shouldShowFallback && isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
-        style={{ 
-          backgroundImage: `url('${fallbackSrc}')`,
-          transition: 'opacity 0.3s ease-in-out'
-        }}
-      />
     </div>
   );
 };
