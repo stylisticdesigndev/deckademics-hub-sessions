@@ -11,6 +11,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [videoKey, setVideoKey] = useState<number>(Date.now()); // Add key for forcing remount
 
   // Function to fetch the latest video, with improved error handling
   const getLatestVideo = useCallback(async () => {
@@ -47,6 +48,8 @@ const Index = () => {
           // Append a timestamp to bust browser cache
           const cacheBuster = `?timestamp=${Date.now()}`;
           setBackgroundVideoUrl(publicUrl.publicUrl + cacheBuster);
+          // Force video component remount by updating key
+          setVideoKey(Date.now());
         } else {
           throw new Error('Could not get public URL for video');
         }
@@ -55,6 +58,8 @@ const Index = () => {
         // Use default video with cache buster
         const cacheBuster = `?timestamp=${Date.now()}`;
         setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4' + cacheBuster);
+        // Force video component remount by updating key
+        setVideoKey(Date.now());
       }
     } catch (err) {
       console.error('Failed to fetch background video:', err);
@@ -71,6 +76,8 @@ const Index = () => {
         // Add cache buster to default URL to force reload
         const cacheBuster = `?timestamp=${Date.now()}`;
         setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4' + cacheBuster);
+        // Force video component remount by updating key
+        setVideoKey(Date.now());
         
         toast({
           title: "Video Load Error",
@@ -90,6 +97,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       <VideoBackground 
+        key={videoKey} // Add key to force remount when URL changes
         videoSrc={backgroundVideoUrl} 
         fallbackSrc="/lovable-uploads/dj-background.mp4" 
       />

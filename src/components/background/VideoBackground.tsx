@@ -27,6 +27,8 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     setCurrentSrc(videoSrc);
     setPlayAttempts(0);
     initialLoadAttemptedRef.current = false;
+    
+    console.log('Video source changed to:', videoSrc);
   }, [videoSrc]);
   
   // Enhanced resize handler with better error recovery
@@ -35,13 +37,16 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     
     const handleResize = () => {
       // Clear any pending timer
-      if (resizeTimer) {
+      if (resizeTimer !== null) {
         window.clearTimeout(resizeTimer);
       }
       
       // Set a new timer to delay handling resize
       resizeTimer = window.setTimeout(() => {
-        if (!videoRef.current) return;
+        if (!videoRef.current) {
+          console.log('Video element not found on resize');
+          return;
+        }
         
         const video = videoRef.current;
         
@@ -96,16 +101,16 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     document.addEventListener('fullscreenchange', handleResize);
     
     return () => {
-      if (resizeTimer) {
+      if (resizeTimer !== null) {
         window.clearTimeout(resizeTimer);
       }
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
       document.removeEventListener('fullscreenchange', handleResize);
     };
-  }, [playAttempts]);
+  }, []);
   
-  // More robust playback attempt system
+  // More robust playback attempt system - fix for "ref is not a prop" warning
   useEffect(() => {
     if (!videoRef.current || hasError) return;
     
@@ -161,7 +166,8 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
         } else if (currentSrc !== fallbackSrc) {
           // After multiple failures, try the fallback video
           console.log('Multiple play attempts failed, switching to fallback video');
-          setCurrentSrc(fallbackSrc);
+          const cacheBuster = `?t=${Date.now()}`;
+          setCurrentSrc(`${fallbackSrc}${cacheBuster}`);
           setPlayAttempts(0);
         } else {
           // If we're already using the fallback and still failing, show error state
@@ -202,8 +208,9 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     
     // If we haven't tried the fallback yet, switch to it
     if (currentSrc !== fallbackSrc) {
-      console.log('Video loading failed, trying fallback:', fallbackSrc);
-      setCurrentSrc(fallbackSrc);
+      const cacheBuster = `?t=${Date.now()}`;
+      console.log('Video loading failed, trying fallback with cachebuster:', fallbackSrc + cacheBuster);
+      setCurrentSrc(fallbackSrc + cacheBuster);
       setPlayAttempts(0); // Reset attempts for the new source
     } else {
       // If even the fallback fails, show error state
@@ -220,7 +227,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
 
   return (
     <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
-      <div className="absolute inset-0 bg-black/50 z-10" /> {/* Overlay to darken the video */}
+      <div className="absolute inset-0 bg-black/50 z-10" />
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center z-5">
           <div className="w-12 h-12 border-4 border-deckademics-primary border-t-transparent rounded-full animate-spin" />
