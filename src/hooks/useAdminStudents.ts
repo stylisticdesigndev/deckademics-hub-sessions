@@ -3,22 +3,28 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface Profile {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface InstructorProfile {
+  first_name: string;
+  last_name: string;
+}
+
+interface Instructor {
+  id: string;
+  profile: InstructorProfile;
+}
+
 interface Student {
   id: string;
-  email: string;
   level: string;
   enrollment_status: string;
-  profile: {
-    first_name: string;
-    last_name: string;
-  };
-  instructor?: {
-    id: string;
-    profile: {
-      first_name: string;
-      last_name: string;
-    };
-  };
+  profile: Profile;
+  instructor?: Instructor;
 }
 
 export const useAdminStudents = () => {
