@@ -1,19 +1,23 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { AuthProvider } from '@/providers/AuthProvider';
-// Import VideoBackground
 import { VideoBackground } from '@/components/background/VideoBackground';
 
 const InstructorAuth = () => {
+  // Add a key to force VideoBackground remounting
+  const [videoKey] = useState<number>(Date.now());
+  
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Video Background (behind everything) */}
+      {/* Video Background (behind everything) with key to force remount */}
       <VideoBackground 
+        key={videoKey}
         videoSrc="/lovable-uploads/dj-background.mp4" 
         fallbackSrc="/lovable-uploads/dj-background.mp4"
       />
+      
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header content */}
       </header>
@@ -56,4 +60,3 @@ const InstructorAuth = () => {
 };
 
 export default InstructorAuth;
-
