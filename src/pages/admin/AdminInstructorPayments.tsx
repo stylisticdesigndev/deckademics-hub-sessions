@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -119,9 +118,8 @@ const AdminInstructorPayments = () => {
     
     const rate = parseFloat(newHourlyRate);
     if (isNaN(rate) || rate <= 0) {
-      toast('Invalid Rate', {
+      toast.error('Invalid Rate', {
         description: 'Please enter a valid hourly rate.',
-        variant: 'destructive',
       });
       return;
     }
@@ -154,9 +152,8 @@ const AdminInstructorPayments = () => {
     
     const hours = parseFloat(hoursToChange);
     if (isNaN(hours) || hours <= 0) {
-      toast('Invalid Hours', {
+      toast.error('Invalid Hours', {
         description: 'Please enter a valid number of hours.',
-        variant: 'destructive',
       });
       return;
     }
