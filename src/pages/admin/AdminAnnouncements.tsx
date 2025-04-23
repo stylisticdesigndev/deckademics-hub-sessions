@@ -52,7 +52,7 @@ const AdminAnnouncements = () => {
         .insert([{
           title,
           content,
-          author_id: userData.id,
+          author_id: userData?.profile?.id,
           target_role: ['student', 'instructor', 'admin']
         }])
         .select()
@@ -65,13 +65,16 @@ const AdminAnnouncements = () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       setIsDialogOpen(false);
       setNewAnnouncement({ title: '', content: '' });
-      toast.success('Announcement Created', {
-        description: 'Your announcement has been published successfully.'
+      toast({
+        title: 'Announcement Created',
+        description: 'Your announcement has been published successfully.',
       });
     },
     onError: (error) => {
-      toast.error('Error', {
-        description: 'Could not create announcement. Please try again.'
+      toast({
+        title: 'Error',
+        description: 'Could not create announcement. Please try again.',
+        variant: 'destructive',
       });
       console.error('Error creating announcement:', error);
     }
@@ -89,13 +92,16 @@ const AdminAnnouncements = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success('Announcement Deleted', {
-        description: 'The announcement has been removed.'
+      toast({
+        title: 'Announcement Deleted',
+        description: 'The announcement has been removed.',
       });
     },
     onError: (error) => {
-      toast.error('Error', {
-        description: 'Could not delete announcement. Please try again.'
+      toast({
+        title: 'Error',
+        description: 'Could not delete announcement. Please try again.',
+        variant: 'destructive',
       });
       console.error('Error deleting announcement:', error);
     }
@@ -103,8 +109,10 @@ const AdminAnnouncements = () => {
 
   const handleCreateAnnouncement = () => {
     if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
-      toast.error('Missing Information', {
-        description: 'Please provide both a title and content for your announcement.'
+      toast({
+        title: 'Missing Information',
+        description: 'Please provide both a title and content for your announcement.',
+        variant: 'destructive',
       });
       return;
     }
