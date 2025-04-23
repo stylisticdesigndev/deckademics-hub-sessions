@@ -30,46 +30,6 @@ const AdminSettings = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState(localStorage.getItem('backgroundVideoUrl') || '/lovable-uploads/dj-background.mp4');
   const { clearLocalStorage, session } = useAuth();
   
-  // Check if the storage bucket exists and permissions are correct
-  const [bucketExists, setBucketExists] = useState(false);
-  const [bucketError, setBucketError] = useState<string | null>(null);
-  const [isCheckingBucket, setIsCheckingBucket] = useState(true);
-
-  useEffect(() => {
-    // Check if the bucket exists and test permissions
-    async function checkBucket() {
-      setIsCheckingBucket(true);
-      try {
-        // First check if the bucket exists
-        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('background-videos');
-        
-        if (bucketError) {
-          console.error('Error checking bucket:', bucketError);
-          if (bucketError.message.includes("Bucket not found")) {
-            setBucketError("Storage bucket 'background-videos' exists but may not be accessible. Please check the Supabase storage configuration.");
-          } else {
-            setBucketError(bucketError.message);
-          }
-          setBucketExists(false);
-          setIsCheckingBucket(false);
-          return;
-        }
-
-        console.log("Bucket exists:", bucketData);
-        setBucketExists(true);
-        setBucketError(null);
-        setIsCheckingBucket(false);
-      } catch (error: any) {
-        console.error('Error checking bucket:', error);
-        setBucketError(error.message || "An error occurred while checking the storage bucket");
-        setBucketExists(false);
-        setIsCheckingBucket(false);
-      }
-    }
-    
-    checkBucket();
-  }, []);
-
   // Preview the current video
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   
@@ -118,84 +78,27 @@ const AdminSettings = () => {
     setIsUploading(true);
     toast({
       title: 'Upload Started',
-      description: 'Uploading video file, please wait...',
+      description: 'Processing video file, please wait...',
     });
 
     try {
-      const fileExt = videoFile.name.split('.').pop();
-      const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `${uniqueFileName}`;
-
-      // Set cache control and content type
-      const options = {
-        cacheControl: '3600',
-        contentType: videoFile.type,
-        upsert: true
-      };
-
-      console.log('Uploading file:', filePath, 'with options:', options);
-      console.log('File size:', videoFile.size, 'bytes');
-      console.log('File type:', videoFile.type);
-
-      // Upload to Supabase storage with improved error handling
-      const { data, error: uploadError } = await supabase.storage
-        .from('background-videos')
-        .upload(filePath, videoFile, options);
-
-      console.log('Upload response data:', data);
+      // Create a local URL for the video file
+      const localUrl = URL.createObjectURL(videoFile);
       
-      if (uploadError) {
-        console.error('Upload error details:', uploadError);
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('background-videos')
-        .getPublicUrl(filePath);
-
-      console.log('File uploaded successfully. Public URL:', publicUrl);
-
       // Save URL to localStorage
-      localStorage.setItem('backgroundVideoUrl', publicUrl);
-      setBackgroundVideoUrl(publicUrl);
+      localStorage.setItem('backgroundVideoUrl', localUrl);
+      setBackgroundVideoUrl(localUrl);
 
       toast({
-        title: 'Video Uploaded',
-        description: 'Background video successfully updated.',
+        title: 'Video Applied',
+        description: 'Background video has been set for this session. Note: The video will need to be re-selected if you refresh the page.',
       });
     } catch (error: any) {
-      console.error('Error uploading video:', error);
+      console.error('Error processing video:', error);
       
-      let errorMessage = 'There was an error uploading the video.';
-      if (error.message) {
-        errorMessage = `Upload error: ${error.message}`;
-        console.error('Detailed error message:', errorMessage);
-      } else if (error.error_description) {
-        errorMessage = error.error_description;
-      } 
-
-      // Fallback to using the File API if Supabase fails
-      if (error.message?.includes('not found') || error.status === 404 || error.statusCode === 404) {
-        try {
-          const tempUrl = URL.createObjectURL(videoFile);
-          setBackgroundVideoUrl(tempUrl);
-          localStorage.setItem('backgroundVideoUrl', tempUrl);
-          
-          toast({
-            title: 'Using Local Video',
-            description: 'The video is available for preview but will not be saved permanently.',
-          });
-          setIsUploading(false);
-          return;
-        } catch (localError) {
-          console.error('Fallback error:', localError);
-        }
-      }
-
       toast({
         title: 'Upload Failed',
-        description: errorMessage,
+        description: error.message || 'There was an error processing the video.',
         variant: 'destructive'
       });
     } finally {
@@ -303,31 +206,13 @@ const AdminSettings = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Background Video</h3>
                   
-                  {isCheckingBucket ? (
-                    <Alert className="mb-4">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <AlertTitle>Checking bucket configuration...</AlertTitle>
-                      <AlertDescription>
-                        Verifying your access to the storage bucket.
-                      </AlertDescription>
-                    </Alert>
-                  ) : bucketExists ? (
-                    <Alert className="mb-4 bg-green-50 border-green-300">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-800">Storage bucket configured correctly</AlertTitle>
-                      <AlertDescription className="text-green-700">
-                        You can upload videos to the background-videos bucket.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Alert variant="destructive" className="mb-4">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Storage Configuration Issue</AlertTitle>
-                      <AlertDescription>
-                        {bucketError || "Unable to access the storage bucket. Videos will be stored temporarily."}
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Local Video Mode</AlertTitle>
+                    <AlertDescription>
+                      Videos are stored locally in your browser. They will need to be re-uploaded if you clear your browser data or switch devices.
+                    </AlertDescription>
+                  </Alert>
                   
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <Input 
@@ -347,11 +232,11 @@ const AdminSettings = () => {
                       {isUploading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
+                          Processing...
                         </>
                       ) : (
                         <>
-                          Upload Video
+                          Apply Video
                           <Video className="ml-2 h-4 w-4" />
                         </>
                       )}
