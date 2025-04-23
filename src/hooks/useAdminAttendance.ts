@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,11 +20,11 @@ export interface Student {
 export const useAdminAttendance = () => {
   const queryClient = useQueryClient();
   const today = new Date();
-  const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Week starts on Monday
+  const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); 
   const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 });
 
   // Fetch all attendance records for current week to calculate stats
-  const { data: weeklyAttendance } = useQuery({
+  const { data: weeklyAttendance, isLoading: isLoadingWeeklyAttendance } = useQuery({
     queryKey: ['admin', 'attendance', 'weekly'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,18 +32,22 @@ export const useAdminAttendance = () => {
         .select(`
           id,
           date,
-          status
+          status,
+          class_id
         `)
         .gte('date', format(startOfCurrentWeek, 'yyyy-MM-dd'))
         .lte('date', format(endOfCurrentWeek, 'yyyy-MM-dd'));
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching weekly attendance:', error);
+        throw error;
+      }
       return data || [];
     }
   });
 
   // Fetch missed attendance records
-  const { data: missedAttendance, isLoading } = useQuery({
+  const { data: missedAttendance, isLoading: isLoadingMissedAttendance } = useQuery({
     queryKey: ['admin', 'attendance', 'missed'],
     queryFn: async () => {
       const { data: attendanceData, error } = await supabase
@@ -169,11 +172,11 @@ export const useAdminAttendance = () => {
 
   // Calculate stats from actual data
   const calculateStats = () => {
-    if (!weeklyAttendance) {
+    if (!weeklyAttendance || weeklyAttendance.length === 0) {
       return {
         missedCount: 0,
         scheduledMakeups: 0,
-        attendanceRate: 90 // Default value
+        attendanceRate: 0 // Changed from hardcoded 90 to 0
       };
     }
 
@@ -187,13 +190,13 @@ export const useAdminAttendance = () => {
     const scheduledMakeups = weeklyAttendance.filter(record => record.status === 'makeup').length;
     
     // Calculate attendance rate
-    let attendanceRate = 100;
-    if (totalClasses > 0) {
-      const attendedClasses = weeklyAttendance.filter(
-        record => record.status === 'attended' || record.status === 'made-up'
-      ).length;
-      attendanceRate = Math.round((attendedClasses / totalClasses) * 100);
-    }
+    const attendedClasses = weeklyAttendance.filter(
+      record => record.status === 'attended' || record.status === 'made-up'
+    ).length;
+    
+    const attendanceRate = totalClasses > 0 
+      ? Math.round((attendedClasses / totalClasses) * 100) 
+      : 0;
 
     return {
       missedCount,
@@ -202,6 +205,7 @@ export const useAdminAttendance = () => {
     };
   };
 
+  const isLoading = isLoadingWeeklyAttendance || isLoadingMissedAttendance;
   const stats = calculateStats();
 
   return {
