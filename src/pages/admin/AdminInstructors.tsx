@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -268,6 +269,27 @@ const AdminInstructors = () => {
     );
   };
 
+  // Add deactivate instructor dialog
+  const DeactivateInstructorDialog = () => (
+    <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Deactivate Instructor</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to deactivate this instructor? They will no longer be able to access the system.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmDeactivate}>
+            Deactivate
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
   
   if (isLoading) {
     return (
@@ -529,6 +551,7 @@ const AdminInstructors = () => {
             </div>
           </div>
 
+          <DeactivateInstructorDialog />
           
           <Tabs defaultValue="active">
             <TabsList>

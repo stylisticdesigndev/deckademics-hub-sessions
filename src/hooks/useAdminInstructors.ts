@@ -30,7 +30,11 @@ export const useAdminInstructors = () => {
         .select('*', { count: 'exact', head: true });
       
       console.log('Total instructor count:', count);
-      console.log('Error checking count:', error);
+      
+      if (error) {
+        console.error('Error checking instructor count:', error);
+        return 0;
+      }
       
       return count;
     }
@@ -47,27 +51,33 @@ export const useAdminInstructors = () => {
         .select('*', { count: 'exact', head: true });
       
       console.log('Total profile count:', count);
-      console.log('Error checking count:', error);
+      
+      if (error) {
+        console.error('Error checking profile count:', error);
+        return 0;
+      }
       
       return count;
     }
   });
 
-  // List all users directly from auth.users for debugging
+  // List all users directly from profiles table for debugging
   const { data: allUsers } = useQuery({
     queryKey: ['admin', 'all-users'],
     queryFn: async () => {
-      console.log('Fetching all auth users for debugging...');
+      console.log('Fetching all profiles for debugging...');
       
-      // We can't query auth.users directly, but we can list all profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, first_name, last_name, role');
       
-      console.log('All profiles:', data);
-      console.log('Error fetching profiles:', error);
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        return [];
+      }
       
-      return data;
+      console.log('All profiles:', data);
+      return data || [];
     }
   });
 
@@ -107,7 +117,6 @@ export const useAdminInstructors = () => {
             .single();
           
           console.log(`Profile data for ${instructor.id}:`, profileData);
-          console.log(`Profile error for ${instructor.id}:`, profileError);
           
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
@@ -171,7 +180,6 @@ export const useAdminInstructors = () => {
             .single();
           
           console.log(`Profile data for ${instructor.id}:`, profileData);
-          console.log(`Profile error for ${instructor.id}:`, profileError);
           
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
@@ -232,7 +240,6 @@ export const useAdminInstructors = () => {
             .single();
           
           console.log(`Profile data for ${instructor.id}:`, profileData);
-          console.log(`Profile error for ${instructor.id}:`, profileError);
           
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
@@ -257,7 +264,6 @@ export const useAdminInstructors = () => {
     }
   });
 
-  // Mutations remain the same as they're working fine
   const approveInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
@@ -333,33 +339,62 @@ export const useAdminInstructors = () => {
   // Add a mutation to create a new instructor record for an existing user
   const createInstructor = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase
+      console.log(`Creating instructor record for user ${userId}`);
+      
+      // First check if this instructor record already exists
+      const { data: existingInstructor, error: checkError } = await supabase
+        .from('instructors')
+        .select('id')
+        .eq('id', userId)
+        .single();
+        
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking for existing instructor:', checkError);
+        throw checkError;
+      }
+        
+      if (existingInstructor) {
+        console.log('Instructor record already exists for this user');
+        throw new Error('Instructor record already exists for this user');
+      }
+
+      // Insert the new instructor record
+      const { data, error } = await supabase
         .from('instructors')
         .insert([{ 
           id: userId,
           status: 'pending',
           specialties: [],
-          hourly_rate: 25 // default hourly rate
-        }]);
+          hourly_rate: 25, // default hourly rate
+          years_experience: 0 // default years of experience
+        }])
+        .select();
 
-      if (error) throw error;
+      console.log('Instructor creation result:', { data, error });
+
+      if (error) {
+        console.error('Error creating instructor record:', error);
+        throw error;
+      }
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       toast.success('Instructor record created successfully');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to create instructor record: ' + error.message);
     }
   });
 
   return {
-    activeInstructors,
-    pendingInstructors,
-    inactiveInstructors,
+    activeInstructors: activeInstructors || [],
+    pendingInstructors: pendingInstructors || [],
+    inactiveInstructors: inactiveInstructors || [],
     rawInstructorCount,
     rawProfileCount,
-    allUsers,
+    allUsers: allUsers || [],
     isLoading: isLoadingActive || isLoadingPending || isLoadingInactive,
     approveInstructor,
     declineInstructor,
