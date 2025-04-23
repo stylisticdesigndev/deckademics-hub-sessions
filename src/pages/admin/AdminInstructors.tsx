@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -95,8 +94,6 @@ const AdminInstructors = () => {
     activeInstructors,
     pendingInstructors,
     inactiveInstructors,
-    rawInstructorCount,
-    rawProfileCount,
     allUsers,
     isLoading,
     approveInstructor,
@@ -106,15 +103,55 @@ const AdminInstructors = () => {
     createInstructor
   } = useAdminInstructors();
 
+  // Get instructor by ID now works with the correct types
+  const getInstructorById = (id: string) => {
+    return (activeInstructors as InstructorWithProfile[]).find(instructor => instructor.id === id) ||
+           (pendingInstructors as InstructorWithProfile[]).find(instructor => instructor.id === id) ||
+           (inactiveInstructors as InstructorWithProfile[]).find(instructor => instructor.id === id);
+  };
+
+  const filteredActiveInstructors = (activeInstructors as InstructorWithProfile[])?.filter(
+    instructor => (
+      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ) || [];
+
+  const filteredPendingInstructors = (pendingInstructors as InstructorWithProfile[])?.filter(
+    instructor => (
+      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ) || [];
+
+  const filteredInactiveInstructors = (inactiveInstructors as InstructorWithProfile[])?.filter(
+    instructor => (
+      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ) || [];
+
+  // Get eligible users who don't have instructor records yet
+  const eligibleUsers = (allUsers || []).filter(user => {
+    // Check if this user doesn't already have an instructor record
+    const isAlreadyInstructor = 
+      (activeInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id) ||
+      (pendingInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id) ||
+      (inactiveInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id);
+    
+    return !isAlreadyInstructor;
+  });
+
   // Log debugging information when data changes
   useEffect(() => {
-    console.log("Debug - Raw instructor count:", rawInstructorCount);
-    console.log("Debug - Raw profile count:", rawProfileCount);
     console.log("Debug - All users:", allUsers);
     console.log("Debug - Active instructors:", activeInstructors);
     console.log("Debug - Pending instructors:", pendingInstructors);
     console.log("Debug - Inactive instructors:", inactiveInstructors);
-  }, [rawInstructorCount, rawProfileCount, allUsers, activeInstructors, pendingInstructors, inactiveInstructors]);
+  }, [allUsers, activeInstructors, pendingInstructors, inactiveInstructors]);
 
   const handleApprove = (id: string) => {
     approveInstructor.mutate(id);
@@ -150,52 +187,6 @@ const AdminInstructors = () => {
     setShowCreateInstructorDialog(false);
     setSelectedUserId('');
   };
-
-  const getInstructorById = (id: string) => {
-    return activeInstructors?.find(instructor => instructor.id === id) ||
-           pendingInstructors?.find(instructor => instructor.id === id) ||
-           inactiveInstructors?.find(instructor => instructor.id === id);
-  };
-
-  const filteredActiveInstructors = activeInstructors?.filter(
-    instructor => (
-      instructor.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  ) || [];
-
-  const filteredPendingInstructors = pendingInstructors?.filter(
-    instructor => (
-      instructor.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  ) || [];
-
-  const filteredInactiveInstructors = inactiveInstructors?.filter(
-    instructor => (
-      instructor.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  ) || [];
-
-  // Get eligible users who don't have instructor records yet
-  const eligibleUsers = (allUsers || []).filter(user => {
-    // Check if this user doesn't already have an instructor record
-    const isAlreadyInstructor = 
-      (activeInstructors || []).some(instructor => instructor.id === user.id) ||
-      (pendingInstructors || []).some(instructor => instructor.id === user.id) ||
-      (inactiveInstructors || []).some(instructor => instructor.id === user.id);
-    
-    return !isAlreadyInstructor;
-  });
-
-  // Get active instructors for reassignment dropdown (exclude the one being deactivated)
-  const availableInstructors = activeInstructors
-    ?.filter(instructor => instructor.id !== instructorToDeactivate)
-    .map(instructor => `${instructor.profile.first_name} ${instructor.profile.last_name}`) || [];
 
   const handleAddInstructor = (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,7 +253,7 @@ const AdminInstructors = () => {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>No instructor records found</AlertTitle>
         <AlertDescription>
-          There are {rawProfileCount || 'no'} user profiles in the database, but no instructor records. 
+          There are no instructor records. 
           Use the "Convert User to Instructor" feature to create instructor records for existing users.
         </AlertDescription>
       </Alert>
@@ -536,7 +527,7 @@ const AdminInstructors = () => {
             </Dialog>
           </div>
 
-          {rawInstructorCount === 0 && showNoInstructorsMessage()}
+          {activeInstructors?.length === 0 && pendingInstructors?.length === 0 && inactiveInstructors?.length === 0 && showNoInstructorsMessage()}
 
           <div className="flex items-center space-x-2">
             <div className="relative flex-1">
@@ -863,6 +854,21 @@ interface Student {
   email: string;
   level: string;
   assignedTo?: number | null;
+}
+
+// Define the InstructorWithProfile interface
+interface InstructorWithProfile {
+  id: string;
+  status: string;
+  specialties: string[];
+  bio: string | null;
+  hourly_rate: number;
+  years_experience: number;
+  profile: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+  };
 }
 
 export default AdminInstructors;

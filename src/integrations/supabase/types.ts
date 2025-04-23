@@ -581,6 +581,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_instructor: {
+        Args: {
+          user_id: string
+          initial_status: string
+          initial_hourly_rate: number
+        }
+        Returns: Json
+      }
+      get_instructors_with_profiles: {
+        Args: { status_param: string }
+        Returns: {
+          id: string
+          status: string
+          specialties: string[]
+          bio: string
+          hourly_rate: number
+          years_experience: number
+          profile: Json
+        }[]
+      }
       get_user_profile: {
         Args: { user_id: string }
         Returns: {
