@@ -24,7 +24,7 @@ export const useAdminInstructors = () => {
     queryFn: async () => {
       console.log('Fetching active instructors...');
       
-      // First, query instructors table
+      // Fetch all active instructors directly
       const { data: instructorsData, error: instructorsError } = await supabase
         .from('instructors')
         .select('*')
@@ -41,20 +41,20 @@ export const useAdminInstructors = () => {
         console.log('No active instructors found');
         return [] as Instructor[];
       }
-      
-      // Then, for each instructor, get their profile data
-      const instructorsWithProfiles = await Promise.all(
+
+      // For each instructor, fetch their profile in a separate call
+      const instructorsWithProfiles: Instructor[] = await Promise.all(
         instructorsData.map(async (instructor) => {
+          // Get profile data
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('first_name, last_name, email')
             .eq('id', instructor.id)
             .single();
-            
-          console.log(`Profile data for instructor ${instructor.id}:`, profileData);
           
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
+            // Return instructor with placeholder profile data
             return {
               ...instructor,
               profile: {
@@ -65,6 +65,7 @@ export const useAdminInstructors = () => {
             };
           }
           
+          // Return instructor with profile data
           return {
             ...instructor,
             profile: profileData
@@ -73,7 +74,7 @@ export const useAdminInstructors = () => {
       );
       
       console.log('Active instructors with profiles:', instructorsWithProfiles);
-      return instructorsWithProfiles as Instructor[];
+      return instructorsWithProfiles;
     }
   });
 
@@ -82,7 +83,7 @@ export const useAdminInstructors = () => {
     queryFn: async () => {
       console.log('Fetching pending instructors...');
       
-      // First, query instructors table
+      // Fetch all pending instructors directly
       const { data: instructorsData, error: instructorsError } = await supabase
         .from('instructors')
         .select('*')
@@ -99,16 +100,17 @@ export const useAdminInstructors = () => {
         console.log('No pending instructors found');
         return [] as Instructor[];
       }
-      
-      // Then, for each instructor, get their profile data
-      const instructorsWithProfiles = await Promise.all(
+
+      // For each instructor, fetch their profile in a separate call
+      const instructorsWithProfiles: Instructor[] = await Promise.all(
         instructorsData.map(async (instructor) => {
+          // Get profile data
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('first_name, last_name, email')
             .eq('id', instructor.id)
             .single();
-            
+          
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
             return {
@@ -128,7 +130,7 @@ export const useAdminInstructors = () => {
         })
       );
       
-      return instructorsWithProfiles as Instructor[];
+      return instructorsWithProfiles;
     }
   });
 
@@ -137,7 +139,7 @@ export const useAdminInstructors = () => {
     queryFn: async () => {
       console.log('Fetching inactive instructors...');
       
-      // First, query instructors table
+      // Fetch all inactive instructors directly
       const { data: instructorsData, error: instructorsError } = await supabase
         .from('instructors')
         .select('*')
@@ -154,16 +156,17 @@ export const useAdminInstructors = () => {
         console.log('No inactive instructors found');
         return [] as Instructor[];
       }
-      
-      // Then, for each instructor, get their profile data
-      const instructorsWithProfiles = await Promise.all(
+
+      // For each instructor, fetch their profile in a separate call
+      const instructorsWithProfiles: Instructor[] = await Promise.all(
         instructorsData.map(async (instructor) => {
+          // Get profile data
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('first_name, last_name, email')
             .eq('id', instructor.id)
             .single();
-            
+          
           if (profileError) {
             console.error(`Error fetching profile for instructor ${instructor.id}:`, profileError);
             return {
@@ -183,10 +186,11 @@ export const useAdminInstructors = () => {
         })
       );
       
-      return instructorsWithProfiles as Instructor[];
+      return instructorsWithProfiles;
     }
   });
 
+  // Mutations remain the same as they're working fine
   const approveInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
