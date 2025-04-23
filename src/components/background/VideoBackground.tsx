@@ -3,25 +3,39 @@ import React, { useState, useEffect } from 'react';
 
 interface VideoBackgroundProps {
   videoSrc: string;
+  fallbackSrc?: string;
 }
 
-export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc }) => {
+export const VideoBackground: React.FC<VideoBackgroundProps> = ({ 
+  videoSrc,
+  fallbackSrc = '/lovable-uploads/dj-background.mp4' 
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string>(videoSrc);
   
   useEffect(() => {
     setIsLoading(true);
     setHasError(false);
+    setCurrentSrc(videoSrc);
   }, [videoSrc]);
   
   const handleVideoLoaded = () => {
+    console.log('Video loaded successfully:', currentSrc);
     setIsLoading(false);
   };
   
   const handleVideoError = () => {
-    console.error('Error loading video from source:', videoSrc);
-    setIsLoading(false);
-    setHasError(true);
+    console.error('Error loading video from source:', currentSrc);
+    
+    // If current source failed and it's not already the fallback, try the fallback
+    if (currentSrc !== fallbackSrc) {
+      console.log('Attempting to load fallback video:', fallbackSrc);
+      setCurrentSrc(fallbackSrc);
+    } else {
+      setIsLoading(false);
+      setHasError(true);
+    }
   };
 
   return (
@@ -41,7 +55,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc }) =>
         onLoadedData={handleVideoLoaded}
         onError={handleVideoError}
       >
-        <source src={videoSrc} type="video/mp4" />
+        <source src={currentSrc} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
       {hasError && (

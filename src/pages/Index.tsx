@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
@@ -28,13 +28,20 @@ const Index = () => {
           const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
           if (publicUrl?.publicUrl) {
             console.log('Found video URL:', publicUrl.publicUrl);
-            setBackgroundVideoUrl(publicUrl.publicUrl);
+            // Append a timestamp to bust browser cache
+            const cacheBuster = `?timestamp=${Date.now()}`;
+            setBackgroundVideoUrl(publicUrl.publicUrl + cacheBuster);
           }
         } else {
           console.log('No videos found, using default');
         }
       } catch (err) {
         console.error('Failed to fetch background video:', err);
+        toast({
+          title: "Video Load Error",
+          description: "Could not load background video. Using default instead.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -45,7 +52,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      <VideoBackground videoSrc={backgroundVideoUrl} />
+      <VideoBackground 
+        videoSrc={backgroundVideoUrl} 
+        fallbackSrc="/lovable-uploads/dj-background.mp4" 
+      />
+      
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header logo removed */}
       </header>
