@@ -265,7 +265,7 @@ const AdminSettings = () => {
                   )}
                   <FormDescription>
                     Upload a new background video for the landing page.<br />
-                    Recommended size: 1920x1080, max 50MB.
+                    Recommended size: 1920x1080, max 500MB.
                   </FormDescription>
                   {backgroundVideoUrl && (
                     <div className="mt-4">
