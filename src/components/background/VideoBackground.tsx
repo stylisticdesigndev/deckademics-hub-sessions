@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 interface VideoBackgroundProps {
@@ -48,7 +47,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       {/* Semi-transparent overlay */}
       <div className="absolute inset-0 bg-black/50 z-10" />
       
-      {/* Video element */}
+      {/* Video element - now with responsive classes */}
       {shouldShowVideo && (
         <video
           autoPlay
