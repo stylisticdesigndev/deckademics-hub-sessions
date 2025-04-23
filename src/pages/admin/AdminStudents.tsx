@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
+import { useAdminStudents } from '@/hooks/useAdminStudents';
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Check, X, Eye, UserRound } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -45,145 +45,74 @@ import {
 const AdminStudents = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [instructorFilter, setInstructorFilter] = useState('all');
-  const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [assignInstructor, setAssignInstructor] = useState('');
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   
-  // Mock student data
-  const [activeStudents, setActiveStudents] = useState([
-    { id: 1, name: 'Alex Johnson', email: 'alex@example.com', instructor: 'Professor Smith', level: 'Novice', paymentStatus: 'paid' },
-    { id: 2, name: 'Maria Garcia', email: 'maria@example.com', instructor: 'DJ Mike', level: 'Intermediate', paymentStatus: 'paid' },
-    { id: 3, name: 'James Wilson', email: 'james@example.com', instructor: 'Sarah Jones', level: 'Advanced', paymentStatus: 'overdue' },
-    { id: 4, name: 'Emma Brown', email: 'emma@example.com', instructor: 'Professor Smith', level: 'Novice', paymentStatus: 'paid' },
-    { id: 5, name: 'Michael Davis', email: 'michael@example.com', instructor: 'Robert Williams', level: 'Intermediate', paymentStatus: 'pending' },
-  ]);
+  const {
+    activeStudents,
+    pendingStudents,
+    isLoading,
+    approveStudent,
+    declineStudent,
+    deactivateStudent
+  } = useAdminStudents();
 
-  const [pendingStudents, setPendingStudents] = useState([
-    { id: 6, name: 'Olivia Taylor', email: 'olivia@example.com', instructor: null, level: null, paymentStatus: 'pending' },
-    { id: 7, name: 'William Thomas', email: 'william@example.com', instructor: null, level: null, paymentStatus: 'pending' },
-    { id: 8, name: 'Sophia Moore', email: 'sophia@example.com', instructor: null, level: null, paymentStatus: 'pending' },
-    { id: 9, name: 'Liam Anderson', email: 'liam@example.com', instructor: null, level: null, paymentStatus: 'pending' },
-    { id: 10, name: 'Isabella White', email: 'isabella@example.com', instructor: null, level: null, paymentStatus: 'pending' },
-  ]);
-
-  const instructors = [
-    { id: 1, name: 'Professor Smith' },
-    { id: 2, name: 'DJ Mike' },
-    { id: 3, name: 'Sarah Jones' },
-    { id: 4, name: 'Robert Williams' },
-    { id: 5, name: 'Laura Thompson' },
-  ];
-
-  const handleApprove = (id: number) => {
-    // Find the student in pending list
-    const student = pendingStudents.find(s => s.id === id);
-    if (!student) return;
-    
-    // Remove from pending and add to active with initial values
-    setPendingStudents(pendingStudents.filter(s => s.id !== id));
-    setActiveStudents([...activeStudents, {
-      ...student,
-      level: 'Novice', // Default level changed from Beginner to Novice
-      paymentStatus: 'pending' // Default payment status
-    }]);
-
-    toast({
-      title: 'Student Approved',
-      description: 'The student account has been approved.',
-    });
+  const handleApprove = (id: string) => {
+    approveStudent.mutate(id);
   };
 
-  const handleDecline = (id: number) => {
-    setPendingStudents(pendingStudents.filter(s => s.id !== id));
-    
-    toast({
-      title: 'Student Declined',
-      description: 'The student account has been declined.',
-    });
+  const handleDecline = (id: string) => {
+    declineStudent.mutate(id);
   };
 
-  const handleDeactivate = (id: number) => {
+  const handleDeactivate = (id: string) => {
     setSelectedStudent(id);
     setShowDeactivateDialog(true);
   };
   
   const confirmDeactivate = () => {
     if (!selectedStudent) return;
-    
-    setActiveStudents(activeStudents.filter(s => s.id !== selectedStudent));
-    
-    toast({
-      title: 'Student Deactivated',
-      description: 'The student account has been deactivated.',
-    });
-    
+    deactivateStudent.mutate(selectedStudent);
     setShowDeactivateDialog(false);
     setSelectedStudent(null);
   };
-  
-  const handleView = (id: number) => {
+
+  const handleView = (id: string) => {
     setSelectedStudent(id);
     setShowViewStudentDialog(true);
   };
-  
-  const handleAssign = (id: number) => {
-    setSelectedStudent(id);
-    setShowAssignDialog(true);
-    
-    // Find the student's current instructor if any
-    const student = activeStudents.find(s => s.id === id);
-    if (student && student.instructor) {
-      setAssignInstructor(student.instructor);
-    } else {
-      setAssignInstructor('');
-    }
-  };
-  
-  const confirmAssign = () => {
-    if (!selectedStudent || !assignInstructor) {
-      toast({
-        title: 'Error',
-        description: 'Please select an instructor.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // Update the student's instructor
-    setActiveStudents(activeStudents.map(student => 
-      student.id === selectedStudent 
-        ? { ...student, instructor: assignInstructor } 
-        : student
-    ));
-    
-    toast({
-      title: 'Instructor Assigned',
-      description: `The student has been assigned to ${assignInstructor}.`,
-    });
-    
-    setShowAssignDialog(false);
-    setSelectedStudent(null);
-    setAssignInstructor('');
+
+  const getStudentById = (id: string) => {
+    return activeStudents?.find(student => student.id === id) || 
+           pendingStudents?.find(student => student.id === id);
   };
 
-  const getStudentById = (id: number) => {
-    return activeStudents.find(student => student.id === id) || 
-           pendingStudents.find(student => student.id === id);
-  };
+  const filteredActiveStudents = activeStudents?.filter(
+    student => (
+      student.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ) || [];
 
-  const filteredActiveStudents = activeStudents.filter(
-    student => (student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                student.email.toLowerCase().includes(searchQuery.toLowerCase())) &&
-               (instructorFilter === 'all' || student.instructor === instructorFilter)
-  );
+  const filteredPendingStudents = pendingStudents?.filter(
+    student => (
+      student.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ) || [];
 
-  const filteredPendingStudents = pendingStudents.filter(
-    student => student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               student.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout
@@ -223,19 +152,6 @@ const AdminStudents = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={instructorFilter} onValueChange={setInstructorFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by instructor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Instructors</SelectItem>
-                {instructors.map((instructor) => (
-                  <SelectItem key={instructor.id} value={instructor.name}>
-                    {instructor.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <Tabs defaultValue="active">
@@ -272,20 +188,19 @@ const AdminStudents = () => {
                       <tbody>
                         {filteredActiveStudents.map((student) => (
                           <tr key={student.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">{student.name}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
-                            <td className="px-4 py-3">{student.instructor}</td>
+                            <td className="px-4 py-3 font-medium">
+                              {student.profile.first_name} {student.profile.last_name}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {student.profile.email}
+                            </td>
+                            <td className="px-4 py-3">
+                              {student.instructor?.profile.first_name} {student.instructor?.profile.last_name}
+                            </td>
                             <td className="px-4 py-3">{student.level}</td>
                             <td className="px-4 py-3 text-center">
-                              <Badge variant="outline" className={
-                                student.paymentStatus === 'paid' 
-                                  ? 'bg-green-500/10 text-green-500 hover:bg-green-500/10 hover:text-green-500'
-                                  : student.paymentStatus === 'pending'
-                                  ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500'
-                                  : 'bg-red-500/10 text-red-500 hover:bg-red-500/10 hover:text-red-500'
-                              }>
-                                {student.paymentStatus === 'paid' ? 'Paid' : 
-                                 student.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
+                              <Badge variant="outline" className="bg-green-500/10 text-green-500">
+                                Active
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-right">
@@ -295,7 +210,7 @@ const AdminStudents = () => {
                                     <Button 
                                       variant="ghost" 
                                       size="icon"
-                                      onClick={() => handleAssign(student.id)}
+                                      onClick={() => {}}
                                       className="h-8 w-8"
                                     >
                                       <UserRound className="h-4 w-4" />
@@ -375,10 +290,14 @@ const AdminStudents = () => {
                       <tbody>
                         {filteredPendingStudents.map((student) => (
                           <tr key={student.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">{student.name}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{student.email}</td>
+                            <td className="px-4 py-3 font-medium">
+                              {student.profile.first_name} {student.profile.last_name}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {student.profile.email}
+                            </td>
                             <td className="px-4 py-3 text-center">
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500">
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500">
                                 Pending
                               </Badge>
                             </td>
@@ -432,7 +351,6 @@ const AdminStudents = () => {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
 
         {/* View Student Dialog */}
         <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
@@ -442,73 +360,13 @@ const AdminStudents = () => {
             </DialogHeader>
             {selectedStudent && (
               <div className="py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Name</p>
-                    <p>{getStudentById(selectedStudent)?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p>{getStudentById(selectedStudent)?.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Instructor</p>
-                    <p>{getStudentById(selectedStudent)?.instructor || "Not assigned"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Level</p>
-                    <p>{getStudentById(selectedStudent)?.level || "Not set"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
-                    <Badge variant="outline" className={
-                      getStudentById(selectedStudent)?.paymentStatus === 'paid' 
-                        ? 'bg-green-500/10 text-green-500'
-                        : getStudentById(selectedStudent)?.paymentStatus === 'pending'
-                        ? 'bg-amber-500/10 text-amber-500'
-                        : 'bg-red-500/10 text-red-500'
-                    }>
-                      {getStudentById(selectedStudent)?.paymentStatus === 'paid' ? 'Paid' : 
-                       getStudentById(selectedStudent)?.paymentStatus === 'pending' ? 'Pending' : 'Overdue'}
-                    </Badge>
-                  </div>
-                </div>
+                {/* Student details will be displayed here */}
+                <p>Student ID: {selectedStudent}</p>
+                {/* Add more details as needed */}
               </div>
             )}
             <DialogFooter>
               <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Assign Instructor Dialog */}
-        <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Assign Instructor</DialogTitle>
-              <DialogDescription>
-                Select an instructor for {selectedStudent && getStudentById(selectedStudent)?.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Select value={assignInstructor} onValueChange={setAssignInstructor}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((instructor) => (
-                    <SelectItem key={instructor.id} value={instructor.name}>
-                      {instructor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={confirmAssign}>Assign</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -519,23 +377,14 @@ const AdminStudents = () => {
             <DialogHeader>
               <DialogTitle>Deactivate Student</DialogTitle>
               <DialogDescription>
-                Are you sure you want to deactivate this student account? This action will remove them from all classes.
+                Are you sure you want to deactivate this student account? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowDeactivateDialog(false);
-                  setSelectedStudent(null);
-                }}
-              >
+              <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive"
-                onClick={confirmDeactivate}
-              >
+              <Button variant="destructive" onClick={confirmDeactivate}>
                 Deactivate
               </Button>
             </DialogFooter>
