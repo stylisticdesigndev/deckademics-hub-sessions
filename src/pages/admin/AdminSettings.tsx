@@ -30,6 +30,9 @@ const AdminSettings = () => {
   const { clearLocalStorage, session } = useAuth();
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
+  // Increase max allowable video size to 500MB
+  const MAX_VIDEO_MB = 500;
+
   // Fetch latest background video from Supabase storage on mount
   useEffect(() => {
     async function fetchBackgroundVideo() {
@@ -79,10 +82,10 @@ const AdminSettings = () => {
       return;
     }
     const fileSizeInMB = videoFile.size / (1024 * 1024);
-    if (fileSizeInMB > 50) {
+    if (fileSizeInMB > MAX_VIDEO_MB) {
       toast({
         title: 'File Too Large',
-        description: 'Video file exceeds the 50MB limit. Please choose a smaller file.',
+        description: `Video file exceeds the ${MAX_VIDEO_MB}MB limit. Please choose a smaller file.`,
         variant: 'destructive'
       });
       return;
