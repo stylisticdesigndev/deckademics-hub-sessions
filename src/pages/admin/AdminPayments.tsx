@@ -1,93 +1,29 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, Calendar, Check } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
-
-// Mock payment data
-const initialPaymentData = [
-  {
-    id: 1,
-    studentName: "Alex Johnson",
-    email: "alex@example.com",
-    amount: 250,
-    dueDate: "2025-04-10",
-    status: "missed",
-    daysPastDue: 5,
-    partiallyPaid: false
-  },
-  {
-    id: 2,
-    studentName: "Jamie Smith",
-    email: "jamie@example.com",
-    amount: 250,
-    dueDate: "2025-04-12",
-    status: "upcoming",
-    daysTillDue: 7,
-    partiallyPaid: false
-  },
-  {
-    id: 3,
-    studentName: "Taylor Brown",
-    email: "taylor@example.com",
-    amount: 250,
-    dueDate: "2025-04-15",
-    status: "upcoming",
-    daysTillDue: 10,
-    partiallyPaid: false
-  },
-  {
-    id: 4,
-    studentName: "Morgan Wilson",
-    email: "morgan@example.com",
-    amount: 250,
-    dueDate: "2025-03-30",
-    status: "missed",
-    daysPastDue: 16,
-    partiallyPaid: true
-  },
-  {
-    id: 5,
-    studentName: "Jordan Lee",
-    email: "jordan@example.com",
-    amount: 250,
-    dueDate: "2025-04-18",
-    status: "upcoming",
-    daysTillDue: 13,
-    partiallyPaid: false
-  }
-];
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Check, CreditCard, Calendar } from 'lucide-react';
+import { useAdminPayments } from '@/hooks/useAdminPayments';
 
 const AdminPayments = () => {
-  const [paymentData, setPaymentData] = useState(initialPaymentData);
-  
-  const missedPayments = paymentData.filter(payment => payment.status === "missed");
-  const upcomingPayments = paymentData.filter(payment => payment.status === "upcoming");
-  
-  const totalMissed = missedPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalUpcoming = upcomingPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  
-  const handleMarkAsPaid = (paymentId: number, paymentType: 'full' | 'partial') => {
-    setPaymentData(prev => 
-      prev.map(payment => {
-        if (payment.id === paymentId) {
-          if (paymentType === 'full') {
-            // Remove the payment by returning null
-            return { ...payment, status: 'paid' };
-          } else {
-            // Mark as partially paid
-            return { ...payment, partiallyPaid: true };
-          }
-        }
-        return payment;
-      }).filter(payment => payment.status !== 'paid')
-    );
-    
+  const { missedPayments, upcomingPayments, isLoading, stats } = useAdminPayments();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMissedPayments = missedPayments.filter(payment =>
+    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredUpcomingPayments = upcomingPayments.filter(payment =>
+    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleMarkAsPaid = (paymentId: string, paymentType: 'full' | 'partial') => {
+    // Implementation will be added when we integrate with the payment processing system
     toast({
       title: paymentType === 'full' ? "Payment Marked as Paid" : "Payment Marked as Partially Paid",
       description: paymentType === 'full' 
@@ -95,7 +31,17 @@ const AdminPayments = () => {
         : "The payment has been marked as partially paid.",
     });
   };
-  
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">Loading payments...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
       <div className="space-y-6">
@@ -115,9 +61,9 @@ const AdminPayments = () => {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{missedPayments.length}</div>
+              <div className="text-2xl font-bold">{stats.missedPaymentsCount}</div>
               <p className="text-xs text-muted-foreground">
-                ${totalMissed} past due
+                ${stats.totalMissedAmount} past due
               </p>
             </CardContent>
           </Card>
@@ -130,12 +76,25 @@ const AdminPayments = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{upcomingPayments.length}</div>
+              <div className="text-2xl font-bold">{stats.upcomingPaymentsCount}</div>
               <p className="text-xs text-muted-foreground">
-                ${totalUpcoming} due within 2 weeks
+                ${stats.totalUpcomingAmount} due within 2 weeks
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <div className="relative flex-1">
+            <Input
+              type="search"
+              placeholder="Search students..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <CreditCard className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          </div>
         </div>
 
         <Card>
@@ -144,7 +103,7 @@ const AdminPayments = () => {
             <CardDescription>Students with past due payments</CardDescription>
           </CardHeader>
           <CardContent>
-            {missedPayments.length > 0 ? (
+            {filteredMissedPayments.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -157,7 +116,7 @@ const AdminPayments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {missedPayments.map((payment) => (
+                  {filteredMissedPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.studentName}</TableCell>
                       <TableCell>{payment.email}</TableCell>
@@ -212,7 +171,7 @@ const AdminPayments = () => {
             <CardDescription>Payments due within the next two weeks</CardDescription>
           </CardHeader>
           <CardContent>
-            {upcomingPayments.length > 0 ? (
+            {filteredUpcomingPayments.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -225,7 +184,7 @@ const AdminPayments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {upcomingPayments.map((payment) => (
+                  {filteredUpcomingPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.studentName}</TableCell>
                       <TableCell>{payment.email}</TableCell>
