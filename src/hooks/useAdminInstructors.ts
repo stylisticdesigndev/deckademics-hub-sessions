@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,6 +22,8 @@ export const useAdminInstructors = () => {
   const { data: activeInstructors, isLoading: isLoadingActive } = useQuery({
     queryKey: ['admin', 'instructors', 'active'],
     queryFn: async () => {
+      console.log('Fetching active instructors...');
+      
       const { data, error } = await supabase
         .from('instructors')
         .select(`
@@ -37,6 +38,13 @@ export const useAdminInstructors = () => {
         .eq('status', 'active');
 
       console.log('Active Instructors Query Result:', { data, error });
+      
+      if (data) {
+        console.log('Number of active instructors returned:', data.length);
+        data.forEach((instructor, index) => {
+          console.log(`Instructor ${index + 1}:`, instructor);
+        });
+      }
 
       if (error) {
         console.error('Error fetching active instructors:', error);
@@ -49,6 +57,8 @@ export const useAdminInstructors = () => {
   const { data: pendingInstructors, isLoading: isLoadingPending } = useQuery({
     queryKey: ['admin', 'instructors', 'pending'],
     queryFn: async () => {
+      console.log('Fetching pending instructors...');
+      
       const { data, error } = await supabase
         .from('instructors')
         .select(`
@@ -62,6 +72,8 @@ export const useAdminInstructors = () => {
         `)
         .eq('status', 'pending');
 
+      console.log('Pending Instructors Query Result:', { data, error });
+      
       if (error) throw error;
       return data as Instructor[];
     }
@@ -70,6 +82,8 @@ export const useAdminInstructors = () => {
   const { data: inactiveInstructors, isLoading: isLoadingInactive } = useQuery({
     queryKey: ['admin', 'instructors', 'inactive'],
     queryFn: async () => {
+      console.log('Fetching inactive instructors...');
+      
       const { data, error } = await supabase
         .from('instructors')
         .select(`
@@ -83,6 +97,8 @@ export const useAdminInstructors = () => {
         `)
         .eq('status', 'inactive');
 
+      console.log('Inactive Instructors Query Result:', { data, error });
+      
       if (error) throw error;
       return data as Instructor[];
     }
