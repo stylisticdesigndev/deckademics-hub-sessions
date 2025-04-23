@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -9,10 +10,10 @@ const StudentAuth = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Using a different video source with timestamp to prevent caching issues */}
+      {/* Using static image for background */}
       <VideoBackground 
-        videoSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
-        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png"
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+        videoSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png"
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
