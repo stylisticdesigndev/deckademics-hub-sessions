@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -7,15 +7,13 @@ import { VideoBackground } from '@/components/background/VideoBackground';
 
 const StudentAuth = () => {
   console.log("Rendering StudentAuth page");
-  // Use a simple timestamp as the key
-  const timestamp = Date.now();
   
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
-      {/* Video Background with direct video path */}
+      {/* Static video URL with cache-busting query parameter */}
       <VideoBackground 
-        videoSrc="/lovable-uploads/dj-background.mp4" 
-        fallbackSrc="/lovable-uploads/dj-background.mp4"
+        videoSrc="https://storage.googleapis.com/lovable-static-assets/static/sample-videos/turntable-video.mp4" 
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png"
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
