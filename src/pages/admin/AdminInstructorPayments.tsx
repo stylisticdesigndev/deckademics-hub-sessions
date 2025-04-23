@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -6,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { 
   Dialog, 
   DialogContent, 
@@ -22,10 +23,11 @@ import { format } from 'date-fns';
 import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
 import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/InstructorPaymentSearch';
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define instructor type
 interface Instructor {
-  id: number;
+  id: string;
   name: string;
   email: string;
   hourlyRate: number;
@@ -33,10 +35,11 @@ interface Instructor {
 }
 
 const AdminInstructorPayments = () => {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  // Fetch payments data from the hook
   const { payments, stats, isLoading } = useInstructorPayments();
-  const [editPaymentId, setEditPaymentId] = useState<string | null>(null); // Updated to string
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
@@ -44,88 +47,30 @@ const AdminInstructorPayments = () => {
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   
-  // Mock data for instructors
-  const [instructors, setInstructors] = useState<Instructor[]>([
-    { id: 1, name: 'Professor Smith', email: 'smith@example.com', hourlyRate: 30, specialization: 'Turntablism' },
-    { id: 2, name: 'DJ Mike', email: 'mike@example.com', hourlyRate: 28, specialization: 'Scratching' },
-    { id: 3, name: 'Sarah Jones', email: 'sarah@example.com', hourlyRate: 32, specialization: 'Beat Mixing' },
-    { id: 4, name: 'Robert Williams', email: 'robert@example.com', hourlyRate: 25, specialization: 'Production' },
-    { id: 5, name: 'Laura Thompson', email: 'laura@example.com', hourlyRate: 27, specialization: 'Music Theory' },
-  ]);
+  // Generate instructors list from payments data
+  const instructorsList = React.useMemo(() => {
+    if (!payments || payments.length === 0) return [];
+    
+    const uniqueInstructors = new Map<string, Instructor>();
+    
+    payments.forEach(payment => {
+      if (!uniqueInstructors.has(payment.instructorId || '')) {
+        uniqueInstructors.set(payment.instructorId || '', {
+          id: payment.instructorId || '',
+          name: payment.instructorName,
+          email: `${payment.instructorName.toLowerCase().replace(/\s+/g, '.')}@example.com`, // Generate email for display
+          hourlyRate: payment.hourlyRate,
+          specialization: 'DJ Instruction', // Default value
+        });
+      }
+    });
+    
+    return Array.from(uniqueInstructors.values());
+  }, [payments]);
   
-  // Use local payments data since the hook might return empty results
-  // for testing purposes
-  const [localPayments, setLocalPayments] = useState<InstructorPayment[]>([
-    { 
-      id: "1", // Updated to string to match our interface 
-      instructorId: "1",  // Updated to string
-      instructorName: 'Professor Smith', 
-      hourlyRate: 30, 
-      hoursLogged: 24, 
-      totalAmount: 720, 
-      payPeriodStart: '2025-03-15', 
-      payPeriodEnd: '2025-03-31', 
-      status: 'pending',
-      lastUpdated: '2025-04-01'
-    },
-    { 
-      id: "2", // Updated to string
-      instructorId: "2", // Updated to string
-      instructorName: 'DJ Mike', 
-      hourlyRate: 28, 
-      hoursLogged: 20, 
-      totalAmount: 560, 
-      payPeriodStart: '2025-03-15', 
-      payPeriodEnd: '2025-03-31', 
-      status: 'pending',
-      lastUpdated: '2025-04-01'
-    },
-    { 
-      id: "3", // Updated to string
-      instructorId: "3", // Updated to string
-      instructorName: 'Sarah Jones', 
-      hourlyRate: 32, 
-      hoursLogged: 22, 
-      totalAmount: 704, 
-      payPeriodStart: '2025-03-15', 
-      payPeriodEnd: '2025-03-31', 
-      status: 'pending',
-      lastUpdated: '2025-04-02'
-    },
-    { 
-      id: "4", // Updated to string
-      instructorId: "1", // Updated to string
-      instructorName: 'Professor Smith', 
-      hourlyRate: 30, 
-      hoursLogged: 25, 
-      totalAmount: 750, 
-      payPeriodStart: '2025-03-01', 
-      payPeriodEnd: '2025-03-14', 
-      status: 'paid',
-      lastUpdated: '2025-03-16'
-    },
-    { 
-      id: "5", // Updated to string
-      instructorId: "2", // Updated to string
-      instructorName: 'DJ Mike', 
-      hourlyRate: 28, 
-      hoursLogged: 18, 
-      totalAmount: 504, 
-      payPeriodStart: '2025-03-01', 
-      payPeriodEnd: '2025-03-14', 
-      status: 'paid',
-      lastUpdated: '2025-03-16'
-    }
-  ]);
-  
-  // Use API data if available, otherwise fallback to mock data
-  const effectivePayments = payments && payments.length > 0 ? payments : localPayments;
-
-  // Define payments lists from the data
-  const pendingPayments = effectivePayments.filter(payment => payment.status === 'pending');
-  const completedPayments = effectivePayments.filter(payment => payment.status === 'paid');
-  
-  const totalPendingAmount = pendingPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
+  // Split payments into pending and completed
+  const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
+  const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
   
   const filteredPendingPayments = pendingPayments.filter(payment => 
     payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -135,15 +80,25 @@ const AdminInstructorPayments = () => {
     payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleMarkAsPaid = (paymentId: string) => { // Updated to string
-    setLocalPayments(localPayments.map(payment => 
-      payment.id === paymentId ? { ...payment, status: 'paid' } : payment
-    ));
-    
-    toast({
-      title: 'Payment Marked as Paid',
-      description: 'The instructor payment has been marked as paid.',
-    });
+  const handleMarkAsPaid = async (paymentId: string) => {
+    try {
+      // Update payment status in the database
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ status: 'paid' })
+        .eq('id', paymentId);
+      
+      if (error) throw error;
+      
+      toast('Payment Marked as Paid', {
+        description: 'The instructor payment has been marked as paid.'
+      });
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast('Error Updating Payment', {
+        description: 'There was a problem marking the payment as paid.',
+      });
+    }
   };
   
   const openSetRateDialog = (instructor: Instructor) => {
@@ -159,86 +114,89 @@ const AdminInstructorPayments = () => {
     setShowEditHoursDialog(true);
   };
   
-  const handleUpdateHourlyRate = () => {
+  const handleUpdateHourlyRate = async () => {
     if (!selectedInstructor) return;
     
     const rate = parseFloat(newHourlyRate);
     if (isNaN(rate) || rate <= 0) {
-      toast({
-        title: 'Invalid Rate',
+      toast('Invalid Rate', {
         description: 'Please enter a valid hourly rate.',
         variant: 'destructive',
       });
       return;
     }
     
-    // Update instructor's hourly rate
-    setInstructors(instructors.map(instructor => 
-      instructor.id === selectedInstructor.id 
-        ? { ...instructor, hourlyRate: rate } 
-        : instructor
-    ));
-    
-    // Update any pending payments for this instructor
-    setLocalPayments(localPayments.map(payment => {
-      if (payment.instructorId === selectedInstructor.id.toString() && payment.status === 'pending') {
-        const newTotal = payment.hoursLogged * rate;
-        return {
-          ...payment,
-          hourlyRate: rate,
-          totalAmount: newTotal,
-          lastUpdated: new Date().toISOString().split('T')[0]
-        };
-      }
-      return payment;
-    }));
-    
-    toast({
-      title: 'Hourly Rate Updated',
-      description: `${selectedInstructor.name}'s hourly rate has been updated to $${rate}.`,
-    });
-    
-    setShowSetRateDialog(false);
-    setSelectedInstructor(null);
+    try {
+      // Update instructor's hourly rate in the database
+      const { error } = await supabase
+        .from('instructors')
+        .update({ hourly_rate: rate })
+        .eq('id', selectedInstructor.id);
+      
+      if (error) throw error;
+      
+      toast('Hourly Rate Updated', {
+        description: `${selectedInstructor.name}'s hourly rate has been updated to $${rate}.`,
+      });
+      
+      setShowSetRateDialog(false);
+      setSelectedInstructor(null);
+    } catch (error) {
+      console.error('Error updating hourly rate:', error);
+      toast('Error Updating Rate', {
+        description: 'There was a problem updating the hourly rate.',
+      });
+    }
   };
   
-  const handleEditHours = () => {
+  const handleEditHours = async () => {
     if (!editPaymentId) return;
     
     const hours = parseFloat(hoursToChange);
     if (isNaN(hours) || hours <= 0) {
-      toast({
-        title: 'Invalid Hours',
+      toast('Invalid Hours', {
         description: 'Please enter a valid number of hours.',
         variant: 'destructive',
       });
       return;
     }
     
-    setLocalPayments(localPayments.map(payment => {
-      if (payment.id === editPaymentId) {
-        const newHours = hoursOperation === 'add' 
-          ? payment.hoursLogged + hours 
-          : Math.max(0, payment.hoursLogged - hours);
-        
-        const newTotal = newHours * payment.hourlyRate;
-        return {
-          ...payment,
-          hoursLogged: newHours,
-          totalAmount: newTotal,
-          lastUpdated: new Date().toISOString().split('T')[0]
-        };
-      }
-      return payment;
-    }));
-    
-    toast({
-      title: hoursOperation === 'add' ? 'Hours Added' : 'Hours Subtracted',
-      description: `${hours} hours have been ${hoursOperation === 'add' ? 'added to' : 'subtracted from'} the payment record.`,
-    });
-    
-    setShowEditHoursDialog(false);
-    setEditPaymentId(null);
+    try {
+      // Find the current payment
+      const payment = payments?.find(p => p.id === editPaymentId);
+      if (!payment) throw new Error('Payment not found');
+      
+      // Calculate new hours
+      const newHours = hoursOperation === 'add' 
+        ? payment.hoursLogged + hours 
+        : Math.max(0, payment.hoursLogged - hours);
+      
+      // Calculate new total amount
+      const newTotal = newHours * payment.hourlyRate;
+      
+      // Update payment in the database
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ 
+          hours_worked: newHours,
+          amount: newTotal,
+        })
+        .eq('id', editPaymentId);
+      
+      if (error) throw error;
+      
+      toast(hoursOperation === 'add' ? 'Hours Added' : 'Hours Subtracted', {
+        description: `${hours} hours have been ${hoursOperation === 'add' ? 'added to' : 'subtracted from'} the payment record.`,
+      });
+      
+      setShowEditHoursDialog(false);
+      setEditPaymentId(null);
+    } catch (error) {
+      console.error('Error updating hours:', error);
+      toast('Error Updating Hours', {
+        description: 'There was a problem updating the hours worked.',
+      });
+    }
   };
 
   // Format a date string to US format (MM/DD/YYYY)
@@ -246,6 +204,16 @@ const AdminInstructorPayments = () => {
     const date = new Date(dateString);
     return format(date, 'MM/dd/yyyy');
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">Loading instructor payments data...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
@@ -258,12 +226,8 @@ const AdminInstructorPayments = () => {
         </div>
 
         <InstructorPaymentStatsCards
-          stats={{
-            pendingPaymentsCount: pendingPayments.length,
-            totalPendingAmount: totalPendingAmount,
-            instructorRatesCount: instructors.length
-          }}
-          instructors={instructors}
+          stats={stats}
+          instructors={instructorsList}
         />
 
         <InstructorPaymentSearch
@@ -280,36 +244,42 @@ const AdminInstructorPayments = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Instructor</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Specialization</TableHead>
-                  <TableHead className="text-right">Hourly Rate</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {instructors.map((instructor) => (
-                  <TableRow key={instructor.id}>
-                    <TableCell className="font-medium">{instructor.name}</TableCell>
-                    <TableCell>{instructor.email}</TableCell>
-                    <TableCell>{instructor.specialization}</TableCell>
-                    <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => openSetRateDialog(instructor)}
-                      >
-                        Update Rate
-                      </Button>
-                    </TableCell>
+            {instructorsList.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Instructor</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Specialization</TableHead>
+                    <TableHead className="text-right">Hourly Rate</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {instructorsList.map((instructor) => (
+                    <TableRow key={instructor.id}>
+                      <TableCell className="font-medium">{instructor.name}</TableCell>
+                      <TableCell>{instructor.email}</TableCell>
+                      <TableCell>{instructor.specialization}</TableCell>
+                      <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openSetRateDialog(instructor)}
+                        >
+                          Update Rate
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No instructors found.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -318,7 +288,7 @@ const AdminInstructorPayments = () => {
           <CardHeader>
             <CardTitle>Current Pay Period</CardTitle>
             <CardDescription>
-              Pending payments for instructors (03/15/2025-03/31/2025)
+              Pending payments for instructors
             </CardDescription>
           </CardHeader>
           <CardContent>
