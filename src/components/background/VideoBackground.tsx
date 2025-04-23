@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
@@ -110,25 +109,22 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     };
   }, []);
   
-  // More robust playback attempt system - fix for "ref is not a prop" warning
+  // Fix for video playback attempts
   useEffect(() => {
     if (!videoRef.current || hasError) return;
     
-    // Function to attempt playback with multiple strategies
     const attemptPlayback = async () => {
       if (!videoRef.current) return;
       
       const video = videoRef.current;
       
       try {
-        // Mark that we've tried initial load
         initialLoadAttemptedRef.current = true;
         
         console.log(`Attempt ${playAttempts + 1} to play video from: ${currentSrc}`);
         
-        // First ensure video is ready to play
-        if (video.readyState < 2) { // HAVE_CURRENT_DATA or better
-          // Wait for metadata to load first
+        // Wait for metadata to load first if needed
+        if (video.readyState < 2) {
           await new Promise<void>((resolve) => {
             const handleCanPlay = () => {
               video.removeEventListener('canplay', handleCanPlay);
@@ -136,10 +132,9 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
             };
             video.addEventListener('canplay', handleCanPlay);
             
-            // Set a timeout in case metadata never loads
             setTimeout(() => {
               video.removeEventListener('canplay', handleCanPlay);
-              resolve(); // Continue anyway after timeout
+              resolve();
             }, 3000);
           });
         }
@@ -155,22 +150,19 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       } catch (err) {
         console.warn(`Playback attempt ${playAttempts + 1} failed:`, err);
         
-        // Implement exponential backoff for retry attempts
         if (playAttempts < 3) {
-          const delay = Math.pow(2, playAttempts) * 500; // 500ms, 1s, 2s
+          const delay = Math.pow(2, playAttempts) * 500;
           console.log(`Scheduling retry ${playAttempts + 1} in ${delay}ms`);
           
           setTimeout(() => {
             setPlayAttempts(prev => prev + 1);
           }, delay);
         } else if (currentSrc !== fallbackSrc) {
-          // After multiple failures, try the fallback video
           console.log('Multiple play attempts failed, switching to fallback video');
-          const cacheBuster = `?t=${Date.now()}`;
-          setCurrentSrc(`${fallbackSrc}${cacheBuster}`);
+          // Add timestamp to avoid cache
+          setCurrentSrc(`${fallbackSrc}?t=${Date.now()}`);
           setPlayAttempts(0);
         } else {
-          // If we're already using the fallback and still failing, show error state
           console.error('All video playback attempts failed, showing error UI');
           setHasError(true);
           setIsLoading(false);
@@ -208,12 +200,11 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     
     // If we haven't tried the fallback yet, switch to it
     if (currentSrc !== fallbackSrc) {
-      const cacheBuster = `?t=${Date.now()}`;
-      console.log('Video loading failed, trying fallback with cachebuster:', fallbackSrc + cacheBuster);
-      setCurrentSrc(fallbackSrc + cacheBuster);
-      setPlayAttempts(0); // Reset attempts for the new source
+      // Add timestamp to avoid cache
+      console.log('Video loading failed, trying fallback with cachebuster:', fallbackSrc + '?t=' + Date.now());
+      setCurrentSrc(fallbackSrc + '?t=' + Date.now());
+      setPlayAttempts(0);
     } else {
-      // If even the fallback fails, show error state
       setHasError(true);
       setIsLoading(false);
       
@@ -263,7 +254,6 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
                 if (currentSrc === fallbackSrc && videoSrc !== fallbackSrc) {
                   setCurrentSrc(videoSrc + cacheBuster);
                 } else {
-                  // Force reload with a cache buster
                   setCurrentSrc(fallbackSrc + cacheBuster);
                 }
               }}
