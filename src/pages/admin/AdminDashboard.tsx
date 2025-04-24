@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,20 +8,28 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { Loader2 } from 'lucide-react';
+import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
   const { data: dashboardData, isLoading, error } = useAdminDashboard();
+  const { 
+    pendingInstructors, 
+    isLoading: isLoadingInstructors 
+  } = useAdminInstructors();
 
-  if (error) {
-    toast({
-      title: 'Error',
-      description: 'Failed to load dashboard data',
-      variant: 'destructive',
-    });
-  }
+  // Handle dashboard data loading error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard data',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
-  if (isLoading) {
+  if (isLoading || isLoadingInstructors) {
     return (
       <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
         <div className="flex items-center justify-center h-full">
@@ -154,10 +163,31 @@ const AdminDashboard = () => {
                   <div className="p-4">
                     <h3 className="font-medium">New Instructor Registrations</h3>
                     <div className="mt-2 divide-y">
-                      
-                      <div className="py-4 text-center text-muted-foreground">
-                        No pending instructor approvals
-                      </div>
+                      {pendingInstructors && pendingInstructors.length > 0 ? (
+                        pendingInstructors.map((instructor) => (
+                          <div key={instructor.id} className="py-3 flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">
+                                {instructor.profile.first_name} {instructor.profile.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {instructor.profile.email}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => {
+                                window.location.href = '/admin/instructors';
+                              }}>
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-4 text-center text-muted-foreground">
+                          No pending instructor approvals
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -173,7 +203,9 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                
+                <div className="py-4 text-center text-muted-foreground">
+                  No recent activities to display
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
