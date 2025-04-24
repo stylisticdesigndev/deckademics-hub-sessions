@@ -25,17 +25,20 @@ export const useAdminInstructors = () => {
     queryFn: async () => {
       console.log('Fetching all profiles for debugging...');
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name, role');
-      
-      if (error) {
+      try {
+        const { data, error } = await supabase.rpc('get_all_users');
+        
+        if (error) {
+          console.error('Error fetching profiles:', error);
+          return [];
+        }
+        
+        console.log('All profiles:', data);
+        return data || [];
+      } catch (error) {
         console.error('Error fetching profiles:', error);
         return [];
       }
-      
-      console.log('All profiles:', data);
-      return data || [];
     }
   });
 
@@ -45,22 +48,9 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching active instructors...');
         
-        const { data, error } = await supabase
-          .from('instructors')
-          .select(`
-            id,
-            status,
-            specialties,
-            bio,
-            hourly_rate,
-            years_experience,
-            profile:profiles(
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .eq('status', 'active');
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+          status_param: 'active'
+        });
         
         if (error) {
           console.error('Error fetching active instructors:', error);
@@ -82,22 +72,9 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching pending instructors...');
         
-        const { data, error } = await supabase
-          .from('instructors')
-          .select(`
-            id,
-            status,
-            specialties,
-            bio,
-            hourly_rate,
-            years_experience,
-            profile:profiles(
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .eq('status', 'pending');
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+          status_param: 'pending'
+        });
         
         if (error) {
           console.error('Error fetching pending instructors:', error);
@@ -119,22 +96,9 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching inactive instructors...');
         
-        const { data, error } = await supabase
-          .from('instructors')
-          .select(`
-            id,
-            status,
-            specialties,
-            bio,
-            hourly_rate,
-            years_experience,
-            profile:profiles(
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .eq('status', 'inactive');
+        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+          status_param: 'inactive' 
+        });
         
         if (error) {
           console.error('Error fetching inactive instructors:', error);
@@ -162,6 +126,7 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor approved successfully');
     },
     onError: (error: Error) => {
@@ -181,6 +146,7 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor declined successfully');
     },
     onError: (error: Error) => {
@@ -200,6 +166,7 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor deactivated successfully');
     },
     onError: (error: Error) => {
@@ -219,6 +186,7 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor activated successfully');
     },
     onError: (error: Error) => {
@@ -226,7 +194,6 @@ export const useAdminInstructors = () => {
     }
   });
 
-  // Update the createInstructor mutation to use the admin_create_instructor DB function
   const createInstructor = useMutation({
     mutationFn: async (userId: string) => {
       console.log(`Creating instructor record for user ${userId} using admin function`);
@@ -257,6 +224,7 @@ export const useAdminInstructors = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor record created successfully');
     },
     onError: (error: Error) => {
