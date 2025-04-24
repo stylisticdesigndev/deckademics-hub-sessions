@@ -38,7 +38,7 @@ export const useAdminDashboard = () => {
       try {
         // Get counts using aggregate functions to avoid RLS issues
         const { data: studentCounts, error: studentsError } = await supabase
-          .rpc<StudentCounts>('get_student_counts');
+          .rpc<StudentCounts, any>('get_student_counts');
 
         if (studentsError) {
           console.error("Error fetching student counts:", studentsError);
@@ -49,7 +49,7 @@ export const useAdminDashboard = () => {
 
         // Get instructor counts
         const { data: instructorCounts, error: instructorsError } = await supabase
-          .rpc<InstructorCounts>('get_instructor_counts');
+          .rpc<InstructorCounts, any>('get_instructor_counts');
 
         if (instructorsError) {
           console.error("Error fetching instructor counts:", instructorsError);

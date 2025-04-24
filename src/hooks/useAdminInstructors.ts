@@ -35,7 +35,7 @@ export const useAdminInstructors = () => {
       console.log('Fetching all profiles for debugging...');
       
       try {
-        const { data, error } = await supabase.rpc('get_all_users');
+        const { data, error } = await supabase.rpc<Profile[], any>('get_all_users');
         
         if (error) {
           console.error('Error fetching profiles:', error);
@@ -57,7 +57,7 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching active instructors...');
         
-        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+        const { data, error } = await supabase.rpc<InstructorWithProfile[], any>('get_instructors_with_profiles', {
           status_param: 'active'
         });
         
@@ -81,7 +81,7 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching pending instructors...');
         
-        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+        const { data, error } = await supabase.rpc<InstructorWithProfile[], any>('get_instructors_with_profiles', {
           status_param: 'pending'
         });
         
@@ -105,7 +105,7 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching inactive instructors...');
         
-        const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
+        const { data, error } = await supabase.rpc<InstructorWithProfile[], any>('get_instructors_with_profiles', {
           status_param: 'inactive' 
         });
         
