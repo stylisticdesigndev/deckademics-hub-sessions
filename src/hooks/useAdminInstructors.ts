@@ -1,6 +1,15 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface Profile {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+}
 
 interface InstructorWithProfile {
   id: string;
@@ -20,7 +29,7 @@ export const useAdminInstructors = () => {
   const queryClient = useQueryClient();
 
   // List all users directly from profiles table for debugging
-  const { data: allUsers } = useQuery({
+  const { data: allUsers } = useQuery<Profile[]>({
     queryKey: ['admin', 'all-users'],
     queryFn: async () => {
       console.log('Fetching all profiles for debugging...');
@@ -199,7 +208,6 @@ export const useAdminInstructors = () => {
       console.log(`Creating instructor record for user ${userId} using admin function`);
       
       try {
-        // Use the admin_create_instructor function
         const { data, error } = await supabase.rpc(
           'admin_create_instructor',
           {

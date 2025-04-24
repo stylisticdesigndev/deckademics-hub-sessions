@@ -589,6 +589,25 @@ export type Database = {
         }
         Returns: Json
       }
+      get_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          first_name: string
+          last_name: string
+          role: string
+        }[]
+      }
+      get_instructor_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total: number
+          pending: number
+          active: number
+          inactive: number
+        }[]
+      }
       get_instructors_with_profiles: {
         Args: { status_param: string }
         Returns: {
@@ -599,6 +618,14 @@ export type Database = {
           hourly_rate: number
           years_experience: number
           profile: Json
+        }[]
+      }
+      get_student_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total: number
+          pending: number
+          active: number
         }[]
       }
       get_user_profile: {

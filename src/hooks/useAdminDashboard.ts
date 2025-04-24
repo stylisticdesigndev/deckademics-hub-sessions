@@ -16,6 +16,19 @@ interface DashboardStats {
   }[];
 }
 
+interface StudentCounts {
+  total: number;
+  pending: number;
+  active: number;
+}
+
+interface InstructorCounts {
+  total: number;
+  pending: number;
+  active: number;
+  inactive: number;
+}
+
 export const useAdminDashboard = () => {
   return useQuery({
     queryKey: ['admin-dashboard'],
@@ -25,7 +38,7 @@ export const useAdminDashboard = () => {
       try {
         // Get counts using aggregate functions to avoid RLS issues
         const { data: studentCounts, error: studentsError } = await supabase
-          .rpc('get_student_counts');
+          .rpc<StudentCounts>('get_student_counts');
 
         if (studentsError) {
           console.error("Error fetching student counts:", studentsError);
@@ -36,7 +49,7 @@ export const useAdminDashboard = () => {
 
         // Get instructor counts
         const { data: instructorCounts, error: instructorsError } = await supabase
-          .rpc('get_instructor_counts');
+          .rpc<InstructorCounts>('get_instructor_counts');
 
         if (instructorsError) {
           console.error("Error fetching instructor counts:", instructorsError);
@@ -44,6 +57,10 @@ export const useAdminDashboard = () => {
         }
         
         console.log("Instructor counts data:", instructorCounts);
+
+        if (!studentCounts || !instructorCounts) {
+          throw new Error('Failed to fetch counts data');
+        }
 
         // For now, we'll return recent activities as an empty array since we haven't implemented activity logging yet
         const recentActivities: {
@@ -53,24 +70,17 @@ export const useAdminDashboard = () => {
           timestamp: Date;
         }[] = [];
 
-        // Use the counts from the RPC functions with fallbacks
         return {
-          totalStudents: studentCounts?.total || 0,
-          pendingStudents: studentCounts?.pending || 0,
-          totalInstructors: instructorCounts?.total || 0,
-          pendingInstructors: instructorCounts?.pending || 0,
+          totalStudents: studentCounts.total,
+          pendingStudents: studentCounts.pending,
+          totalInstructors: instructorCounts.total,
+          pendingInstructors: instructorCounts.pending,
           recentActivities
         };
       } catch (error) {
         console.error("Dashboard data fetch error:", error);
         toast.error("Failed to load dashboard data");
-        return {
-          totalStudents: 0,
-          pendingStudents: 0,
-          totalInstructors: 0,
-          pendingInstructors: 0,
-          recentActivities: []
-        };
+        throw error;
       }
     },
     staleTime: 60000 // Cache data for 1 minute
