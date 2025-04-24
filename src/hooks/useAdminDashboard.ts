@@ -38,7 +38,7 @@ export const useAdminDashboard = () => {
       try {
         // Get counts using aggregate functions to avoid RLS issues
         const { data: studentCounts, error: studentsError } = await supabase
-          .rpc<StudentCounts, any>('get_student_counts');
+          .rpc('get_student_counts');
 
         if (studentsError) {
           console.error("Error fetching student counts:", studentsError);
@@ -49,7 +49,7 @@ export const useAdminDashboard = () => {
 
         // Get instructor counts
         const { data: instructorCounts, error: instructorsError } = await supabase
-          .rpc<InstructorCounts, any>('get_instructor_counts');
+          .rpc('get_instructor_counts');
 
         if (instructorsError) {
           console.error("Error fetching instructor counts:", instructorsError);
@@ -69,12 +69,16 @@ export const useAdminDashboard = () => {
           details: string;
           timestamp: Date;
         }[] = [];
+        
+        // Since these functions return arrays with a single object, we need to access the first element
+        const studentData = Array.isArray(studentCounts) ? studentCounts[0] : studentCounts;
+        const instructorData = Array.isArray(instructorCounts) ? instructorCounts[0] : instructorCounts;
 
         return {
-          totalStudents: studentCounts.total,
-          pendingStudents: studentCounts.pending,
-          totalInstructors: instructorCounts.total,
-          pendingInstructors: instructorCounts.pending,
+          totalStudents: studentData.total,
+          pendingStudents: studentData.pending,
+          totalInstructors: instructorData.total,
+          pendingInstructors: instructorData.pending,
           recentActivities
         };
       } catch (error) {
