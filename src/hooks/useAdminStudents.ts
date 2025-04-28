@@ -99,7 +99,7 @@ export const useAdminStudents = () => {
         // Ensure all students have valid profiles
         const validStudents = students.filter(student => 
           student && student.profile && student.profile.first_name && student.profile.last_name
-        );
+        ) as Student[];
         
         console.log("Valid active students with profiles:", validStudents.length);
         
@@ -228,7 +228,7 @@ export const useAdminStudents = () => {
         // Ensure all students have valid profiles
         const validStudents = students.filter(student => 
           student && student.profile && student.profile.first_name && student.profile.last_name
-        );
+        ) as Student[];
         
         console.log("Valid pending students with profiles:", validStudents.length);
         
