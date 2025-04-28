@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -91,7 +90,8 @@ export const useAdminStudents = () => {
             
             // Add instructor info to student records
             data.forEach(student => {
-              student.instructor = instructorMap[student.id] || null;
+              // Explicitly type the student object to include the instructor property
+              (student as Student).instructor = instructorMap[student.id] || null;
             });
           }
         } catch (err) {
