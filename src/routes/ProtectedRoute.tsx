@@ -20,6 +20,19 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
 
+  // Check for user metadata in session for cases where profile creation fails
+  useEffect(() => {
+    if (!isLoading && session && session.user && !userData.role) {
+      const userRole = session.user.user_metadata?.role as UserRole | undefined;
+      
+      if (userRole && allowedRoles.includes(userRole)) {
+        console.log("Using role from user metadata:", userRole);
+        // If we have a valid role in metadata but no profile, we can still proceed
+        setIsWaitingForProfile(false);
+      }
+    }
+  }, [isLoading, session, userData.role, allowedRoles]);
+
   // Simply wait for loading to complete
   useEffect(() => {
     if (!isLoading) {
@@ -36,13 +49,12 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     
     // Only run this effect when we have session and profile data is loaded
     if (!isLoading && session) {
-      if (userData.profile && userData.role) {
-        // If user has a profile and a role, check if they're allowed on this route
-        if (!allowedRoles.includes(userData.role)) {
+      if ((userData.profile && userData.role) || (session.user.user_metadata?.role)) {
+        // If user has a profile and a role, or metadata role, check if they're allowed on this route
+        const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
+        if (!allowedRoles.includes(effectiveRole)) {
           console.log("Access denied - redirecting to appropriate dashboard");
-          
-          // We'll handle redirection in the render section instead of using navigate
-          // This helps prevent issues with navigation during render
+          // We'll handle redirection in the render section
         }
       } else if (waitTime >= 5000) {
         // After waiting and still no profile, show error and redirect to auth
@@ -52,7 +64,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
           variant: 'destructive',
         });
         signOut();
-      } else if (userData.user && !userData.profile) {
+      } else if (session.user && !userData.profile) {
         // If we have a user but no profile, start interval timer
         if (!waitInterval) {
           waitInterval = window.setInterval(() => {
@@ -95,16 +107,22 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }
   
+  // Get effective role either from userData or from session metadata
+  const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
+  
   // If user is authenticated but has no role or wrong role
-  if (!userData.role || !allowedRoles.includes(userData.role)) {
+  if (!effectiveRole || !allowedRoles.includes(effectiveRole)) {
     console.log("Access denied - redirecting to appropriate dashboard");
     
+    // Use the role from user metadata if profile role is not available
+    const roleForRedirect = effectiveRole || 'student';
+    
     // Redirect to the appropriate dashboard based on user's actual role
-    if (userData.role === 'admin') {
+    if (roleForRedirect === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
-    } else if (userData.role === 'instructor') {
+    } else if (roleForRedirect === 'instructor') {
       return <Navigate to="/instructor/dashboard" replace />;
-    } else if (userData.role === 'student') {
+    } else if (roleForRedirect === 'student') {
       return <Navigate to="/student/dashboard" replace />;
     } else {
       // If still no role after retries, sign the user out
