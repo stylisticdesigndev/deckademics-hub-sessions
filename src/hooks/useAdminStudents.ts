@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,7 +42,7 @@ export const useAdminStudents = () => {
     queryKey: ['admin', 'students', 'active'],
     queryFn: async () => {
       console.log("Fetching active students");
-      const { data, error } = await supabase
+      const { data: students, error } = await supabase
         .from('students')
         .select(`
           id,
@@ -56,50 +57,58 @@ export const useAdminStudents = () => {
         throw error;
       }
       
-      console.log("Active students data:", data);
+      console.log("Active students raw data:", students);
       
-      // Get the students with instructor information using a custom query
-      if (data && data.length > 0) {
-        try {
-          const studentIds = data.map(student => student.id);
-          
-          // Use the raw SQL function we created in the migration
-          const { data: instructorAssignments, error: instructorError } = await supabase
-            .rpc('get_students_with_instructors', { student_ids: studentIds });
-          
-          if (instructorError) {
-            console.error("Error fetching instructor assignments:", instructorError);
-          } else if (instructorAssignments) {
-            console.log("Instructor assignments:", instructorAssignments);
-            
-            // Map instructors to students
-            const instructorMap: Record<string, Instructor> = {};
-            
-            // Type assertion to handle the returned data properly
-            (instructorAssignments as InstructorAssignment[]).forEach((item) => {
-              if (item && item.student_id && item.instructor_id) {
-                instructorMap[item.student_id] = {
-                  id: item.instructor_id,
-                  profile: {
-                    first_name: item.instructor_first_name || '',
-                    last_name: item.instructor_last_name || ''
-                  }
-                };
-              }
-            });
-            
-            // Add instructor info to student records
-            data.forEach(student => {
-              // Explicitly type the student object to include the instructor property
-              (student as Student).instructor = instructorMap[student.id] || null;
-            });
-          }
-        } catch (err) {
-          console.error("Error processing instructor data:", err);
-        }
+      // Make sure we have valid data before proceeding
+      if (!students || students.length === 0) {
+        console.log("No active students found");
+        return [] as Student[];
       }
       
-      return data as Student[];
+      // Type the data correctly
+      const typedStudents = students as Student[];
+      
+      try {
+        // Get all student IDs
+        const studentIds = typedStudents.map(student => student.id);
+        console.log("Student IDs for instructor lookup:", studentIds);
+        
+        // Use the raw SQL function we created in the migration
+        const { data: instructorAssignments, error: instructorError } = await supabase
+          .rpc('get_students_with_instructors', { student_ids: studentIds });
+        
+        if (instructorError) {
+          console.error("Error fetching instructor assignments:", instructorError);
+        } else if (instructorAssignments) {
+          console.log("Instructor assignments returned:", instructorAssignments);
+          
+          // Map instructors to students
+          const instructorMap: Record<string, Instructor> = {};
+          
+          // Type assertion to handle the returned data properly
+          (instructorAssignments as InstructorAssignment[]).forEach((item) => {
+            if (item && item.student_id && item.instructor_id) {
+              instructorMap[item.student_id] = {
+                id: item.instructor_id,
+                profile: {
+                  first_name: item.instructor_first_name || '',
+                  last_name: item.instructor_last_name || ''
+                }
+              };
+            }
+          });
+          
+          // Add instructor info to student records
+          typedStudents.forEach(student => {
+            // Explicitly type the student object to include the instructor property
+            student.instructor = instructorMap[student.id] || null;
+          });
+        }
+      } catch (err) {
+        console.error("Error processing instructor data:", err);
+      }
+      
+      return typedStudents;
     }
   });
 
@@ -107,7 +116,7 @@ export const useAdminStudents = () => {
     queryKey: ['admin', 'students', 'pending'],
     queryFn: async () => {
       console.log("Fetching pending students");
-      const { data, error } = await supabase
+      const { data: students, error } = await supabase
         .from('students')
         .select(`
           id,
@@ -122,8 +131,8 @@ export const useAdminStudents = () => {
         throw error;
       }
       
-      console.log("Pending students data:", data);
-      return data as Student[];
+      console.log("Pending students raw data:", students);
+      return students as Student[];
     }
   });
 
