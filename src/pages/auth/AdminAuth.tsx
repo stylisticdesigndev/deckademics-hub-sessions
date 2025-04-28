@@ -17,6 +17,14 @@ const AdminAuthContent = () => {
       const role = session.user.user_metadata?.role;
       if (role === 'admin') {
         navigate('/admin/dashboard');
+      } else if (role) {
+        // If they have a different role, redirect to appropriate page
+        console.log(`User has ${role} role, redirecting appropriately`);
+        if (role === 'student') {
+          navigate('/student/dashboard');
+        } else if (role === 'instructor') {
+          navigate('/instructor/dashboard');
+        }
       }
     }
   }, [session, navigate]);
