@@ -268,6 +268,8 @@ export const useAdminStudents = () => {
         return;
       }
 
+      console.log("Invoking create-demo-student function with ID:", studentId);
+
       // Use the edge function to create demo student
       const { data: result, error: functionError } = await supabase
         .functions.invoke('create-demo-student', {

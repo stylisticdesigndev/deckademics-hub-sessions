@@ -32,7 +32,7 @@ serve(async (req) => {
 
     console.log("Creating demo student with ID:", student_id);
 
-    // First, create auth user to satisfy foreign key constraint
+    // First, create auth user with the createUser admin API
     const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
       uuid: student_id,
       email: email_address,
@@ -42,12 +42,34 @@ serve(async (req) => {
     });
 
     if (authError) {
-      throw new Error(`Failed to create auth user: ${authError.message}`);
+      console.error("Failed to create auth user:", authError);
+      return new Response(
+        JSON.stringify({ error: `Failed to create auth user: ${authError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Profile should be automatically created by the handle_new_user trigger function
-    
-    // Create student record if needed (handle_new_user should create it, but let's ensure it exists)
+    console.log("Auth user created successfully:", authData);
+
+    // Create profile directly (handle_new_user trigger may not have fired yet)
+    const { error: profileError } = await supabaseClient
+      .from('profiles')
+      .insert({
+        id: student_id,
+        email: email_address,
+        first_name: first_name || 'Demo',
+        last_name: last_name || 'Student',
+        role: 'student'
+      });
+
+    if (profileError) {
+      console.error("Failed to create profile:", profileError);
+      // Don't fail the whole operation if this fails - profile might already exist from the trigger
+    } else {
+      console.log("Profile created successfully");
+    }
+
+    // Create student record 
     const { data: studentData, error: studentError } = await supabaseClient
       .from('students')
       .upsert({
@@ -58,8 +80,14 @@ serve(async (req) => {
       .select();
 
     if (studentError) {
-      throw new Error(`Failed to create student: ${studentError.message}`);
+      console.error("Failed to create student:", studentError);
+      return new Response(
+        JSON.stringify({ error: `Failed to create student: ${studentError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    console.log("Student created successfully:", studentData);
 
     return new Response(
       JSON.stringify({ success: true, student: studentData[0] }),

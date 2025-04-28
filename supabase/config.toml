@@ -25,4 +25,4 @@ port = 54326
 
 [functions]
 [functions.create-demo-student]
-verify_jwt = true
+verify_jwt = false
