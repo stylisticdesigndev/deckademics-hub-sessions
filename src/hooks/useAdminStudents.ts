@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -267,19 +268,21 @@ export const useAdminStudents = () => {
         return;
       }
 
-      // Use a stored function or direct SQL to bypass RLS
-      // This requires the function to be defined in the database with SECURITY DEFINER
+      // Use a POST request to the function endpoint rather than RPC to bypass TypeScript limitations
       const { data: result, error: functionError } = await supabase
-        .rpc('create_demo_student', {
-          student_id: studentId,
-          email_address: email,
-          first_name: 'Demo',
-          last_name: 'Student'
+        .functions.invoke('create-demo-student', {
+          body: {
+            student_id: studentId,
+            email_address: email,
+            first_name: 'Demo',
+            last_name: 'Student'
+          },
+          method: 'POST',
         });
 
       if (functionError) {
         console.error("Error creating demo student:", functionError);
-        toast.error(`Failed to create demo student: ${functionError.message}`);
+        toast.error(`Failed to create demo student: ${functionError}`);
         return;
       }
       
