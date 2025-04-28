@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,11 +18,14 @@ interface Instructor {
   profile: InstructorProfile;
 }
 
+// Update Student interface to make instructor optional
 interface Student {
   id: string;
   level: string;
   enrollment_status: string;
   profile: Profile;
+  notes?: string | null;
+  start_date?: string | null;
   instructor?: Instructor | null;
 }
 
@@ -70,6 +72,7 @@ export const useAdminStudents = () => {
         const profile = profiles?.find(p => p.id === student.id);
         return {
           ...student,
+          instructor: null, // Initialize with null to avoid type errors
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
@@ -130,6 +133,7 @@ export const useAdminStudents = () => {
         const profile = profiles?.find(p => p.id === student.id);
         return {
           ...student,
+          instructor: null, // Initialize with null to avoid type errors
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
