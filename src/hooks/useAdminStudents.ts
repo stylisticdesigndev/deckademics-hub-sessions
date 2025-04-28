@@ -240,35 +240,37 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Create a function to manually add a demo student
+  // Modified function to create a student without relying on auth.users
   const createDemoStudent = async () => {
     try {
       console.log("Creating demo student...");
       
       // Generate a unique ID
       const studentId = crypto.randomUUID();
+      const timestamp = Date.now();
+      const email = `demo${timestamp}@example.com`;
       
-      // First create a demo profile
-      const { data: profileData, error: profileError } = await supabase
+      // First, check if a student already exists with this email to avoid duplicates
+      const { data: existingProfiles, error: checkError } = await supabase
         .from('profiles')
-        .insert({
-          id: studentId,
-          email: `demo${Date.now()}@example.com`,
-          first_name: 'Demo',
-          last_name: 'Student',
-          role: 'student'
-        })
-        .select();
+        .select('id')
+        .eq('email', email);
       
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        toast.error("Failed to create demo student profile");
+      if (checkError) {
+        console.error("Error checking existing profiles:", checkError);
+        toast.error("Failed to check for existing profiles");
         return;
       }
       
-      console.log("Demo profile created:", profileData);
+      if (existingProfiles && existingProfiles.length > 0) {
+        console.log("A student with this email already exists");
+        toast.error("A student with this email already exists");
+        return;
+      }
       
-      // Then create the student record
+      console.log("Creating student directly in the database tables...");
+
+      // Create the student record first since it doesn't have the foreign key constraint
       const { data: studentData, error: studentError } = await supabase
         .from('students')
         .insert({
@@ -285,6 +287,37 @@ export const useAdminStudents = () => {
       }
       
       console.log("Demo student created:", studentData);
+      
+      // Now create the profile record
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: studentId,
+          email: email,
+          first_name: 'Demo',
+          last_name: 'Student',
+          role: 'student'
+        })
+        .select();
+      
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        
+        // Delete the student record we just created to maintain consistency
+        const { error: cleanupError } = await supabase
+          .from('students')
+          .delete()
+          .eq('id', studentId);
+          
+        if (cleanupError) {
+          console.error("Failed to cleanup student record after profile creation failed:", cleanupError);
+        }
+        
+        toast.error("Failed to create demo student profile");
+        return;
+      }
+      
+      console.log("Demo profile created:", profileData);
       toast.success("Demo student created successfully");
       
       // Refresh the data
