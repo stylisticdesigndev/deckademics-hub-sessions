@@ -20,13 +20,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Search, UserPlus, Check, X, Eye, UserRound, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -44,7 +44,6 @@ import {
 } from "@/components/ui/tooltip";
 
 const AdminStudents = () => {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
@@ -58,6 +57,12 @@ const AdminStudents = () => {
     declineStudent,
     deactivateStudent
   } = useAdminStudents();
+
+  console.log("AdminStudents - render with data:", { 
+    activeStudents, 
+    pendingStudents, 
+    isLoading 
+  });
 
   const handleApprove = (id: string) => {
     approveStudent.mutate(id);
@@ -91,17 +96,19 @@ const AdminStudents = () => {
 
   const filteredActiveStudents = activeStudents?.filter(
     student => (
-      student.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      !searchQuery
     )
   ) || [];
 
   const filteredPendingStudents = pendingStudents?.filter(
     student => (
-      student.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      !searchQuery
     )
   ) || [];
 
@@ -114,6 +121,8 @@ const AdminStudents = () => {
       </DashboardLayout>
     );
   }
+
+  const selectedStudentData = selectedStudent ? getStudentById(selectedStudent) : null;
 
   return (
     <DashboardLayout
@@ -174,37 +183,39 @@ const AdminStudents = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="px-4 py-3 text-left font-medium">Name</th>
-                          <th className="px-4 py-3 text-left font-medium">Email</th>
-                          <th className="px-4 py-3 text-left font-medium">Instructor</th>
-                          <th className="px-4 py-3 text-left font-medium">Level</th>
-                          <th className="px-4 py-3 text-center font-medium">Payment</th>
-                          <th className="px-4 py-3 text-right font-medium">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredActiveStudents.map((student) => (
-                          <tr key={student.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {student.profile.first_name} {student.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {student.profile.email}
-                            </td>
-                            <td className="px-4 py-3">
-                              {student.instructor?.profile.first_name} {student.instructor?.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3">{student.level}</td>
-                            <td className="px-4 py-3 text-center">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Instructor</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredActiveStudents.length > 0 ? (
+                        filteredActiveStudents.map((student) => (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">
+                              {student.profile?.first_name} {student.profile?.last_name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {student.profile?.email}
+                            </TableCell>
+                            <TableCell>
+                              {student.instructor ? 
+                                `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
+                                'Not assigned'}
+                            </TableCell>
+                            <TableCell>{student.level}</TableCell>
+                            <TableCell className="text-center">
                               <Badge variant="outline" className="bg-green-500/10 text-green-500">
                                 Active
                               </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-right">
+                            </TableCell>
+                            <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -252,19 +263,18 @@ const AdminStudents = () => {
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredActiveStudents.length === 0 && (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
-                              No students found matching your search.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                            No active students found matching your search.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -278,31 +288,31 @@ const AdminStudents = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="px-4 py-3 text-left font-medium">Name</th>
-                          <th className="px-4 py-3 text-left font-medium">Email</th>
-                          <th className="px-4 py-3 text-center font-medium">Status</th>
-                          <th className="px-4 py-3 text-right font-medium">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredPendingStudents.map((student) => (
-                          <tr key={student.id} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {student.profile.first_name} {student.profile.last_name}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {student.profile.email}
-                            </td>
-                            <td className="px-4 py-3 text-center">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPendingStudents.length > 0 ? (
+                        filteredPendingStudents.map((student) => (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">
+                              {student.profile?.first_name} {student.profile?.last_name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {student.profile?.email}
+                            </TableCell>
+                            <TableCell className="text-center">
                               <Badge variant="outline" className="bg-amber-500/10 text-amber-500">
                                 Pending
                               </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-right">
+                            </TableCell>
+                            <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -335,19 +345,18 @@ const AdminStudents = () => {
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredPendingStudents.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                              No pending students found matching your search.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                            No pending students found matching your search.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -359,11 +368,34 @@ const AdminStudents = () => {
               <DialogHeader>
                 <DialogTitle>Student Details</DialogTitle>
               </DialogHeader>
-              {selectedStudent && (
-                <div className="py-4">
-                  {/* Student details will be displayed here */}
-                  <p>Student ID: {selectedStudent}</p>
-                  {/* Add more details as needed */}
+              {selectedStudentData && (
+                <div className="py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Name</p>
+                      <p className="font-medium">{selectedStudentData.profile?.first_name} {selectedStudentData.profile?.last_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{selectedStudentData.profile?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Level</p>
+                      <p className="font-medium">{selectedStudentData.level || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <p className="font-medium">{selectedStudentData.enrollment_status}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Instructor</p>
+                      <p className="font-medium">
+                        {selectedStudentData.instructor
+                          ? `${selectedStudentData.instructor.profile?.first_name} ${selectedStudentData.instructor.profile?.last_name}`
+                          : 'Not assigned'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
               <DialogFooter>

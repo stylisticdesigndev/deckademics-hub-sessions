@@ -33,39 +33,63 @@ export const useAdminStudents = () => {
   const { data: activeStudents, isLoading: isLoadingActive } = useQuery({
     queryKey: ['admin', 'students', 'active'],
     queryFn: async () => {
+      console.log("Fetching active students");
       const { data, error } = await supabase
         .from('students')
         .select(`
           id,
           level,
           enrollment_status,
-          profile:profiles(first_name, last_name, email),
-          instructor:instructors(
-            id,
-            profile:profiles(first_name, last_name)
-          )
+          profile:profiles(first_name, last_name, email)
         `)
         .eq('enrollment_status', 'active');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching active students:", error);
+        throw error;
+      }
       
-      // Process the data to extract the first instructor from the array
-      const processedData = data?.map(student => {
-        return {
-          ...student,
-          instructor: student.instructor && student.instructor.length > 0 
-            ? student.instructor[0] 
-            : undefined
-        };
-      });
+      console.log("Active students data:", data);
       
-      return processedData as Student[];
+      // Fetch instructor assignments separately
+      if (data && data.length > 0) {
+        const studentIds = data.map(student => student.id);
+        
+        const { data: instructorAssignments, error: instructorError } = await supabase
+          .from('students_instructors')
+          .select(`
+            student_id,
+            instructor:instructor_id(
+              id,
+              profile:profiles(first_name, last_name)
+            )
+          `)
+          .in('student_id', studentIds);
+        
+        if (instructorError) {
+          console.error("Error fetching instructor assignments:", instructorError);
+        } else if (instructorAssignments) {
+          // Map instructors to students
+          const instructorMap = instructorAssignments.reduce((map, item) => {
+            map[item.student_id] = item.instructor;
+            return map;
+          }, {});
+          
+          // Add instructor info to student records
+          data.forEach(student => {
+            student.instructor = instructorMap[student.id];
+          });
+        }
+      }
+      
+      return data as Student[];
     }
   });
 
   const { data: pendingStudents, isLoading: isLoadingPending } = useQuery({
     queryKey: ['admin', 'students', 'pending'],
     queryFn: async () => {
+      console.log("Fetching pending students");
       const { data, error } = await supabase
         .from('students')
         .select(`
@@ -76,7 +100,12 @@ export const useAdminStudents = () => {
         `)
         .eq('enrollment_status', 'pending');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching pending students:", error);
+        throw error;
+      }
+      
+      console.log("Pending students data:", data);
       return data as Student[];
     }
   });
@@ -95,6 +124,7 @@ export const useAdminStudents = () => {
       toast.success('Student approved successfully');
     },
     onError: (error) => {
+      console.error("Error approving student:", error);
       toast.error('Failed to approve student: ' + error.message);
     }
   });
@@ -113,6 +143,7 @@ export const useAdminStudents = () => {
       toast.success('Student declined successfully');
     },
     onError: (error) => {
+      console.error("Error declining student:", error);
       toast.error('Failed to decline student: ' + error.message);
     }
   });
@@ -131,13 +162,14 @@ export const useAdminStudents = () => {
       toast.success('Student deactivated successfully');
     },
     onError: (error) => {
+      console.error("Error deactivating student:", error);
       toast.error('Failed to deactivate student: ' + error.message);
     }
   });
 
   return {
-    activeStudents,
-    pendingStudents,
+    activeStudents: activeStudents || [],
+    pendingStudents: pendingStudents || [],
     isLoading: isLoadingActive || isLoadingPending,
     approveStudent,
     declineStudent,
