@@ -56,10 +56,10 @@ serve(async (req) => {
     const userId = authUser.user.id;
     console.log("Auth user created with ID:", userId);
 
-    // Step 2: Wait to ensure the user is properly created
+    // Wait to ensure the user is properly created
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Step 3: Check if profile was created by the trigger, if not create it manually
+    // Step 2: Check if profile was created by the trigger, if not create it manually
     console.log("Step 2: Checking/creating profile");
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
@@ -81,7 +81,6 @@ serve(async (req) => {
 
       if (profileError) {
         console.error("Failed to create profile:", profileError);
-        // Log error but continue - we'll try to create the student record anyway
       } else {
         console.log("Profile created manually");
       }
@@ -92,7 +91,7 @@ serve(async (req) => {
       console.log("Profile already exists");
     }
 
-    // Step 4: Create student record with start_date
+    // Step 3: Create student record with start_date
     console.log("Step 3: Creating student record");
     const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
     

@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -18,7 +19,6 @@ interface Instructor {
   profile: InstructorProfile;
 }
 
-// Update Student interface to make instructor optional
 interface Student {
   id: string;
   level: string;
@@ -45,15 +45,15 @@ export const useAdminStudents = () => {
       
       if (studentsError) {
         console.error("Error fetching active students:", studentsError);
-        return [];
+        throw studentsError;
       }
+
+      console.log("Raw active students data:", activeStudents);
 
       if (!activeStudents || activeStudents.length === 0) {
         console.log("No active students found");
         return [];
       }
-
-      console.log("Found active students:", activeStudents);
       
       // Get profiles for these students
       const activeStudentIds = activeStudents.map(student => student.id);
@@ -62,9 +62,9 @@ export const useAdminStudents = () => {
         .select('*')
         .in('id', activeStudentIds);
         
-      if (profilesError) {
-        console.error("Error fetching profiles for active students:", profilesError);
-        return [];
+      if (profilesErrors) {
+        console.error("Error fetching profiles for active students:", profilesErrors);
+        throw profilesErrors;
       }
       
       // Combine student data with profile data
@@ -89,7 +89,7 @@ export const useAdminStudents = () => {
       return studentsWithProfiles;
     } catch (err) {
       console.error("Unexpected error in fetchActiveStudents:", err);
-      return [];
+      throw err;
     }
   };
 
@@ -106,15 +106,15 @@ export const useAdminStudents = () => {
       
       if (studentsError) {
         console.error("Error fetching pending students:", studentsError);
-        return [];
+        throw studentsError;
       }
+
+      console.log("Raw pending students data:", pendingStudents);
 
       if (!pendingStudents || pendingStudents.length === 0) {
         console.log("No pending students found");
         return [];
       }
-
-      console.log("Found pending students:", pendingStudents);
       
       // Get profiles for these students
       const pendingStudentIds = pendingStudents.map(student => student.id);
@@ -125,7 +125,7 @@ export const useAdminStudents = () => {
         
       if (profilesError) {
         console.error("Error fetching profiles for pending students:", profilesError);
-        return [];
+        throw profilesError;
       }
       
       // Combine student data with profile data
@@ -150,7 +150,7 @@ export const useAdminStudents = () => {
       return studentsWithProfiles;
     } catch (err) {
       console.error("Unexpected error in fetchPendingStudents:", err);
-      return [];
+      throw err;
     }
   };
 
@@ -158,19 +158,23 @@ export const useAdminStudents = () => {
   const { 
     data: activeStudents, 
     isLoading: isLoadingActive,
-    refetch: refetchActive
+    refetch: refetchActive,
+    error: activeError
   } = useQuery({
     queryKey: ['admin', 'students', 'active'],
-    queryFn: fetchActiveStudents
+    queryFn: fetchActiveStudents,
+    retry: 1
   });
 
   const { 
     data: pendingStudents, 
     isLoading: isLoadingPending,
-    refetch: refetchPending
+    refetch: refetchPending,
+    error: pendingError
   } = useQuery({
     queryKey: ['admin', 'students', 'pending'],
-    queryFn: fetchPendingStudents
+    queryFn: fetchPendingStudents,
+    retry: 1
   });
 
   // Function to create a demo student
@@ -204,64 +208,44 @@ export const useAdminStudents = () => {
         return null;
       }
 
-      // Make the request to the edge function with retries
-      let attempts = 0;
-      const maxAttempts = 3;
-      let success = false;
-      let result = null;
-      
-      while (attempts < maxAttempts && !success) {
-        attempts++;
-        console.log(`Attempt ${attempts}/${maxAttempts} to create demo student`);
+      // Make the request to the edge function
+      try {
+        const response = await supabase.functions.invoke('create-demo-student', {
+          body: {
+            email_address: email,
+            first_name: 'Demo',
+            last_name: 'Student'
+          }
+        });
         
-        try {
-          const response = await supabase.functions.invoke('create-demo-student', {
-            body: {
-              email_address: email,
-              first_name: 'Demo',
-              last_name: 'Student'
-            }
-          });
-          
-          if (response.error) {
-            console.error(`Attempt ${attempts} failed:`, response.error);
-            
-            if (attempts >= maxAttempts) {
-              toast.dismiss();
-              toast.error(`Failed to create demo student: ${response.error}`);
-              return null;
-            }
-            
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            continue;
-          }
-          
-          // Success!
-          result = response.data;
-          console.log("Demo student created successfully:", result);
-          success = true;
+        if (response.error || !response.data?.success) {
+          console.error("Failed to create demo student:", response.error || response.data?.error);
           toast.dismiss();
-          toast.success("Demo student created successfully!");
-          
-          // Force refetching of students data after successful creation
-          await Promise.all([refetchActive(), refetchPending()]);
-          break;
-        } catch (err) {
-          console.error(`Attempt ${attempts} exception:`, err);
-          
-          if (attempts >= maxAttempts) {
-            toast.dismiss();
-            toast.error("Failed after multiple attempts. Please try again later.");
-            return null;
-          }
-          
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          toast.error(`Failed to create demo student: ${response.error || response.data?.error || 'Unknown error'}`);
+          return null;
         }
+        
+        // Success!
+        const result = response.data;
+        console.log("Demo student created successfully:", result);
+        toast.dismiss();
+        toast.success("Demo student created successfully!");
+        
+        // Force refetching of students data after successful creation
+        // Use setTimeout to ensure the database has time to update
+        setTimeout(() => {
+          refetchActive();
+          refetchPending();
+          toast.info("Refreshing student data...");
+        }, 2000);
+        
+        return result;
+      } catch (err) {
+        console.error("Exception in createDemoStudent:", err);
+        toast.dismiss();
+        toast.error("Failed to create demo student. Please try again later.");
+        return null;
       }
-      
-      return result;
     } catch (err) {
       console.error("Unexpected error in createDemoStudent:", err);
       toast.dismiss();
@@ -303,6 +287,7 @@ export const useAdminStudents = () => {
       return { allStudents, allProfiles };
     } catch (err) {
       console.error("Debug: Unexpected error in debugFetchStudents:", err);
+      throw err;
     }
   };
 
@@ -373,6 +358,15 @@ export const useAdminStudents = () => {
     console.error("Debug fetch error:", err);
   });
 
+  // Handle any errors
+  if (activeError) {
+    console.error("Error in active students query:", activeError);
+  }
+  
+  if (pendingError) {
+    console.error("Error in pending students query:", pendingError);
+  }
+
   return {
     activeStudents: activeStudents || [],
     pendingStudents: pendingStudents || [],
@@ -381,6 +375,10 @@ export const useAdminStudents = () => {
     declineStudent,
     deactivateStudent,
     createDemoStudent,
-    debugFetchStudents
+    debugFetchStudents,
+    refetchData: () => {
+      refetchActive();
+      refetchPending();
+    }
   };
 };

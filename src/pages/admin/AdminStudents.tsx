@@ -60,7 +60,8 @@ const AdminStudents = () => {
     declineStudent,
     deactivateStudent,
     createDemoStudent,
-    debugFetchStudents
+    debugFetchStudents,
+    refetchData
   } = useAdminStudents();
 
   // Add useEffect to log data whenever it changes
@@ -105,6 +106,8 @@ const AdminStudents = () => {
       const debug = await debugFetchStudents();
       setDebugInfo(debug);
       console.log("Manual debug refresh complete:", debug);
+      // Also refresh the UI data
+      refetchData();
     } finally {
       setIsRefreshing(false);
     }
@@ -114,6 +117,10 @@ const AdminStudents = () => {
     setIsCreatingDemo(true);
     try {
       await createDemoStudent();
+      // Add explicit refresh after a delay
+      setTimeout(() => {
+        handleDebugRefresh();
+      }, 3000);
     } finally {
       setIsCreatingDemo(false);
     }
