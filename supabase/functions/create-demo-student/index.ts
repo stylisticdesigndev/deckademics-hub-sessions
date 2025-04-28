@@ -92,53 +92,38 @@ serve(async (req) => {
       console.log("Profile already exists");
     }
 
-    // Step 4: Check if student record exists, if not create it
+    // Step 4: Create student record with start_date
     console.log("Step 3: Creating student record");
-    const { data: existingStudent } = await supabaseAdmin
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+    const { data: studentData, error: studentError } = await supabaseAdmin
       .from('students')
-      .select('id')
-      .eq('id', userId)
+      .insert({
+        id: userId,
+        level: 'beginner',
+        enrollment_status: 'active',
+        start_date: today
+      })
+      .select()
       .single();
 
-    if (!existingStudent) {
-      const { data: studentData, error: studentError } = await supabaseAdmin
-        .from('students')
-        .insert({
-          id: userId,
-          level: 'beginner',
-          enrollment_status: 'active'
-        })
-        .select()
-        .single();
-
-      if (studentError) {
-        console.error("Failed to create student record:", studentError);
-        return new Response(
-          JSON.stringify({ error: `Failed to create student record: ${studentError.message}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      console.log("Student record created:", studentData);
+    if (studentError) {
+      console.error("Failed to create student record:", studentError);
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Demo student created successfully", 
-          student: studentData 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      console.log("Student record already exists");
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Student record already exists", 
-          student: existingStudent 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `Failed to create student record: ${studentError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log("Student record created:", studentData);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Demo student created successfully", 
+        student: studentData 
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error("Unexpected error in create-demo-student function:", error.message);
     

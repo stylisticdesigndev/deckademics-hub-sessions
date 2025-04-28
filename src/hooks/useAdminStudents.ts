@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,227 +24,155 @@ interface Student {
   level: string;
   enrollment_status: string;
   profile: Profile;
-  instructor?: Instructor | null;  // Added as optional property
-}
-
-interface InstructorAssignment {
-  student_id: string;
-  instructor_id: string;
-  instructor_first_name: string;
-  instructor_last_name: string;
+  instructor?: Instructor | null;
 }
 
 export const useAdminStudents = () => {
   const queryClient = useQueryClient();
 
-  const { data: activeStudents, isLoading: isLoadingActive } = useQuery({
-    queryKey: ['admin', 'students', 'active'],
-    queryFn: async () => {
-      console.log("Fetching active students");
-      try {
-        // Direct query to check if there are any active students
-        const { data: countResult, error: countError } = await supabase
-          .from('students')
-          .select('count')
-          .eq('enrollment_status', 'active');
-        
-        if (countError) {
-          console.error("Error checking student count:", countError);
-          return [];
-        }
-        
-        console.log("Active student count check:", countResult);
-        
-        // Query profiles first to make sure we have valid data
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, email')
-          .eq('role', 'student');
-          
-        if (profilesError) {
-          console.error("Error fetching profiles:", profilesError);
-          return [];
-        }
-        
-        if (!profiles || profiles.length === 0) {
-          console.log("No student profiles found");
-          return [];
-        }
-        
-        console.log("Found student profiles:", profiles.length);
-        
-        // Now get active students with their profiles
-        const { data: students, error } = await supabase
-          .from('students')
-          .select(`
-            id,
-            level,
-            enrollment_status,
-            profile:profiles!inner(first_name, last_name, email)
-          `)
-          .eq('enrollment_status', 'active');
+  // Get active students
+  const fetchActiveStudents = async () => {
+    try {
+      console.log("Fetching active students...");
+      
+      // First get all students with active status
+      const { data: activeStudents, error: studentsError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('enrollment_status', 'active');
+      
+      if (studentsError) {
+        console.error("Error fetching active students:", studentsError);
+        return [];
+      }
 
-        if (error) {
-          console.error("Error fetching active students:", error);
-          return [];
-        }
-        
-        console.log("Active students query result:", students);
-        
-        if (!students || students.length === 0) {
-          console.log("No active students found");
-          return [];
-        }
+      if (!activeStudents || activeStudents.length === 0) {
+        console.log("No active students found");
+        return [];
+      }
 
-        // Ensure all students have valid profiles
-        const validStudents = students.filter(student => 
-          student && student.profile && student.profile.first_name && student.profile.last_name
-        ) as Student[];
+      console.log("Found active students:", activeStudents);
+      
+      // Get profiles for these students
+      const activeStudentIds = activeStudents.map(student => student.id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', activeStudentIds);
         
-        console.log("Valid active students with profiles:", validStudents.length);
-        
-        // Don't try to fetch instructor data if there are no valid students
-        if (validStudents.length === 0) {
-          return [];
-        }
-        
-        // Get instructor assignments
-        try {
-          const studentIds = validStudents.map(student => student.id);
-          
-          // Create a manual mapping since the RPC function might be failing
-          const { data: enrollments, error: enrollError } = await supabase
-            .from('enrollments')
-            .select(`
-              student_id,
-              class:classes(
-                instructor_id,
-                instructor:instructors(
-                  profile:profiles(first_name, last_name)
-                )
-              )
-            `)
-            .in('student_id', studentIds);
-          
-          if (enrollError) {
-            console.error("Error fetching enrollments:", enrollError);
-          } else if (enrollments && enrollments.length > 0) {
-            console.log("Found enrollments:", enrollments);
-            
-            // Map instructors to students
-            const instructorMap: Record<string, Instructor> = {};
-            
-            enrollments.forEach(enrollment => {
-              if (enrollment && 
-                  enrollment.class && 
-                  enrollment.class.instructor && 
-                  enrollment.class.instructor.profile) {
-                    
-                const instructor = enrollment.class.instructor;
-                instructorMap[enrollment.student_id] = {
-                  id: enrollment.class.instructor_id,
-                  profile: {
-                    first_name: instructor.profile.first_name || '',
-                    last_name: instructor.profile.last_name || ''
-                  }
-                };
-              }
-            });
-            
-            // Add instructor info to student records
-            validStudents.forEach(student => {
-              student.instructor = instructorMap[student.id] || null;
-            });
+      if (profilesError) {
+        console.error("Error fetching profiles for active students:", profilesError);
+        return [];
+      }
+      
+      // Combine student data with profile data
+      const studentsWithProfiles = activeStudents.map(student => {
+        const profile = profiles?.find(p => p.id === student.id);
+        return {
+          ...student,
+          profile: profile ? {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            email: profile.email || ''
+          } : {
+            first_name: '',
+            last_name: '',
+            email: ''
           }
-        } catch (err) {
-          console.error("Error processing instructor data:", err);
-        }
-        
-        return validStudents;
-      } catch (err) {
-        console.error("Unexpected error in useAdminStudents (active):", err);
+        };
+      });
+      
+      console.log("Active students with profiles:", studentsWithProfiles);
+      return studentsWithProfiles;
+    } catch (err) {
+      console.error("Unexpected error in fetchActiveStudents:", err);
+      return [];
+    }
+  };
+
+  // Get pending students
+  const fetchPendingStudents = async () => {
+    try {
+      console.log("Fetching pending students...");
+      
+      // First get all students with pending status
+      const { data: pendingStudents, error: studentsError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('enrollment_status', 'pending');
+      
+      if (studentsError) {
+        console.error("Error fetching pending students:", studentsError);
         return [];
       }
+
+      if (!pendingStudents || pendingStudents.length === 0) {
+        console.log("No pending students found");
+        return [];
+      }
+
+      console.log("Found pending students:", pendingStudents);
+      
+      // Get profiles for these students
+      const pendingStudentIds = pendingStudents.map(student => student.id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', pendingStudentIds);
+        
+      if (profilesError) {
+        console.error("Error fetching profiles for pending students:", profilesError);
+        return [];
+      }
+      
+      // Combine student data with profile data
+      const studentsWithProfiles = pendingStudents.map(student => {
+        const profile = profiles?.find(p => p.id === student.id);
+        return {
+          ...student,
+          profile: profile ? {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            email: profile.email || ''
+          } : {
+            first_name: '',
+            last_name: '',
+            email: ''
+          }
+        };
+      });
+      
+      console.log("Pending students with profiles:", studentsWithProfiles);
+      return studentsWithProfiles;
+    } catch (err) {
+      console.error("Unexpected error in fetchPendingStudents:", err);
+      return [];
     }
+  };
+
+  // Query setup
+  const { 
+    data: activeStudents, 
+    isLoading: isLoadingActive,
+    refetch: refetchActive
+  } = useQuery({
+    queryKey: ['admin', 'students', 'active'],
+    queryFn: fetchActiveStudents
   });
 
-  const { data: pendingStudents, isLoading: isLoadingPending } = useQuery({
+  const { 
+    data: pendingStudents, 
+    isLoading: isLoadingPending,
+    refetch: refetchPending
+  } = useQuery({
     queryKey: ['admin', 'students', 'pending'],
-    queryFn: async () => {
-      console.log("Fetching pending students");
-      try {
-        // Direct query to check if there are any pending students
-        const { data: countResult, error: countError } = await supabase
-          .from('students')
-          .select('count')
-          .eq('enrollment_status', 'pending');
-        
-        if (countError) {
-          console.error("Error checking pending student count:", countError);
-          return [];
-        }
-        
-        console.log("Pending student count check:", countResult);
-        
-        // Query profiles first
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, email')
-          .eq('role', 'student');
-          
-        if (profilesError) {
-          console.error("Error fetching profiles for pending students:", profilesError);
-          return [];
-        }
-        
-        if (!profiles || profiles.length === 0) {
-          console.log("No student profiles found for pending check");
-          return [];
-        }
-        
-        // Get pending students with their profiles
-        const { data: students, error } = await supabase
-          .from('students')
-          .select(`
-            id,
-            level,
-            enrollment_status,
-            profile:profiles!inner(first_name, last_name, email)
-          `)
-          .eq('enrollment_status', 'pending');
-
-        if (error) {
-          console.error("Error fetching pending students:", error);
-          return [];
-        }
-        
-        console.log("Pending students query result:", students);
-        
-        if (!students || students.length === 0) {
-          console.log("No pending students found");
-          return [];
-        }
-
-        // Ensure all students have valid profiles
-        const validStudents = students.filter(student => 
-          student && student.profile && student.profile.first_name && student.profile.last_name
-        ) as Student[];
-        
-        console.log("Valid pending students with profiles:", validStudents.length);
-        
-        return validStudents;
-      } catch (err) {
-        console.error("Unexpected error in useAdminStudents (pending):", err);
-        return [];
-      }
-    }
+    queryFn: fetchPendingStudents
   });
 
-  // Completely revised function to create a demo student 
+  // Function to create a demo student
   const createDemoStudent = async () => {
     try {
       toast.loading("Creating demo student...");
-      console.log("Starting demo student creation process...");
       
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
@@ -252,7 +181,6 @@ export const useAdminStudents = () => {
       console.log(`Using email: ${email} for demo student`);
 
       // First, check if a profile already exists with this email
-      console.log("Checking for existing profile with this email...");
       const { data: existingProfiles, error: checkError } = await supabase
         .from('profiles')
         .select('email')
@@ -272,9 +200,7 @@ export const useAdminStudents = () => {
         return null;
       }
 
-      // Make the request to the edge function
-      console.log("Calling create-demo-student edge function...");
-      
+      // Make the request to the edge function with retries
       let attempts = 0;
       const maxAttempts = 3;
       let success = false;
@@ -296,7 +222,6 @@ export const useAdminStudents = () => {
           if (response.error) {
             console.error(`Attempt ${attempts} failed:`, response.error);
             
-            // If this is the last attempt, show error and return
             if (attempts >= maxAttempts) {
               toast.dismiss();
               toast.error(`Failed to create demo student: ${response.error}`);
@@ -314,11 +239,13 @@ export const useAdminStudents = () => {
           success = true;
           toast.dismiss();
           toast.success("Demo student created successfully!");
+          
+          // Force refetching of students data after successful creation
+          await Promise.all([refetchActive(), refetchPending()]);
           break;
         } catch (err) {
           console.error(`Attempt ${attempts} exception:`, err);
           
-          // If this is the last attempt, show error and return
           if (attempts >= maxAttempts) {
             toast.dismiss();
             toast.error("Failed after multiple attempts. Please try again later.");
@@ -330,13 +257,7 @@ export const useAdminStudents = () => {
         }
       }
       
-      // Refresh data
-      if (success) {
-        queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-        return result;
-      }
-      
-      return null;
+      return result;
     } catch (err) {
       console.error("Unexpected error in createDemoStudent:", err);
       toast.dismiss();
@@ -345,7 +266,7 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Let's add a debug function to directly fetch students
+  // Debug function to directly fetch all database data
   const debugFetchStudents = async () => {
     try {
       console.log("Debug: Directly fetching all data");
@@ -381,6 +302,7 @@ export const useAdminStudents = () => {
     }
   };
 
+  // Mutation to approve a student
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
@@ -400,6 +322,7 @@ export const useAdminStudents = () => {
     }
   });
 
+  // Mutation to decline a student
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
@@ -419,6 +342,7 @@ export const useAdminStudents = () => {
     }
   });
 
+  // Mutation to deactivate a student
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
