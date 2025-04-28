@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -240,94 +239,108 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Modified function to create a student that bypasses RLS
+  // Completely revised function to create a demo student 
   const createDemoStudent = async () => {
     try {
-      console.log("Creating demo student...");
+      toast.loading("Creating demo student...");
+      console.log("Starting demo student creation process...");
       
-      // Generate a unique ID
-      const studentId = crypto.randomUUID();
+      // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
       const email = `demo${timestamp}@example.com`;
       
-      // First, check if a student already exists with this email to avoid duplicates
+      console.log(`Using email: ${email} for demo student`);
+
+      // First, check if a profile already exists with this email
+      console.log("Checking for existing profile with this email...");
       const { data: existingProfiles, error: checkError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('email')
         .eq('email', email);
       
       if (checkError) {
         console.error("Error checking existing profiles:", checkError);
+        toast.dismiss();
         toast.error("Failed to check for existing profiles");
-        return;
+        return null;
       }
       
       if (existingProfiles && existingProfiles.length > 0) {
-        console.log("A student with this email already exists");
-        toast.error("A student with this email already exists");
-        return;
+        console.log("A profile with this email already exists");
+        toast.dismiss();
+        toast.error("A profile with this email already exists");
+        return null;
       }
 
-      console.log("Invoking create-demo-student function with ID:", studentId);
-
-      // Use the edge function to create demo student with retry logic
-      let attempts = 0;
-      let success = false;
+      // Make the request to the edge function
+      console.log("Calling create-demo-student edge function...");
       
-      while (attempts < 3 && !success) {
+      let attempts = 0;
+      const maxAttempts = 3;
+      let success = false;
+      let result = null;
+      
+      while (attempts < maxAttempts && !success) {
         attempts++;
-        console.log(`Attempt ${attempts} to create demo student`);
+        console.log(`Attempt ${attempts}/${maxAttempts} to create demo student`);
         
         try {
-          const { data: result, error: functionError } = await supabase
-            .functions.invoke('create-demo-student', {
-              body: {
-                student_id: studentId,
-                email_address: email,
-                first_name: 'Demo',
-                last_name: 'Student'
-              }
-            });
-
-          if (functionError) {
-            console.error(`Attempt ${attempts} failed:`, functionError);
+          const response = await supabase.functions.invoke('create-demo-student', {
+            body: {
+              email_address: email,
+              first_name: 'Demo',
+              last_name: 'Student'
+            }
+          });
+          
+          if (response.error) {
+            console.error(`Attempt ${attempts} failed:`, response.error);
             
-            // If this is the last attempt, show an error
-            if (attempts >= 3) {
-              toast.error(`Failed to create demo student: ${functionError.message}`);
+            // If this is the last attempt, show error and return
+            if (attempts >= maxAttempts) {
+              toast.dismiss();
+              toast.error(`Failed to create demo student: ${response.error}`);
               return null;
             }
             
-            // Wait a bit before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
             continue;
           }
           
           // Success!
-          console.log("Demo student created:", result);
-          toast.success("Demo student created successfully");
+          result = response.data;
+          console.log("Demo student created successfully:", result);
           success = true;
-          
-          // Refresh the data
-          queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-          return result;
-          
+          toast.dismiss();
+          toast.success("Demo student created successfully!");
+          break;
         } catch (err) {
           console.error(`Attempt ${attempts} exception:`, err);
           
-          // If this is the last attempt, show an error
-          if (attempts >= 3) {
-            toast.error("Failed to create demo student after multiple attempts");
+          // If this is the last attempt, show error and return
+          if (attempts >= maxAttempts) {
+            toast.dismiss();
+            toast.error("Failed after multiple attempts. Please try again later.");
             return null;
           }
           
-          // Wait a bit before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
+      
+      // Refresh data
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+        return result;
+      }
+      
+      return null;
     } catch (err) {
-      console.error("Error in createDemoStudent:", err);
-      toast.error("Failed to create demo student");
+      console.error("Unexpected error in createDemoStudent:", err);
+      toast.dismiss();
+      toast.error("An unexpected error occurred");
       return null;
     }
   };

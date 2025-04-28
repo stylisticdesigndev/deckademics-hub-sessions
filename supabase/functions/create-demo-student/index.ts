@@ -15,9 +15,9 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { student_id, email_address, first_name, last_name } = await req.json();
+    const { email_address, first_name, last_name } = await req.json();
 
-    if (!student_id || !email_address) {
+    if (!email_address) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -25,19 +25,23 @@ serve(async (req) => {
     }
 
     // Create a Supabase client with the Admin key to bypass RLS
-    const supabaseClient = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log("Creating demo student with ID:", student_id);
+    console.log("Creating demo student with email:", email_address);
 
-    // First, create auth user with the createUser admin API
-    const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
-      uid: student_id,  // Changed from uuid to uid
+    // Step 1: First create the auth user with admin API
+    console.log("Step 1: Creating auth user");
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email_address,
       email_confirm: true,
-      user_metadata: { first_name, last_name },
+      user_metadata: { 
+        first_name: first_name || 'Demo', 
+        last_name: last_name || 'Student',
+        role: 'student'
+      },
       app_metadata: { role: 'student' }
     });
 
@@ -49,59 +53,94 @@ serve(async (req) => {
       );
     }
 
-    console.log("Auth user created successfully:", authData);
+    const userId = authUser.user.id;
+    console.log("Auth user created with ID:", userId);
 
-    // Give a small delay to ensure auth user is fully propagated
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Step 2: Wait to ensure the user is properly created
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Create profile directly (handle_new_user trigger may not have fired yet)
-    const { error: profileError } = await supabaseClient
+    // Step 3: Check if profile was created by the trigger, if not create it manually
+    console.log("Step 2: Checking/creating profile");
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        id: student_id,
-        email: email_address,
-        first_name: first_name || 'Demo',
-        last_name: last_name || 'Student',
-        role: 'student'
-      });
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (profileError) {
-      console.error("Failed to create profile:", profileError);
-      // Don't fail the whole operation if this fails - profile might already exist from the trigger
+    if (!existingProfile) {
+      console.log("No profile found, creating manually");
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: email_address,
+          first_name: first_name || 'Demo',
+          last_name: last_name || 'Student',
+          role: 'student'
+        });
+
+      if (profileError) {
+        console.error("Failed to create profile:", profileError);
+        // Log error but continue - we'll try to create the student record anyway
+      } else {
+        console.log("Profile created manually");
+      }
+
+      // Additional waiting time after profile creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } else {
-      console.log("Profile created successfully");
+      console.log("Profile already exists");
     }
 
-    // Give a small delay to ensure profile is fully created
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Create student record 
-    const { data: studentData, error: studentError } = await supabaseClient
+    // Step 4: Check if student record exists, if not create it
+    console.log("Step 3: Creating student record");
+    const { data: existingStudent } = await supabaseAdmin
       .from('students')
-      .upsert({
-        id: student_id,
-        level: 'beginner',
-        enrollment_status: 'active'
-      })
-      .select();
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (studentError) {
-      console.error("Failed to create student:", studentError);
+    if (!existingStudent) {
+      const { data: studentData, error: studentError } = await supabaseAdmin
+        .from('students')
+        .insert({
+          id: userId,
+          level: 'beginner',
+          enrollment_status: 'active'
+        })
+        .select()
+        .single();
+
+      if (studentError) {
+        console.error("Failed to create student record:", studentError);
+        return new Response(
+          JSON.stringify({ error: `Failed to create student record: ${studentError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log("Student record created:", studentData);
       return new Response(
-        JSON.stringify({ error: `Failed to create student: ${studentError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          message: "Demo student created successfully", 
+          student: studentData 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      console.log("Student record already exists");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Student record already exists", 
+          student: existingStudent 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log("Student created successfully:", studentData);
-
-    return new Response(
-      JSON.stringify({ success: true, student: studentData[0] }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
-    console.error("Error in create-demo-student function:", error.message);
+    console.error("Unexpected error in create-demo-student function:", error.message);
     
     return new Response(
       JSON.stringify({ error: error.message }),
