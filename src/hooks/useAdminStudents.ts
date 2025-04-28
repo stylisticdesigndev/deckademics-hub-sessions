@@ -27,6 +27,14 @@ interface Student {
   instructor?: Instructor | null;
 }
 
+// Define the structure of the data returned by the get_students_with_instructors function
+interface InstructorAssignment {
+  student_id: string;
+  instructor_id: string;
+  instructor_first_name: string;
+  instructor_last_name: string;
+}
+
 export const useAdminStudents = () => {
   const queryClient = useQueryClient();
 
@@ -56,8 +64,7 @@ export const useAdminStudents = () => {
         try {
           const studentIds = data.map(student => student.id);
           
-          // Here we use a raw SQL query to get instructor info since the students_instructors junction table
-          // isn't defined in the TypeScript types
+          // Use the raw SQL function we created in the migration
           const { data: instructorAssignments, error: instructorError } = await supabase
             .rpc('get_students_with_instructors', { student_ids: studentIds });
           
@@ -68,7 +75,9 @@ export const useAdminStudents = () => {
             
             // Map instructors to students
             const instructorMap: Record<string, Instructor> = {};
-            instructorAssignments.forEach((item: any) => {
+            
+            // Type assertion to handle the returned data properly
+            (instructorAssignments as InstructorAssignment[]).forEach((item) => {
               if (item && item.student_id && item.instructor_id) {
                 instructorMap[item.student_id] = {
                   id: item.instructor_id,

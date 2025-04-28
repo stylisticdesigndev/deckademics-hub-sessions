@@ -628,6 +628,15 @@ export type Database = {
           active: number
         }[]
       }
+      get_students_with_instructors: {
+        Args: { student_ids: string[] }
+        Returns: {
+          student_id: string
+          instructor_id: string
+          instructor_first_name: string
+          instructor_last_name: string
+        }[]
+      }
       get_user_profile: {
         Args: { user_id: string }
         Returns: {
