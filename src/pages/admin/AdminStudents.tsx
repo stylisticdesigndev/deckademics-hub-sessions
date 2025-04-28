@@ -42,7 +42,6 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { supabase } from '@/integrations/supabase/client';
 
 const AdminStudents = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +49,8 @@ const AdminStudents = () => {
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isCreatingDemo, setIsCreatingDemo] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const {
     activeStudents,
@@ -58,6 +59,7 @@ const AdminStudents = () => {
     approveStudent,
     declineStudent,
     deactivateStudent,
+    createDemoStudent,
     debugFetchStudents
   } = useAdminStudents();
 
@@ -66,14 +68,6 @@ const AdminStudents = () => {
     console.log("AdminStudents - Active Students Updated:", activeStudents);
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
   }, [activeStudents, pendingStudents]);
-
-  console.log("AdminStudents - render with data:", { 
-    activeStudents, 
-    pendingStudents, 
-    isLoading,
-    activeStudentsCount: activeStudents?.length,
-    pendingStudentsCount: pendingStudents?.length
-  });
 
   const handleApprove = (id: string) => {
     approveStudent.mutate(id);
@@ -106,57 +100,22 @@ const AdminStudents = () => {
   };
 
   const handleDebugRefresh = async () => {
-    const debug = await debugFetchStudents();
-    setDebugInfo(debug);
-    console.log("Manual debug refresh complete:", debug);
+    setIsRefreshing(true);
+    try {
+      const debug = await debugFetchStudents();
+      setDebugInfo(debug);
+      console.log("Manual debug refresh complete:", debug);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
-  // Test function to create a demo student directly
-  const createDemoStudent = async () => {
+  const handleCreateDemoStudent = async () => {
+    setIsCreatingDemo(true);
     try {
-      console.log("Creating demo student...");
-      
-      // First create a test profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: crypto.randomUUID(),
-          email: `demo${Date.now()}@example.com`,
-          first_name: 'Demo',
-          last_name: 'Student',
-          role: 'student'
-        })
-        .select();
-      
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        return;
-      }
-      
-      console.log("Demo profile created:", profileData);
-      
-      if (profileData && profileData.length > 0) {
-        // Then create the student record with the same ID
-        const { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .insert({
-            id: profileData[0].id,
-            level: 'beginner',
-            enrollment_status: 'active'
-          })
-          .select();
-          
-        if (studentError) {
-          console.error("Error creating student:", studentError);
-          return;
-        }
-        
-        console.log("Demo student created:", studentData);
-        // Refresh the data
-        handleDebugRefresh();
-      }
-    } catch (err) {
-      console.error("Error in createDemoStudent:", err);
+      await createDemoStudent();
+    } finally {
+      setIsCreatingDemo(false);
     }
   };
 
@@ -205,11 +164,32 @@ const AdminStudents = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleDebugRefresh} variant="outline" size="icon" title="Refresh Data">
-                <RefreshCcw className="h-4 w-4" />
+              <Button 
+                onClick={handleDebugRefresh} 
+                variant="outline" 
+                size="icon" 
+                disabled={isRefreshing}
+                title="Refresh Data"
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCcw className="h-4 w-4" />
+                )}
               </Button>
-              <Button onClick={createDemoStudent} variant="outline">
-                Create Demo Student
+              <Button 
+                onClick={handleCreateDemoStudent} 
+                variant="outline"
+                disabled={isCreatingDemo}
+              >
+                {isCreatingDemo ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>Create Demo Student</>
+                )}
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -462,9 +442,18 @@ const AdminStudents = () => {
                   ) : (
                     <div className="text-center py-6">
                       <p className="mb-4 text-muted-foreground">Click refresh to load debug info</p>
-                      <Button onClick={handleDebugRefresh}>
-                        <RefreshCcw className="mr-2 h-4 w-4" />
-                        Load Debug Data
+                      <Button onClick={handleDebugRefresh} disabled={isRefreshing}>
+                        {isRefreshing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Load Debug Data
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}
