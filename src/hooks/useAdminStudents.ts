@@ -66,13 +66,15 @@ export const useAdminStudents = () => {
         console.error("Error fetching profiles for active students:", profilesError);
         throw profilesError;
       }
+
+      console.log("Profiles data:", profiles);
       
       // Combine student data with profile data
       const studentsWithProfiles = activeStudents.map(student => {
         const profile = profiles?.find(p => p.id === student.id);
         return {
           ...student,
-          instructor: null, // Initialize with null to avoid type errors
+          instructor: null, // Initialize with null to match the Student interface
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
@@ -133,7 +135,7 @@ export const useAdminStudents = () => {
         const profile = profiles?.find(p => p.id === student.id);
         return {
           ...student,
-          instructor: null, // Initialize with null to avoid type errors
+          instructor: null, // Initialize with null to match the Student interface
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
