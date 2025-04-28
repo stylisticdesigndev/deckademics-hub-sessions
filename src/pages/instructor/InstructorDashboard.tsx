@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ProgressBar } from '@/components/progress/ProgressBar';
+import { useToast } from '@/hooks/use-toast';
 
 interface Student {
   id: string;
@@ -32,6 +33,7 @@ interface Student {
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const { userData } = useAuth();
+  const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,7 @@ const InstructorDashboard = () => {
   const [todayClasses, setTodayClasses] = useState(0);
   const [averageProgress, setAverageProgress] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
   // Get instructor name from auth provider
   const instructorName = userData.profile 
@@ -53,6 +56,7 @@ const InstructorDashboard = () => {
 
       try {
         setLoading(true);
+        setFetchError(null);
         
         console.log("Fetching dashboard data for instructor:", userData.user.id);
         
@@ -159,8 +163,14 @@ const InstructorDashboard = () => {
         } else {
           console.log("Instructor has no assigned classes yet");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching instructor dashboard data:', error);
+        setFetchError(error.message || 'Failed to load dashboard data');
+        toast({
+          title: 'Error fetching data',
+          description: error.message || 'An error occurred while fetching dashboard data',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -171,7 +181,7 @@ const InstructorDashboard = () => {
     } else {
       setLoading(false);
     }
-  }, [userData.user?.id]);
+  }, [userData.user?.id, toast]);
   
   // Filter students based on search term
   const filteredStudents = students.filter(student =>
@@ -188,6 +198,13 @@ const InstructorDashboard = () => {
             Your dashboard is ready for you to start managing your students and classes.
           </p>
         </section>
+
+        {fetchError && (
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{fetchError}</AlertDescription>
+          </Alert>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-8">
