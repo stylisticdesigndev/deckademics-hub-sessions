@@ -32,25 +32,25 @@ serve(async (req) => {
 
     console.log("Creating demo student with ID:", student_id);
 
-    // Create profile first
-    const { error: profileError } = await supabaseClient
-      .from('profiles')
-      .insert({
-        id: student_id,
-        email: email_address, 
-        first_name: first_name || 'Demo',
-        last_name: last_name || 'Student',
-        role: 'student'
-      });
+    // First, create auth user to satisfy foreign key constraint
+    const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
+      uuid: student_id,
+      email: email_address,
+      email_confirm: true,
+      user_metadata: { first_name, last_name },
+      app_metadata: { role: 'student' }
+    });
 
-    if (profileError) {
-      throw new Error(`Failed to create profile: ${profileError.message}`);
+    if (authError) {
+      throw new Error(`Failed to create auth user: ${authError.message}`);
     }
 
-    // Then create student record
+    // Profile should be automatically created by the handle_new_user trigger function
+    
+    // Create student record if needed (handle_new_user should create it, but let's ensure it exists)
     const { data: studentData, error: studentError } = await supabaseClient
       .from('students')
-      .insert({
+      .upsert({
         id: student_id,
         level: 'beginner',
         enrollment_status: 'active'

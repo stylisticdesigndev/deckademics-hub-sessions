@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -267,13 +268,15 @@ export const useAdminStudents = () => {
         return;
       }
 
-      // Call the RPC function we just created
+      // Use the edge function to create demo student
       const { data: result, error: functionError } = await supabase
-        .rpc('create_demo_student', {
-          student_id: studentId,
-          email_address: email,
-          first_name: 'Demo',
-          last_name: 'Student'
+        .functions.invoke('create-demo-student', {
+          body: {
+            student_id: studentId,
+            email_address: email,
+            first_name: 'Demo',
+            last_name: 'Student'
+          }
         });
 
       if (functionError) {
