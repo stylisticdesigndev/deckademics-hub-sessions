@@ -589,6 +589,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_demo_student: {
+        Args: {
+          student_id: string
+          email_address: string
+          first_name: string
+          last_name: string
+        }
+        Returns: Json
+      }
       get_all_users: {
         Args: Record<PropertyKey, never>
         Returns: {
