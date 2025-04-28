@@ -34,7 +34,7 @@ serve(async (req) => {
 
     // First, create auth user with the createUser admin API
     const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
-      uuid: student_id,
+      uid: student_id,  // Changed from uuid to uid
       email: email_address,
       email_confirm: true,
       user_metadata: { first_name, last_name },
@@ -50,6 +50,9 @@ serve(async (req) => {
     }
 
     console.log("Auth user created successfully:", authData);
+
+    // Give a small delay to ensure auth user is fully propagated
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Create profile directly (handle_new_user trigger may not have fired yet)
     const { error: profileError } = await supabaseClient
@@ -68,6 +71,9 @@ serve(async (req) => {
     } else {
       console.log("Profile created successfully");
     }
+
+    // Give a small delay to ensure profile is fully created
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Create student record 
     const { data: studentData, error: studentError } = await supabaseClient

@@ -270,29 +270,61 @@ export const useAdminStudents = () => {
 
       console.log("Invoking create-demo-student function with ID:", studentId);
 
-      // Use the edge function to create demo student
-      const { data: result, error: functionError } = await supabase
-        .functions.invoke('create-demo-student', {
-          body: {
-            student_id: studentId,
-            email_address: email,
-            first_name: 'Demo',
-            last_name: 'Student'
-          }
-        });
+      // Use the edge function to create demo student with retry logic
+      let attempts = 0;
+      let success = false;
+      
+      while (attempts < 3 && !success) {
+        attempts++;
+        console.log(`Attempt ${attempts} to create demo student`);
+        
+        try {
+          const { data: result, error: functionError } = await supabase
+            .functions.invoke('create-demo-student', {
+              body: {
+                student_id: studentId,
+                email_address: email,
+                first_name: 'Demo',
+                last_name: 'Student'
+              }
+            });
 
-      if (functionError) {
-        console.error("Error creating demo student:", functionError);
-        toast.error(`Failed to create demo student: ${functionError.message}`);
-        return;
+          if (functionError) {
+            console.error(`Attempt ${attempts} failed:`, functionError);
+            
+            // If this is the last attempt, show an error
+            if (attempts >= 3) {
+              toast.error(`Failed to create demo student: ${functionError.message}`);
+              return null;
+            }
+            
+            // Wait a bit before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          
+          // Success!
+          console.log("Demo student created:", result);
+          toast.success("Demo student created successfully");
+          success = true;
+          
+          // Refresh the data
+          queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+          return result;
+          
+        } catch (err) {
+          console.error(`Attempt ${attempts} exception:`, err);
+          
+          // If this is the last attempt, show an error
+          if (attempts >= 3) {
+            toast.error("Failed to create demo student after multiple attempts");
+            return null;
+          }
+          
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-      
-      console.log("Demo student created:", result);
-      toast.success("Demo student created successfully");
-      
-      // Refresh the data
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      return result;
     } catch (err) {
       console.error("Error in createDemoStudent:", err);
       toast.error("Failed to create demo student");
