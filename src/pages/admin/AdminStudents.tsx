@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -42,12 +42,14 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminStudents = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   
   const {
     activeStudents,
@@ -55,13 +57,22 @@ const AdminStudents = () => {
     isLoading,
     approveStudent,
     declineStudent,
-    deactivateStudent
+    deactivateStudent,
+    debugFetchStudents
   } = useAdminStudents();
+
+  // Add useEffect to log data whenever it changes
+  useEffect(() => {
+    console.log("AdminStudents - Active Students Updated:", activeStudents);
+    console.log("AdminStudents - Pending Students Updated:", pendingStudents);
+  }, [activeStudents, pendingStudents]);
 
   console.log("AdminStudents - render with data:", { 
     activeStudents, 
     pendingStudents, 
-    isLoading 
+    isLoading,
+    activeStudentsCount: activeStudents?.length,
+    pendingStudentsCount: pendingStudents?.length
   });
 
   const handleApprove = (id: string) => {
@@ -92,6 +103,61 @@ const AdminStudents = () => {
   const getStudentById = (id: string) => {
     return activeStudents?.find(student => student.id === id) || 
            pendingStudents?.find(student => student.id === id);
+  };
+
+  const handleDebugRefresh = async () => {
+    const debug = await debugFetchStudents();
+    setDebugInfo(debug);
+    console.log("Manual debug refresh complete:", debug);
+  };
+
+  // Test function to create a demo student directly
+  const createDemoStudent = async () => {
+    try {
+      console.log("Creating demo student...");
+      
+      // First create a test profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: crypto.randomUUID(),
+          email: `demo${Date.now()}@example.com`,
+          first_name: 'Demo',
+          last_name: 'Student',
+          role: 'student'
+        })
+        .select();
+      
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        return;
+      }
+      
+      console.log("Demo profile created:", profileData);
+      
+      if (profileData && profileData.length > 0) {
+        // Then create the student record with the same ID
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .insert({
+            id: profileData[0].id,
+            level: 'beginner',
+            enrollment_status: 'active'
+          })
+          .select();
+          
+        if (studentError) {
+          console.error("Error creating student:", studentError);
+          return;
+        }
+        
+        console.log("Demo student created:", studentData);
+        // Refresh the data
+        handleDebugRefresh();
+      }
+    } catch (err) {
+      console.error("Error in createDemoStudent:", err);
+    }
   };
 
   const filteredActiveStudents = activeStudents?.filter(
@@ -138,17 +204,25 @@ const AdminStudents = () => {
                 Manage all students, approve new registrations, and track payments.
               </p>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Student
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Add a new student to the system</p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex gap-2">
+              <Button onClick={handleDebugRefresh} variant="outline" size="icon" title="Refresh Data">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+              <Button onClick={createDemoStudent} variant="outline">
+                Create Demo Student
+              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Student
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add a new student to the system</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -171,6 +245,9 @@ const AdminStudents = () => {
               </TabsTrigger>
               <TabsTrigger value="pending">
                 Pending Approval ({filteredPendingStudents.length})
+              </TabsTrigger>
+              <TabsTrigger value="debug">
+                Debug Info
               </TabsTrigger>
             </TabsList>
 
@@ -357,6 +434,40 @@ const AdminStudents = () => {
                       )}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="debug" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Debug Information</CardTitle>
+                  <CardDescription>
+                    Database details for debugging purposes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="max-h-96 overflow-auto">
+                  {debugInfo ? (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Profiles in Database:</h3>
+                      <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
+                        {JSON.stringify(debugInfo.allProfiles, null, 2)}
+                      </pre>
+                      
+                      <h3 className="text-lg font-medium mt-4 mb-2">Students in Database:</h3>
+                      <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
+                        {JSON.stringify(debugInfo.allStudents, null, 2)}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="mb-4 text-muted-foreground">Click refresh to load debug info</p>
+                      <Button onClick={handleDebugRefresh}>
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        Load Debug Data
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
