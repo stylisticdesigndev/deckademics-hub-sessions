@@ -33,6 +33,7 @@ const StudentDashboard = () => {
 
   // Redirect if not authenticated or wrong role
   useEffect(() => {
+    // Only attempt redirects once auth is fully loaded
     if (!isLoading) {
       if (!session) {
         console.log("No session found, redirecting to student auth");
@@ -72,30 +73,6 @@ const StudentDashboard = () => {
   };
   
   const studentName = getStudentName();
-  
-  // Only refresh data when userId changes, not on every render
-  useEffect(() => {
-    let isMounted = true;
-    
-    if (userId && isMounted) {
-      // Add a slight delay to avoid potential race conditions with auth
-      const timer = setTimeout(() => {
-        if (isMounted) {
-          console.log("Refreshing data for userId:", userId);
-          refreshData();
-        }
-      }, 300);
-      
-      return () => {
-        isMounted = false;
-        clearTimeout(timer);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]); // Only depend on userId
-
-  // Determine what to show - always prioritize the empty state for new users
-  const showEmptyState = isEmpty || isFirstTimeUser;
 
   // If auth is still loading, show a loading skeleton
   if (isLoading) {
@@ -120,6 +97,9 @@ const StudentDashboard = () => {
       </DashboardLayout>
     );
   }
+
+  // Determine what to show - always prioritize the empty state for new users
+  const showEmptyState = isEmpty || isFirstTimeUser;
 
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">

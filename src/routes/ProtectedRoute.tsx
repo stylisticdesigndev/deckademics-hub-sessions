@@ -22,17 +22,19 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
   // Check for user metadata in session for cases where profile creation fails
   useEffect(() => {
-    if (!isLoading && session && session.user && !userData.role) {
-      const userRole = session.user.user_metadata?.role as UserRole | undefined;
-      
-      if (userRole && allowedRoles.includes(userRole)) {
-        console.log("Using role from user metadata:", userRole);
-        // If we have a valid role in metadata but no profile, we can still proceed
+    if (!isLoading) {
+      if (session && session.user && !userData.role) {
+        const userRole = session.user.user_metadata?.role as UserRole | undefined;
+        
+        if (userRole && allowedRoles.includes(userRole)) {
+          console.log("Using role from user metadata:", userRole);
+          // If we have a valid role in metadata but no profile, we can still proceed
+          setIsWaitingForProfile(false);
+        }
+      } else {
+        // If no session or we have userData.role, we can proceed
         setIsWaitingForProfile(false);
       }
-    } else if (!isLoading && !session) {
-      // If no session and not loading, we can proceed with the redirect
-      setIsWaitingForProfile(false);
     }
   }, [isLoading, session, userData.role, allowedRoles]);
 
@@ -56,34 +58,27 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }, [isLoading, isWaitingForProfile]);
   
-  // Handle profile-based routing decisions
+  // Handle profile timeout
   useEffect(() => {
     let waitInterval: number | undefined;
     
-    // Only run this effect when we have session and profile data is loaded
-    if (!isLoading && session) {
-      if ((userData.profile && userData.role) || (session.user.user_metadata?.role)) {
-        // If user has a profile and a role, or metadata role, check if they're allowed on this route
-        const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
-        if (!allowedRoles.includes(effectiveRole)) {
-          console.log("Access denied - redirecting to appropriate dashboard");
-          // We'll handle redirection in the render section
-        }
+    // Only run this effect when we have session but no profile data loaded
+    if (!isLoading && session && !userData.profile && !userData.role && session.user.user_metadata?.role === undefined) {
+      if (waitTime === 0) {
+        // Start interval to track wait time
+        waitInterval = window.setInterval(() => {
+          setWaitTime(prev => prev + 500);
+        }, 500);
       } else if (waitTime >= 3000) {
-        // After waiting and still no profile, show error and redirect to auth
+        // After waiting and still no profile, show error and logout
+        console.log("Profile timeout - redirecting to login");
         toast({
           title: 'Profile issue detected',
-          description: 'Having trouble loading your profile. Please try signing out and back in.',
+          description: 'Having trouble loading your profile. Please try signing in again.',
           variant: 'destructive',
         });
+        // Safe logout
         signOut();
-      } else if (session.user && !userData.profile) {
-        // If we have a user but no profile, start interval timer
-        if (!waitInterval) {
-          waitInterval = window.setInterval(() => {
-            setWaitTime(prev => prev + 500);
-          }, 500);
-        }
       }
     }
     
@@ -92,10 +87,10 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         clearInterval(waitInterval);
       }
     };
-  }, [isLoading, session, userData, allowedRoles, waitTime, signOut]);
+  }, [isLoading, session, userData, waitTime, signOut]);
   
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && !userData.profile && isWaitingForProfile)) && waitTime < 3000) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 3000) {
     return (
       <div className="flex h-screen items-center justify-center bg-deckademics-dark">
         <div className="w-full max-w-md space-y-4">

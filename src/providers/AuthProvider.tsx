@@ -576,8 +576,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('deckademics-admin-session');
       } 
       
-      // Clear all possible authentication storage to ensure clean logout
-      localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
+      // Force clear all possible authentication storage to ensure clean logout
+      try {
+        localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
+        localStorage.removeItem('supabase.auth.token');
+      } catch (storageError) {
+        console.error("Error clearing local storage:", storageError);
+        // Continue with rest of logout process regardless
+      }
       
       // Then perform the Supabase signout if we're not an admin (which uses mock session)
       if (!isAdmin) {
@@ -592,16 +598,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Sign out completed successfully");
       
+      // Force clear any session that might be still in memory
+      await supabase.auth.setSession({
+        access_token: '',
+        refresh_token: ''
+      });
+      
       // Navigate after everything else has been cleared
       // Add a slight delay to ensure state updates have processed
       setTimeout(() => {
         navigate('/', { replace: true });
+        
+        // Show success toast after navigation
+        toast({
+          title: 'Logged out',
+          description: 'You have been successfully logged out.',
+        });
       }, 100);
       
-      toast({
-        title: 'Logged out',
-        description: 'You have been successfully logged out.',
-      });
     } catch (error: any) {
       console.error("Error during sign out:", error);
       toast({

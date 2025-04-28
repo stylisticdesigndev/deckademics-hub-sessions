@@ -30,17 +30,20 @@ export function useStudentDashboardCore() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  // Use a ref to track if we've already fetched data
+  // Use a ref to track if we've already fetched data and prevent multiple fetches
   const dataFetchedRef = useRef(false);
+  // Use a ref to track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
+  // Get userId from session safely
   const userId = session?.user?.id;
 
   const { upcomingClasses, loading: classesLoading } = useUpcomingClasses();
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);
 
   const fetchStudentInfo = useCallback(async () => {
-    // Exit early if user ID is missing or if we're still loading other data
-    if (!userId || classesLoading || progressLoading) {
+    // Exit early if user ID is missing, component unmounted, or if we're still loading other data
+    if (!userId || !isMountedRef.current || classesLoading || progressLoading) {
       return;
     }
     
@@ -64,24 +67,25 @@ export function useStudentDashboardCore() {
             console.log('Creating student record for new user:', userId);
             const { error: insertError } = await supabase
               .from('students')
-              .insert([{ id: userId }])
-              .select();
+              .insert([{ id: userId }]);
               
             if (insertError) {
               console.error('Error creating student record:', insertError.message);
               setFetchError(`Failed to create student record: ${insertError.message}`);
             } else {
               // Successful creation, use default values
-              setStudentData(prev => ({
-                ...prev,
-                level: 'Beginner'
-              }));
+              if (isMountedRef.current) {
+                setStudentData(prev => ({
+                  ...prev,
+                  level: 'Beginner'
+                }));
+              }
             }
           } catch (insertError) {
             console.error('Exception creating student record:', insertError);
           }
         }
-      } else if (studentInfo && typeof studentInfo === 'object') {
+      } else if (studentInfo && typeof studentInfo === 'object' && isMountedRef.current) {
         setStudentData(prev => ({
           ...prev,
           level: studentInfo.level || 'Beginner'
@@ -91,48 +95,63 @@ export function useStudentDashboardCore() {
       // Determine first-time user status
       const isFirstLogin = upcomingClasses.length === 0 && 
         (!progressData || progressData.length === 0);
-      setIsFirstTimeUser(isFirstLogin);
-
-      // Only update next class if there are upcoming classes
-      if (upcomingClasses.length > 0) {
-        setStudentData(prev => ({
-          ...prev,
-          nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
-          instructor: upcomingClasses[0].instructor
-        }));
-      }
       
-      // Calculate progress if data is available
-      if (progressData && Array.isArray(progressData) && progressData.length > 0) {
-        const totalProficiency = progressData.reduce((sum: number, item: any) =>
-          sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0)
-        , 0);
-        const avgProgress = Math.round(totalProficiency / progressData.length);
-        setStudentData(prev => ({
-          ...prev,
-          totalProgress: avgProgress
-        }));
+      if (isMountedRef.current) {
+        setIsFirstTimeUser(isFirstLogin);
+
+        // Only update next class if there are upcoming classes
+        if (upcomingClasses.length > 0) {
+          setStudentData(prev => ({
+            ...prev,
+            nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
+            instructor: upcomingClasses[0].instructor
+          }));
+        }
+        
+        // Calculate progress if data is available
+        if (progressData && Array.isArray(progressData) && progressData.length > 0) {
+          const totalProficiency = progressData.reduce((sum: number, item: any) =>
+            sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0)
+          , 0);
+          const avgProgress = Math.round(totalProficiency / progressData.length);
+          setStudentData(prev => ({
+            ...prev,
+            totalProgress: avgProgress
+          }));
+        }
       }
       
     } catch (e: any) {
       console.error('Error in fetchStudentInfo:', e);
-      setFetchError(e.message || 'An unknown error occurred');
+      if (isMountedRef.current) {
+        setFetchError(e.message || 'An unknown error occurred');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        // Mark as fetched to prevent duplicate fetches
+        dataFetchedRef.current = true;
+      }
     }
-  }, [userId, upcomingClasses, progressData]);
+  }, [userId, upcomingClasses, progressData, classesLoading, progressLoading]);
 
   // Use a more controlled approach to prevent infinite loops
   useEffect(() => {
     // Only run fetch if we have a userId and haven't already fetched the data
     if (userId && !classesLoading && !progressLoading && !dataFetchedRef.current) {
       console.log("Dashboard - Initial fetch for userId:", userId);
-      dataFetchedRef.current = true;
       fetchStudentInfo();
     } else if (!userId) {
       setLoading(false);
     }
   }, [userId, classesLoading, progressLoading, fetchStudentInfo]);
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   return {
     userId,

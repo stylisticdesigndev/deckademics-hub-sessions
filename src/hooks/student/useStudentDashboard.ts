@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
 import { useAuth } from '@/providers/AuthProvider';
@@ -27,14 +27,19 @@ export const useStudentDashboard = () => {
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
 
-  // Safer refresh mechanism that won't trigger infinite loops
+  // Fix for infinite loop: Only call refreshData when userId changes
+  // and make sure we don't refresh if we're already loading data
   useEffect(() => {
-    // Only refresh data if we have an active session but no data loaded yet
-    if (session && session.user && !loading && upcomingClasses.length === 0 && announcements.length === 0) {
-      console.log("Dashboard - Refreshing data due to missing content for active session:", session.user.id);
+    if (!userId || loading) return;
+    
+    // Use a timeout to prevent rapid succession of refreshes
+    const timer = setTimeout(() => {
+      console.log("Dashboard - Initial load for userId:", userId);
       refreshData();
-    }
-  }, [session, loading, refreshData, upcomingClasses.length, announcements.length]);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [userId, refreshData]); // Only depend on userId, not session which changes frequently
 
   // Determine if dashboard is empty
   // Only consider the dashboard empty if we've already loaded and there's no data
