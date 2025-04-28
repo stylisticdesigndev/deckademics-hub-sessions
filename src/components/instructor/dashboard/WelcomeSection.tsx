@@ -1,14 +1,28 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 
-export const WelcomeSection: React.FC = () => {
-  const { userData } = useAuth();
+export const WelcomeSection: React.FC = memo(() => {
+  const { userData, session } = useAuth();
   
-  // Get instructor name from auth provider
-  const instructorName = userData.profile 
-    ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim() 
-    : 'Instructor';
+  // Get instructor name from auth provider, with fallback to session metadata
+  const getInstructorName = () => {
+    // First try profile data
+    if (userData.profile && userData.profile.first_name) {
+      return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
+    }
+    
+    // Then try session metadata
+    if (session?.user?.user_metadata) {
+      const metadata = session.user.user_metadata;
+      return `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim();
+    }
+    
+    // Fallback
+    return 'Instructor';
+  };
+  
+  const instructorName = getInstructorName();
   
   return (
     <section className="space-y-3">
@@ -18,4 +32,6 @@ export const WelcomeSection: React.FC = () => {
       </p>
     </section>
   );
-};
+});
+
+WelcomeSection.displayName = 'WelcomeSection';

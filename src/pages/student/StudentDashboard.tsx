@@ -33,16 +33,13 @@ const StudentDashboard = () => {
     `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim() : 
     'Student';
   
-  console.log("Rendering dashboard for:", studentName);
-  console.log("Current user metadata:", session?.user?.user_metadata);
-  console.log("Current user profile:", userData?.profile);
-
-  // Force refresh data if user ID changes
+  // Only refresh data when userId changes, not on every render
   useEffect(() => {
     if (userId) {
       refreshData();
     }
-  }, [userId, refreshData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Removed refreshData from dependency array
 
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;
