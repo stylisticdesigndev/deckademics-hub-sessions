@@ -12,35 +12,38 @@ const InstructorAuth = () => {
   const { session, userData, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
-  // Improved session validation logic with debugging
+  // Improved session validation logic with debugging but avoid infinite redirects
   useEffect(() => {
-    console.log("InstructorAuth - Checking auth state:", { 
+    // Skip redirect if we're still loading
+    if (isLoading) {
+      return;
+    }
+    
+    console.log("InstructorAuth - Auth check complete:", { 
       sessionExists: !!session, 
       userId: session?.user?.id,
       userRole: userData.role,
       isLoading
     });
     
-    // Only proceed with redirects once loading is complete
-    if (!isLoading) {
-      if (session && session.user) {
-        console.log("Session detected on instructor auth page:", session.user.email);
-        const role = userData.role || session.user.user_metadata?.role;
-        
-        if (role) {
-          console.log(`User has ${role} role, redirecting appropriately`);
-          if (role === 'instructor') {
-            navigate('/instructor/dashboard', { replace: true });
-          } else if (role === 'student') {
-            navigate('/student/dashboard', { replace: true });
-          } else if (role === 'admin') {
-            navigate('/admin/dashboard', { replace: true });
-          }
+    // Only proceed with redirects if we have session and role info
+    if (session && session.user) {
+      console.log("Session detected on instructor auth page:", session.user.email);
+      const role = userData.role || session.user.user_metadata?.role;
+      
+      if (role) {
+        console.log(`User has ${role} role, redirecting appropriately`);
+        if (role === 'instructor') {
+          navigate('/instructor/dashboard', { replace: true });
+        } else if (role === 'student') {
+          navigate('/student/dashboard', { replace: true });
+        } else if (role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
         }
       }
-      
-      setIsCheckingAuth(false);
     }
+      
+    setIsCheckingAuth(false);
   }, [session, userData, navigate, isLoading]);
 
   // Show loading state while checking auth

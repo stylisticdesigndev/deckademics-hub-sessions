@@ -1,11 +1,12 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
 import { useAuth } from '@/providers/AuthProvider';
 
 export const useStudentDashboard = () => {
   const { session } = useAuth();
+  const initialLoadRef = useRef(false);
   
   const {
     userId,
@@ -27,19 +28,15 @@ export const useStudentDashboard = () => {
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
 
-  // Fix for infinite loop: Only call refreshData when userId changes
-  // and make sure we don't refresh if we're already loading data
+  // Only do an initial load once when the component mounts and userId is available
   useEffect(() => {
-    if (!userId || loading) return;
+    if (!userId || loading || initialLoadRef.current) return;
     
-    // Use a timeout to prevent rapid succession of refreshes
-    const timer = setTimeout(() => {
-      console.log("Dashboard - Initial load for userId:", userId);
-      refreshData();
-    }, 500);
+    console.log("Dashboard - Performing one-time initial load for userId:", userId);
+    initialLoadRef.current = true;
+    refreshData();
     
-    return () => clearTimeout(timer);
-  }, [userId, refreshData]); // Only depend on userId, not session which changes frequently
+  }, [userId, loading, refreshData]); // Only depend on userId and loading state
 
   // Determine if dashboard is empty
   // Only consider the dashboard empty if we've already loaded and there's no data

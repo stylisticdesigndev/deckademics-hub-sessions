@@ -30,10 +30,10 @@ export function useStudentDashboardCore() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  // Use a ref to track if we've already fetched data and prevent multiple fetches
+  // Use refs to track states and prevent infinite loops
   const dataFetchedRef = useRef(false);
-  // Use a ref to track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
+  const fetchAttemptRef = useRef(0);
 
   // Get userId from session safely
   const userId = session?.user?.id;
@@ -42,10 +42,15 @@ export function useStudentDashboardCore() {
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);
 
   const fetchStudentInfo = useCallback(async () => {
-    // Exit early if user ID is missing, component unmounted, or if we're still loading other data
-    if (!userId || !isMountedRef.current || classesLoading || progressLoading) {
+    // Exit early if user ID is missing, component unmounted, or if we've tried too many times
+    if (!userId || !isMountedRef.current || fetchAttemptRef.current > 3) {
       return;
     }
+    
+    // Increment the fetch attempt counter to prevent infinite loops
+    fetchAttemptRef.current += 1;
+    
+    console.log(`Fetching student info (attempt ${fetchAttemptRef.current}) for userId:`, userId);
     
     try {
       setLoading(true);
@@ -119,6 +124,9 @@ export function useStudentDashboardCore() {
             totalProgress: avgProgress
           }));
         }
+        
+        // Mark data as fetched to prevent duplicate fetches
+        dataFetchedRef.current = true;
       }
       
     } catch (e: any) {
@@ -129,17 +137,24 @@ export function useStudentDashboardCore() {
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
-        // Mark as fetched to prevent duplicate fetches
-        dataFetchedRef.current = true;
       }
     }
-  }, [userId, upcomingClasses, progressData, classesLoading, progressLoading]);
+  }, [userId, upcomingClasses, progressData]); // Remove classesLoading and progressLoading to prevent loops
 
-  // Use a more controlled approach to prevent infinite loops
+  // Use a ref to track if this is the first render
+  const isInitialRender = useRef(true);
+
   useEffect(() => {
-    // Only run fetch if we have a userId and haven't already fetched the data
-    if (userId && !classesLoading && !progressLoading && !dataFetchedRef.current) {
-      console.log("Dashboard - Initial fetch for userId:", userId);
+    // Skip data fetching on first render to allow all hooks to initialize
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      setLoading(false);
+      return;
+    }
+    
+    // Only fetch data if we have necessary information and haven't fetched yet
+    if (userId && !dataFetchedRef.current && !classesLoading && !progressLoading) {
+      console.log("Dashboard Core - Fetching initial data for userId:", userId);
       fetchStudentInfo();
     } else if (!userId) {
       setLoading(false);
@@ -150,6 +165,10 @@ export function useStudentDashboardCore() {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      // Reset other refs to ensure clean state if remounted
+      dataFetchedRef.current = false;
+      fetchAttemptRef.current = 0;
+      isInitialRender.current = true;
     };
   }, []);
 

@@ -53,9 +53,6 @@ const StudentDashboard = () => {
     }
   }, [session, userData.role, isLoading, navigate]);
 
-  // Get current user ID from session
-  const userId = session?.user?.id;
-  
   // Generate the name from user data with proper fallbacks
   const getStudentName = () => {
     // First check profile data
