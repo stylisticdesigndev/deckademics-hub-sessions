@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -240,7 +239,7 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Modified function to create a student without relying on auth.users
+  // Modified function to create a student that bypasses RLS
   const createDemoStudent = async () => {
     try {
       console.log("Creating demo student...");
@@ -267,62 +266,29 @@ export const useAdminStudents = () => {
         toast.error("A student with this email already exists");
         return;
       }
-      
-      console.log("Creating student directly in the database tables...");
 
-      // Create the student record first since it doesn't have the foreign key constraint
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .insert({
-          id: studentId,
-          level: 'beginner',
-          enrollment_status: 'active'
-        })
-        .select();
-          
-      if (studentError) {
-        console.error("Error creating student:", studentError);
-        toast.error("Failed to create demo student record");
-        return;
-      }
-      
-      console.log("Demo student created:", studentData);
-      
-      // Now create the profile record
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: studentId,
-          email: email,
+      // Use a stored function or direct SQL to bypass RLS
+      // This requires the function to be defined in the database with SECURITY DEFINER
+      const { data: result, error: functionError } = await supabase
+        .rpc('create_demo_student', {
+          student_id: studentId,
+          email_address: email,
           first_name: 'Demo',
-          last_name: 'Student',
-          role: 'student'
-        })
-        .select();
-      
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        
-        // Delete the student record we just created to maintain consistency
-        const { error: cleanupError } = await supabase
-          .from('students')
-          .delete()
-          .eq('id', studentId);
-          
-        if (cleanupError) {
-          console.error("Failed to cleanup student record after profile creation failed:", cleanupError);
-        }
-        
-        toast.error("Failed to create demo student profile");
+          last_name: 'Student'
+        });
+
+      if (functionError) {
+        console.error("Error creating demo student:", functionError);
+        toast.error(`Failed to create demo student: ${functionError.message}`);
         return;
       }
       
-      console.log("Demo profile created:", profileData);
+      console.log("Demo student created:", result);
       toast.success("Demo student created successfully");
       
       // Refresh the data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      return studentData;
+      return result;
     } catch (err) {
       console.error("Error in createDemoStudent:", err);
       toast.error("Failed to create demo student");
