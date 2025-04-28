@@ -24,7 +24,9 @@ export const useStudentDashboard = () => {
   } = useStudentDashboardActions(fetchStudentInfo);
 
   // Determine if dashboard is empty
-  const isEmpty = announcements.length === 0 && upcomingClasses.length === 0;
+  // Only consider the dashboard empty if we've already loaded and there's no data
+  const isEmpty = !loading && !announcementsLoading && 
+                 announcements.length === 0 && upcomingClasses.length === 0;
 
   return {
     loading: loading || announcementsLoading,

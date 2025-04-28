@@ -123,6 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   
   useEffect(() => {
+    console.log("AuthProvider useEffect running - checking for sessions");
+    
     // Check for admin session in localStorage first
     const storedAdminSession = localStorage.getItem('deckademics-admin-session');
     if (storedAdminSession) {
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const adminSession = JSON.parse(storedAdminSession) as Session;
         // Check if admin session is still valid
         if (adminSession.expires_at > Math.floor(Date.now() / 1000)) {
+          console.log("Found valid admin session in localStorage");
           setSession(adminSession);
           setUserData({
             user: adminSession.user,
@@ -153,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         } else {
           // Clear expired admin session
+          console.log("Found expired admin session, removing from localStorage");
           localStorage.removeItem('deckademics-admin-session');
         }
       } catch (error) {
@@ -167,6 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("Auth state changed:", event, newSession?.user?.id);
         
         if (event === 'SIGNED_OUT') {
+          console.log("SIGNED_OUT event detected, clearing session and userData");
           setSession(null);
           setUserData({
             user: null,
@@ -553,32 +558,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    console.log("Signing out user");
     try {
       // Check if this is an admin session and clear localStorage if so
       if (userData.role === 'admin' && userData.user?.email === 'admin@deckademics.com') {
+        console.log("Clearing admin session from localStorage");
         localStorage.removeItem('deckademics-admin-session');
-        setSession(null);
-        setUserData({
-          user: null,
-          profile: null,
-          role: null
-        });
-      } else {
-        // Regular Supabase signout
-        await supabase.auth.signOut();
-      }
+      } 
       
-      navigate('/');
+      // First explicitly clear our React state
+      setSession(null);
+      setUserData({
+        user: null,
+        profile: null,
+        role: null
+      });
+      
+      // Then perform the Supabase signout
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Also manually remove Supabase session from localStorage to ensure it's fully cleared
+      localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
+      
+      console.log("Sign out completed successfully");
+      
+      // Navigate after everything else has been cleared
+      navigate('/', { replace: true });
+      
       toast({
         title: 'Logged out',
         description: 'You have been successfully logged out.',
       });
     } catch (error: any) {
+      console.error("Error during sign out:", error);
       toast({
         title: 'Error signing out',
         description: error.message || 'Something went wrong.',
         variant: 'destructive',
       });
+      
+      // Force navigate to home page even if there was an error
+      navigate('/', { replace: true });
     }
   };
 
@@ -614,19 +635,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Method to clear local storage
   const clearLocalStorage = () => {
     try {
-      localStorage.clear();
+      console.log("Clearing all local storage");
       
-      // Optional: Clear specific keys related to your app
+      // Clear specific keys related to your app
       localStorage.removeItem('deckademics-admin-session');
-      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
+      
+      // Reset state
+      setSession(null);
+      setUserData({
+        user: null,
+        profile: null,
+        role: null
+      });
       
       toast({
         title: 'Local Storage Cleared',
         description: 'Browser local storage has been cleared successfully.',
       });
-      
-      // Optional: Perform sign out to reset the entire auth state
-      signOut();
     } catch (error) {
       console.error('Error clearing local storage:', error);
       toast({

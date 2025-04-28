@@ -1,34 +1,63 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const InstructorAuthContent = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, userData, isLoading } = useAuth();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
-  // Redirect if user is already logged in
+  // Improved session validation logic
   useEffect(() => {
-    if (session && session.user) {
-      console.log("Session detected on instructor auth page:", session.user.email);
-      const role = session.user.user_metadata?.role;
-      
-      if (role === 'instructor') {
-        console.log("Redirecting instructor to dashboard");
-        navigate('/instructor/dashboard');
-      } else if (role) {
-        // If they have a different role, redirect to appropriate page
-        console.log(`User has ${role} role, redirecting appropriately`);
-        if (role === 'student') {
-          navigate('/student/dashboard');
-        } else if (role === 'admin') {
-          navigate('/admin/dashboard');
+    console.log("InstructorAuth - Checking auth state:", { 
+      sessionExists: !!session, 
+      userId: session?.user?.id,
+      userRole: userData.role,
+      isLoading
+    });
+    
+    // Only proceed with redirects once loading is complete
+    if (!isLoading) {
+      if (session && session.user) {
+        console.log("Session detected on instructor auth page:", session.user.email);
+        const role = userData.role || session.user.user_metadata?.role;
+        
+        if (role) {
+          console.log(`User has ${role} role, redirecting appropriately`);
+          if (role === 'instructor') {
+            navigate('/instructor/dashboard', { replace: true });
+          } else if (role === 'student') {
+            navigate('/student/dashboard', { replace: true });
+          } else if (role === 'admin') {
+            navigate('/admin/dashboard', { replace: true });
+          }
         }
       }
+      
+      setIsCheckingAuth(false);
     }
-  }, [session, navigate]);
+  }, [session, userData, navigate, isLoading]);
+
+  // Show loading state while checking auth
+  if (isLoading || isCheckingAuth) {
+    return (
+      <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
+        <div className="text-center flex flex-col items-center space-y-4">
+          <Skeleton className="h-28 w-28 rounded-full" />
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">

@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
@@ -11,6 +13,34 @@ const Index = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const [videoKey, setVideoKey] = useState<number>(Date.now()); // Add key for forcing remount
+  const { userData, session, clearLocalStorage } = useAuth();
+  const navigate = useNavigate();
+  
+  // Check if user is already logged in and redirect if needed
+  useEffect(() => {
+    if (session && userData.role) {
+      console.log("User already logged in, redirecting to dashboard");
+      const role = userData.role;
+      
+      if (role === 'student') {
+        navigate('/student/dashboard');
+      } else if (role === 'instructor') {
+        navigate('/instructor/dashboard');
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard');
+      }
+    }
+  }, [session, userData, navigate]);
+
+  // Function to ensure we're starting with a clean authentication state
+  const ensureCleanAuthState = useCallback(() => {
+    console.log("Ensuring clean auth state before navigation");
+    if (session) {
+      // If there's an active session but we're on the index page,
+      // we should clear the local storage to avoid auth issues
+      clearLocalStorage();
+    }
+  }, [session, clearLocalStorage]);
 
   // Function to fetch the latest video, with improved error handling
   const getLatestVideo = useCallback(async () => {
@@ -129,8 +159,9 @@ const Index = () => {
               variant="outline" 
               size="lg"
               asChild
+              onClick={ensureCleanAuthState}
             >
-              <Link to="/auth/student">
+              <Link to="/auth/student" replace={true}>
                 Student Sign In
               </Link>
             </Button>
@@ -140,8 +171,9 @@ const Index = () => {
               variant="outline" 
               size="lg"
               asChild
+              onClick={ensureCleanAuthState}
             >
-              <Link to="/auth/instructor">
+              <Link to="/auth/instructor" replace={true}>
                 Instructor Sign In
               </Link>
             </Button>
@@ -159,6 +191,7 @@ const Index = () => {
           <Link 
             to="/auth/admin" 
             className="text-xs text-muted-foreground hover:text-deckademics-primary transition-colors"
+            onClick={ensureCleanAuthState}
           >
             Administrator Access
           </Link>
