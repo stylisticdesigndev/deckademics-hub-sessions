@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,44 +36,49 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching active students...");
       
-      // Fetch students and profiles in one query with a join
-      const { data: studentsWithProfiles, error } = await supabase
+      // Use a simpler query without the join that's causing issues
+      const { data: students, error } = await supabase
         .from('students')
-        .select(`
-          id,
-          level,
-          enrollment_status,
-          notes,
-          start_date,
-          profiles:id (
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('id, level, enrollment_status, notes, start_date')
         .eq('enrollment_status', 'active');
       
       if (error) {
-        console.error("Error fetching active students with profiles:", error);
+        console.error("Error fetching active students:", error);
         throw error;
       }
 
-      console.log("Raw active students with profiles data:", studentsWithProfiles);
+      console.log("Raw active students data:", students);
 
-      if (!studentsWithProfiles || studentsWithProfiles.length === 0) {
+      if (!students || students.length === 0) {
         console.log("No active students found");
         return [];
       }
       
-      // Transform the data to match the Student interface
-      const formattedStudents = studentsWithProfiles.map(student => {
+      // Now fetch profiles for these students
+      const studentIds = students.map(student => student.id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', studentIds);
+      
+      if (profilesError) {
+        console.error("Error fetching profiles for active students:", profilesError);
+        throw profilesError;
+      }
+      
+      console.log("Profiles for active students:", profiles);
+      
+      // Merge students with their profiles
+      const formattedStudents = students.map(student => {
+        const profile = profiles?.find(p => p.id === student.id) || null;
+        
         return {
           ...student,
-          instructor: null,
-          profile: student.profiles ? {
-            first_name: student.profiles.first_name || '',
-            last_name: student.profiles.last_name || '',
-            email: student.profiles.email || ''
+          instructor: null, // Initialize instructor as null
+          profile: profile ? {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            email: profile.email || ''
           } : {
             first_name: '',
             last_name: '',
@@ -96,44 +100,49 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching pending students...");
       
-      // Fetch students and profiles in one query with a join
-      const { data: studentsWithProfiles, error } = await supabase
+      // Use a simpler query without the join that's causing issues
+      const { data: students, error } = await supabase
         .from('students')
-        .select(`
-          id,
-          level,
-          enrollment_status,
-          notes,
-          start_date,
-          profiles:id (
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('id, level, enrollment_status, notes, start_date')
         .eq('enrollment_status', 'pending');
       
       if (error) {
-        console.error("Error fetching pending students with profiles:", error);
+        console.error("Error fetching pending students:", error);
         throw error;
       }
 
-      console.log("Raw pending students with profiles data:", studentsWithProfiles);
+      console.log("Raw pending students data:", students);
 
-      if (!studentsWithProfiles || studentsWithProfiles.length === 0) {
+      if (!students || students.length === 0) {
         console.log("No pending students found");
         return [];
       }
       
-      // Transform the data to match the Student interface
-      const formattedStudents = studentsWithProfiles.map(student => {
+      // Now fetch profiles for these students
+      const studentIds = students.map(student => student.id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', studentIds);
+      
+      if (profilesError) {
+        console.error("Error fetching profiles for pending students:", profilesError);
+        throw profilesError;
+      }
+      
+      console.log("Profiles for pending students:", profiles);
+      
+      // Merge students with their profiles
+      const formattedStudents = students.map(student => {
+        const profile = profiles?.find(p => p.id === student.id) || null;
+        
         return {
           ...student,
-          instructor: null,
-          profile: student.profiles ? {
-            first_name: student.profiles.first_name || '',
-            last_name: student.profiles.last_name || '',
-            email: student.profiles.email || ''
+          instructor: null, // Initialize instructor as null
+          profile: profile ? {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            email: profile.email || ''
           } : {
             first_name: '',
             last_name: '',
@@ -230,8 +239,10 @@ export const useAdminStudents = () => {
         // Force refetching of students data after successful creation
         // Use setTimeout to ensure the database has time to update
         setTimeout(() => {
+          console.log("Refreshing student data after creating demo student...");
           refetchActive();
           refetchPending();
+          debugFetchStudents();  // Also run debug fetch to verify data
           toast.info("Refreshing student data...");
         }, 2000);
         
