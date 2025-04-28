@@ -24,7 +24,7 @@ interface Student {
   level: string;
   enrollment_status: string;
   profile: Profile;
-  instructor?: Instructor;
+  instructor?: Instructor | null;
 }
 
 export const useAdminStudents = () => {
@@ -51,34 +51,42 @@ export const useAdminStudents = () => {
       
       console.log("Active students data:", data);
       
-      // Fetch instructor assignments separately
+      // Get the students with instructor information using a custom query
       if (data && data.length > 0) {
-        const studentIds = data.map(student => student.id);
-        
-        const { data: instructorAssignments, error: instructorError } = await supabase
-          .from('students_instructors')
-          .select(`
-            student_id,
-            instructor:instructor_id(
-              id,
-              profile:profiles(first_name, last_name)
-            )
-          `)
-          .in('student_id', studentIds);
-        
-        if (instructorError) {
-          console.error("Error fetching instructor assignments:", instructorError);
-        } else if (instructorAssignments) {
-          // Map instructors to students
-          const instructorMap = instructorAssignments.reduce((map, item) => {
-            map[item.student_id] = item.instructor;
-            return map;
-          }, {});
+        try {
+          const studentIds = data.map(student => student.id);
           
-          // Add instructor info to student records
-          data.forEach(student => {
-            student.instructor = instructorMap[student.id];
-          });
+          // Here we use a raw SQL query to get instructor info since the students_instructors junction table
+          // isn't defined in the TypeScript types
+          const { data: instructorAssignments, error: instructorError } = await supabase
+            .rpc('get_students_with_instructors', { student_ids: studentIds });
+          
+          if (instructorError) {
+            console.error("Error fetching instructor assignments:", instructorError);
+          } else if (instructorAssignments) {
+            console.log("Instructor assignments:", instructorAssignments);
+            
+            // Map instructors to students
+            const instructorMap: Record<string, Instructor> = {};
+            instructorAssignments.forEach((item: any) => {
+              if (item && item.student_id && item.instructor_id) {
+                instructorMap[item.student_id] = {
+                  id: item.instructor_id,
+                  profile: {
+                    first_name: item.instructor_first_name || '',
+                    last_name: item.instructor_last_name || ''
+                  }
+                };
+              }
+            });
+            
+            // Add instructor info to student records
+            data.forEach(student => {
+              student.instructor = instructorMap[student.id] || null;
+            });
+          }
+        } catch (err) {
+          console.error("Error processing instructor data:", err);
         }
       }
       
