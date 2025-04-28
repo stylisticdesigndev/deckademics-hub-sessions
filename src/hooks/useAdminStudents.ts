@@ -37,48 +37,44 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching active students...");
       
-      // First get all students with active status
-      const { data: activeStudents, error: studentsError } = await supabase
+      // Fetch students and profiles in one query with a join
+      const { data: studentsWithProfiles, error } = await supabase
         .from('students')
-        .select('*')
+        .select(`
+          id,
+          level,
+          enrollment_status,
+          notes,
+          start_date,
+          profiles:id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .eq('enrollment_status', 'active');
       
-      if (studentsError) {
-        console.error("Error fetching active students:", studentsError);
-        throw studentsError;
+      if (error) {
+        console.error("Error fetching active students with profiles:", error);
+        throw error;
       }
 
-      console.log("Raw active students data:", activeStudents);
+      console.log("Raw active students with profiles data:", studentsWithProfiles);
 
-      if (!activeStudents || activeStudents.length === 0) {
+      if (!studentsWithProfiles || studentsWithProfiles.length === 0) {
         console.log("No active students found");
         return [];
       }
       
-      // Get profiles for these students
-      const activeStudentIds = activeStudents.map(student => student.id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', activeStudentIds);
-        
-      if (profilesError) {
-        console.error("Error fetching profiles for active students:", profilesError);
-        throw profilesError;
-      }
-
-      console.log("Profiles data:", profiles);
-      
-      // Combine student data with profile data
-      const studentsWithProfiles = activeStudents.map(student => {
-        const profile = profiles?.find(p => p.id === student.id);
+      // Transform the data to match the Student interface
+      const formattedStudents = studentsWithProfiles.map(student => {
         return {
           ...student,
-          instructor: null, // Initialize with null to match the Student interface
-          profile: profile ? {
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.email || ''
+          instructor: null,
+          profile: student.profiles ? {
+            first_name: student.profiles.first_name || '',
+            last_name: student.profiles.last_name || '',
+            email: student.profiles.email || ''
           } : {
             first_name: '',
             last_name: '',
@@ -87,8 +83,8 @@ export const useAdminStudents = () => {
         };
       });
       
-      console.log("Active students with profiles:", studentsWithProfiles);
-      return studentsWithProfiles;
+      console.log("Formatted active students:", formattedStudents);
+      return formattedStudents;
     } catch (err) {
       console.error("Unexpected error in fetchActiveStudents:", err);
       throw err;
@@ -100,46 +96,44 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching pending students...");
       
-      // First get all students with pending status
-      const { data: pendingStudents, error: studentsError } = await supabase
+      // Fetch students and profiles in one query with a join
+      const { data: studentsWithProfiles, error } = await supabase
         .from('students')
-        .select('*')
+        .select(`
+          id,
+          level,
+          enrollment_status,
+          notes,
+          start_date,
+          profiles:id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .eq('enrollment_status', 'pending');
       
-      if (studentsError) {
-        console.error("Error fetching pending students:", studentsError);
-        throw studentsError;
+      if (error) {
+        console.error("Error fetching pending students with profiles:", error);
+        throw error;
       }
 
-      console.log("Raw pending students data:", pendingStudents);
+      console.log("Raw pending students with profiles data:", studentsWithProfiles);
 
-      if (!pendingStudents || pendingStudents.length === 0) {
+      if (!studentsWithProfiles || studentsWithProfiles.length === 0) {
         console.log("No pending students found");
         return [];
       }
       
-      // Get profiles for these students
-      const pendingStudentIds = pendingStudents.map(student => student.id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', pendingStudentIds);
-        
-      if (profilesError) {
-        console.error("Error fetching profiles for pending students:", profilesError);
-        throw profilesError;
-      }
-      
-      // Combine student data with profile data
-      const studentsWithProfiles = pendingStudents.map(student => {
-        const profile = profiles?.find(p => p.id === student.id);
+      // Transform the data to match the Student interface
+      const formattedStudents = studentsWithProfiles.map(student => {
         return {
           ...student,
-          instructor: null, // Initialize with null to match the Student interface
-          profile: profile ? {
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.email || ''
+          instructor: null,
+          profile: student.profiles ? {
+            first_name: student.profiles.first_name || '',
+            last_name: student.profiles.last_name || '',
+            email: student.profiles.email || ''
           } : {
             first_name: '',
             last_name: '',
@@ -148,8 +142,8 @@ export const useAdminStudents = () => {
         };
       });
       
-      console.log("Pending students with profiles:", studentsWithProfiles);
-      return studentsWithProfiles;
+      console.log("Formatted pending students:", formattedStudents);
+      return formattedStudents;
     } catch (err) {
       console.error("Unexpected error in fetchPendingStudents:", err);
       throw err;
