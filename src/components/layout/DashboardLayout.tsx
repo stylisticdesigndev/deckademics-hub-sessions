@@ -1,5 +1,5 @@
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -29,7 +30,7 @@ export const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { signOut, userData } = useAuth();
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const handleLogout = () => {
     signOut();
@@ -50,6 +51,56 @@ export const DashboardLayout = ({
       return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
     }
     return `${userType.charAt(0).toUpperCase() + userType.slice(1)} User`;
+  };
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      if (!userData.user?.id) return;
+      
+      try {
+        let count = 0;
+        
+        // For now, we're using announcements as notifications
+        // This would be enhanced with a proper notifications system in the future
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('id')
+          .contains('target_role', [userType])
+          .order('published_at', { ascending: false })
+          .limit(5);
+          
+        if (error) {
+          console.error('Error fetching notifications:', error);
+          return;
+        }
+        
+        if (data) {
+          count = data.length;
+        }
+        
+        setUnreadNotifications(count);
+      } catch (err) {
+        console.error('Error counting notifications:', err);
+      }
+    };
+    
+    fetchNotificationCount();
+    
+    // Set up a timer to refresh notification count every minute
+    const intervalId = setInterval(fetchNotificationCount, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [userData.user?.id, userType]);
+
+  // Handle notification click
+  const handleNotificationClick = () => {
+    // Navigate to the appropriate messages or notifications page based on user type
+    if (userType === 'student' || userType === 'instructor') {
+      navigate(`/${userType}/messages`);
+    } else if (userType === 'admin') {
+      navigate('/admin/announcements');
+    }
   };
 
   return (
@@ -104,7 +155,7 @@ export const DashboardLayout = ({
               <h1 className="text-xl font-semibold">Deckademics DJ School</h1>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" className="relative" onClick={() => navigate(`/${userType}/messages`)}>
+              <Button variant="outline" size="icon" className="relative" onClick={handleNotificationClick}>
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 bg-deckademics-primary text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">

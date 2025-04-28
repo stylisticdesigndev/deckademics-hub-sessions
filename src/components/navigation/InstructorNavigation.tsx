@@ -7,7 +7,8 @@ import {
   Users,
   Calendar,
   MessageSquare,
-  UserCog
+  UserCog,
+  Bell
 } from 'lucide-react';
 import {
   Tooltip,
@@ -40,6 +41,13 @@ export const InstructorNavigation = () => {
       href: "/instructor/classes",
       active: pathname === "/instructor/classes",
       tooltip: "View and manage your class schedule"
+    },
+    {
+      title: "Messages",
+      icon: Bell,
+      href: "/instructor/messages",
+      active: pathname === "/instructor/messages",
+      tooltip: "View messages and notifications"
     },
     {
       title: "Announcements",

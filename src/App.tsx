@@ -31,6 +31,7 @@ import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
+import InstructorMessages from "./pages/instructor/InstructorMessages";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
               <Route path="/instructor/classes" element={<InstructorClasses />} />
               <Route path="/instructor/profile" element={<InstructorProfile />} />
+              <Route path="/instructor/messages" element={<InstructorMessages />} />
             </Route>
             
             {/* Admin routes */}
