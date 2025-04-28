@@ -1,8 +1,6 @@
 
-// refactored: imports and hooks usage for maintainability
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
-import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
 
 export const useStudentDashboard = () => {
   const {
@@ -12,7 +10,8 @@ export const useStudentDashboard = () => {
     isFirstTimeUser,
     progressData,
     upcomingClasses,
-    fetchStudentInfo
+    fetchStudentInfo,
+    fetchError
   } = useStudentDashboardCore();
 
   const {
@@ -24,6 +23,7 @@ export const useStudentDashboard = () => {
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
 
+  // Determine if dashboard is empty
   const isEmpty = announcements.length === 0 && upcomingClasses.length === 0;
 
   return {
@@ -35,6 +35,7 @@ export const useStudentDashboard = () => {
     handleAddToCalendar,
     isEmpty,
     isFirstTimeUser,
-    refreshData
+    refreshData,
+    fetchError
   };
 };

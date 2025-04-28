@@ -26,7 +26,9 @@ export function useStudentDashboardActions(fetchStudentInfo: () => void) {
     });
   }, [toast]);
 
+  // Prevent unnecessary rerenders by wrapping this in useCallback
   const refreshData = useCallback(() => {
+    console.log("Refreshing student dashboard data");
     fetchStudentInfo();
   }, [fetchStudentInfo]);
 

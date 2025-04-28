@@ -28,6 +28,7 @@ export function useStudentDashboardCore() {
     nextClass: 'Not scheduled',
   });
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const userId = session?.user?.id;
 
@@ -39,8 +40,11 @@ export function useStudentDashboardCore() {
       setLoading(false);
       return;
     }
+    
     try {
       setLoading(true);
+      
+      // First check if student record exists
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
         .select('level, enrollment_status, notes')
@@ -49,21 +53,42 @@ export function useStudentDashboardCore() {
 
       if (studentError) {
         console.error('Error fetching student info:', studentError);
-      }
-
-      if (studentInfo && typeof studentInfo === 'object') {
+        setFetchError(studentError.message);
+        
+        // If student record doesn't exist, create one
+        if (studentError.code === 'PGRST116') {
+          try {
+            console.log('Creating student record for new user:', userId);
+            const { error: insertError } = await supabase
+              .from('students')
+              .insert([{ id: userId }])
+              .select();
+              
+            if (insertError) {
+              console.error('Error creating student record:', insertError.message);
+              setFetchError(`Failed to create student record: ${insertError.message}`);
+            } else {
+              // Successful creation, use default values
+              setStudentData(prev => ({
+                ...prev,
+                level: 'Beginner'
+              }));
+            }
+          } catch (insertError) {
+            console.error('Exception creating student record:', insertError);
+          }
+        }
+      } else if (studentInfo && typeof studentInfo === 'object') {
         setStudentData(prev => ({
           ...prev,
           level: studentInfo.level || 'Beginner'
         }));
       }
 
-      // Only determine first-time user status if both classes and progress are loaded
-      if (!classesLoading && !progressLoading) {
-        const isFirstLogin = (!upcomingClasses || upcomingClasses.length === 0) &&
-          (!progressData || progressData.length === 0);
-        setIsFirstTimeUser(isFirstLogin);
-      }
+      // Determine first-time user status
+      const isFirstLogin = upcomingClasses.length === 0 && 
+        (!progressData || progressData.length === 0);
+      setIsFirstTimeUser(isFirstLogin);
 
       // Only update next class if there are upcoming classes
       if (upcomingClasses.length > 0) {
@@ -74,7 +99,7 @@ export function useStudentDashboardCore() {
         }));
       }
       
-      // Only calculate progress if progress data is available
+      // Calculate progress if data is available
       if (progressData && Array.isArray(progressData) && progressData.length > 0) {
         const totalProficiency = progressData.reduce((sum: number, item: any) =>
           sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0)
@@ -85,19 +110,23 @@ export function useStudentDashboardCore() {
           totalProgress: avgProgress
         }));
       }
-    } catch (e) {
-      console.error('Error fetching student info:', e);
+      
+    } catch (e: any) {
+      console.error('Error in fetchStudentInfo:', e);
+      setFetchError(e.message || 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
-  }, [userId, upcomingClasses, progressData, classesLoading, progressLoading]);
+  }, [userId, upcomingClasses, progressData]);
 
-  // Only fetch student info once when userId is available and data sources are loaded
+  // Only run fetchStudentInfo when ready and data is loaded
   useEffect(() => {
-    if (userId && !classesLoading && !progressLoading) {
+    if (!classesLoading && !progressLoading && userId) {
       fetchStudentInfo();
+    } else if (!userId) {
+      setLoading(false);
     }
-  }, [userId, fetchStudentInfo, classesLoading, progressLoading]);
+  }, [fetchStudentInfo, userId, classesLoading, progressLoading]);
 
   return {
     userId,
@@ -107,5 +136,6 @@ export function useStudentDashboardCore() {
     progressData,
     upcomingClasses,
     fetchStudentInfo,
+    fetchError
   };
 }

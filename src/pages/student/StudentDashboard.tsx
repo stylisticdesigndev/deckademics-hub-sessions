@@ -10,6 +10,8 @@ import { AnnouncementsSection } from '@/components/student/dashboard/Announcemen
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
 import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
 import { useAuth } from '@/providers/AuthProvider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { userData, session } = useAuth();
@@ -28,18 +30,50 @@ const StudentDashboard = () => {
   // Get current user ID from session
   const userId = session?.user?.id;
   
-  // Generate the name from session user metadata instead of profile data
-  const studentName = session?.user?.user_metadata ? 
-    `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim() : 
-    'Student';
+  // Generate the name from user data with proper fallbacks
+  const getStudentName = () => {
+    // First check profile data
+    if (userData.profile && userData.profile.first_name) {
+      return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
+    }
+    
+    // Then check session metadata
+    if (session?.user?.user_metadata) {
+      const metadata = session.user.user_metadata;
+      // Log all user data to help debug
+      console.log("Current user metadata:", metadata);
+      console.log("Current user profile:", userData.profile);
+      console.log("Rendering dashboard for:", 
+        `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim());
+      
+      return `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim();
+    }
+    
+    return 'Student';
+  };
+  
+  const studentName = getStudentName();
   
   // Only refresh data when userId changes, not on every render
   useEffect(() => {
-    if (userId) {
-      refreshData();
+    let isMounted = true;
+    
+    if (userId && isMounted) {
+      // Add a slight delay to avoid potential race conditions with auth
+      const timer = setTimeout(() => {
+        if (isMounted) {
+          console.log("Refreshing data for userId:", userId);
+          refreshData();
+        }
+      }, 300);
+      
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]); // Removed refreshData from dependency array
+  }, [userId]); // Only depend on userId
 
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;
@@ -54,6 +88,16 @@ const StudentDashboard = () => {
             {isEmpty && " Complete your profile and enroll in classes to get started."}
           </p>
         </section>
+
+        {!userId && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Authentication Error</AlertTitle>
+            <AlertDescription>
+              There was a problem loading your profile. Please try logging out and back in.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {loading ? (
           <DashboardSkeleton />

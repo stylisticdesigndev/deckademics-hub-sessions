@@ -5,7 +5,7 @@ import { useAuth } from '@/providers/AuthProvider';
 export const WelcomeSection: React.FC = memo(() => {
   const { userData, session } = useAuth();
   
-  // Get instructor name from auth provider, with fallback to session metadata
+  // Get instructor name from auth provider, with consistent fallback strategy
   const getInstructorName = () => {
     // First try profile data
     if (userData.profile && userData.profile.first_name) {
