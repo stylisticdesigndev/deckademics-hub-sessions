@@ -62,9 +62,9 @@ export const useAdminStudents = () => {
         .select('*')
         .in('id', activeStudentIds);
         
-      if (profilesErrors) {
-        console.error("Error fetching profiles for active students:", profilesErrors);
-        throw profilesErrors;
+      if (profilesError) {
+        console.error("Error fetching profiles for active students:", profilesError);
+        throw profilesError;
       }
       
       // Combine student data with profile data
