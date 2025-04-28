@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -70,7 +71,6 @@ const createAdminUser = (): User => {
     email_confirmed_at: new Date().toISOString(),
     last_sign_in_at: new Date().toISOString(),
     factors: null
-    // Removed the 'banned_until' property that was causing the TypeScript error
   };
 };
 
@@ -161,76 +161,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
   
-    // Only create a new subscription if one doesn't exist
-    if (!authChangeSubscription) {
-      // Set up auth state listener first
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, newSession) => {
-          console.log("Auth state changed:", event, newSession?.user?.id);
-          
-          if (event === 'SIGNED_OUT') {
-            setSession(null);
-            setUserData({
-              user: null,
-              profile: null,
-              role: null
-            });
-            return;
-          }
-          
-          setSession(newSession);
-          
-          if (newSession?.user) {
-            // Use setTimeout to avoid auth deadlocks
-            setTimeout(() => {
-              // Special handling for admin@deckademics.com
-              if (newSession.user.email === 'admin@deckademics.com') {
-                console.log("Admin user detected, using direct role assignment");
-                setUserData({
-                  user: newSession.user,
-                  profile: {
-                    id: newSession.user.id,
-                    first_name: 'Admin',
-                    last_name: 'User',
-                    email: 'admin@deckademics.com',
-                    avatar_url: null,
-                    role: 'admin',
-                  },
-                  role: 'admin',
-                });
-                
-                // Only redirect on SIGNED_IN event, not on token refresh
-                if (event === 'SIGNED_IN') {
-                  redirectBasedOnRole('admin');
-                }
-                return;
-              }
-              
-              fetchUserProfile(newSession.user.id)
-                .then(profile => {
-                  if (profile?.role) {
-                    // Only redirect on SIGNED_IN event, not on token refresh
-                    if (event === 'SIGNED_IN') {
-                      redirectBasedOnRole(profile.role);
-                    }
-                  }
-                })
-                .catch(error => {
-                  console.error("Error fetching user profile in auth state change:", error);
-                });
-            }, 0);
-          } else {
-            setUserData({
-              user: null,
-              profile: null,
-              role: null
-            });
-          }
+    // Set up auth state listener
+    const { data } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log("Auth state changed:", event, newSession?.user?.id);
+        
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUserData({
+            user: null,
+            profile: null,
+            role: null
+          });
+          return;
         }
-      );
+        
+        setSession(newSession);
+        
+        if (newSession?.user) {
+          // Use setTimeout to avoid auth deadlocks
+          setTimeout(() => {
+            // Special handling for admin@deckademics.com
+            if (newSession.user.email === 'admin@deckademics.com') {
+              console.log("Admin user detected, using direct role assignment");
+              setUserData({
+                user: newSession.user,
+                profile: {
+                  id: newSession.user.id,
+                  first_name: 'Admin',
+                  last_name: 'User',
+                  email: 'admin@deckademics.com',
+                  avatar_url: null,
+                  role: 'admin',
+                },
+                role: 'admin',
+              });
+              
+              // Only redirect on SIGNED_IN event, not on token refresh
+              if (event === 'SIGNED_IN') {
+                redirectBasedOnRole('admin');
+              }
+              return;
+            }
+            
+            fetchUserProfile(newSession.user.id)
+              .then(profile => {
+                if (profile?.role) {
+                  // Only redirect on SIGNED_IN event, not on token refresh
+                  if (event === 'SIGNED_IN') {
+                    redirectBasedOnRole(profile.role);
+                  }
+                }
+              })
+              .catch(error => {
+                console.error("Error fetching user profile in auth state change:", error);
+              });
+          }, 0);
+        } else {
+          setUserData({
+            user: null,
+            profile: null,
+            role: null
+          });
+        }
+      }
+    );
 
-      authChangeSubscription = subscription;
-    }
+    // We're not unsubscribing to avoid multiple subscriptions issue
+    authChangeSubscription = data.subscription;
 
     // Check for existing session
     const initializeAuth = async () => {
@@ -285,74 +283,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     
     initializeAuth();
-
-    return () => {
-      // Don't unsubscribe - we want to keep the subscription for the app lifetime
-      // This prevents multiple GoTrueClient instances
-    };
   }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // First try to get the profile using get_user_profile function
-      const { data: funcData, error: funcError } = await supabase
-        .rpc('get_user_profile', { user_id: userId });
+      // Use get_user_role function to avoid RLS recursion issues
+      const { data: roleData, error: roleError } = await supabase.rpc('get_user_role', { 
+        user_id: userId 
+      });
       
-      if (funcError) {
-        console.error("Error fetching profile with RPC:", funcError);
-        // Fall back to direct query if RPC fails
-        const { data: directData, error: directError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-          
-        if (directError) {
-          console.error("Error fetching profile directly:", directError);
-          throw directError;
+      if (roleError) {
+        console.error("Error fetching role:", roleError);
+        throw roleError;
+      }
+      
+      console.log("Got user role:", roleData);
+      
+      // Fetch profile details directly without using recursion-prone RLS
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        
+        // If profile doesn't exist but we have user metadata, create one
+        if (session?.user?.user_metadata) {
+          return await createProfileFromMetadata(userId);
         }
         
-        if (directData) {
-          console.log("User profile fetched directly:", directData);
-          setUserData({
-            user: session?.user || null,
-            profile: directData as Profile,
-            role: directData.role as UserRole,
-          });
-          return directData as Profile;
-        }
+        throw profileError;
       }
-
-      // Check if we got any profile data from the RPC call
-      if (funcData && funcData.length > 0) {
-        const profile = funcData[0] as Profile;
-        console.log("User profile fetched successfully:", profile);
+      
+      if (profileData) {
+        console.log("User profile fetched successfully:", profileData);
         
         setUserData({
           user: session?.user || null,
-          profile: profile,
-          role: profile.role as UserRole,
+          profile: profileData as Profile,
+          role: profileData.role as UserRole,
         });
         
-        return profile;
-      }
-      
-      console.warn("No profile found for user:", userId);
-      
-      // If no profile exists but we have user metadata, create one
-      if (session?.user?.user_metadata) {
-        try {
-          return await createProfileFromMetadata(userId);
-        } catch (createError) {
-          console.error("Failed to create profile from metadata:", createError);
-          toast({
-            title: 'Profile Error',
-            description: 'Could not create user profile. Please try logging out and back in.',
-            variant: 'destructive',
-          });
-        }
+        return profileData as Profile;
       }
       
       return null;
@@ -560,11 +536,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (profileError) {
           console.error("Error creating profile after signup:", profileError);
         }
-        
-        // Redirect to the appropriate dashboard
-        setTimeout(() => {
-          redirectBasedOnRole(role);
-        }, 500);
       }
       
       return { user: data.user, session: data.session };
@@ -674,8 +645,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     updateProfile,
-    setAdminSession, // Add the new method to the context value
-    clearLocalStorage, // Add the new method to the context value
+    setAdminSession,
+    clearLocalStorage,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

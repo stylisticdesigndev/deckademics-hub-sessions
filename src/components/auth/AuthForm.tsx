@@ -116,14 +116,17 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         description: `You have been logged in as ${userType}.`,
       });
       
-      // Redirect based on role
-      if (userType === 'student') {
-        navigate('/student/dashboard');
-      } else if (userType === 'instructor') {
-        navigate('/instructor/dashboard');
-      } else if (userType === 'admin') {
-        navigate('/admin/dashboard');
-      }
+      // Add a slight delay before redirecting to ensure state is updated
+      setTimeout(() => {
+        // Redirect based on role
+        if (userType === 'student') {
+          navigate('/student/dashboard');
+        } else if (userType === 'instructor') {
+          navigate('/instructor/dashboard');
+        } else if (userType === 'admin') {
+          navigate('/admin/dashboard');
+        }
+      }, 100);
     } catch (error: any) {
       console.error("Sign in error in form:", error);
       setLoginError(error.message || 'Authentication failed. Please try again.');
@@ -180,7 +183,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       console.log("Attempting sign up with:", formData.email, "role:", userType);
       
       // Use the AuthProvider signUp method which handles profile creation
-      const { user, session } = await signUp(
+      const result = await signUp(
         formData.email,
         formData.password,
         userType,
@@ -190,17 +193,31 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         }
       );
       
-      if (!user) {
+      if (!result.user) {
         setSignupError("Registration failed. Please try again.");
         setSignupLoading(false);
         return;
       }
       
-      if (user && !session) {
+      if (result.user && !result.session) {
         toast({
           title: 'Account created!',
           description: 'Please check your email to verify your account before signing in.',
         });
+      } else if (result.session) {
+        toast({
+          title: 'Account created!',
+          description: 'Your account has been created and you are now logged in.',
+        });
+        
+        // Add a slight delay before redirecting
+        setTimeout(() => {
+          if (userType === 'student') {
+            navigate('/student/dashboard');
+          } else if (userType === 'instructor') {
+            navigate('/instructor/dashboard');
+          }
+        }, 100);
       }
       
     } catch (error: any) {

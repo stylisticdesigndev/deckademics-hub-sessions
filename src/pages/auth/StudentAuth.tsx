@@ -12,9 +12,20 @@ const StudentAuthContent = () => {
   // Redirect if user is already logged in
   useEffect(() => {
     if (session && session.user) {
+      console.log("Session detected on student auth page:", session.user.email);
       const role = session.user.user_metadata?.role;
+      
       if (role === 'student') {
+        console.log("Redirecting student to dashboard");
         navigate('/student/dashboard');
+      } else if (role) {
+        // If they have a different role, redirect to appropriate page
+        console.log(`User has ${role} role, redirecting appropriately`);
+        if (role === 'instructor') {
+          navigate('/instructor/dashboard');
+        } else if (role === 'admin') {
+          navigate('/admin/dashboard');
+        }
       }
     }
   }, [session, navigate]);
