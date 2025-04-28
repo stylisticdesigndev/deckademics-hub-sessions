@@ -24,7 +24,7 @@ interface Student {
   level: string;
   enrollment_status: string;
   profile: Profile;
-  instructor?: Instructor | null;
+  instructor?: Instructor | null;  // Added as optional property
 }
 
 interface InstructorAssignment {
