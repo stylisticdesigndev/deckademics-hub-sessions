@@ -30,18 +30,31 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         // If we have a valid role in metadata but no profile, we can still proceed
         setIsWaitingForProfile(false);
       }
+    } else if (!isLoading && !session) {
+      // If no session and not loading, we can proceed with the redirect
+      setIsWaitingForProfile(false);
     }
   }, [isLoading, session, userData.role, allowedRoles]);
 
-  // Simply wait for loading to complete
+  // Simply wait for loading to complete with a maximum timeout
   useEffect(() => {
     if (!isLoading) {
       // Set a small additional delay to ensure profile has time to load
       setTimeout(() => {
         setIsWaitingForProfile(false);
-      }, 500);
+      }, 300);
+    } else {
+      // Set a maximum wait time for loading
+      const timer = setTimeout(() => {
+        if (isWaitingForProfile) {
+          console.log("Maximum wait time reached, proceeding with auth check");
+          setIsWaitingForProfile(false);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isLoading, isWaitingForProfile]);
   
   // Handle profile-based routing decisions
   useEffect(() => {
@@ -56,7 +69,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
           console.log("Access denied - redirecting to appropriate dashboard");
           // We'll handle redirection in the render section
         }
-      } else if (waitTime >= 5000) {
+      } else if (waitTime >= 3000) {
         // After waiting and still no profile, show error and redirect to auth
         toast({
           title: 'Profile issue detected',
@@ -81,8 +94,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     };
   }, [isLoading, session, userData, allowedRoles, waitTime, signOut]);
   
-  // Show loading state
-  if (isLoading || (session && !userData.profile && isWaitingForProfile)) {
+  // Show loading state but with a maximum wait time
+  if ((isLoading || (session && !userData.profile && isWaitingForProfile)) && waitTime < 3000) {
     return (
       <div className="flex h-screen items-center justify-center bg-deckademics-dark">
         <div className="w-full max-w-md space-y-4">
@@ -126,7 +139,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       return <Navigate to="/student/dashboard" replace />;
     } else {
       // If still no role after retries, sign the user out
-      if (waitTime >= 5000) {
+      if (waitTime >= 3000) {
         signOut();
       }
       // Fallback to login if role is missing

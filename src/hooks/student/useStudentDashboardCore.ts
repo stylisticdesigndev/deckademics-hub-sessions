@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
 import { useStudentProgress } from './dashboard/useStudentProgress';
@@ -29,6 +29,9 @@ export function useStudentDashboardCore() {
   });
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  // Use a ref to track if we've already fetched data
+  const dataFetchedRef = useRef(false);
 
   const userId = session?.user?.id;
 
@@ -36,8 +39,8 @@ export function useStudentDashboardCore() {
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);
 
   const fetchStudentInfo = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
+    // Exit early if user ID is missing or if we're still loading other data
+    if (!userId || classesLoading || progressLoading) {
       return;
     }
     
@@ -119,14 +122,17 @@ export function useStudentDashboardCore() {
     }
   }, [userId, upcomingClasses, progressData]);
 
-  // Only run fetchStudentInfo when ready and data is loaded
+  // Use a more controlled approach to prevent infinite loops
   useEffect(() => {
-    if (!classesLoading && !progressLoading && userId) {
+    // Only run fetch if we have a userId and haven't already fetched the data
+    if (userId && !classesLoading && !progressLoading && !dataFetchedRef.current) {
+      console.log("Dashboard - Initial fetch for userId:", userId);
+      dataFetchedRef.current = true;
       fetchStudentInfo();
     } else if (!userId) {
       setLoading(false);
     }
-  }, [fetchStudentInfo, userId, classesLoading, progressLoading]);
+  }, [userId, classesLoading, progressLoading, fetchStudentInfo]);
 
   return {
     userId,

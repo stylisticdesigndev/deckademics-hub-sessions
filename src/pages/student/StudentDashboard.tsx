@@ -12,9 +12,12 @@ import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
-  const { userData, session } = useAuth();
+  const { userData, session, isLoading } = useAuth();
+  const navigate = useNavigate();
+  
   const {
     loading,
     studentData,
@@ -24,8 +27,30 @@ const StudentDashboard = () => {
     handleAddToCalendar,
     isEmpty,
     isFirstTimeUser,
-    refreshData
+    refreshData,
+    fetchError
   } = useStudentDashboard();
+
+  // Redirect if not authenticated or wrong role
+  useEffect(() => {
+    if (!isLoading) {
+      if (!session) {
+        console.log("No session found, redirecting to student auth");
+        navigate('/auth/student', { replace: true });
+        return;
+      }
+      
+      // If user has wrong role, redirect them
+      if (userData.role && userData.role !== 'student') {
+        console.log(`User has ${userData.role} role, redirecting to appropriate dashboard`);
+        if (userData.role === 'instructor') {
+          navigate('/instructor/dashboard', { replace: true });
+        } else if (userData.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        }
+      }
+    }
+  }, [session, userData.role, isLoading, navigate]);
 
   // Get current user ID from session
   const userId = session?.user?.id;
@@ -40,12 +65,6 @@ const StudentDashboard = () => {
     // Then check session metadata
     if (session?.user?.user_metadata) {
       const metadata = session.user.user_metadata;
-      // Log all user data to help debug
-      console.log("Current user metadata:", metadata);
-      console.log("Current user profile:", userData.profile);
-      console.log("Rendering dashboard for:", 
-        `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim());
-      
       return `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim();
     }
     
@@ -78,6 +97,30 @@ const StudentDashboard = () => {
   // Determine what to show - always prioritize the empty state for new users
   const showEmptyState = isEmpty || isFirstTimeUser;
 
+  // If auth is still loading, show a loading skeleton
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+        <DashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  // If no session, render an error alert that will redirect
+  if (!session) {
+    return (
+      <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication Required</AlertTitle>
+          <AlertDescription>
+            Please sign in to access your student dashboard.
+          </AlertDescription>
+        </Alert>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
@@ -89,12 +132,12 @@ const StudentDashboard = () => {
           </p>
         </section>
 
-        {!userId && (
+        {fetchError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Authentication Error</AlertTitle>
+            <AlertTitle>Error loading dashboard</AlertTitle>
             <AlertDescription>
-              There was a problem loading your profile. Please try logging out and back in.
+              {fetchError}
             </AlertDescription>
           </Alert>
         )}

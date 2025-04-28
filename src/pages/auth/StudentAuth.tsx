@@ -11,7 +11,7 @@ const StudentAuthContent = () => {
   const { session, userData, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
-  // Improved session validation logic
+  // Improved session validation logic with debugging
   useEffect(() => {
     console.log("StudentAuth - Checking auth state:", { 
       sessionExists: !!session, 

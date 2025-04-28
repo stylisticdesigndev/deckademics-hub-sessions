@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -557,15 +556,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Modified signOut method with better session clearing
   const signOut = async () => {
     console.log("Signing out user");
     try {
-      // Check if this is an admin session and clear localStorage if so
-      if (userData.role === 'admin' && userData.user?.email === 'admin@deckademics.com') {
-        console.log("Clearing admin session from localStorage");
-        localStorage.removeItem('deckademics-admin-session');
-      } 
-      
       // First explicitly clear our React state
       setSession(null);
       setUserData({
@@ -574,17 +568,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null
       });
       
-      // Then perform the Supabase signout
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Check if this is an admin session and clear localStorage if so
+      const isAdmin = userData.role === 'admin' && userData.user?.email === 'admin@deckademics.com';
       
-      // Also manually remove Supabase session from localStorage to ensure it's fully cleared
+      if (isAdmin) {
+        console.log("Clearing admin session from localStorage");
+        localStorage.removeItem('deckademics-admin-session');
+      } 
+      
+      // Clear all possible authentication storage to ensure clean logout
       localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
+      
+      // Then perform the Supabase signout if we're not an admin (which uses mock session)
+      if (!isAdmin) {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+        } catch (supabaseError) {
+          console.error("Error during Supabase sign out:", supabaseError);
+          // Continue with rest of logout process regardless
+        }
+      }
       
       console.log("Sign out completed successfully");
       
       // Navigate after everything else has been cleared
-      navigate('/', { replace: true });
+      // Add a slight delay to ensure state updates have processed
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
       
       toast({
         title: 'Logged out',
