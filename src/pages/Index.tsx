@@ -113,7 +113,6 @@ const Index = () => {
         setVideoKey(Date.now());
         
         toast({
-          title: "Video Load Error",
           description: "Could not load background video. Using default instead.",
           variant: "destructive"
         });
