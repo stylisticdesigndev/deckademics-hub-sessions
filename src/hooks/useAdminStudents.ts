@@ -37,25 +37,29 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching active students...");
       
-      // Get all active student records from the students table
-      const { data: studentRecords, error } = await supabase
+      // Get all student records from the students table
+      const { data: students, error: studentsError } = await supabase
         .from('students')
-        .select('*')
-        .eq('enrollment_status', 'active');
+        .select('*');
       
-      if (error) {
-        console.error("Error fetching active students:", error);
-        throw error;
+      if (studentsError) {
+        console.error("Error fetching students:", studentsError);
+        throw studentsError;
       }
 
-      console.log("Raw active students data:", studentRecords);
+      console.log("All students from database:", students);
+      
+      // Filter active students
+      const studentRecords = students?.filter(student => student.enrollment_status === 'active') || [];
+      
+      console.log("Filtered active students:", studentRecords);
 
-      if (!studentRecords || studentRecords.length === 0) {
+      if (studentRecords.length === 0) {
         console.log("No active students found");
         return [];
       }
       
-      // Get profiles for all students in a single query
+      // Get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -69,8 +73,13 @@ export const useAdminStudents = () => {
       
       // Combine student records with their profiles
       const formattedStudents = studentRecords.map(student => {
-        // Find matching profile
         const profile = profiles?.find(p => p.id === student.id);
+        
+        if (profile) {
+          console.log(`Found matching profile for student ${student.id}:`, profile);
+        } else {
+          console.log(`No matching profile found for student ${student.id}`);
+        }
         
         return {
           ...student,
@@ -100,25 +109,29 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching pending students...");
       
-      // Get all pending student records from the students table
-      const { data: studentRecords, error } = await supabase
+      // Get all student records from the students table
+      const { data: students, error: studentsError } = await supabase
         .from('students')
-        .select('*')
-        .eq('enrollment_status', 'pending');
+        .select('*');
       
-      if (error) {
-        console.error("Error fetching pending students:", error);
-        throw error;
+      if (studentsError) {
+        console.error("Error fetching students:", studentsError);
+        throw studentsError;
       }
 
-      console.log("Raw pending students data:", studentRecords);
+      console.log("All students from database:", students);
+      
+      // Filter pending students
+      const studentRecords = students?.filter(student => student.enrollment_status === 'pending') || [];
+      
+      console.log("Filtered pending students:", studentRecords);
 
-      if (!studentRecords || studentRecords.length === 0) {
+      if (studentRecords.length === 0) {
         console.log("No pending students found");
         return [];
       }
       
-      // Get profiles for all students in a single query
+      // Get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -127,11 +140,18 @@ export const useAdminStudents = () => {
         console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
+
+      console.log("All profiles:", profiles);
       
       // Combine student records with their profiles
       const formattedStudents = studentRecords.map(student => {
-        // Find matching profile
         const profile = profiles?.find(p => p.id === student.id);
+        
+        if (profile) {
+          console.log(`Found matching profile for student ${student.id}:`, profile);
+        } else {
+          console.log(`No matching profile found for student ${student.id}`);
+        }
         
         return {
           ...student,
@@ -219,7 +239,9 @@ export const useAdminStudents = () => {
           description: "Demo student created successfully!",
         });
         
-        // Force refetching of students data after successful creation
+        // Force invalidation of queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+        
         // Use setTimeout to ensure the database has time to update
         setTimeout(() => {
           console.log("Refreshing student data after creating demo student...");
