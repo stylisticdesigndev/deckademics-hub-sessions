@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,14 +7,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
-  // Use a simple default video path without cache-busting initially
-  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
+  // Use the full URL path to ensure proper loading
+  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('./lovable-uploads/dj-background.mp4');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [videoKey, setVideoKey] = useState<number>(Date.now()); // Key for forcing remount
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  console.log("Index page rendering - Video URL:", backgroundVideoUrl);
+  console.log("Index page rendering with video URL:", backgroundVideoUrl);
   
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
@@ -52,9 +50,8 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       <VideoBackground 
-        key={videoKey}
         videoSrc={backgroundVideoUrl} 
-        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+        fallbackSrc="./lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
       />
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
@@ -66,7 +63,7 @@ const Index = () => {
           <div className="text-center flex flex-col items-center space-y-2">
             <div className="mb-4">
               <img 
-                src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
+                src="./lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
                 className="h-28 w-auto"
               />

@@ -14,6 +14,24 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
     // Reset states when video source changes
     setHasError(false);
     setIsLoading(true);
+    
+    // Check if the video exists before trying to play it
+    const checkVideoExists = async () => {
+      try {
+        const response = await fetch(videoSrc, { method: 'HEAD' });
+        if (!response.ok) {
+          console.error(`Video file not accessible: ${videoSrc}`, response.status);
+          setHasError(true);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error(`Error checking video existence: ${videoSrc}`, error);
+        setHasError(true);
+        setIsLoading(false);
+      }
+    };
+    
+    checkVideoExists();
   }, [videoSrc]);
 
   const handleVideoError = () => {
@@ -28,7 +46,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
   };
 
   // Show a console log to track rendering
-  console.log('VideoBackground rendering with src:', videoSrc);
+  console.log('VideoBackground rendering with src:', videoSrc, 'hasError:', hasError);
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
