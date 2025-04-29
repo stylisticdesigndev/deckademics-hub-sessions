@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
@@ -12,12 +12,14 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFetchTime, setLastFetchTime] = useState(0);
-  const [videoKey, setVideoKey] = useState<number>(Date.now()); // Add key for forcing remount
+  const [videoKey, setVideoKey] = useState<number>(Date.now()); // Key for forcing remount
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
+    console.log("Index page - Session check:", !!session, "User role:", userData.role);
+    
     if (session && userData.role) {
       console.log("User already logged in, redirecting to dashboard");
       const role = userData.role;
@@ -29,6 +31,8 @@ const Index = () => {
       } else if (role === 'admin') {
         navigate('/admin/dashboard');
       }
+    } else {
+      console.log("No active session found or missing role, showing login options");
     }
   }, [session, userData, navigate]);
 
@@ -126,7 +130,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
       <VideoBackground 
-        key={videoKey} // Key to force remount when URL changes
+        key={videoKey}
         videoSrc={backgroundVideoUrl} 
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
       />
