@@ -1,67 +1,59 @@
+
 import React, { useState, useEffect } from 'react';
 
 interface VideoBackgroundProps {
-  videoSrc?: string;
-  fallbackSrc?: string;
-  disableVideo?: boolean;
+  videoSrc: string;
+  fallbackSrc: string;
 }
 
-/**
- * Background component that displays a video or falls back to a static image
- * if the video cannot be loaded or is not provided
- */
-export const VideoBackground: React.FC<VideoBackgroundProps> = ({ 
-  videoSrc,
-  fallbackSrc = '/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png',
-  disableVideo = false
-}) => {
-  const [videoError, setVideoError] = useState(false);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  
-  // Reset video error state when videoSrc changes
+export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fallbackSrc }) => {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (videoSrc && !disableVideo) {
-      setVideoError(false);
-      setIsVideoLoaded(false);
-      console.log("Attempting to load video from:", videoSrc);
-    }
-  }, [videoSrc, disableVideo]);
+    // Reset states when video source changes
+    setHasError(false);
+    setIsLoading(true);
+  }, [videoSrc]);
 
-  // Handle video load success
-  const handleVideoLoad = () => {
-    setIsVideoLoaded(true);
-    console.log("Video loaded successfully:", videoSrc);
-  };
-
-  // Handle video load error
   const handleVideoError = () => {
-    setVideoError(true);
-    console.log("Video load error for:", videoSrc);
+    console.error('Video failed to load:', videoSrc);
+    setHasError(true);
+    setIsLoading(false);
   };
 
-  // Determine if we should show the video
-  const shouldShowVideo = videoSrc && !videoError && !disableVideo;
-  
+  const handleVideoLoaded = () => {
+    console.log('Video loaded successfully:', videoSrc);
+    setIsLoading(false);
+  };
+
+  // Show a console log to track rendering
+  console.log('VideoBackground rendering with src:', videoSrc);
+
   return (
-    <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
-      {/* Semi-transparent overlay */}
-      <div className="absolute inset-0 bg-black/50 z-10" />
-      
-      {/* Video element - now with responsive classes */}
-      {shouldShowVideo && (
+    <div className="fixed inset-0 -z-10 overflow-hidden">
+      {!hasError ? (
         <video
+          key={videoSrc} // Add key to force remount when src changes
           autoPlay
-          muted
           loop
+          muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-5"
-          onLoadedData={handleVideoLoad}
+          className={`object-cover w-full h-full transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           onError={handleVideoError}
+          onLoadedData={handleVideoLoaded}
         >
           <source src={videoSrc} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
+      ) : (
+        <img 
+          src={fallbackSrc} 
+          alt="Background" 
+          className="object-cover w-full h-full"
+        />
       )}
+      <div className="absolute inset-0 bg-black/40"></div>
     </div>
   );
 };

@@ -4,23 +4,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner'; // Import toast directly from sonner
+import { toast } from 'sonner'; 
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
+  // Use a simple default video path without cache-busting initially
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const [lastFetchTime, setLastFetchTime] = useState(0);
   const [videoKey, setVideoKey] = useState<number>(Date.now()); // Key for forcing remount
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
+  console.log("Index page rendering - Video URL:", backgroundVideoUrl);
+  
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
-    console.log("Index page - Session check:", !!session, "User role:", userData.role);
+    console.log("Index page - Session check:", !!session, "User role:", userData?.role);
     
-    if (session && userData.role) {
+    if (session && userData?.role) {
       console.log("User already logged in, redirecting to dashboard");
       const role = userData.role;
       
@@ -33,6 +34,8 @@ const Index = () => {
       }
     } else {
       console.log("No active session found or missing role, showing login options");
+      // Set loading to false as we're not redirecting
+      setIsLoading(false);
     }
   }, [session, userData, navigate]);
 
@@ -45,88 +48,6 @@ const Index = () => {
       clearLocalStorage();
     }
   }, [session, clearLocalStorage]);
-
-  // Function to fetch the latest video, with improved error handling
-  const getLatestVideo = useCallback(async () => {
-    const now = Date.now();
-    
-    // Avoid excessive retries in short periods (minimum 2s between attempts)
-    if (now - lastFetchTime < 2000 && lastFetchTime > 0) {
-      console.log('Skipping video fetch - too soon since last attempt');
-      return;
-    }
-    
-    setLastFetchTime(now);
-    setIsLoading(true);
-    
-    try {
-      console.log('Fetching latest background video...');
-      
-      // List files in the bucket and pick the newest one:
-      const { data, error } = await supabase.storage.from('background-videos').list('', { 
-        sortBy: { column: 'created_at', order: 'desc' }, 
-        limit: 1 
-      });
-      
-      if (error) {
-        console.error('Error fetching videos:', error);
-        throw error;
-      }
-      
-      if (data && data.length > 0) {
-        const { data: publicUrl } = supabase.storage.from('background-videos').getPublicUrl(data[0].name);
-        if (publicUrl?.publicUrl) {
-          console.log('Found video URL:', publicUrl.publicUrl);
-          
-          // Append a timestamp to bust browser cache
-          const cacheBuster = `?timestamp=${Date.now()}`;
-          setBackgroundVideoUrl(publicUrl.publicUrl + cacheBuster);
-          // Force video component remount by updating key
-          setVideoKey(Date.now());
-        } else {
-          throw new Error('Could not get public URL for video');
-        }
-      } else {
-        console.log('No videos found, using default');
-        // Use default video with cache buster
-        const cacheBuster = `?timestamp=${Date.now()}`;
-        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4' + cacheBuster);
-        // Force video component remount by updating key
-        setVideoKey(Date.now());
-      }
-    } catch (err) {
-      console.error('Failed to fetch background video:', err);
-      
-      // If we've tried less than 3 times, retry after a delay with exponential backoff
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        console.log(`Retrying video fetch in ${delay}ms. Attempt ${retryCount + 1}/3`);
-        
-        setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-        }, delay);
-      } else {
-        // Add cache buster to default URL to force reload
-        const cacheBuster = `?timestamp=${Date.now()}`;
-        setBackgroundVideoUrl('/lovable-uploads/dj-background.mp4' + cacheBuster);
-        // Force video component remount by updating key
-        setVideoKey(Date.now());
-        
-        // Use the toast function directly from sonner
-        toast("Could not load background video. Using default instead.", {
-          description: "Please check your internet connection and try again.",
-          position: "bottom-center",
-          duration: 5000
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [retryCount, lastFetchTime]);
-  
-  useEffect(() => {
-    getLatestVideo();
-  }, [retryCount, getLatestVideo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative">
