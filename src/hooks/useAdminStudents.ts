@@ -32,10 +32,47 @@ interface Student {
 export const useAdminStudents = () => {
   const queryClient = useQueryClient();
 
-  // Get active students
-  const fetchActiveStudents = async () => {
+  // Debug function to directly fetch all database data
+  const debugFetchStudents = async () => {
+    console.log("Debug: Directly fetching all data");
+    
     try {
-      console.log("Fetching active students...");
+      // Query all students
+      const { data: allStudents, error } = await supabase
+        .from('students')
+        .select('*');
+      
+      if (error) {
+        console.error("Debug: Error fetching all students:", error);
+        throw error;
+      }
+      
+      console.log("Debug: All students in database:", allStudents);
+      
+      // Query all profiles
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profilesError) {
+        console.error("Debug: Error fetching profiles:", profilesError);
+        throw profilesError;
+      }
+      
+      console.log("Debug: All profiles in database:", allProfiles);
+      
+      // Return both for debugging
+      return { allStudents, allProfiles };
+    } catch (err) {
+      console.error("Debug: Unexpected error in debugFetchStudents:", err);
+      throw err;
+    }
+  };
+
+  // Get all students
+  const fetchAllStudents = async () => {
+    try {
+      console.log("Fetching all students...");
       
       // Get all student records from the students table
       const { data: students, error: studentsError } = await supabase
@@ -47,19 +84,14 @@ export const useAdminStudents = () => {
         throw studentsError;
       }
 
-      console.log("All students from database:", students);
+      console.log("All students from database:", students || []);
       
-      // Filter active students
-      const studentRecords = students?.filter(student => student.enrollment_status === 'active') || [];
-      
-      console.log("Filtered active students:", studentRecords);
-
-      if (studentRecords.length === 0) {
-        console.log("No active students found");
-        return [];
+      if (!students || students.length === 0) {
+        console.log("No students found in the database");
+        return { activeStudents: [], pendingStudents: [] };
       }
       
-      // Get all profiles
+      // Get all profiles in a single query
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -69,132 +101,68 @@ export const useAdminStudents = () => {
         throw profilesError;
       }
 
-      console.log("All profiles:", profiles);
+      console.log("All profiles from database:", profiles || []);
+
+      // Filter and format active students
+      const activeStudents = students
+        .filter(student => student.enrollment_status === 'active')
+        .map(student => {
+          const profile = profiles?.find(p => p.id === student.id);
+          return {
+            ...student,
+            instructor: null, // Initialize instructor as null for now
+            profile: profile ? {
+              first_name: profile.first_name || '',
+              last_name: profile.last_name || '',
+              email: profile.email || ''
+            } : {
+              first_name: '',
+              last_name: '',
+              email: ''
+            }
+          };
+        });
+
+      console.log("Formatted active students:", activeStudents);
       
-      // Combine student records with their profiles
-      const formattedStudents = studentRecords.map(student => {
-        const profile = profiles?.find(p => p.id === student.id);
+      // Filter and format pending students
+      const pendingStudents = students
+        .filter(student => student.enrollment_status === 'pending')
+        .map(student => {
+          const profile = profiles?.find(p => p.id === student.id);
+          return {
+            ...student,
+            instructor: null,
+            profile: profile ? {
+              first_name: profile.first_name || '',
+              last_name: profile.last_name || '',
+              email: profile.email || ''
+            } : {
+              first_name: '',
+              last_name: '',
+              email: ''
+            }
+          };
+        });
         
-        if (profile) {
-          console.log(`Found matching profile for student ${student.id}:`, profile);
-        } else {
-          console.log(`No matching profile found for student ${student.id}`);
-        }
-        
-        return {
-          ...student,
-          instructor: null, // Initialize instructor as null for now
-          profile: profile ? {
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.email || ''
-          } : {
-            first_name: '',
-            last_name: '',
-            email: ''
-          }
-        };
-      });
+      console.log("Formatted pending students:", pendingStudents);
       
-      console.log("Formatted active students:", formattedStudents);
-      return formattedStudents;
+      return { activeStudents, pendingStudents };
     } catch (err) {
-      console.error("Unexpected error in fetchActiveStudents:", err);
+      console.error("Unexpected error in fetchAllStudents:", err);
       throw err;
     }
   };
 
-  // Get pending students
-  const fetchPendingStudents = async () => {
-    try {
-      console.log("Fetching pending students...");
-      
-      // Get all student records from the students table
-      const { data: students, error: studentsError } = await supabase
-        .from('students')
-        .select('*');
-      
-      if (studentsError) {
-        console.error("Error fetching students:", studentsError);
-        throw studentsError;
-      }
-
-      console.log("All students from database:", students);
-      
-      // Filter pending students
-      const studentRecords = students?.filter(student => student.enrollment_status === 'pending') || [];
-      
-      console.log("Filtered pending students:", studentRecords);
-
-      if (studentRecords.length === 0) {
-        console.log("No pending students found");
-        return [];
-      }
-      
-      // Get all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        throw profilesError;
-      }
-
-      console.log("All profiles:", profiles);
-      
-      // Combine student records with their profiles
-      const formattedStudents = studentRecords.map(student => {
-        const profile = profiles?.find(p => p.id === student.id);
-        
-        if (profile) {
-          console.log(`Found matching profile for student ${student.id}:`, profile);
-        } else {
-          console.log(`No matching profile found for student ${student.id}`);
-        }
-        
-        return {
-          ...student,
-          instructor: null,
-          profile: profile ? {
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.email || ''
-          } : {
-            first_name: '',
-            last_name: '',
-            email: ''
-          }
-        };
-      });
-      
-      console.log("Formatted pending students:", formattedStudents);
-      return formattedStudents;
-    } catch (err) {
-      console.error("Unexpected error in fetchPendingStudents:", err);
-      throw err;
-    }
-  };
-
-  // Query setup
+  // Query setup for all students
   const { 
-    data: activeStudents, 
-    isLoading: isLoadingActive,
-    refetch: refetchActive,
-    error: activeError
+    data: studentsData, 
+    isLoading,
+    refetch: refetchStudents,
+    error: studentsError
   } = useQuery({
-    queryKey: ['admin', 'students', 'active'],
-    queryFn: fetchActiveStudents
-  });
-
-  const { 
-    data: pendingStudents, 
-    isLoading: isLoadingPending,
-    refetch: refetchPending,
-    error: pendingError
-  } = useQuery({
-    queryKey: ['admin', 'students', 'pending'],
-    queryFn: fetchPendingStudents
+    queryKey: ['admin', 'students', 'all'],
+    queryFn: fetchAllStudents
   });
 
   // Function to create a demo student
@@ -245,9 +213,7 @@ export const useAdminStudents = () => {
         // Use setTimeout to ensure the database has time to update
         setTimeout(() => {
           console.log("Refreshing student data after creating demo student...");
-          refetchActive();
-          refetchPending();
-          debugFetchStudents();  // Also run debug fetch to verify data
+          refetchStudents();
           toast({
             title: "Refreshing",
             description: "Refreshing student data...",
@@ -270,46 +236,10 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Debug function to directly fetch all database data
-  const debugFetchStudents = async () => {
-    try {
-      console.log("Debug: Directly fetching all data");
-      
-      // Query without filters to see all students
-      const { data: allStudents, error } = await supabase
-        .from('students')
-        .select('*');
-      
-      if (error) {
-        console.error("Debug: Error fetching all students:", error);
-        return;
-      }
-      
-      console.log("Debug: All students in database:", allStudents);
-      
-      // Also check profiles table
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (profilesError) {
-        console.error("Debug: Error fetching profiles:", profilesError);
-        return;
-      }
-      
-      console.log("Debug: All profiles in database:", allProfiles);
-      
-      // Return both for debugging
-      return { allStudents, allProfiles };
-    } catch (err) {
-      console.error("Debug: Unexpected error in debugFetchStudents:", err);
-      throw err;
-    }
-  };
-
   // Mutation to approve a student
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
+      console.log("Approving student with ID:", studentId);
       const { error } = await supabase
         .from('students')
         .update({ enrollment_status: 'active' })
@@ -337,6 +267,7 @@ export const useAdminStudents = () => {
   // Mutation to decline a student
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
+      console.log("Declining student with ID:", studentId);
       const { error } = await supabase
         .from('students')
         .update({ enrollment_status: 'declined' })
@@ -364,6 +295,7 @@ export const useAdminStudents = () => {
   // Mutation to deactivate a student
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
+      console.log("Deactivating student with ID:", studentId);
       const { error } = await supabase
         .from('students')
         .update({ enrollment_status: 'inactive' })
@@ -388,34 +320,20 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Call the debug function immediately to log current state
-  debugFetchStudents().then(result => {
-    console.log("Debug fetch complete:", result);
-  }).catch(err => {
-    console.error("Debug fetch error:", err);
-  });
-
   // Handle any errors
-  if (activeError) {
-    console.error("Error in active students query:", activeError);
-  }
-  
-  if (pendingError) {
-    console.error("Error in pending students query:", pendingError);
+  if (studentsError) {
+    console.error("Error in students query:", studentsError);
   }
 
   return {
-    activeStudents: activeStudents || [],
-    pendingStudents: pendingStudents || [],
-    isLoading: isLoadingActive || isLoadingPending,
+    activeStudents: studentsData?.activeStudents || [],
+    pendingStudents: studentsData?.pendingStudents || [],
+    isLoading,
     approveStudent,
     declineStudent,
     deactivateStudent,
     createDemoStudent,
     debugFetchStudents,
-    refetchData: () => {
-      refetchActive();
-      refetchPending();
-    }
+    refetchData: refetchStudents
   };
 };

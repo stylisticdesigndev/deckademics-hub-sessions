@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -70,6 +69,11 @@ const AdminStudents = () => {
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
   }, [activeStudents, pendingStudents]);
 
+  // Auto-fetch debug data on first load
+  useEffect(() => {
+    handleDebugRefresh();
+  }, []);
+
   const handleApprove = (id: string) => {
     approveStudent.mutate(id);
   };
@@ -104,10 +108,12 @@ const AdminStudents = () => {
     setIsRefreshing(true);
     try {
       const debug = await debugFetchStudents();
+      console.log("Debug data received:", debug);
       setDebugInfo(debug);
-      console.log("Manual debug refresh complete:", debug);
       // Also refresh the UI data
       refetchData();
+    } catch (error) {
+      console.error("Error fetching debug data:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -225,7 +231,7 @@ const AdminStudents = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="active">
+          <Tabs defaultValue="debug">
             <TabsList>
               <TabsTrigger value="active">
                 Active Students ({filteredActiveStudents.length})
