@@ -235,19 +235,21 @@ export const useAdminStudents = () => {
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Approving student with ID:", studentId);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .update({ enrollment_status: 'active' })
-        .eq('id', studentId);
+        .eq('id', studentId)
+        .select();
 
       if (error) {
         console.error("Error in approveStudent mutation:", error);
-        throw error;
+        throw new Error(error.message);
       }
       
-      return { success: true, studentId };
+      return { success: true, studentId, data };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Student approved successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     },
     onError: (error) => {
@@ -264,19 +266,21 @@ export const useAdminStudents = () => {
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Declining student with ID:", studentId);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .update({ enrollment_status: 'declined' })
-        .eq('id', studentId);
+        .eq('id', studentId)
+        .select();
 
       if (error) {
         console.error("Error in declineStudent mutation:", error);
-        throw error;
+        throw new Error(error.message);
       }
       
-      return { success: true, studentId };
+      return { success: true, studentId, data };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Student declined successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     },
     onError: (error) => {
@@ -293,19 +297,21 @@ export const useAdminStudents = () => {
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Deactivating student with ID:", studentId);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .update({ enrollment_status: 'inactive' })
-        .eq('id', studentId);
+        .eq('id', studentId)
+        .select();
 
       if (error) {
         console.error("Error in deactivateStudent mutation:", error);
-        throw error;
+        throw new Error(error.message);
       }
       
-      return { success: true, studentId };
+      return { success: true, studentId, data };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Student deactivated successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     },
     onError: (error) => {

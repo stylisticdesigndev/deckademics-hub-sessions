@@ -86,8 +86,13 @@ const AdminStudents = () => {
       });
       // Refresh the data after approval
       refetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in handleApprove:", error);
+      toast({
+        title: "Error",
+        description: `Failed to approve student: ${error.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -101,8 +106,13 @@ const AdminStudents = () => {
       });
       // Refresh the data after declining
       refetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in handleDecline:", error);
+      toast({
+        title: "Error",
+        description: `Failed to decline student: ${error.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -123,8 +133,13 @@ const AdminStudents = () => {
       });
       // Refresh the data after deactivation
       refetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
+      toast({
+        title: "Error",
+        description: `Failed to deactivate student: ${error.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
     } finally {
       setShowDeactivateDialog(false);
       setSelectedStudent(null);
