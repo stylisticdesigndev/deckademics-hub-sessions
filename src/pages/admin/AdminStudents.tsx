@@ -78,21 +78,41 @@ const AdminStudents = () => {
     handleDebugRefresh();
   }, []);
 
+  // This effect ensures we always have fresh data when changing tabs
+  useEffect(() => {
+    const fetchData = async () => {
+      console.log("Fetching fresh data after tab change");
+      await refetchData();
+    };
+    
+    fetchData();
+  }, [selectedTabValue, refetchData]);
+
   const handleApprove = async (id: string) => {
     try {
       setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
       
+      // Show toast for better feedback
+      toast({
+        title: "Processing",
+        description: "Approving student enrollment...",
+      });
+      
       await approveStudent.mutateAsync(id);
       
       console.log("Approval complete, switching to active tab");
+      
+      // Switch to active tab to see the newly approved student
       setSelectedTabValue('active');
       
-      // Explicitly refresh the data after a delay to ensure the database has updated
+      // Explicitly refresh the data to ensure the UI is updated
+      await refetchData();
+      
       setTimeout(async () => {
-        console.log("Refreshing data after approval");
+        console.log("Double-checking data after approval");
         await refetchData();
-      }, 1000);
+      }, 1500);
       
     } catch (error: any) {
       console.error("Error in handleApprove:", error);
@@ -111,13 +131,16 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Declining student with ID:", id);
       
+      // Show toast for better feedback
+      toast({
+        title: "Processing",
+        description: "Declining student enrollment...",
+      });
+      
       await declineStudent.mutateAsync(id);
       
-      // Explicitly refresh the data after a delay
-      setTimeout(async () => {
-        console.log("Refreshing data after decline");
-        await refetchData();
-      }, 1000);
+      // Explicitly refresh the data to ensure the UI is updated
+      await refetchData();
       
     } catch (error: any) {
       console.error("Error in handleDecline:", error);
@@ -145,11 +168,8 @@ const AdminStudents = () => {
       
       await deactivateStudent.mutateAsync(selectedStudent);
       
-      // Explicitly refresh the data after a delay
-      setTimeout(async () => {
-        console.log("Refreshing data after deactivation");
-        await refetchData();
-      }, 1000);
+      // Explicitly refresh the data to ensure the UI is updated
+      await refetchData();
       
     } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
@@ -431,6 +451,19 @@ const AdminStudents = () => {
                               <div className="mt-2 flex items-center justify-center">
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                 <span>Refreshing data...</span>
+                              </div>
+                            )}
+                            {!isRefreshing && selectedTabValue === 'active' && (
+                              <div className="mt-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={handleDebugRefresh}
+                                  className="mx-auto"
+                                >
+                                  <RefreshCcw className="mr-2 h-4 w-4" />
+                                  Refresh Data
+                                </Button>
                               </div>
                             )}
                           </TableCell>

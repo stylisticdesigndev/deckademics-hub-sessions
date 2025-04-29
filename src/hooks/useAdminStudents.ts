@@ -180,7 +180,9 @@ export const useAdminStudents = () => {
     error: studentsError
   } = useQuery({
     queryKey: ['admin', 'students', 'all'],
-    queryFn: fetchAllStudents
+    queryFn: fetchAllStudents,
+    // Add staleTime to ensure data is refetched when needed
+    staleTime: 10000 // 10 seconds
   });
 
   // Function to create a demo student
@@ -231,7 +233,7 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Mutation to approve a student
+  // Mutation to approve a student - FIXED to ensure proper synchronization
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Approving student with ID:", studentId);
@@ -249,12 +251,14 @@ export const useAdminStudents = () => {
       }
       
       console.log("Student approved successfully in database:", data);
+      
+      // Return result data for later use
       return { success: true, studentId, data };
     },
     onSuccess: (result) => {
       console.log("Student approved successfully:", result);
       
-      // Force invalidation to refresh data
+      // Explicitly invalidate and refetch queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
       toast({
@@ -262,7 +266,27 @@ export const useAdminStudents = () => {
         description: `Student approved successfully`,
       });
       
-      // Force a refetch to ensure data is up-to-date
+      // Move this student from pendingStudents to activeStudents immediately
+      if (studentsData) {
+        // Find the student in pendingStudents
+        const approvedStudent = studentsData.pendingStudents.find(s => s.id === result.studentId);
+        
+        if (approvedStudent) {
+          // Create updated data structure
+          const updatedData = {
+            activeStudents: [
+              ...studentsData.activeStudents,
+              { ...approvedStudent, enrollment_status: 'active' }
+            ],
+            pendingStudents: studentsData.pendingStudents.filter(s => s.id !== result.studentId)
+          };
+          
+          // Update the cache with this new data structure
+          queryClient.setQueryData(['admin', 'students', 'all'], updatedData);
+        }
+      }
+      
+      // Force a refetch to ensure data is up-to-date with server
       setTimeout(() => {
         console.log("Refreshing student data after approval...");
         refetchStudents();
@@ -306,6 +330,18 @@ export const useAdminStudents = () => {
         title: "Success",
         description: `Student declined successfully`,
       });
+      
+      // Update local cache immediately for UI responsiveness
+      if (studentsData) {
+        // Create updated data structure removing the student from pendingStudents
+        const updatedData = {
+          activeStudents: [...studentsData.activeStudents],
+          pendingStudents: studentsData.pendingStudents.filter(s => s.id !== result.studentId)
+        };
+        
+        // Update the cache with this new data structure
+        queryClient.setQueryData(['admin', 'students', 'all'], updatedData);
+      }
       
       // Force a refetch to ensure data is up-to-date
       setTimeout(() => {
@@ -351,6 +387,18 @@ export const useAdminStudents = () => {
         title: "Success",
         description: `Student deactivated successfully`,
       });
+      
+      // Update local cache immediately for UI responsiveness
+      if (studentsData) {
+        // Create updated data structure removing the student from activeStudents
+        const updatedData = {
+          activeStudents: studentsData.activeStudents.filter(s => s.id !== result.studentId),
+          pendingStudents: [...studentsData.pendingStudents]
+        };
+        
+        // Update the cache with this new data structure
+        queryClient.setQueryData(['admin', 'students', 'all'], updatedData);
+      }
       
       // Force a refetch to ensure data is up-to-date
       setTimeout(() => {
