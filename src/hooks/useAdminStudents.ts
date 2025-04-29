@@ -1,6 +1,7 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 interface Profile {
   first_name: string;
@@ -36,10 +37,10 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching active students...");
       
-      // Use a simpler query without the join that's causing issues
-      const { data: students, error } = await supabase
+      // First, get all active student records
+      const { data: studentRecords, error } = await supabase
         .from('students')
-        .select('id, level, enrollment_status, notes, start_date')
+        .select('*')
         .eq('enrollment_status', 'active');
       
       if (error) {
@@ -47,18 +48,18 @@ export const useAdminStudents = () => {
         throw error;
       }
 
-      console.log("Raw active students data:", students);
+      console.log("Raw active students data:", studentRecords);
 
-      if (!students || students.length === 0) {
+      if (!studentRecords || studentRecords.length === 0) {
         console.log("No active students found");
         return [];
       }
       
-      // Now fetch profiles for these students
-      const studentIds = students.map(student => student.id);
-      const { data: profiles, error: profilesError } = await supabase
+      // Then get all the profiles for these students in a separate query
+      const studentIds = studentRecords.map(student => student.id);
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
+        .select('*')
         .in('id', studentIds);
       
       if (profilesError) {
@@ -66,15 +67,15 @@ export const useAdminStudents = () => {
         throw profilesError;
       }
       
-      console.log("Profiles for active students:", profiles);
+      console.log("Profiles for active students:", profilesData);
       
-      // Merge students with their profiles
-      const formattedStudents = students.map(student => {
-        const profile = profiles?.find(p => p.id === student.id) || null;
+      // Combine the student records with their profiles
+      const formattedStudents = studentRecords.map(student => {
+        const profile = profilesData?.find(p => p.id === student.id);
         
         return {
           ...student,
-          instructor: null, // Initialize instructor as null
+          instructor: null, // Initialize instructor as null for now
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
@@ -100,10 +101,10 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching pending students...");
       
-      // Use a simpler query without the join that's causing issues
-      const { data: students, error } = await supabase
+      // First, get all pending student records
+      const { data: studentRecords, error } = await supabase
         .from('students')
-        .select('id, level, enrollment_status, notes, start_date')
+        .select('*')
         .eq('enrollment_status', 'pending');
       
       if (error) {
@@ -111,18 +112,18 @@ export const useAdminStudents = () => {
         throw error;
       }
 
-      console.log("Raw pending students data:", students);
+      console.log("Raw pending students data:", studentRecords);
 
-      if (!students || students.length === 0) {
+      if (!studentRecords || studentRecords.length === 0) {
         console.log("No pending students found");
         return [];
       }
       
-      // Now fetch profiles for these students
-      const studentIds = students.map(student => student.id);
-      const { data: profiles, error: profilesError } = await supabase
+      // Then get all the profiles for these students in a separate query
+      const studentIds = studentRecords.map(student => student.id);
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
+        .select('*')
         .in('id', studentIds);
       
       if (profilesError) {
@@ -130,15 +131,15 @@ export const useAdminStudents = () => {
         throw profilesError;
       }
       
-      console.log("Profiles for pending students:", profiles);
+      console.log("Profiles for pending students:", profilesData);
       
-      // Merge students with their profiles
-      const formattedStudents = students.map(student => {
-        const profile = profiles?.find(p => p.id === student.id) || null;
+      // Combine the student records with their profiles
+      const formattedStudents = studentRecords.map(student => {
+        const profile = profilesData?.find(p => p.id === student.id);
         
         return {
           ...student,
-          instructor: null, // Initialize instructor as null
+          instructor: null, // Initialize instructor as null for now
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
@@ -167,8 +168,7 @@ export const useAdminStudents = () => {
     error: activeError
   } = useQuery({
     queryKey: ['admin', 'students', 'active'],
-    queryFn: fetchActiveStudents,
-    retry: 1
+    queryFn: fetchActiveStudents
   });
 
   const { 
@@ -178,40 +178,23 @@ export const useAdminStudents = () => {
     error: pendingError
   } = useQuery({
     queryKey: ['admin', 'students', 'pending'],
-    queryFn: fetchPendingStudents,
-    retry: 1
+    queryFn: fetchPendingStudents
   });
 
   // Function to create a demo student
   const createDemoStudent = async () => {
     try {
-      toast.loading("Creating demo student...");
+      const { toast } = await import('@/components/ui/use-toast');
+      toast({
+        title: "Creating demo student...",
+        description: "Please wait while we set up a demo student account.",
+      });
       
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
       const email = `demo${timestamp}@example.com`;
       
       console.log(`Using email: ${email} for demo student`);
-
-      // First, check if a profile already exists with this email
-      const { data: existingProfiles, error: checkError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', email);
-      
-      if (checkError) {
-        console.error("Error checking existing profiles:", checkError);
-        toast.dismiss();
-        toast.error("Failed to check for existing profiles");
-        return null;
-      }
-      
-      if (existingProfiles && existingProfiles.length > 0) {
-        console.log("A profile with this email already exists");
-        toast.dismiss();
-        toast.error("A profile with this email already exists");
-        return null;
-      }
 
       // Make the request to the edge function
       try {
@@ -225,16 +208,21 @@ export const useAdminStudents = () => {
         
         if (response.error || !response.data?.success) {
           console.error("Failed to create demo student:", response.error || response.data?.error);
-          toast.dismiss();
-          toast.error(`Failed to create demo student: ${response.error || response.data?.error || 'Unknown error'}`);
+          toast({
+            title: "Error",
+            description: `Failed to create demo student: ${response.error || response.data?.error || 'Unknown error'}`,
+            variant: "destructive",
+          });
           return null;
         }
         
         // Success!
         const result = response.data;
         console.log("Demo student created successfully:", result);
-        toast.dismiss();
-        toast.success("Demo student created successfully!");
+        toast({
+          title: "Success",
+          description: "Demo student created successfully!",
+        });
         
         // Force refetching of students data after successful creation
         // Use setTimeout to ensure the database has time to update
@@ -243,20 +231,24 @@ export const useAdminStudents = () => {
           refetchActive();
           refetchPending();
           debugFetchStudents();  // Also run debug fetch to verify data
-          toast.info("Refreshing student data...");
+          toast({
+            title: "Refreshing",
+            description: "Refreshing student data...",
+          });
         }, 2000);
         
         return result;
       } catch (err) {
         console.error("Exception in createDemoStudent:", err);
-        toast.dismiss();
-        toast.error("Failed to create demo student. Please try again later.");
+        toast({
+          title: "Error",
+          description: "Failed to create demo student. Please try again later.",
+          variant: "destructive",
+        });
         return null;
       }
     } catch (err) {
       console.error("Unexpected error in createDemoStudent:", err);
-      toast.dismiss();
-      toast.error("An unexpected error occurred");
       return null;
     }
   };
@@ -310,11 +302,18 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast.success('Student approved successfully');
+      toast({
+        title: "Success",
+        description: "Student approved successfully"
+      });
     },
     onError: (error) => {
       console.error("Error approving student:", error);
-      toast.error('Failed to approve student: ' + error.message);
+      toast({
+        title: "Error",
+        description: `Failed to approve student: ${error.message}`,
+        variant: "destructive"
+      });
     }
   });
 
@@ -330,11 +329,18 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast.success('Student declined successfully');
+      toast({
+        title: "Success",
+        description: "Student declined successfully"
+      });
     },
     onError: (error) => {
       console.error("Error declining student:", error);
-      toast.error('Failed to decline student: ' + error.message);
+      toast({
+        title: "Error",
+        description: `Failed to decline student: ${error.message}`,
+        variant: "destructive"
+      });
     }
   });
 
@@ -350,11 +356,18 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast.success('Student deactivated successfully');
+      toast({
+        title: "Success",
+        description: "Student deactivated successfully"
+      });
     },
     onError: (error) => {
       console.error("Error deactivating student:", error);
-      toast.error('Failed to deactivate student: ' + error.message);
+      toast({
+        title: "Error",
+        description: `Failed to deactivate student: ${error.message}`,
+        variant: "destructive"
+      });
     }
   });
 
