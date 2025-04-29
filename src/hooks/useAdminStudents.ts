@@ -235,6 +235,8 @@ export const useAdminStudents = () => {
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Approving student with ID:", studentId);
+      
+      // Update the student record directly
       const { data, error } = await supabase
         .from('students')
         .update({ enrollment_status: 'active' })
@@ -246,14 +248,25 @@ export const useAdminStudents = () => {
         throw new Error(error.message);
       }
       
+      console.log("Student approved successfully in database:", data);
       return { success: true, studentId, data };
     },
-    onSuccess: (data) => {
-      console.log("Student approved successfully:", data);
+    onSuccess: (result) => {
+      console.log("Student approved successfully:", result);
+      
       // Force invalidation to refresh data
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
+      
+      toast({
+        title: "Success",
+        description: `Student approved successfully`,
+      });
+      
       // Force a refetch to ensure data is up-to-date
-      setTimeout(() => refetchStudents(), 300);
+      setTimeout(() => {
+        console.log("Refreshing student data after approval...");
+        refetchStudents();
+      }, 500);
     },
     onError: (error) => {
       console.error("Error approving student:", error);
@@ -280,14 +293,25 @@ export const useAdminStudents = () => {
         throw new Error(error.message);
       }
       
+      console.log("Student declined successfully in database:", data);
       return { success: true, studentId, data };
     },
-    onSuccess: (data) => {
-      console.log("Student declined successfully:", data);
+    onSuccess: (result) => {
+      console.log("Student declined successfully:", result);
+      
       // Force invalidation to refresh data
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
+      
+      toast({
+        title: "Success",
+        description: `Student declined successfully`,
+      });
+      
       // Force a refetch to ensure data is up-to-date
-      setTimeout(() => refetchStudents(), 300);
+      setTimeout(() => {
+        console.log("Refreshing student data after declining...");
+        refetchStudents();
+      }, 500);
     },
     onError: (error) => {
       console.error("Error declining student:", error);
@@ -314,14 +338,25 @@ export const useAdminStudents = () => {
         throw new Error(error.message);
       }
       
+      console.log("Student deactivated successfully in database:", data);
       return { success: true, studentId, data };
     },
-    onSuccess: (data) => {
-      console.log("Student deactivated successfully:", data);
+    onSuccess: (result) => {
+      console.log("Student deactivated successfully:", result);
+      
       // Force invalidation to refresh data
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
+      
+      toast({
+        title: "Success",
+        description: `Student deactivated successfully`,
+      });
+      
       // Force a refetch to ensure data is up-to-date
-      setTimeout(() => refetchStudents(), 300);
+      setTimeout(() => {
+        console.log("Refreshing student data after deactivation...");
+        refetchStudents();
+      }, 500);
     },
     onError: (error) => {
       console.error("Error deactivating student:", error);

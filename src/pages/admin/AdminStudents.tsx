@@ -53,6 +53,7 @@ const AdminStudents = () => {
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
+  const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   
   const {
     activeStudents,
@@ -70,11 +71,6 @@ const AdminStudents = () => {
   useEffect(() => {
     console.log("AdminStudents - Active Students Updated:", activeStudents);
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
-    
-    // Auto-switch to active tab if a student was approved and there are active students
-    if (activeStudents.length > 0 && pendingStudents.length === 0 && selectedTabValue === 'pending') {
-      setSelectedTabValue('active');
-    }
   }, [activeStudents, pendingStudents]);
 
   // Auto-fetch debug data on first load
@@ -84,18 +80,20 @@ const AdminStudents = () => {
 
   const handleApprove = async (id: string) => {
     try {
+      setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
-      await approveStudent.mutateAsync(id);
-      toast({
-        title: "Success",
-        description: "Student approved successfully",
-      });
       
-      // After approval, the student should move from pending to active
+      await approveStudent.mutateAsync(id);
+      
+      console.log("Approval complete, switching to active tab");
       setSelectedTabValue('active');
       
-      // Explicitly refresh the data
-      await refetchData();
+      // Explicitly refresh the data after a delay to ensure the database has updated
+      setTimeout(async () => {
+        console.log("Refreshing data after approval");
+        await refetchData();
+      }, 1000);
+      
     } catch (error: any) {
       console.error("Error in handleApprove:", error);
       toast({
@@ -103,20 +101,24 @@ const AdminStudents = () => {
         description: `Failed to approve student: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       });
+    } finally {
+      setProcessingStudentId(null);
     }
   };
 
   const handleDecline = async (id: string) => {
     try {
+      setProcessingStudentId(id);
       console.log("Declining student with ID:", id);
-      await declineStudent.mutateAsync(id);
-      toast({
-        title: "Success",
-        description: "Student declined successfully",
-      });
       
-      // Explicitly refresh the data
-      await refetchData();
+      await declineStudent.mutateAsync(id);
+      
+      // Explicitly refresh the data after a delay
+      setTimeout(async () => {
+        console.log("Refreshing data after decline");
+        await refetchData();
+      }, 1000);
+      
     } catch (error: any) {
       console.error("Error in handleDecline:", error);
       toast({
@@ -124,6 +126,8 @@ const AdminStudents = () => {
         description: `Failed to decline student: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       });
+    } finally {
+      setProcessingStudentId(null);
     }
   };
 
@@ -136,15 +140,17 @@ const AdminStudents = () => {
     if (!selectedStudent) return;
     
     try {
+      setProcessingStudentId(selectedStudent);
       console.log("Deactivating student with ID:", selectedStudent);
-      await deactivateStudent.mutateAsync(selectedStudent);
-      toast({
-        title: "Success",
-        description: "Student deactivated successfully",
-      });
       
-      // Explicitly refresh the data
-      await refetchData();
+      await deactivateStudent.mutateAsync(selectedStudent);
+      
+      // Explicitly refresh the data after a delay
+      setTimeout(async () => {
+        console.log("Refreshing data after deactivation");
+        await refetchData();
+      }, 1000);
+      
     } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
       toast({
@@ -153,6 +159,7 @@ const AdminStudents = () => {
         variant: "destructive"
       });
     } finally {
+      setProcessingStudentId(null);
       setShowDeactivateDialog(false);
       setSelectedStudent(null);
     }
@@ -399,8 +406,13 @@ const AdminStudents = () => {
                                       size="icon"
                                       onClick={() => handleDeactivate(student.id)}
                                       className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      disabled={processingStudentId === student.id}
                                     >
-                                      <X className="h-4 w-4" />
+                                      {processingStudentId === student.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <X className="h-4 w-4" />
+                                      )}
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -415,6 +427,12 @@ const AdminStudents = () => {
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                             No active students found matching your search.
+                            {isRefreshing && (
+                              <div className="mt-2 flex items-center justify-center">
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                <span>Refreshing data...</span>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
@@ -464,9 +482,9 @@ const AdminStudents = () => {
                                   size="icon"
                                   onClick={() => handleApprove(student.id)}
                                   className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                  disabled={approveStudent.isPending}
+                                  disabled={processingStudentId === student.id}
                                 >
-                                  {approveStudent.isPending && approveStudent.variables === student.id ? (
+                                  {processingStudentId === student.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
                                     <Check className="h-4 w-4" />
@@ -477,9 +495,9 @@ const AdminStudents = () => {
                                   size="icon"
                                   onClick={() => handleDecline(student.id)}
                                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  disabled={declineStudent.isPending}
+                                  disabled={processingStudentId === student.id}
                                 >
-                                  {declineStudent.isPending && declineStudent.variables === student.id ? (
+                                  {processingStudentId === student.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
                                     <X className="h-4 w-4" />
@@ -493,6 +511,12 @@ const AdminStudents = () => {
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                             No pending students found matching your search.
+                            {isRefreshing && (
+                              <div className="mt-2 flex items-center justify-center">
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                <span>Refreshing data...</span>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
@@ -522,6 +546,26 @@ const AdminStudents = () => {
                       <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
                         {JSON.stringify(debugInfo.allStudents, null, 2)}
                       </pre>
+                      
+                      <div className="mt-4">
+                        <Button 
+                          onClick={handleDebugRefresh} 
+                          variant="outline"
+                          disabled={isRefreshing}
+                        >
+                          {isRefreshing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Refreshing...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCcw className="mr-2 h-4 w-4" />
+                              Refresh Debug Data
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-6">
@@ -601,8 +645,19 @@ const AdminStudents = () => {
                 <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
                   Cancel
                 </Button>
-                <Button variant="destructive" onClick={confirmDeactivate}>
-                  Deactivate
+                <Button 
+                  variant="destructive" 
+                  onClick={confirmDeactivate}
+                  disabled={processingStudentId !== null}
+                >
+                  {processingStudentId !== null ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Deactivate'
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
