@@ -37,7 +37,7 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching active students...");
       
-      // First, get all active student records
+      // Get all active student records from the students table
       const { data: studentRecords, error } = await supabase
         .from('students')
         .select('*')
@@ -55,23 +55,22 @@ export const useAdminStudents = () => {
         return [];
       }
       
-      // Then get all the profiles for these students in a separate query
-      const studentIds = studentRecords.map(student => student.id);
-      const { data: profilesData, error: profilesError } = await supabase
+      // Get profiles for all students in a single query
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .in('id', studentIds);
+        .select('*');
       
       if (profilesError) {
-        console.error("Error fetching profiles for active students:", profilesError);
+        console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
+
+      console.log("All profiles:", profiles);
       
-      console.log("Profiles for active students:", profilesData);
-      
-      // Combine the student records with their profiles
+      // Combine student records with their profiles
       const formattedStudents = studentRecords.map(student => {
-        const profile = profilesData?.find(p => p.id === student.id);
+        // Find matching profile
+        const profile = profiles?.find(p => p.id === student.id);
         
         return {
           ...student,
@@ -101,7 +100,7 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching pending students...");
       
-      // First, get all pending student records
+      // Get all pending student records from the students table
       const { data: studentRecords, error } = await supabase
         .from('students')
         .select('*')
@@ -119,27 +118,24 @@ export const useAdminStudents = () => {
         return [];
       }
       
-      // Then get all the profiles for these students in a separate query
-      const studentIds = studentRecords.map(student => student.id);
-      const { data: profilesData, error: profilesError } = await supabase
+      // Get profiles for all students in a single query
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .in('id', studentIds);
+        .select('*');
       
       if (profilesError) {
-        console.error("Error fetching profiles for pending students:", profilesError);
+        console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
       
-      console.log("Profiles for pending students:", profilesData);
-      
-      // Combine the student records with their profiles
+      // Combine student records with their profiles
       const formattedStudents = studentRecords.map(student => {
-        const profile = profilesData?.find(p => p.id === student.id);
+        // Find matching profile
+        const profile = profiles?.find(p => p.id === student.id);
         
         return {
           ...student,
-          instructor: null, // Initialize instructor as null for now
+          instructor: null,
           profile: profile ? {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
@@ -184,7 +180,6 @@ export const useAdminStudents = () => {
   // Function to create a demo student
   const createDemoStudent = async () => {
     try {
-      const { toast } = await import('@/components/ui/use-toast');
       toast({
         title: "Creating demo student...",
         description: "Please wait while we set up a demo student account.",
