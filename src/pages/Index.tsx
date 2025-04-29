@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner'; // Import toast from sonner instead
+import { toast } from 'sonner'; // Import toast directly from sonner
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
@@ -112,7 +112,7 @@ const Index = () => {
         // Force video component remount by updating key
         setVideoKey(Date.now());
         
-        // Fixed: Use the correct toast import from sonner
+        // Use the toast function directly from sonner
         toast("Could not load background video. Using default instead.", {
           description: "Please check your internet connection and try again.",
           position: "bottom-center",
