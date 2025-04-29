@@ -52,6 +52,7 @@ const AdminStudents = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedTabValue, setSelectedTabValue] = useState('pending');
   
   const {
     activeStudents,
@@ -69,6 +70,11 @@ const AdminStudents = () => {
   useEffect(() => {
     console.log("AdminStudents - Active Students Updated:", activeStudents);
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
+    
+    // Auto-switch to active tab if a student was approved and there are active students
+    if (activeStudents.length > 0 && pendingStudents.length === 0 && selectedTabValue === 'pending') {
+      setSelectedTabValue('active');
+    }
   }, [activeStudents, pendingStudents]);
 
   // Auto-fetch debug data on first load
@@ -84,8 +90,12 @@ const AdminStudents = () => {
         title: "Success",
         description: "Student approved successfully",
       });
-      // Refresh the data after approval
-      refetchData();
+      
+      // After approval, the student should move from pending to active
+      setSelectedTabValue('active');
+      
+      // Explicitly refresh the data
+      await refetchData();
     } catch (error: any) {
       console.error("Error in handleApprove:", error);
       toast({
@@ -104,8 +114,9 @@ const AdminStudents = () => {
         title: "Success",
         description: "Student declined successfully",
       });
-      // Refresh the data after declining
-      refetchData();
+      
+      // Explicitly refresh the data
+      await refetchData();
     } catch (error: any) {
       console.error("Error in handleDecline:", error);
       toast({
@@ -131,8 +142,9 @@ const AdminStudents = () => {
         title: "Success",
         description: "Student deactivated successfully",
       });
-      // Refresh the data after deactivation
-      refetchData();
+      
+      // Explicitly refresh the data
+      await refetchData();
     } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
       toast({
@@ -163,7 +175,7 @@ const AdminStudents = () => {
       console.log("Debug data received:", debug);
       setDebugInfo(debug);
       // Also refresh the UI data
-      refetchData();
+      await refetchData();
     } catch (error) {
       console.error("Error fetching debug data:", error);
     } finally {
@@ -180,9 +192,9 @@ const AdminStudents = () => {
         description: "Demo student created successfully",
       });
       // Add explicit refresh after a delay
-      setTimeout(() => {
-        handleDebugRefresh();
-      }, 3000);
+      setTimeout(async () => {
+        await handleDebugRefresh();
+      }, 1000);
     } catch (error) {
       console.error("Error creating demo student:", error);
       toast({
@@ -294,7 +306,7 @@ const AdminStudents = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="pending">
+          <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
             <TabsList>
               <TabsTrigger value="active">
                 Active Students ({filteredActiveStudents.length})
@@ -452,16 +464,26 @@ const AdminStudents = () => {
                                   size="icon"
                                   onClick={() => handleApprove(student.id)}
                                   className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                  disabled={approveStudent.isPending}
                                 >
-                                  <Check className="h-4 w-4" />
+                                  {approveStudent.isPending && approveStudent.variables === student.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
                                   onClick={() => handleDecline(student.id)}
                                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={declineStudent.isPending}
                                 >
-                                  <X className="h-4 w-4" />
+                                  {declineStudent.isPending && declineStudent.variables === student.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <X className="h-4 w-4" />
+                                  )}
                                 </Button>
                               </div>
                             </TableCell>

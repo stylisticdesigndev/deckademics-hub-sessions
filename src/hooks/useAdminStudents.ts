@@ -250,7 +250,10 @@ export const useAdminStudents = () => {
     },
     onSuccess: (data) => {
       console.log("Student approved successfully:", data);
+      // Force invalidation to refresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      // Force a refetch to ensure data is up-to-date
+      setTimeout(() => refetchStudents(), 300);
     },
     onError: (error) => {
       console.error("Error approving student:", error);
@@ -281,7 +284,10 @@ export const useAdminStudents = () => {
     },
     onSuccess: (data) => {
       console.log("Student declined successfully:", data);
+      // Force invalidation to refresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      // Force a refetch to ensure data is up-to-date
+      setTimeout(() => refetchStudents(), 300);
     },
     onError: (error) => {
       console.error("Error declining student:", error);
@@ -312,7 +318,10 @@ export const useAdminStudents = () => {
     },
     onSuccess: (data) => {
       console.log("Student deactivated successfully:", data);
+      // Force invalidation to refresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      // Force a refetch to ensure data is up-to-date
+      setTimeout(() => refetchStudents(), 300);
     },
     onError: (error) => {
       console.error("Error deactivating student:", error);
