@@ -47,7 +47,7 @@ export const useAdminStudents = () => {
         throw error;
       }
       
-      console.log("Debug: All students in database:", allStudents);
+      console.log("Debug: All students in database:", allStudents || []);
       
       // Query all profiles
       const { data: allProfiles, error: profilesError } = await supabase
@@ -59,7 +59,32 @@ export const useAdminStudents = () => {
         throw profilesError;
       }
       
-      console.log("Debug: All profiles in database:", allProfiles);
+      console.log("Debug: All profiles in database:", allProfiles || []);
+      
+      // Create students manually from profiles
+      if (allProfiles && allProfiles.length > 0) {
+        const manuallyCreatedStudents = allProfiles
+          .filter(profile => profile.role === 'student')
+          .map(profile => {
+            // Check if a corresponding student record exists
+            const existingStudent = allStudents?.find(s => s.id === profile.id);
+            
+            return {
+              id: profile.id,
+              level: existingStudent?.level || 'beginner',
+              enrollment_status: existingStudent?.enrollment_status || 'active',
+              notes: existingStudent?.notes || null,
+              start_date: existingStudent?.start_date || null,
+              profile: {
+                first_name: profile.first_name || '',
+                last_name: profile.last_name || '',
+                email: profile.email || ''
+              }
+            };
+          });
+        
+        console.log("Manually created students from profiles:", manuallyCreatedStudents);
+      }
       
       // Return both for debugging
       return { allStudents, allProfiles };
@@ -74,78 +99,71 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching all students...");
       
-      // Get all student records from the students table
-      const { data: students, error: studentsError } = await supabase
+      // Get all profiles that have a student role
+      const { data: studentProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'student');
+      
+      if (profilesError) {
+        console.error("Error fetching student profiles:", profilesError);
+        throw profilesError;
+      }
+
+      console.log("Found student profiles:", studentProfiles || []);
+      
+      if (!studentProfiles || studentProfiles.length === 0) {
+        console.log("No student profiles found");
+        return { activeStudents: [], pendingStudents: [] };
+      }
+      
+      // Get all student records
+      const { data: studentRecords, error: studentsError } = await supabase
         .from('students')
         .select('*');
       
       if (studentsError) {
-        console.error("Error fetching students:", studentsError);
+        console.error("Error fetching student records:", studentsError);
         throw studentsError;
       }
 
-      console.log("All students from database:", students || []);
+      console.log("Found student records:", studentRecords || []);
       
-      if (!students || students.length === 0) {
-        console.log("No students found in the database");
-        return { activeStudents: [], pendingStudents: [] };
-      }
-      
-      // Get all profiles in a single query
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        throw profilesError;
-      }
-
-      console.log("All profiles from database:", profiles || []);
-
-      // Filter and format active students
-      const activeStudents = students
-        .filter(student => student.enrollment_status === 'active')
-        .map(student => {
-          const profile = profiles?.find(p => p.id === student.id);
-          return {
-            ...student,
-            instructor: null, // Initialize instructor as null for now
-            profile: profile ? {
-              first_name: profile.first_name || '',
-              last_name: profile.last_name || '',
-              email: profile.email || ''
-            } : {
-              first_name: '',
-              last_name: '',
-              email: ''
-            }
-          };
-        });
-
-      console.log("Formatted active students:", activeStudents);
-      
-      // Filter and format pending students
-      const pendingStudents = students
-        .filter(student => student.enrollment_status === 'pending')
-        .map(student => {
-          const profile = profiles?.find(p => p.id === student.id);
-          return {
-            ...student,
-            instructor: null,
-            profile: profile ? {
-              first_name: profile.first_name || '',
-              last_name: profile.last_name || '',
-              email: profile.email || ''
-            } : {
-              first_name: '',
-              last_name: '',
-              email: ''
-            }
-          };
-        });
+      // Create complete student objects by merging profiles with student records
+      const allStudents = studentProfiles.map(profile => {
+        // Find the corresponding student record if it exists
+        const studentRecord = studentRecords?.find(s => s.id === profile.id) || {
+          id: profile.id,
+          level: 'beginner',
+          enrollment_status: 'pending',
+          notes: null,
+          start_date: null
+        };
         
-      console.log("Formatted pending students:", pendingStudents);
+        return {
+          ...studentRecord,
+          profile: {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            email: profile.email || ''
+          },
+          instructor: null // Initialize instructor as null for now
+        };
+      });
+      
+      console.log("Merged student objects:", allStudents);
+      
+      // Filter for active and pending students
+      const activeStudents = allStudents.filter(
+        student => student.enrollment_status === 'active'
+      );
+      
+      const pendingStudents = allStudents.filter(
+        student => student.enrollment_status === 'pending'
+      );
+      
+      console.log("Active students:", activeStudents);
+      console.log("Pending students:", pendingStudents);
       
       return { activeStudents, pendingStudents };
     } catch (err) {
