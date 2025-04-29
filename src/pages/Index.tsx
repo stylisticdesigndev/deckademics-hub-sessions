@@ -8,13 +8,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
-  // Use the correct path format without ./ prefix which might cause issues
-  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
+  // Hard-code an image fallback path since the video might be problematic
+  const [backgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  console.log("Index page rendering with video URL:", backgroundVideoUrl);
+  console.log("Index page rendering with fallback image for background");
   
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
@@ -49,7 +49,7 @@ const Index = () => {
   }, [session, clearLocalStorage]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent relative">
+    <div className="min-h-screen flex flex-col bg-black relative">
       <VideoBackground 
         videoSrc={backgroundVideoUrl} 
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
