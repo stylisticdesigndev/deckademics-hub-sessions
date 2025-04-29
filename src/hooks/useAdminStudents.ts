@@ -236,68 +236,75 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Completely revamped mutation to approve a student with proper synchronization
+  // Completely revised mutation to approve a student
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
-      console.log("Approving student with ID:", studentId);
+      console.log("Starting approval process for student ID:", studentId);
       
       try {
-        // First, verify the current status to avoid race conditions
-        const { data: currentStudent, error: fetchError } = await supabase
+        // First, check if a student record exists
+        const { data: checkStudent, error: checkError } = await supabase
           .from('students')
-          .select('enrollment_status')
+          .select('*')
           .eq('id', studentId)
           .single();
-          
-        if (fetchError) {
-          console.error("Error fetching current student status:", fetchError);
-          throw new Error("Could not verify current student status");
+        
+        if (checkError) {
+          // If the error is not found, we need to create the student record
+          if (checkError.code === 'PGRST116') {
+            console.log("Student record doesn't exist yet. Creating one...");
+            
+            // Insert a new student record
+            const { data: newStudent, error: insertError } = await supabase
+              .from('students')
+              .insert([
+                { 
+                  id: studentId,
+                  level: 'beginner',
+                  enrollment_status: 'active'
+                }
+              ])
+              .select();
+            
+            if (insertError) {
+              console.error("Error creating new student record:", insertError);
+              throw new Error(`Failed to create student record: ${insertError.message}`);
+            }
+            
+            console.log("Created new student record successfully:", newStudent);
+            return { success: true, studentId, action: 'created', data: newStudent };
+          } else {
+            console.error("Error checking for existing student:", checkError);
+            throw new Error(`Failed to check for existing student: ${checkError.message}`);
+          }
         }
         
-        if (currentStudent.enrollment_status === 'active') {
-          console.log("Student is already approved, no action needed");
-          return { success: true, studentId, alreadyApproved: true };
-        }
+        console.log("Found existing student record:", checkStudent);
         
-        // Update the student record directly with explicit return of all fields
-        const { data, error } = await supabase
+        // Update the existing student record to active
+        const { data: updatedStudent, error: updateError } = await supabase
           .from('students')
           .update({ enrollment_status: 'active' })
           .eq('id', studentId)
           .select();
-
-        if (error) {
-          console.error("Error in approveStudent mutation:", error);
-          throw new Error(error.message);
+        
+        if (updateError) {
+          console.error("Error updating student status:", updateError);
+          throw new Error(`Failed to update student status: ${updateError.message}`);
         }
         
-        console.log("Student approved successfully in database:", data);
-        
-        // Important: Double-check that the update actually happened
-        const { data: verifyUpdate } = await supabase
-          .from('students')
-          .select('enrollment_status')
-          .eq('id', studentId)
-          .single();
-          
-        console.log("Verification after update:", verifyUpdate);
-        
-        if (!verifyUpdate || verifyUpdate.enrollment_status !== 'active') {
-          console.error("Verification failed: Student not updated correctly");
-          throw new Error("Student status update verification failed");
-        }
-        
-        return { success: true, studentId, data };
+        console.log("Updated student status successfully:", updatedStudent);
+        return { success: true, studentId, action: 'updated', data: updatedStudent };
       } catch (error: any) {
-        console.error("Error in approveStudent mutation:", error);
-        throw error;
+        console.error("Error in approveStudent:", error);
+        throw new Error(error.message || 'Unknown error approving student');
       }
     },
     onMutate: async (studentId) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      // Snapshot current data
+      // Snapshot the current data
       const previousData = queryClient.getQueryData(['admin', 'students', 'all']);
       
       // Optimistically update the UI 
@@ -324,7 +331,7 @@ export const useAdminStudents = () => {
       
       return { previousData };
     },
-    onSuccess: (result, studentId) => {
+    onSuccess: (result) => {
       console.log("Student approved successfully with server confirmation:", result);
       
       // Explicitly invalidate and refetch queries to ensure fresh data
@@ -338,9 +345,7 @@ export const useAdminStudents = () => {
       // Force a guaranteed refetch after a delay to ensure UI is in sync with server
       setTimeout(() => {
         console.log("Forcing data refresh after approval...");
-        refetchStudents().then(() => {
-          console.log("Data refreshed after approval");
-        });
+        refetchStudents();
       }, 500);
     },
     onError: (error, studentId, context: any) => {
@@ -359,62 +364,71 @@ export const useAdminStudents = () => {
       
       // Refetch to ensure UI is in sync with server
       refetchStudents();
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure synchronization
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
     }
   });
 
-  // Similarly improved mutation to decline a student
+  // Similarly revised mutation to decline a student
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
-      console.log("Declining student with ID:", studentId);
+      console.log("Starting decline process for student ID:", studentId);
       
       try {
-        // First verify the student exists and check current status
-        const { data: currentStudent, error: fetchError } = await supabase
+        // First, check if a student record exists
+        const { data: checkStudent, error: checkError } = await supabase
           .from('students')
           .select('*')
           .eq('id', studentId)
           .single();
-          
-        if (fetchError) {
-          console.error("Error fetching student for decline:", fetchError);
-          throw new Error("Could not find student to decline");
+        
+        if (checkError) {
+          // If the error is not found, we need to create the student record
+          if (checkError.code === 'PGRST116') {
+            console.log("Student record doesn't exist yet. Creating one with declined status...");
+            
+            // Insert a new student record with declined status
+            const { data: newStudent, error: insertError } = await supabase
+              .from('students')
+              .insert([
+                { 
+                  id: studentId,
+                  level: 'beginner',
+                  enrollment_status: 'declined'
+                }
+              ])
+              .select();
+            
+            if (insertError) {
+              console.error("Error creating new declined student record:", insertError);
+              throw new Error(`Failed to create declined student record: ${insertError.message}`);
+            }
+            
+            console.log("Created new declined student record successfully:", newStudent);
+            return { success: true, studentId, action: 'created_declined', data: newStudent };
+          } else {
+            console.error("Error checking for existing student:", checkError);
+            throw new Error(`Failed to check for existing student: ${checkError.message}`);
+          }
         }
         
-        // Update the student record to declined status
-        const { data, error } = await supabase
+        console.log("Found existing student record:", checkStudent);
+        
+        // Update the existing student record to declined
+        const { data: updatedStudent, error: updateError } = await supabase
           .from('students')
           .update({ enrollment_status: 'declined' })
           .eq('id', studentId)
           .select();
-
-        if (error) {
-          console.error("Error in declineStudent mutation:", error);
-          throw new Error(error.message);
+        
+        if (updateError) {
+          console.error("Error updating student status to declined:", updateError);
+          throw new Error(`Failed to update student status to declined: ${updateError.message}`);
         }
         
-        console.log("Student declined successfully in database:", data);
-        
-        // Verify the update happened
-        const { data: verifyUpdate } = await supabase
-          .from('students')
-          .select('enrollment_status')
-          .eq('id', studentId)
-          .single();
-          
-        console.log("Verification after decline:", verifyUpdate);
-        
-        if (!verifyUpdate || verifyUpdate.enrollment_status !== 'declined') {
-          throw new Error("Student decline verification failed");
-        }
-        
-        return { success: true, studentId, data };
+        console.log("Updated student status to declined successfully:", updatedStudent);
+        return { success: true, studentId, action: 'updated_declined', data: updatedStudent };
       } catch (error: any) {
-        console.error("Error in declineStudent operation:", error);
-        throw error;
+        console.error("Error in declineStudent:", error);
+        throw new Error(error.message || 'Unknown error declining student');
       }
     },
     onMutate: async (studentId) => {
@@ -451,9 +465,7 @@ export const useAdminStudents = () => {
       
       // Force refetch to ensure synchronization
       setTimeout(() => {
-        refetchStudents().then(() => {
-          console.log("Data refreshed after declining student");
-        });
+        refetchStudents();
       }, 500);
     },
     onError: (error, studentId, context: any) => {
@@ -471,14 +483,10 @@ export const useAdminStudents = () => {
       });
       
       refetchStudents();
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
     }
   });
 
-  // Revamped mutation to deactivate a student with similar improvements
+  // Similar pattern for deactivate student
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Deactivating student with ID:", studentId);
@@ -492,8 +500,31 @@ export const useAdminStudents = () => {
           .single();
           
         if (fetchError) {
-          console.error("Error fetching student for deactivation:", fetchError);
-          throw new Error("Could not find student to deactivate");
+          if (fetchError.code === 'PGRST116') {
+            // Student record doesn't exist yet
+            console.log("Student record doesn't exist. Creating inactive record...");
+            
+            const { data: newStudent, error: insertError } = await supabase
+              .from('students')
+              .insert([
+                { 
+                  id: studentId,
+                  level: 'beginner',
+                  enrollment_status: 'inactive'
+                }
+              ])
+              .select();
+              
+            if (insertError) {
+              console.error("Error creating inactive student record:", insertError);
+              throw new Error(`Failed to create inactive student record: ${insertError.message}`);
+            }
+            
+            return { success: true, studentId, action: 'created_inactive', data: newStudent };
+          } else {
+            console.error("Error fetching student for deactivation:", fetchError);
+            throw new Error("Could not find student to deactivate");
+          }
         }
         
         // Update the student record
@@ -510,20 +541,7 @@ export const useAdminStudents = () => {
         
         console.log("Student deactivated successfully in database:", data);
         
-        // Verify the update happened
-        const { data: verifyUpdate } = await supabase
-          .from('students')
-          .select('enrollment_status')
-          .eq('id', studentId)
-          .single();
-          
-        console.log("Verification after deactivation:", verifyUpdate);
-        
-        if (!verifyUpdate || verifyUpdate.enrollment_status !== 'inactive') {
-          throw new Error("Student deactivation verification failed");
-        }
-        
-        return { success: true, studentId, data };
+        return { success: true, studentId, action: 'updated_inactive', data };
       } catch (error: any) {
         console.error("Error in deactivateStudent operation:", error);
         throw error;
@@ -563,9 +581,7 @@ export const useAdminStudents = () => {
       
       // Force refetch to ensure synchronization
       setTimeout(() => {
-        refetchStudents().then(() => {
-          console.log("Data refreshed after deactivating student");
-        });
+        refetchStudents();
       }, 500);
     },
     onError: (error, studentId, context: any) => {
@@ -583,10 +599,6 @@ export const useAdminStudents = () => {
       });
       
       refetchStudents();
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
     }
   });
 
