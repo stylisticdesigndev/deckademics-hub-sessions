@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
@@ -41,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { toast } from '@/components/ui/use-toast';
 
 const AdminStudents = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,12 +76,34 @@ const AdminStudents = () => {
     handleDebugRefresh();
   }, []);
 
-  const handleApprove = (id: string) => {
-    approveStudent.mutate(id);
+  const handleApprove = async (id: string) => {
+    try {
+      console.log("Approving student with ID:", id);
+      await approveStudent.mutateAsync(id);
+      toast({
+        title: "Success",
+        description: "Student approved successfully",
+      });
+      // Refresh the data after approval
+      refetchData();
+    } catch (error) {
+      console.error("Error in handleApprove:", error);
+    }
   };
 
-  const handleDecline = (id: string) => {
-    declineStudent.mutate(id);
+  const handleDecline = async (id: string) => {
+    try {
+      console.log("Declining student with ID:", id);
+      await declineStudent.mutateAsync(id);
+      toast({
+        title: "Success",
+        description: "Student declined successfully",
+      });
+      // Refresh the data after declining
+      refetchData();
+    } catch (error) {
+      console.error("Error in handleDecline:", error);
+    }
   };
 
   const handleDeactivate = (id: string) => {
@@ -87,11 +111,24 @@ const AdminStudents = () => {
     setShowDeactivateDialog(true);
   };
   
-  const confirmDeactivate = () => {
+  const confirmDeactivate = async () => {
     if (!selectedStudent) return;
-    deactivateStudent.mutate(selectedStudent);
-    setShowDeactivateDialog(false);
-    setSelectedStudent(null);
+    
+    try {
+      console.log("Deactivating student with ID:", selectedStudent);
+      await deactivateStudent.mutateAsync(selectedStudent);
+      toast({
+        title: "Success",
+        description: "Student deactivated successfully",
+      });
+      // Refresh the data after deactivation
+      refetchData();
+    } catch (error) {
+      console.error("Error in confirmDeactivate:", error);
+    } finally {
+      setShowDeactivateDialog(false);
+      setSelectedStudent(null);
+    }
   };
 
   const handleView = (id: string) => {
@@ -123,10 +160,21 @@ const AdminStudents = () => {
     setIsCreatingDemo(true);
     try {
       await createDemoStudent();
+      toast({
+        title: "Success",
+        description: "Demo student created successfully",
+      });
       // Add explicit refresh after a delay
       setTimeout(() => {
         handleDebugRefresh();
       }, 3000);
+    } catch (error) {
+      console.error("Error creating demo student:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create demo student",
+        variant: "destructive",
+      });
     } finally {
       setIsCreatingDemo(false);
     }
@@ -231,7 +279,7 @@ const AdminStudents = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="debug">
+          <Tabs defaultValue="pending">
             <TabsList>
               <TabsTrigger value="active">
                 Active Students ({filteredActiveStudents.length})
@@ -384,36 +432,22 @@ const AdminStudents = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleApprove(student.id)}
-                                      className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Approve Student</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleDecline(student.id)}
-                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Decline Student</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => handleApprove(student.id)}
+                                  className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => handleDecline(student.id)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>

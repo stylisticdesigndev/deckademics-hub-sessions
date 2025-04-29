@@ -186,11 +186,6 @@ export const useAdminStudents = () => {
   // Function to create a demo student
   const createDemoStudent = async () => {
     try {
-      toast({
-        title: "Creating demo student...",
-        description: "Please wait while we set up a demo student account.",
-      });
-      
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
       const email = `demo${timestamp}@example.com`;
@@ -209,21 +204,12 @@ export const useAdminStudents = () => {
         
         if (response.error || !response.data?.success) {
           console.error("Failed to create demo student:", response.error || response.data?.error);
-          toast({
-            title: "Error",
-            description: `Failed to create demo student: ${response.error || response.data?.error || 'Unknown error'}`,
-            variant: "destructive",
-          });
           return null;
         }
         
         // Success!
         const result = response.data;
         console.log("Demo student created successfully:", result);
-        toast({
-          title: "Success",
-          description: "Demo student created successfully!",
-        });
         
         // Force invalidation of queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
@@ -232,20 +218,11 @@ export const useAdminStudents = () => {
         setTimeout(() => {
           console.log("Refreshing student data after creating demo student...");
           refetchStudents();
-          toast({
-            title: "Refreshing",
-            description: "Refreshing student data...",
-          });
         }, 2000);
         
         return result;
       } catch (err) {
         console.error("Exception in createDemoStudent:", err);
-        toast({
-          title: "Error",
-          description: "Failed to create demo student. Please try again later.",
-          variant: "destructive",
-        });
         return null;
       }
     } catch (err) {
@@ -263,14 +240,15 @@ export const useAdminStudents = () => {
         .update({ enrollment_status: 'active' })
         .eq('id', studentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in approveStudent mutation:", error);
+        throw error;
+      }
+      
+      return { success: true, studentId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast({
-        title: "Success",
-        description: "Student approved successfully"
-      });
     },
     onError: (error) => {
       console.error("Error approving student:", error);
@@ -291,14 +269,15 @@ export const useAdminStudents = () => {
         .update({ enrollment_status: 'declined' })
         .eq('id', studentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in declineStudent mutation:", error);
+        throw error;
+      }
+      
+      return { success: true, studentId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast({
-        title: "Success",
-        description: "Student declined successfully"
-      });
     },
     onError: (error) => {
       console.error("Error declining student:", error);
@@ -319,14 +298,15 @@ export const useAdminStudents = () => {
         .update({ enrollment_status: 'inactive' })
         .eq('id', studentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in deactivateStudent mutation:", error);
+        throw error;
+      }
+      
+      return { success: true, studentId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      toast({
-        title: "Success",
-        description: "Student deactivated successfully"
-      });
     },
     onError: (error) => {
       console.error("Error deactivating student:", error);
