@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
@@ -78,17 +78,26 @@ const AdminStudents = () => {
     handleDebugRefresh();
   }, []);
 
-  // This effect ensures we always have fresh data when changing tabs
+  // Enhanced effect to ensure we have fresh data when changing tabs
   useEffect(() => {
     const fetchData = async () => {
-      console.log("Fetching fresh data after tab change");
-      await refetchData();
+      setIsRefreshing(true);
+      console.log(`Fetching fresh data after tab change to ${selectedTabValue}`);
+      try {
+        await refetchData();
+        console.log(`Data refreshed for ${selectedTabValue} tab`);
+      } catch (error) {
+        console.error("Error refreshing data after tab change:", error);
+      } finally {
+        setIsRefreshing(false);
+      }
     };
     
     fetchData();
   }, [selectedTabValue, refetchData]);
 
-  const handleApprove = async (id: string) => {
+  // Memoized handler for approving a student with better error handling
+  const handleApprove = useCallback(async (id: string) => {
     try {
       setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
@@ -106,13 +115,17 @@ const AdminStudents = () => {
       // Switch to active tab to see the newly approved student
       setSelectedTabValue('active');
       
-      // Explicitly refresh the data to ensure the UI is updated
-      await refetchData();
-      
+      // Schedule multiple data refreshes to ensure UI consistency
       setTimeout(async () => {
-        console.log("Double-checking data after approval");
+        console.log("First check after approval");
         await refetchData();
-      }, 1500);
+        
+        // Second check after a longer delay
+        setTimeout(async () => {
+          console.log("Second verification check after approval");
+          await refetchData();
+        }, 1000);
+      }, 500);
       
     } catch (error: any) {
       console.error("Error in handleApprove:", error);
@@ -124,9 +137,10 @@ const AdminStudents = () => {
     } finally {
       setProcessingStudentId(null);
     }
-  };
+  }, [approveStudent, refetchData]);
 
-  const handleDecline = async (id: string) => {
+  // Memoized handler for declining a student with verification
+  const handleDecline = useCallback(async (id: string) => {
     try {
       setProcessingStudentId(id);
       console.log("Declining student with ID:", id);
@@ -139,8 +153,15 @@ const AdminStudents = () => {
       
       await declineStudent.mutateAsync(id);
       
-      // Explicitly refresh the data to ensure the UI is updated
+      // Multiple data refreshes to ensure UI consistency
+      console.log("Refreshing data after decline");
       await refetchData();
+      
+      // Second verification check
+      setTimeout(async () => {
+        console.log("Second verification check after declining");
+        await refetchData();
+      }, 1000);
       
     } catch (error: any) {
       console.error("Error in handleDecline:", error);
@@ -152,13 +173,14 @@ const AdminStudents = () => {
     } finally {
       setProcessingStudentId(null);
     }
-  };
+  }, [declineStudent, refetchData]);
 
   const handleDeactivate = (id: string) => {
     setSelectedStudent(id);
     setShowDeactivateDialog(true);
   };
   
+  // Updated deactivation confirmation with verification
   const confirmDeactivate = async () => {
     if (!selectedStudent) return;
     
@@ -166,10 +188,22 @@ const AdminStudents = () => {
       setProcessingStudentId(selectedStudent);
       console.log("Deactivating student with ID:", selectedStudent);
       
+      toast({
+        title: "Processing",
+        description: "Deactivating student account...",
+      });
+      
       await deactivateStudent.mutateAsync(selectedStudent);
       
-      // Explicitly refresh the data to ensure the UI is updated
+      // Multiple refreshes for UI consistency
+      console.log("Refreshing data after deactivation");
       await refetchData();
+      
+      // Second verification check
+      setTimeout(async () => {
+        console.log("Second verification check after deactivation");
+        await refetchData();
+      }, 1000);
       
     } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
@@ -195,16 +229,25 @@ const AdminStudents = () => {
            pendingStudents?.find(student => student.id === id);
   };
 
+  // Enhanced debug refresh with better error handling
   const handleDebugRefresh = async () => {
     setIsRefreshing(true);
     try {
+      console.log("Fetching debug data and refreshing UI...");
       const debug = await debugFetchStudents();
       console.log("Debug data received:", debug);
       setDebugInfo(debug);
+      
       // Also refresh the UI data
       await refetchData();
+      console.log("UI data refreshed");
     } catch (error) {
       console.error("Error fetching debug data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch debug data",
+        variant: "destructive"
+      });
     } finally {
       setIsRefreshing(false);
     }
@@ -213,15 +256,25 @@ const AdminStudents = () => {
   const handleCreateDemoStudent = async () => {
     setIsCreatingDemo(true);
     try {
-      await createDemoStudent();
-      toast({
-        title: "Success",
-        description: "Demo student created successfully",
-      });
-      // Add explicit refresh after a delay
-      setTimeout(async () => {
-        await handleDebugRefresh();
-      }, 1000);
+      const result = await createDemoStudent();
+      
+      if (result) {
+        toast({
+          title: "Success",
+          description: "Demo student created successfully",
+        });
+        
+        // Add explicit refresh after a delay
+        setTimeout(async () => {
+          await handleDebugRefresh();
+        }, 1000);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create demo student",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error creating demo student:", error);
       toast({
@@ -231,6 +284,23 @@ const AdminStudents = () => {
       });
     } finally {
       setIsCreatingDemo(false);
+    }
+  };
+  
+  // Add a forced data refresh function for UI buttons
+  const handleForceRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log("Force refreshing all student data");
+      await refetchData();
+      toast({
+        title: "Refreshed",
+        description: "Student data refreshed successfully",
+      });
+    } catch (error) {
+      console.error("Error during force refresh:", error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -280,7 +350,7 @@ const AdminStudents = () => {
             </div>
             <div className="flex gap-2">
               <Button 
-                onClick={handleDebugRefresh} 
+                onClick={handleForceRefresh} 
                 variant="outline" 
                 size="icon" 
                 disabled={isRefreshing}
@@ -295,7 +365,7 @@ const AdminStudents = () => {
               <Button 
                 onClick={handleCreateDemoStudent} 
                 variant="outline"
-                disabled={isCreatingDemo}
+                disabled={isCreatingDemo || isRefreshing}
               >
                 {isCreatingDemo ? (
                   <>
@@ -308,7 +378,7 @@ const AdminStudents = () => {
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button>
+                  <Button disabled={isRefreshing}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Add Student
                   </Button>
@@ -335,14 +405,23 @@ const AdminStudents = () => {
 
           <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
             <TabsList>
-              <TabsTrigger value="active">
+              <TabsTrigger value="active" disabled={isRefreshing}>
                 Active Students ({filteredActiveStudents.length})
+                {isRefreshing && selectedTabValue === 'active' && (
+                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
+                )}
               </TabsTrigger>
-              <TabsTrigger value="pending">
+              <TabsTrigger value="pending" disabled={isRefreshing}>
                 Pending Approval ({filteredPendingStudents.length})
+                {isRefreshing && selectedTabValue === 'pending' && (
+                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
+                )}
               </TabsTrigger>
-              <TabsTrigger value="debug">
+              <TabsTrigger value="debug" disabled={isRefreshing}>
                 Debug Info
+                {isRefreshing && selectedTabValue === 'debug' && (
+                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -396,6 +475,7 @@ const AdminStudents = () => {
                                       size="icon"
                                       onClick={() => {}}
                                       className="h-8 w-8"
+                                      disabled={processingStudentId === student.id}
                                     >
                                       <UserRound className="h-4 w-4" />
                                     </Button>
@@ -411,6 +491,7 @@ const AdminStudents = () => {
                                       size="icon"
                                       onClick={() => handleView(student.id)}
                                       className="h-8 w-8"
+                                      disabled={processingStudentId === student.id}
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
@@ -446,25 +527,27 @@ const AdminStudents = () => {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                            No active students found matching your search.
-                            {isRefreshing && (
-                              <div className="mt-2 flex items-center justify-center">
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                <span>Refreshing data...</span>
+                            {isRefreshing ? (
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                                <p>Loading active students...</p>
                               </div>
-                            )}
-                            {!isRefreshing && selectedTabValue === 'active' && (
-                              <div className="mt-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={handleDebugRefresh}
-                                  className="mx-auto"
-                                >
-                                  <RefreshCcw className="mr-2 h-4 w-4" />
-                                  Refresh Data
-                                </Button>
-                              </div>
+                            ) : (
+                              <>
+                                No active students found matching your search.
+                                <div className="mt-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleForceRefresh}
+                                    className="mx-auto"
+                                    disabled={isRefreshing}
+                                  >
+                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                    Refresh Data
+                                  </Button>
+                                </div>
+                              </>
                             )}
                           </TableCell>
                         </TableRow>
@@ -515,7 +598,7 @@ const AdminStudents = () => {
                                   size="icon"
                                   onClick={() => handleApprove(student.id)}
                                   className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                  disabled={processingStudentId === student.id}
+                                  disabled={processingStudentId === student.id || isRefreshing}
                                 >
                                   {processingStudentId === student.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -528,7 +611,7 @@ const AdminStudents = () => {
                                   size="icon"
                                   onClick={() => handleDecline(student.id)}
                                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  disabled={processingStudentId === student.id}
+                                  disabled={processingStudentId === student.id || isRefreshing}
                                 >
                                   {processingStudentId === student.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -543,12 +626,27 @@ const AdminStudents = () => {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                            No pending students found matching your search.
-                            {isRefreshing && (
-                              <div className="mt-2 flex items-center justify-center">
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                <span>Refreshing data...</span>
+                            {isRefreshing ? (
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                                <p>Loading pending students...</p>
                               </div>
+                            ) : (
+                              <>
+                                No pending students found matching your search.
+                                <div className="mt-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleForceRefresh}
+                                    className="mx-auto"
+                                    disabled={isRefreshing}
+                                  >
+                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                    Refresh Data
+                                  </Button>
+                                </div>
+                              </>
                             )}
                           </TableCell>
                         </TableRow>
@@ -568,7 +666,14 @@ const AdminStudents = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="max-h-96 overflow-auto">
-                  {debugInfo ? (
+                  {isRefreshing ? (
+                    <div className="flex justify-center py-12">
+                      <div className="flex flex-col items-center space-y-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <p>Loading debug information...</p>
+                      </div>
+                    </div>
+                  ) : debugInfo ? (
                     <div>
                       <h3 className="text-lg font-medium mb-2">Profiles in Database:</h3>
                       <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
