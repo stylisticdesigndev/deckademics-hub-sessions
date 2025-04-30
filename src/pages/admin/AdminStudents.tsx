@@ -101,7 +101,7 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
       
-      // Show toast for better feedback using the correct implementation
+      // Use our updated safe toast implementation
       toast.info("Approving student enrollment...");
       
       await approveStudent.mutateAsync(id);
@@ -137,7 +137,7 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Declining student with ID:", id);
       
-      // Show toast for better feedback
+      // Use our updated safe toast implementation
       toast.info("Declining student enrollment...");
       
       await declineStudent.mutateAsync(id);
@@ -173,6 +173,7 @@ const AdminStudents = () => {
       setProcessingStudentId(selectedStudent);
       console.log("Deactivating student with ID:", selectedStudent);
       
+      // Use our updated safe toast implementation
       toast.info("Deactivating student account...");
       
       await deactivateStudent.mutateAsync(selectedStudent);
@@ -221,6 +222,7 @@ const AdminStudents = () => {
       console.log("UI data refreshed");
     } catch (error) {
       console.error("Error fetching debug data:", error);
+      // Use our updated safe toast implementation
       toast.error("Failed to fetch debug data");
     } finally {
       setIsRefreshing(false);
@@ -233,6 +235,7 @@ const AdminStudents = () => {
       const result = await createDemoStudent();
       
       if (result) {
+        // Use our updated safe toast implementation
         toast.success("Demo student created successfully");
         
         // Add explicit refresh after a delay
@@ -240,10 +243,12 @@ const AdminStudents = () => {
           await handleDebugRefresh();
         }, 1000);
       } else {
+        // Use our updated safe toast implementation
         toast.error("Failed to create demo student");
       }
     } catch (error) {
       console.error("Error creating demo student:", error);
+      // Use our updated safe toast implementation
       toast.error("Failed to create demo student");
     } finally {
       setIsCreatingDemo(false);
@@ -256,9 +261,12 @@ const AdminStudents = () => {
     try {
       console.log("Force refreshing all student data");
       await refetchData();
+      // Use our updated safe toast implementation
       toast.success("Student data refreshed successfully");
     } catch (error) {
       console.error("Error during force refresh:", error);
+      // Add error toast for better user experience
+      toast.error("Failed to refresh student data");
     } finally {
       setIsRefreshing(false);
     }

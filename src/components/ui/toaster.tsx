@@ -1,5 +1,5 @@
 
-import { useToast } from "@/hooks/use-toast"
+import { useToast, initToastState } from "@/components/ui/use-toast";
 import {
   Toast,
   ToastClose,
@@ -7,10 +7,11 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@/components/ui/toast"
+} from "@/components/ui/toast";
 
 export function Toaster() {
-  const { toasts } = useToast()
+  // Initialize the global toast state and get the current toasts
+  const { toasts } = initToastState();
 
   return (
     <ToastProvider>

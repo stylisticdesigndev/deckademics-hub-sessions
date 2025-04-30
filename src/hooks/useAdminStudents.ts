@@ -336,7 +336,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate and refetch queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.success(`Student approved successfully`);
       
       // Force a guaranteed refetch after a delay to ensure UI is in sync with server
@@ -353,7 +353,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.error(`Failed to approve student: ${error.message}`);
       
       // Refetch to ensure UI is in sync with server
@@ -452,7 +452,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.success(`Student declined successfully`);
       
       // Force refetch to ensure synchronization
@@ -468,7 +468,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.error(`Failed to decline student: ${error.message}`);
       
       refetchStudents();
@@ -563,7 +563,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.success(`Student deactivated successfully`);
       
       // Force refetch to ensure synchronization
@@ -579,7 +579,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      // Use correct toast implementation
+      // Use our updated safe toast implementation
       toast.error(`Failed to deactivate student: ${error.message}`);
       
       refetchStudents();
