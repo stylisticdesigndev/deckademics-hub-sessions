@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
@@ -30,7 +29,7 @@ export const useStudentDashboard = () => {
     handleAddToCalendar,
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
-
+  
   // Log initial state
   useEffect(() => {
     console.log("StudentDashboard: Initial state", { 

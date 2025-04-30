@@ -1,12 +1,19 @@
 
 import { useToast as useToastHook } from "@/hooks/use-toast";
-import { type Toast as ToastType } from "@/hooks/use-toast";
+import type { ToastProps } from "@/components/ui/toast";
+
+// Define a type for our toast functions
+export interface ToastOptions {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
+}
 
 // Re-export the useToast hook
 export const useToast = useToastHook;
 
-// Create a wrapper function for toast that includes the variant
-export const toast = (props: ToastType) => {
+// Create a base toast function
+export const toast = (props: ToastProps) => {
   return useToastHook().toast(props);
 };
 

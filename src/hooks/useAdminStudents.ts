@@ -235,7 +235,7 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Completely revised mutation to approve a student
+  // Fix the mutation to approve a student
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Starting approval process for student ID:", studentId);
@@ -336,6 +336,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate and refetch queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
+      // Use correct toast implementation
       toast.success(`Student approved successfully`);
       
       // Force a guaranteed refetch after a delay to ensure UI is in sync with server
@@ -344,7 +345,7 @@ export const useAdminStudents = () => {
         refetchStudents();
       }, 500);
     },
-    onError: (error, studentId, context: any) => {
+    onError: (error: any, studentId, context: any) => {
       console.error("Error approving student:", error);
       
       // Rollback to previous state
@@ -352,6 +353,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
+      // Use correct toast implementation
       toast.error(`Failed to approve student: ${error.message}`);
       
       // Refetch to ensure UI is in sync with server
@@ -359,7 +361,7 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Similarly revised mutation to decline a student
+  // Fix the mutation to decline a student
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Starting decline process for student ID:", studentId);
@@ -450,6 +452,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
+      // Use correct toast implementation
       toast.success(`Student declined successfully`);
       
       // Force refetch to ensure synchronization
@@ -457,7 +460,7 @@ export const useAdminStudents = () => {
         refetchStudents();
       }, 500);
     },
-    onError: (error, studentId, context: any) => {
+    onError: (error: any, studentId, context: any) => {
       console.error("Error declining student:", error);
       
       // Rollback to previous state
@@ -465,13 +468,14 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
+      // Use correct toast implementation
       toast.error(`Failed to decline student: ${error.message}`);
       
       refetchStudents();
     }
   });
 
-  // Similar pattern for deactivate student
+  // Fix the mutation for deactivate student
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Deactivating student with ID:", studentId);
@@ -559,6 +563,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
+      // Use correct toast implementation
       toast.success(`Student deactivated successfully`);
       
       // Force refetch to ensure synchronization
@@ -566,7 +571,7 @@ export const useAdminStudents = () => {
         refetchStudents();
       }, 500);
     },
-    onError: (error, studentId, context: any) => {
+    onError: (error: any, studentId, context: any) => {
       console.error("Error deactivating student:", error);
       
       // Rollback to previous state
@@ -574,6 +579,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
+      // Use correct toast implementation
       toast.error(`Failed to deactivate student: ${error.message}`);
       
       refetchStudents();

@@ -101,7 +101,7 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
       
-      // Show toast for better feedback
+      // Show toast for better feedback using the correct implementation
       toast.info("Approving student enrollment...");
       
       await approveStudent.mutateAsync(id);
@@ -129,7 +129,7 @@ const AdminStudents = () => {
     } finally {
       setProcessingStudentId(null);
     }
-  }, [approveStudent, refetchData]);
+  }, [approveStudent, refetchData, setSelectedTabValue, setProcessingStudentId]);
 
   // Memoized handler for declining a student with verification
   const handleDecline = useCallback(async (id: string) => {
@@ -158,7 +158,7 @@ const AdminStudents = () => {
     } finally {
       setProcessingStudentId(null);
     }
-  }, [declineStudent, refetchData]);
+  }, [declineStudent, refetchData, setProcessingStudentId]);
 
   const handleDeactivate = (id: string) => {
     setSelectedStudent(id);
