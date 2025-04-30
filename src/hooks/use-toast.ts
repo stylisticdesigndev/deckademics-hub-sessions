@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -8,12 +9,18 @@ import type {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  variant?: "default" | "destructive"
 }
+
+// Explicitly redefine the type to ensure compatibility
+interface Toast extends Omit<ToasterToast, "id"> {}
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -137,7 +144,7 @@ function dispatch(action: Action) {
   })
 }
 
-// Define the shape of our toast input parameters
+// Define the shape of our toast input parameters - matching ToasterToast
 type ToastOptions = {
   title?: React.ReactNode
   description?: React.ReactNode
@@ -148,7 +155,7 @@ type ToastOptions = {
 function toast(options: ToastOptions) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
+  const update = (props: Partial<ToasterToast>) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
@@ -156,16 +163,17 @@ function toast(options: ToastOptions) {
     
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
+  // Create toast with compatible types
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...options,
       id,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
       },
-    },
+      ...options,
+    } as ToasterToast,
   })
 
   return {

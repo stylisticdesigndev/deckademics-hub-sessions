@@ -1,10 +1,8 @@
 
-// Import the ToastProps type correctly from the toast component
 import type { ToastProps } from "@/components/ui/toast";
-// Import the actual hook implementation
 import { toast as hookToast, useToast as useToastHook } from "@/hooks/use-toast";
 
-// Define a type for our toast functions
+// Define a type for our toast functions using the same type as the hook
 export interface ToastOptions {
   title?: React.ReactNode;
   description?: React.ReactNode;
