@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import type {
@@ -138,14 +137,15 @@ function dispatch(action: Action) {
   })
 }
 
-// This is the interface our toast function expects
-interface Toast extends Omit<ToasterToast, "id"> {
-  title?: React.ReactNode;
-  description?: React.ReactNode;
-  variant?: "default" | "destructive";
+// Define the shape of our toast input parameters
+type ToastOptions = {
+  title?: React.ReactNode
+  description?: React.ReactNode
+  variant?: "default" | "destructive"
+  action?: ToastActionElement
 }
 
-function toast({ ...props }: Toast) {
+function toast(options: ToastOptions) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -153,12 +153,13 @@ function toast({ ...props }: Toast) {
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
+    
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...options,
       id,
       open: true,
       onOpenChange: (open) => {

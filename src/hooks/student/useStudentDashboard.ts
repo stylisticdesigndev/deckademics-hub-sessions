@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
@@ -83,7 +84,6 @@ export const useStudentDashboard = () => {
       console.error("StudentDashboard: Max retries reached, showing error to user");
       setHasErrorState(true);
       
-      // Use toast without description
       toast.error("Could not load dashboard data after multiple attempts. Please try refreshing the page.");
     }
   }, [fetchError, loadDashboardData]);
@@ -109,7 +109,6 @@ export const useStudentDashboard = () => {
     // Force refresh
     loadDashboardData();
     
-    // Use toast without description
     toast.info("Refreshing dashboard data...");
   }, [loadDashboardData]);
 

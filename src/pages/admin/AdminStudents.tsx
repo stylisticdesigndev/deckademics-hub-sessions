@@ -101,11 +101,7 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Approving student with ID:", id);
       
-      // Update toast call to work with our fixed implementation
-      toast({
-        title: "Info",
-        description: "Approving student enrollment..."
-      });
+      toast.info("Approving student enrollment...");
       
       await approveStudent.mutateAsync(id);
       
@@ -128,11 +124,7 @@ const AdminStudents = () => {
       
     } catch (error: any) {
       console.error("Error in handleApprove:", error);
-      toast({
-        title: "Error",
-        description: `Failed to approve student: ${error.message || 'Unknown error'}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to approve student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
     }
@@ -144,11 +136,7 @@ const AdminStudents = () => {
       setProcessingStudentId(id);
       console.log("Declining student with ID:", id);
       
-      // Update toast call to work with our fixed implementation
-      toast({
-        title: "Info",
-        description: "Declining student enrollment..."
-      });
+      toast.info("Declining student enrollment...");
       
       await declineStudent.mutateAsync(id);
       
@@ -164,11 +152,7 @@ const AdminStudents = () => {
       
     } catch (error: any) {
       console.error("Error in handleDecline:", error);
-      toast({
-        title: "Error", 
-        description: `Failed to decline student: ${error.message || 'Unknown error'}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to decline student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
     }
@@ -187,11 +171,7 @@ const AdminStudents = () => {
       setProcessingStudentId(selectedStudent);
       console.log("Deactivating student with ID:", selectedStudent);
       
-      // Update toast call to work with our fixed implementation  
-      toast({
-        title: "Info",
-        description: "Deactivating student account..."
-      });
+      toast.info("Deactivating student account...");
       
       await deactivateStudent.mutateAsync(selectedStudent);
       
@@ -207,11 +187,7 @@ const AdminStudents = () => {
       
     } catch (error: any) {
       console.error("Error in confirmDeactivate:", error);
-      toast({
-        title: "Error",
-        description: `Failed to deactivate student: ${error.message || 'Unknown error'}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to deactivate student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
       setShowDeactivateDialog(false);
@@ -243,12 +219,7 @@ const AdminStudents = () => {
       console.log("UI data refreshed");
     } catch (error: any) {
       console.error("Error fetching debug data:", error);
-      // Update toast call to work with our fixed implementation
-      toast({
-        title: "Error",
-        description: "Failed to fetch debug data", 
-        variant: "destructive"
-      });
+      toast.error("Failed to fetch debug data");
     } finally {
       setIsRefreshing(false);
     }
@@ -260,32 +231,18 @@ const AdminStudents = () => {
       const result = await createDemoStudent();
       
       if (result) {
-        // Update toast call to work with our fixed implementation
-        toast({
-          title: "Success",
-          description: "Demo student created successfully"
-        });
+        toast.success("Demo student created successfully");
         
         // Add explicit refresh after a delay
         setTimeout(async () => {
           await handleDebugRefresh();
         }, 1000);
       } else {
-        // Update toast call to work with our fixed implementation
-        toast({
-          title: "Error",
-          description: "Failed to create demo student",
-          variant: "destructive"
-        });
+        toast.error("Failed to create demo student");
       }
     } catch (error: any) {
       console.error("Error creating demo student:", error);
-      // Update toast call to work with our fixed implementation
-      toast({
-        title: "Error", 
-        description: "Failed to create demo student",
-        variant: "destructive"
-      });
+      toast.error("Failed to create demo student");
     } finally {
       setIsCreatingDemo(false);
     }
@@ -297,19 +254,11 @@ const AdminStudents = () => {
     try {
       console.log("Force refreshing all student data");
       await refetchData();
-      // Update toast call to work with our fixed implementation
-      toast({
-        title: "Success",
-        description: "Student data refreshed successfully"
-      });
+      toast.success("Student data refreshed successfully");
     } catch (error: any) {
       console.error("Error during force refresh:", error);
       // Add error toast for better user experience
-      toast({
-        title: "Error",
-        description: "Failed to refresh student data",
-        variant: "destructive"
-      });
+      toast.error("Failed to refresh student data");
     } finally {
       setIsRefreshing(false);
     }

@@ -9,6 +9,7 @@ export interface ToastOptions {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: "default" | "destructive";
+  action?: React.ReactElement;
 }
 
 // Create a singleton toast state to avoid invalid hook calls
@@ -32,7 +33,7 @@ export const useToast = () => {
 };
 
 // Create a safe wrapper for the toast function that doesn't require hooks
-export const toast = (props: ToastProps) => {
+export const toast = (props: ToastOptions) => {
   console.log("Toast called with props:", props);
   
   // Try to use the hook state if it's available
@@ -50,6 +51,7 @@ toast.error = (message: string) => {
   console.error("Toast Error:", message);
   return toast({
     title: "Error",
+    description: message,
     variant: "destructive",
   });
 };
@@ -58,6 +60,7 @@ toast.success = (message: string) => {
   console.log("Toast Success:", message);
   return toast({
     title: "Success",
+    description: message,
   });
 };
 
@@ -65,6 +68,7 @@ toast.info = (message: string) => {
   console.log("Toast Info:", message);
   return toast({
     title: "Info",
+    description: message,
   });
 };
 
@@ -73,5 +77,6 @@ toast.warning = (message: string) => {
   return toast({
     variant: "destructive",
     title: "Warning",
+    description: message,
   });
 };
