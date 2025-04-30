@@ -12,74 +12,104 @@ const Index = () => {
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  // Load video with cache busting to force fresh load
+  // Clear any potential authentication errors on load
   useEffect(() => {
-    // Create a unique URL with timestamp to bypass browser cache
-    const timestamp = Date.now();
-    const videoWithTimestamp = `/lovable-uploads/dj-background.mp4?t=${timestamp}`;
-    console.log("Setting video URL with cache-busting:", videoWithTimestamp);
-    setBackgroundVideoUrl(videoWithTimestamp);
+    console.log("Index: Page loaded, clearing any auth errors");
+    localStorage.removeItem('auth-error');
   }, []);
   
-  // Clean up auth state on initial load
+  // Load background video
   useEffect(() => {
+    console.log("Index: Setting up background video");
+    
+    // Check if video exists before setting the URL
+    const videoPath = '/lovable-uploads/dj-background.mp4';
+    
+    fetch(videoPath, { method: 'HEAD' })
+      .then(response => {
+        if (!response.ok) {
+          console.error(`Index: Video file not accessible (Status ${response.status}):`, videoPath);
+          throw new Error('Video file not found');
+        }
+        return response;
+      })
+      .then(() => {
+        console.log("Index: Video exists, setting URL");
+        setBackgroundVideoUrl(videoPath);
+      })
+      .catch(error => {
+        console.error("Index: Error loading video:", error);
+        // Set the URL anyway, the VideoBackground component will handle the fallback
+        setBackgroundVideoUrl(videoPath);
+      })
+      .finally(() => {
+        // Always finish loading after video check
+        setTimeout(() => setIsLoading(false), 300);
+      });
+  }, []);
+  
+  // Check authentication state and clean up if necessary
+  useEffect(() => {
+    if (isLoading) return;
+    
     const handleInitialLoad = () => {
-      console.log("Index page initial load - checking auth state");
+      console.log("Index: Checking auth state", { 
+        sessionExists: !!session, 
+        userDataExists: !!userData, 
+        userRole: userData?.role 
+      });
       
-      // If we're on the index page but there's inconsistent session data,
-      // clear it to ensure a fresh start
+      // If we have a session but userData is inconsistent, clear local storage
       if (session && (!userData || !userData.role)) {
-        console.log("Found inconsistent auth state, clearing local storage");
+        console.log("Index: Found inconsistent auth state, clearing local storage");
         clearLocalStorage();
       }
-      
-      // Reset any cached authentication errors
-      localStorage.removeItem('auth-error');
-      
-      // Always set loading to false after initial checks
-      setIsLoading(false);
     };
 
-    // Short timeout to ensure page has properly initialized
-    const timer = setTimeout(handleInitialLoad, 100);
-    return () => clearTimeout(timer);
-  }, [session, userData, clearLocalStorage]);
+    handleInitialLoad();
+  }, [session, userData, clearLocalStorage, isLoading]);
   
-  // Check if user is already logged in and redirect if needed
+  // Handle redirection if user is already logged in
   const checkAndRedirect = useCallback(() => {
-    if (isLoading) return; // Skip redirect check during initial loading
+    if (isLoading) return;
     
-    console.log("Index page - Session check:", !!session, "User role:", userData?.role);
+    console.log("Index: Session check for redirection", { 
+      sessionExists: !!session, 
+      userRole: userData?.role
+    });
     
     if (session && userData?.role) {
-      console.log("User already logged in, redirecting to dashboard");
+      console.log("Index: User already logged in, redirecting to dashboard");
       const role = userData.role;
       
-      if (role === 'student') {
-        navigate('/student/dashboard');
-      } else if (role === 'instructor') {
-        navigate('/instructor/dashboard');
-      } else if (role === 'admin') {
-        navigate('/admin/dashboard');
+      switch (role) {
+        case 'student':
+          navigate('/student/dashboard');
+          break;
+        case 'instructor':
+          navigate('/instructor/dashboard');
+          break;
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        default:
+          console.error("Index: Unknown user role", role);
       }
-    } else {
-      console.log("No active session found or missing role, showing login options");
     }
   }, [session, userData, navigate, isLoading]);
   
-  // Run the redirect check whenever dependencies change
+  // Run the redirect check when dependencies change
   useEffect(() => {
     checkAndRedirect();
   }, [checkAndRedirect]);
 
-  // Ensure we're starting with a clean authentication state
+  // Ensure clean auth state before navigation
   const ensureCleanAuthState = () => {
-    console.log("Ensuring clean auth state before navigation");
+    console.log("Index: Ensuring clean auth state before navigation");
+    
     if (session) {
-      // If there's an active session but we're on the index page,
-      // we should clear the local storage to avoid auth issues
       clearLocalStorage();
-      toast.success("Authentication state cleared for fresh login");
+      toast.success("Starting fresh login session");
     }
   };
 
@@ -112,8 +142,9 @@ const Index = () => {
                 src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
                 className="h-28 w-auto"
+                onLoad={() => console.log("Index: Logo loaded successfully")}
                 onError={(e) => {
-                  console.error("Failed to load logo image");
+                  console.error("Index: Failed to load logo image");
                   e.currentTarget.src = "/placeholder.svg";
                 }}
               />

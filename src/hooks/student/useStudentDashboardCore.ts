@@ -34,9 +34,19 @@ export function useStudentDashboardCore() {
   const dataFetchedRef = useRef(false);
   const isMountedRef = useRef(true);
   const fetchAttemptRef = useRef(0);
+  const startTimeRef = useRef(Date.now());
 
   // Get userId from session safely
   const userId = session?.user?.id;
+
+  // Log initial state
+  useEffect(() => {
+    console.log("StudentDashboardCore: Initializing", { 
+      userId, 
+      sessionExists: !!session,
+      startTime: new Date(startTimeRef.current).toISOString()
+    });
+  }, []);
 
   const { upcomingClasses, loading: classesLoading } = useUpcomingClasses();
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);
@@ -44,16 +54,22 @@ export function useStudentDashboardCore() {
   const fetchStudentInfo = useCallback(async () => {
     // Exit early if user ID is missing, component unmounted, or if we've tried too many times
     if (!userId || !isMountedRef.current || fetchAttemptRef.current > 3) {
+      console.log("StudentDashboardCore: Early exit from fetchStudentInfo", {
+        userId: !!userId,
+        isMounted: isMountedRef.current,
+        attempts: fetchAttemptRef.current
+      });
       return;
     }
     
     // Increment the fetch attempt counter to prevent infinite loops
     fetchAttemptRef.current += 1;
     
-    console.log(`Fetching student info (attempt ${fetchAttemptRef.current}) for userId:`, userId);
+    console.log(`StudentDashboardCore: Fetching student info (attempt ${fetchAttemptRef.current}) for userId:`, userId);
     
     try {
       setLoading(true);
+      setFetchError(null);
       
       // First check if student record exists
       const { data: studentInfo, error: studentError } = await supabase
@@ -63,19 +79,19 @@ export function useStudentDashboardCore() {
         .maybeSingle();
 
       if (studentError) {
-        console.error('Error fetching student info:', studentError);
+        console.error('StudentDashboardCore: Error fetching student info:', studentError);
         setFetchError(studentError.message);
         
         // If student record doesn't exist, create one
         if (studentError.code === 'PGRST116') {
           try {
-            console.log('Creating student record for new user:', userId);
+            console.log('StudentDashboardCore: Creating student record for new user:', userId);
             const { error: insertError } = await supabase
               .from('students')
               .insert([{ id: userId }]);
               
             if (insertError) {
-              console.error('Error creating student record:', insertError.message);
+              console.error('StudentDashboardCore: Error creating student record:', insertError.message);
               setFetchError(`Failed to create student record: ${insertError.message}`);
             } else {
               // Successful creation, use default values
@@ -84,13 +100,15 @@ export function useStudentDashboardCore() {
                   ...prev,
                   level: 'Beginner'
                 }));
+                console.log('StudentDashboardCore: Successfully created student record');
               }
             }
           } catch (insertError) {
-            console.error('Exception creating student record:', insertError);
+            console.error('StudentDashboardCore: Exception creating student record:', insertError);
           }
         }
       } else if (studentInfo && typeof studentInfo === 'object' && isMountedRef.current) {
+        console.log('StudentDashboardCore: Retrieved student info:', studentInfo);
         setStudentData(prev => ({
           ...prev,
           level: studentInfo.level || 'Beginner'
@@ -103,6 +121,7 @@ export function useStudentDashboardCore() {
       
       if (isMountedRef.current) {
         setIsFirstTimeUser(isFirstLogin);
+        console.log('StudentDashboardCore: First time user status:', isFirstLogin);
 
         // Only update next class if there are upcoming classes
         if (upcomingClasses.length > 0) {
@@ -111,6 +130,7 @@ export function useStudentDashboardCore() {
             nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
             instructor: upcomingClasses[0].instructor
           }));
+          console.log('StudentDashboardCore: Updated next class info with:', upcomingClasses[0]);
         }
         
         // Calculate progress if data is available
@@ -123,6 +143,9 @@ export function useStudentDashboardCore() {
             ...prev,
             totalProgress: avgProgress
           }));
+          console.log('StudentDashboardCore: Calculated progress:', avgProgress);
+        } else {
+          console.log('StudentDashboardCore: No progress data available');
         }
         
         // Mark data as fetched to prevent duplicate fetches
@@ -130,13 +153,14 @@ export function useStudentDashboardCore() {
       }
       
     } catch (e: any) {
-      console.error('Error in fetchStudentInfo:', e);
+      console.error('StudentDashboardCore: Error in fetchStudentInfo:', e);
       if (isMountedRef.current) {
         setFetchError(e.message || 'An unknown error occurred');
       }
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
+        console.log('StudentDashboardCore: Completed fetchStudentInfo');
       }
     }
   }, [userId, upcomingClasses, progressData]); // Remove classesLoading and progressLoading to prevent loops
@@ -145,30 +169,40 @@ export function useStudentDashboardCore() {
   const isInitialRender = useRef(true);
 
   useEffect(() => {
+    // Log data dependencies
+    console.log("StudentDashboardCore: Data dependencies updated", {
+      upcomingClassesCount: upcomingClasses.length,
+      progressDataAvailable: !!progressData,
+      classesLoading,
+      progressLoading
+    });
+    
     // Skip data fetching on first render to allow all hooks to initialize
     if (isInitialRender.current) {
       isInitialRender.current = false;
-      setLoading(false);
+      console.log("StudentDashboardCore: Skipping first render fetch");
       return;
     }
     
     // Only fetch data if we have necessary information and haven't fetched yet
     if (userId && !dataFetchedRef.current && !classesLoading && !progressLoading) {
-      console.log("Dashboard Core - Fetching initial data for userId:", userId);
+      console.log("StudentDashboardCore: All dependencies ready, triggering fetch");
       fetchStudentInfo();
     } else if (!userId) {
+      console.log("StudentDashboardCore: No userId available, setting loading to false");
       setLoading(false);
     }
-  }, [userId, classesLoading, progressLoading, fetchStudentInfo]);
+  }, [userId, classesLoading, progressLoading, fetchStudentInfo, upcomingClasses, progressData]);
 
   // Cleanup when component unmounts
   useEffect(() => {
     return () => {
+      console.log("StudentDashboardCore: Component unmounting");
       isMountedRef.current = false;
-      // Reset other refs to ensure clean state if remounted
-      dataFetchedRef.current = false;
-      fetchAttemptRef.current = 0;
-      isInitialRender.current = true;
+      
+      // Log performance metrics
+      const elapsedTime = Date.now() - startTimeRef.current;
+      console.log(`StudentDashboardCore: Lifetime ${elapsedTime}ms, fetch attempts: ${fetchAttemptRef.current}`);
     };
   }, []);
 
