@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -337,10 +336,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate and refetch queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      toast({
-        title: "Success",
-        description: `Student approved successfully`,
-      });
+      toast.success(`Student approved successfully`);
       
       // Force a guaranteed refetch after a delay to ensure UI is in sync with server
       setTimeout(() => {
@@ -356,11 +352,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      toast({
-        title: "Error",
-        description: `Failed to approve student: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to approve student: ${error.message}`);
       
       // Refetch to ensure UI is in sync with server
       refetchStudents();
@@ -458,10 +450,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      toast({
-        title: "Success",
-        description: `Student declined successfully`,
-      });
+      toast.success(`Student declined successfully`);
       
       // Force refetch to ensure synchronization
       setTimeout(() => {
@@ -476,11 +465,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      toast({
-        title: "Error",
-        description: `Failed to decline student: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to decline student: ${error.message}`);
       
       refetchStudents();
     }
@@ -574,10 +559,7 @@ export const useAdminStudents = () => {
       // Explicitly invalidate queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'students', 'all'] });
       
-      toast({
-        title: "Success",
-        description: `Student deactivated successfully`,
-      });
+      toast.success(`Student deactivated successfully`);
       
       // Force refetch to ensure synchronization
       setTimeout(() => {
@@ -592,11 +574,7 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      toast({
-        title: "Error",
-        description: `Failed to deactivate student: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to deactivate student: ${error.message}`);
       
       refetchStudents();
     }

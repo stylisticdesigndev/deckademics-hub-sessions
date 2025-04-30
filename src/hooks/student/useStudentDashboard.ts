@@ -2,7 +2,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 
 export const useStudentDashboard = () => {
