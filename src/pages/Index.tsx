@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
@@ -7,18 +7,21 @@ import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
-  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
+  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  // Log every render for debugging
-  console.log("Index page rendering at:", new Date().toISOString(), 
-    "Video:", backgroundVideoUrl, 
-    "Session:", !!session, 
-    "User role:", userData?.role);
+  // Load video with cache busting to force fresh load
+  useEffect(() => {
+    // Create a unique URL with timestamp to bypass browser cache
+    const timestamp = Date.now();
+    const videoWithTimestamp = `/lovable-uploads/dj-background.mp4?t=${timestamp}`;
+    console.log("Setting video URL with cache-busting:", videoWithTimestamp);
+    setBackgroundVideoUrl(videoWithTimestamp);
+  }, []);
   
-  // Clean up auth state on initial load of the index page
+  // Clean up auth state on initial load
   useEffect(() => {
     const handleInitialLoad = () => {
       console.log("Index page initial load - checking auth state");
@@ -30,6 +33,9 @@ const Index = () => {
         clearLocalStorage();
       }
       
+      // Reset any cached authentication errors
+      localStorage.removeItem('auth-error');
+      
       // Always set loading to false after initial checks
       setIsLoading(false);
     };
@@ -37,10 +43,10 @@ const Index = () => {
     // Short timeout to ensure page has properly initialized
     const timer = setTimeout(handleInitialLoad, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [session, userData, clearLocalStorage]);
   
   // Check if user is already logged in and redirect if needed
-  useEffect(() => {
+  const checkAndRedirect = useCallback(() => {
     if (isLoading) return; // Skip redirect check during initial loading
     
     console.log("Index page - Session check:", !!session, "User role:", userData?.role);
@@ -60,6 +66,11 @@ const Index = () => {
       console.log("No active session found or missing role, showing login options");
     }
   }, [session, userData, navigate, isLoading]);
+  
+  // Run the redirect check whenever dependencies change
+  useEffect(() => {
+    checkAndRedirect();
+  }, [checkAndRedirect]);
 
   // Ensure we're starting with a clean authentication state
   const ensureCleanAuthState = () => {
@@ -72,15 +83,6 @@ const Index = () => {
     }
   };
 
-  // Force the video to reload if needed
-  useEffect(() => {
-    // This creates a unique URL by appending a timestamp to bypass cache
-    const timestamp = Date.now();
-    const videoWithTimestamp = `/lovable-uploads/dj-background.mp4?t=${timestamp}`;
-    console.log("Setting video URL with cache-busting:", videoWithTimestamp);
-    setBackgroundVideoUrl(videoWithTimestamp);
-  }, []);
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -91,10 +93,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-black relative">
-      <VideoBackground 
-        videoSrc={backgroundVideoUrl} 
-        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
-      />
+      {backgroundVideoUrl && (
+        <VideoBackground 
+          videoSrc={backgroundVideoUrl} 
+          fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+        />
+      )}
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header content */}
@@ -108,6 +112,10 @@ const Index = () => {
                 src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
                 className="h-28 w-auto"
+                onError={(e) => {
+                  console.error("Failed to load logo image");
+                  e.currentTarget.src = "/placeholder.svg";
+                }}
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">

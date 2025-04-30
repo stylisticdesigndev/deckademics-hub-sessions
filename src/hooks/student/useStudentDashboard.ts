@@ -2,11 +2,13 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
+import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 
 export const useStudentDashboard = () => {
   const { session } = useAuth();
   const initialLoadRef = useRef(false);
+  const loadAttemptRef = useRef(0);
   
   const {
     userId,
@@ -28,18 +30,45 @@ export const useStudentDashboard = () => {
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
 
-  // Only do an initial load once when the component mounts and userId is available
+  // More robust data loading with retry logic
+  const loadDashboardData = useCallback(() => {
+    if (!userId) return;
+    
+    loadAttemptRef.current += 1;
+    console.log(`Dashboard - Loading data (attempt ${loadAttemptRef.current}) for userId:`, userId);
+    
+    refreshData();
+    
+    // Mark initial load as complete to prevent unnecessary refreshes
+    initialLoadRef.current = true;
+  }, [userId, refreshData]);
+  
+  // Handle retry on error
+  useEffect(() => {
+    if (fetchError && loadAttemptRef.current < 3) {
+      const retryTimer = setTimeout(() => {
+        console.log(`Dashboard - Retrying data load after error (attempt ${loadAttemptRef.current + 1})`);
+        loadDashboardData();
+      }, 2000);
+      
+      return () => clearTimeout(retryTimer);
+    }
+    
+    if (fetchError && loadAttemptRef.current >= 3) {
+      toast.error("Could not load dashboard data after multiple attempts.");
+    }
+  }, [fetchError, loadDashboardData]);
+
+  // Initial load when component mounts and userId is available
   useEffect(() => {
     if (!userId || loading || initialLoadRef.current) return;
     
-    console.log("Dashboard - Performing one-time initial load for userId:", userId);
-    initialLoadRef.current = true;
-    refreshData();
+    console.log("Dashboard - Performing initial load for userId:", userId);
+    loadDashboardData();
     
-  }, [userId, loading, refreshData]); // Only depend on userId and loading state
+  }, [userId, loading, loadDashboardData]); 
 
   // Determine if dashboard is empty
-  // Only consider the dashboard empty if we've already loaded and there's no data
   const isEmpty = !loading && !announcementsLoading && 
                  announcements.length === 0 && upcomingClasses.length === 0;
 

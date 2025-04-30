@@ -9,18 +9,20 @@ interface VideoBackgroundProps {
 export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fallbackSrc }) => {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [videoExists, setVideoExists] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Reset states when component mounts or video source changes
   useEffect(() => {
     setHasError(false);
     setIsLoading(true);
+    setVideoExists(false);
     
     console.log("VideoBackground mounted/updated with video source:", videoSrc);
     
     // Check if video reference exists and if the browser supports video
-    if (!videoRef.current || !document.createElement('video').canPlayType) {
-      console.error('Video element not supported or not available');
+    if (!document.createElement('video').canPlayType) {
+      console.error('Video element not supported by this browser');
       setHasError(true);
       setIsLoading(false);
       return;
@@ -29,26 +31,27 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
     // Verify the video file exists and is accessible
     const checkVideoAvailability = async () => {
       try {
-        const response = await fetch(videoSrc, { method: 'HEAD' });
+        const response = await fetch(videoSrc, { method: 'HEAD', cache: 'no-store' });
         if (!response.ok) {
           console.error('Video file not accessible:', videoSrc, 'Status:', response.status);
           setHasError(true);
+        } else {
+          console.log('Video file is accessible:', videoSrc);
+          setVideoExists(true);
         }
       } catch (error) {
         console.error('Error checking video availability:', error);
         setHasError(true);
       } finally {
-        // We set loading to false in the video events, not here
-        // to ensure we wait for the video to actually be ready
+        // If we can't even fetch the HEAD request, still try to load the video
+        // as the video element's error handler will catch any issues
+        if (!hasError && videoRef.current) {
+          videoRef.current.load();
+        }
       }
     };
     
     checkVideoAvailability();
-    
-    // Force video to reload when source changes
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
     
     // Clean up function
     return () => {
@@ -61,8 +64,8 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
     };
   }, [videoSrc]);
 
-  const handleVideoError = () => {
-    console.error('Video failed to load:', videoSrc);
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    console.error('Video failed to load:', videoSrc, e);
     setHasError(true);
     setIsLoading(false);
   };
@@ -81,13 +84,33 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
       });
     }
   };
+  
+  // Attempt to reload the video if it initially fails
+  useEffect(() => {
+    if (hasError && videoRef.current && !isLoading) {
+      const retryTimeout = setTimeout(() => {
+        console.log("Attempting to reload video after error");
+        setHasError(false);
+        setIsLoading(true);
+        
+        if (videoRef.current) {
+          // Add cache busting parameter to force a fresh load
+          const cacheBuster = `?cb=${Date.now()}`;
+          videoRef.current.src = videoSrc + cacheBuster;
+          videoRef.current.load();
+        }
+      }, 3000); // Wait 3 seconds before retry
+      
+      return () => clearTimeout(retryTimeout);
+    }
+  }, [hasError, videoSrc, isLoading]);
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
       {!hasError ? (
         <video
           ref={videoRef}
-          key={videoSrc} // Force remount when src changes
+          key={videoSrc + Date.now()} // Force remount with unique key
           autoPlay
           loop
           muted
@@ -105,6 +128,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
             src={fallbackSrc} 
             alt="Background" 
             className="object-cover w-full h-full opacity-60"
+            onError={() => console.error("Failed to load fallback image")}
           />
         </div>
       )}
