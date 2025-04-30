@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
@@ -84,7 +83,7 @@ export const useStudentDashboard = () => {
       console.error("StudentDashboard: Max retries reached, showing error to user");
       setHasErrorState(true);
       
-      // Use the safe toast method that doesn't directly use hooks
+      // Use toast without description
       toast.error("Could not load dashboard data after multiple attempts. Please try refreshing the page.");
     }
   }, [fetchError, loadDashboardData]);
@@ -100,7 +99,7 @@ export const useStudentDashboard = () => {
     
   }, [userId, loading, loadDashboardData]); 
 
-  // Handle refresh button click
+  // Handle manual refresh button click
   const handleManualRefresh = useCallback(() => {
     console.log("StudentDashboard: Manual refresh requested");
     
@@ -110,7 +109,7 @@ export const useStudentDashboard = () => {
     // Force refresh
     loadDashboardData();
     
-    // Use the safe toast method
+    // Use toast without description
     toast.info("Refreshing dashboard data...");
   }, [loadDashboardData]);
 

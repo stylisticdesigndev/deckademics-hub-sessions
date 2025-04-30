@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -137,7 +138,12 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+// This is the interface our toast function expects
+interface Toast extends Omit<ToasterToast, "id"> {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  variant?: "default" | "destructive";
+}
 
 function toast({ ...props }: Toast) {
   const id = genId()

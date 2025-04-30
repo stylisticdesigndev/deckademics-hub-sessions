@@ -6,8 +6,8 @@ import { toast as hookToast, useToast as useToastHook } from "@/hooks/use-toast"
 
 // Define a type for our toast functions
 export interface ToastOptions {
-  title?: string;
-  description?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
   variant?: "default" | "destructive";
 }
 
@@ -49,9 +49,8 @@ export const toast = (props: ToastProps) => {
 toast.error = (message: string) => {
   console.error("Toast Error:", message);
   return toast({
-    variant: "destructive",
     title: "Error",
-    description: message,
+    variant: "destructive",
   });
 };
 
@@ -59,7 +58,6 @@ toast.success = (message: string) => {
   console.log("Toast Success:", message);
   return toast({
     title: "Success",
-    description: message,
   });
 };
 
@@ -67,7 +65,6 @@ toast.info = (message: string) => {
   console.log("Toast Info:", message);
   return toast({
     title: "Info",
-    description: message,
   });
 };
 
@@ -76,6 +73,5 @@ toast.warning = (message: string) => {
   return toast({
     variant: "destructive",
     title: "Warning",
-    description: message,
   });
 };
