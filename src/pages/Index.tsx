@@ -1,20 +1,33 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner'; 
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
-  // Hard-code an image fallback path since the video might be problematic
-  const [backgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
+  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('/lovable-uploads/dj-background.mp4');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  console.log("Index page rendering with fallback image for background");
+  console.log("Index page rendering with video background:", backgroundVideoUrl);
+  
+  // Clean up auth state on initial load of the index page
+  useEffect(() => {
+    const handlePageLoad = () => {
+      console.log("Index page loaded, checking for clean auth state");
+      // If we're on the index page but there's session data that's inconsistent,
+      // clear it to ensure a fresh start
+      if (session && (!userData || !userData.role)) {
+        console.log("Found inconsistent auth state, clearing local storage");
+        clearLocalStorage();
+      }
+    };
+
+    handlePageLoad();
+  }, []);
   
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
@@ -38,15 +51,16 @@ const Index = () => {
     }
   }, [session, userData, navigate]);
 
-  // Function to ensure we're starting with a clean authentication state
-  const ensureCleanAuthState = useCallback(() => {
+  // Ensure we're starting with a clean authentication state
+  const ensureCleanAuthState = () => {
     console.log("Ensuring clean auth state before navigation");
     if (session) {
       // If there's an active session but we're on the index page,
       // we should clear the local storage to avoid auth issues
       clearLocalStorage();
+      toast.success("Authentication state cleared for fresh login");
     }
-  }, [session, clearLocalStorage]);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-black relative">
