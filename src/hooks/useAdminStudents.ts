@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface Profile {
   first_name: string;
@@ -30,12 +31,26 @@ interface Student {
 
 export const useAdminStudents = () => {
   const queryClient = useQueryClient();
+  // Get auth context to verify authentication status
+  const { session } = useAuth();
+
+  // Helper function to check authentication before performing database operations
+  const checkAuthentication = () => {
+    if (!session || !session.user) {
+      console.error("Authentication required: No active session found");
+      throw new Error("Authentication required. Please sign in again.");
+    }
+    return true;
+  };
 
   // Debug function to directly fetch all database data
   const debugFetchStudents = async () => {
     console.log("Debug: Directly fetching all data");
     
     try {
+      // Verify authentication before proceeding
+      checkAuthentication();
+      
       // Query all students
       const { data: allStudents, error } = await supabase
         .from('students')
@@ -87,8 +102,17 @@ export const useAdminStudents = () => {
       
       // Return both for debugging
       return { allStudents, allProfiles };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Debug: Unexpected error in debugFetchStudents:", err);
+      
+      if (err.message?.includes('Policy check failed') || err.code === 'PGRST109') {
+        toast.error("Access denied. You don't have permission to perform this operation.");
+      } else if (!session) {
+        toast.error("Authentication required. Please sign in again.");
+      } else {
+        toast.error(`Failed to fetch debug data: ${err.message || 'Unknown error'}`);
+      }
+      
       throw err;
     }
   };
@@ -97,6 +121,9 @@ export const useAdminStudents = () => {
   const fetchAllStudents = async () => {
     try {
       console.log("Fetching all students with improved reliability...");
+      
+      // Verify authentication before proceeding
+      checkAuthentication();
       
       // Get all profiles that have a student role
       const { data: studentProfiles, error: profilesError } = await supabase
@@ -168,8 +195,17 @@ export const useAdminStudents = () => {
       console.log("Pending students:", pendingStudents);
       
       return { activeStudents, pendingStudents };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error in fetchAllStudents:", err);
+      
+      if (err.message?.includes('Policy check failed') || err.code === 'PGRST109') {
+        toast.error("Access denied. You don't have permission to view student records.");
+      } else if (!session) {
+        toast.error("Authentication required. Please sign in again.");
+      } else {
+        toast.error(`Failed to load students: ${err.message || 'Unknown error'}`);
+      }
+      
       throw err;
     }
   };
@@ -184,12 +220,22 @@ export const useAdminStudents = () => {
     queryKey: ['admin', 'students', 'all'],
     queryFn: fetchAllStudents,
     staleTime: 0, // Always refetch when requested
-    refetchOnWindowFocus: true // Refetch when window regains focus
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    retry: (failureCount, error: any) => {
+      // Don't retry on permission/auth errors
+      if (error.message?.includes('Policy check failed') || error.code === 'PGRST109' || !session) {
+        return false;
+      }
+      return failureCount < 3; // Retry other errors up to 3 times
+    }
   });
 
   // Function to create a demo student
   const createDemoStudent = async () => {
     try {
+      // Verify authentication before proceeding
+      checkAuthentication();
+      
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
       const email = `demo${timestamp}@example.com`;
@@ -208,6 +254,14 @@ export const useAdminStudents = () => {
         
         if (response.error || !response.data?.success) {
           console.error("Failed to create demo student:", response.error || response.data?.error);
+          
+          // Handle RLS or auth errors specifically
+          if (response.error?.message?.includes('Policy check failed')) {
+            toast.error("Access denied. You don't have permission to create students.");
+          } else {
+            toast.error(`Failed to create demo student: ${response.error?.message || response.data?.error || 'Unknown error'}`);
+          }
+          
           return null;
         }
         
@@ -225,12 +279,23 @@ export const useAdminStudents = () => {
         }, 2000);
         
         return result;
-      } catch (err) {
+      } catch (err: any) {
         console.error("Exception in createDemoStudent:", err);
+        
+        // More specific error handling
+        if (err.message?.includes('Policy check failed') || err.code === 'PGRST109') {
+          toast.error("Access denied. You don't have permission to create students.");
+        } else if (!session) {
+          toast.error("Authentication required. Please sign in again.");
+        } else {
+          toast.error(`Failed to create demo student: ${err.message || 'Unknown error'}`);
+        }
+        
         return null;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error in createDemoStudent:", err);
+      toast.error(`Failed to create demo student: ${err.message || 'Unknown error'}`);
       return null;
     }
   };
@@ -241,6 +306,9 @@ export const useAdminStudents = () => {
       console.log("Starting approval process for student ID:", studentId);
       
       try {
+        // Verify authentication before proceeding
+        checkAuthentication();
+        
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
           .from('students')
@@ -267,6 +335,12 @@ export const useAdminStudents = () => {
             
             if (insertError) {
               console.error("Error creating new student record:", insertError);
+              
+              // Handle RLS or auth errors specifically
+              if (insertError.message?.includes('Policy check failed') || insertError.code === 'PGRST109') {
+                throw new Error(`Access denied. You don't have permission to approve students.`);
+              }
+              
               throw new Error(`Failed to create student record: ${insertError.message}`);
             }
             
@@ -274,6 +348,12 @@ export const useAdminStudents = () => {
             return { success: true, studentId, action: 'created', data: newStudent };
           } else {
             console.error("Error checking for existing student:", checkError);
+            
+            // Handle RLS or auth errors specifically
+            if (checkError.message?.includes('Policy check failed') || checkError.code === 'PGRST109') {
+              throw new Error(`Access denied. You don't have permission to approve students.`);
+            }
+            
             throw new Error(`Failed to check for existing student: ${checkError.message}`);
           }
         }
@@ -289,6 +369,12 @@ export const useAdminStudents = () => {
         
         if (updateError) {
           console.error("Error updating student status:", updateError);
+          
+          // Handle RLS or auth errors specifically
+          if (updateError.message?.includes('Policy check failed') || updateError.code === 'PGRST109') {
+            throw new Error(`Access denied. You don't have permission to approve students.`);
+          }
+          
           throw new Error(`Failed to update student status: ${updateError.message}`);
         }
         
@@ -354,7 +440,13 @@ export const useAdminStudents = () => {
       }
       
       // Use our updated safe toast implementation
-      toast.error(`Failed to approve student: ${error.message}`);
+      if (error.message?.includes('Access denied')) {
+        toast.error(`Permission denied: You don't have admin rights to approve students.`);
+      } else if (error.message?.includes('Authentication required')) {
+        toast.error(`Authentication required. Please sign in again.`);
+      } else {
+        toast.error(`Failed to approve student: ${error.message}`);
+      }
       
       // Refetch to ensure UI is in sync with server
       refetchStudents();
@@ -367,6 +459,9 @@ export const useAdminStudents = () => {
       console.log("Starting decline process for student ID:", studentId);
       
       try {
+        // Verify authentication before proceeding
+        checkAuthentication();
+        
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
           .from('students')
@@ -393,6 +488,12 @@ export const useAdminStudents = () => {
             
             if (insertError) {
               console.error("Error creating new declined student record:", insertError);
+              
+              // Handle RLS or auth errors specifically
+              if (insertError.message?.includes('Policy check failed') || insertError.code === 'PGRST109') {
+                throw new Error(`Access denied. You don't have permission to decline students.`);
+              }
+              
               throw new Error(`Failed to create declined student record: ${insertError.message}`);
             }
             
@@ -400,6 +501,12 @@ export const useAdminStudents = () => {
             return { success: true, studentId, action: 'created_declined', data: newStudent };
           } else {
             console.error("Error checking for existing student:", checkError);
+            
+            // Handle RLS or auth errors specifically
+            if (checkError.message?.includes('Policy check failed') || checkError.code === 'PGRST109') {
+              throw new Error(`Access denied. You don't have permission to decline students.`);
+            }
+            
             throw new Error(`Failed to check for existing student: ${checkError.message}`);
           }
         }
@@ -415,6 +522,12 @@ export const useAdminStudents = () => {
         
         if (updateError) {
           console.error("Error updating student status to declined:", updateError);
+          
+          // Handle RLS or auth errors specifically
+          if (updateError.message?.includes('Policy check failed') || updateError.code === 'PGRST109') {
+            throw new Error(`Access denied. You don't have permission to decline students.`);
+          }
+          
           throw new Error(`Failed to update student status to declined: ${updateError.message}`);
         }
         
@@ -469,7 +582,13 @@ export const useAdminStudents = () => {
       }
       
       // Use our updated safe toast implementation
-      toast.error(`Failed to decline student: ${error.message}`);
+      if (error.message?.includes('Access denied')) {
+        toast.error(`Permission denied: You don't have admin rights to decline students.`);
+      } else if (error.message?.includes('Authentication required')) {
+        toast.error(`Authentication required. Please sign in again.`);
+      } else {
+        toast.error(`Failed to decline student: ${error.message}`);
+      }
       
       refetchStudents();
     }
@@ -481,6 +600,9 @@ export const useAdminStudents = () => {
       console.log("Deactivating student with ID:", studentId);
       
       try {
+        // Verify authentication before proceeding
+        checkAuthentication();
+        
         // Verify student exists and check current status
         const { data: currentStudent, error: fetchError } = await supabase
           .from('students')
@@ -506,12 +628,24 @@ export const useAdminStudents = () => {
               
             if (insertError) {
               console.error("Error creating inactive student record:", insertError);
+              
+              // Handle RLS or auth errors specifically
+              if (insertError.message?.includes('Policy check failed') || insertError.code === 'PGRST109') {
+                throw new Error(`Access denied. You don't have permission to deactivate students.`);
+              }
+              
               throw new Error(`Failed to create inactive student record: ${insertError.message}`);
             }
             
             return { success: true, studentId, action: 'created_inactive', data: newStudent };
           } else {
             console.error("Error fetching student for deactivation:", fetchError);
+            
+            // Handle RLS or auth errors specifically
+            if (fetchError.message?.includes('Policy check failed') || fetchError.code === 'PGRST109') {
+              throw new Error(`Access denied. You don't have permission to deactivate students.`);
+            }
+            
             throw new Error("Could not find student to deactivate");
           }
         }
@@ -525,6 +659,12 @@ export const useAdminStudents = () => {
 
         if (error) {
           console.error("Error in deactivateStudent mutation:", error);
+          
+          // Handle RLS or auth errors specifically
+          if (error.message?.includes('Policy check failed') || error.code === 'PGRST109') {
+            throw new Error(`Access denied. You don't have permission to deactivate students.`);
+          }
+          
           throw new Error(error.message);
         }
         
@@ -579,8 +719,14 @@ export const useAdminStudents = () => {
         queryClient.setQueryData(['admin', 'students', 'all'], context.previousData);
       }
       
-      // Use our updated safe toast implementation
-      toast.error(`Failed to deactivate student: ${error.message}`);
+      // More specific error handling
+      if (error.message?.includes('Access denied')) {
+        toast.error(`Permission denied: You don't have admin rights to deactivate students.`);
+      } else if (error.message?.includes('Authentication required')) {
+        toast.error(`Authentication required. Please sign in again.`);
+      } else {
+        toast.error(`Failed to deactivate student: ${error.message}`);
+      }
       
       refetchStudents();
     }
