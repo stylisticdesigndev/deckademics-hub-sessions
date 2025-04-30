@@ -12,25 +12,37 @@ const Index = () => {
   const { userData, session, clearLocalStorage } = useAuth();
   const navigate = useNavigate();
   
-  console.log("Index page rendering with video background:", backgroundVideoUrl);
+  // Log every render for debugging
+  console.log("Index page rendering at:", new Date().toISOString(), 
+    "Video:", backgroundVideoUrl, 
+    "Session:", !!session, 
+    "User role:", userData?.role);
   
   // Clean up auth state on initial load of the index page
   useEffect(() => {
-    const handlePageLoad = () => {
-      console.log("Index page loaded, checking for clean auth state");
-      // If we're on the index page but there's session data that's inconsistent,
+    const handleInitialLoad = () => {
+      console.log("Index page initial load - checking auth state");
+      
+      // If we're on the index page but there's inconsistent session data,
       // clear it to ensure a fresh start
       if (session && (!userData || !userData.role)) {
         console.log("Found inconsistent auth state, clearing local storage");
         clearLocalStorage();
       }
+      
+      // Always set loading to false after initial checks
+      setIsLoading(false);
     };
 
-    handlePageLoad();
+    // Short timeout to ensure page has properly initialized
+    const timer = setTimeout(handleInitialLoad, 100);
+    return () => clearTimeout(timer);
   }, []);
   
   // Check if user is already logged in and redirect if needed
   useEffect(() => {
+    if (isLoading) return; // Skip redirect check during initial loading
+    
     console.log("Index page - Session check:", !!session, "User role:", userData?.role);
     
     if (session && userData?.role) {
@@ -46,10 +58,8 @@ const Index = () => {
       }
     } else {
       console.log("No active session found or missing role, showing login options");
-      // Set loading to false as we're not redirecting
-      setIsLoading(false);
     }
-  }, [session, userData, navigate]);
+  }, [session, userData, navigate, isLoading]);
 
   // Ensure we're starting with a clean authentication state
   const ensureCleanAuthState = () => {
@@ -61,6 +71,23 @@ const Index = () => {
       toast.success("Authentication state cleared for fresh login");
     }
   };
+
+  // Force the video to reload if needed
+  useEffect(() => {
+    // This creates a unique URL by appending a timestamp to bypass cache
+    const timestamp = Date.now();
+    const videoWithTimestamp = `/lovable-uploads/dj-background.mp4?t=${timestamp}`;
+    console.log("Setting video URL with cache-busting:", videoWithTimestamp);
+    setBackgroundVideoUrl(videoWithTimestamp);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-12 h-12 border-4 border-deckademics-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-black relative">
