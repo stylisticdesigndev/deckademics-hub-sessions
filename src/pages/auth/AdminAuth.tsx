@@ -6,10 +6,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, setAdminSession } = useAuth();
   
   // Redirect if user is already logged in
   useEffect(() => {
@@ -28,6 +29,11 @@ const AdminAuthContent = () => {
       }
     }
   }, [session, navigate]);
+
+  const handleDirectAdminAccess = () => {
+    setAdminSession();
+    navigate('/admin/dashboard');
+  };
 
   return (
     <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
@@ -58,10 +64,20 @@ const AdminAuthContent = () => {
       
       <AuthForm userType="admin" disableSignup={true} />
       
-      <div className="text-center">
-        <Link to="/" className="text-sm text-deckademics-primary hover:underline">
-          Back to sign in options
-        </Link>
+      <div className="text-center space-y-4">
+        <Button 
+          onClick={handleDirectAdminAccess} 
+          variant="outline" 
+          className="w-full border-deckademics-primary text-deckademics-primary hover:bg-deckademics-primary/10"
+        >
+          Quick Access Demo Admin
+        </Button>
+        
+        <div>
+          <Link to="/" className="text-sm text-deckademics-primary hover:underline">
+            Back to sign in options
+          </Link>
+        </div>
       </div>
     </div>
   );

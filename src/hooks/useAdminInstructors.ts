@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface Profile {
   id: string;
@@ -27,12 +28,58 @@ interface InstructorWithProfile {
 
 export const useAdminInstructors = () => {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
+  
+  // Check if the current user is the mock admin
+  const isMockAdmin = session?.user?.id === "00000000-0000-0000-0000-000000000000";
 
   // List all users directly from profiles table for debugging
   const { data: allUsers } = useQuery<Profile[]>({
     queryKey: ['admin', 'all-users'],
     queryFn: async () => {
       console.log('Fetching all profiles for debugging...');
+      
+      // For mock admin, return mock profiles
+      if (isMockAdmin) {
+        console.log('Using mock profiles for demo admin');
+        return [
+          {
+            id: "mock-user-1",
+            email: "student1@example.com",
+            first_name: "Student",
+            last_name: "One",
+            role: "student"
+          },
+          {
+            id: "mock-user-2",
+            email: "student2@example.com",
+            first_name: "Student",
+            last_name: "Two",
+            role: "student"
+          },
+          {
+            id: "mock-instructor-1",
+            email: "instructor1@example.com",
+            first_name: "Instructor",
+            last_name: "One",
+            role: "instructor"
+          },
+          {
+            id: "mock-instructor-2",
+            email: "instructor2@example.com",
+            first_name: "Instructor",
+            last_name: "Two",
+            role: "instructor"
+          },
+          {
+            id: "00000000-0000-0000-0000-000000000000",
+            email: "admin@deckademics.com",
+            first_name: "Admin",
+            last_name: "User",
+            role: "admin"
+          }
+        ];
+      }
       
       try {
         const { data, error } = await supabase.rpc('get_all_users');
@@ -56,6 +103,26 @@ export const useAdminInstructors = () => {
     queryFn: async () => {
       try {
         console.log('Fetching active instructors...');
+        
+        // For mock admin, return mock active instructors
+        if (isMockAdmin) {
+          console.log('Using mock active instructors for demo admin');
+          return [
+            {
+              id: "mock-instructor-1",
+              status: "active",
+              specialties: ["Hip Hop", "Scratching"],
+              bio: "Experienced instructor specializing in Hip Hop and Scratching techniques.",
+              hourly_rate: 35,
+              years_experience: 5,
+              profile: {
+                first_name: "Instructor",
+                last_name: "One",
+                email: "instructor1@example.com"
+              }
+            }
+          ];
+        }
         
         const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
           status_param: 'active'
@@ -81,6 +148,26 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching pending instructors...');
         
+        // For mock admin, return mock pending instructors
+        if (isMockAdmin) {
+          console.log('Using mock pending instructors for demo admin');
+          return [
+            {
+              id: "mock-instructor-2",
+              status: "pending",
+              specialties: ["EDM", "Mixing"],
+              bio: "New instructor with expertise in EDM and mixing.",
+              hourly_rate: 30,
+              years_experience: 2,
+              profile: {
+                first_name: "Instructor",
+                last_name: "Two",
+                email: "instructor2@example.com"
+              }
+            }
+          ];
+        }
+        
         const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
           status_param: 'pending'
         });
@@ -105,6 +192,12 @@ export const useAdminInstructors = () => {
       try {
         console.log('Fetching inactive instructors...');
         
+        // For mock admin, return mock inactive instructors (empty array for simplicity)
+        if (isMockAdmin) {
+          console.log('Using mock inactive instructors for demo admin');
+          return [];
+        }
+        
         const { data, error } = await supabase.rpc('get_instructors_with_profiles', {
           status_param: 'inactive' 
         });
@@ -125,6 +218,12 @@ export const useAdminInstructors = () => {
 
   const approveInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
+      // For mock admin, just return success without calling the database
+      if (isMockAdmin) {
+        console.log("Mock admin approving instructor:", instructorId);
+        return { success: true, instructorId };
+      }
+      
       const { error } = await supabase
         .from('instructors')
         .update({ status: 'active' })
@@ -145,6 +244,12 @@ export const useAdminInstructors = () => {
 
   const declineInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
+      // For mock admin, just return success without calling the database
+      if (isMockAdmin) {
+        console.log("Mock admin declining instructor:", instructorId);
+        return { success: true, instructorId };
+      }
+      
       const { error } = await supabase
         .from('instructors')
         .update({ status: 'declined' })
@@ -165,6 +270,12 @@ export const useAdminInstructors = () => {
 
   const deactivateInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
+      // For mock admin, just return success without calling the database
+      if (isMockAdmin) {
+        console.log("Mock admin deactivating instructor:", instructorId);
+        return { success: true, instructorId };
+      }
+      
       const { error } = await supabase
         .from('instructors')
         .update({ status: 'inactive' })
@@ -185,6 +296,12 @@ export const useAdminInstructors = () => {
 
   const activateInstructor = useMutation({
     mutationFn: async (instructorId: string) => {
+      // For mock admin, just return success without calling the database
+      if (isMockAdmin) {
+        console.log("Mock admin activating instructor:", instructorId);
+        return { success: true, instructorId };
+      }
+      
       const { error } = await supabase
         .from('instructors')
         .update({ status: 'active' })
@@ -206,6 +323,12 @@ export const useAdminInstructors = () => {
   const createInstructor = useMutation({
     mutationFn: async (userId: string) => {
       console.log(`Creating instructor record for user ${userId} using admin function`);
+      
+      // For mock admin, just return success without calling the database
+      if (isMockAdmin) {
+        console.log("Mock admin creating instructor record for:", userId);
+        return { success: true, userId };
+      }
       
       try {
         const { data, error } = await supabase.rpc(

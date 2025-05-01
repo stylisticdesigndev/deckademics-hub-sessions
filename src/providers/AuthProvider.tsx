@@ -48,10 +48,10 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 // Single instance for auth state storage
 let authChangeSubscription: { unsubscribe: () => void } | null = null;
 
-// Admin user mock
+// Admin user mock with valid UUID format
 const createAdminUser = (): User => {
   return {
-    id: "admin-user-id",
+    id: "00000000-0000-0000-0000-000000000000", // Valid UUID format that works with Postgres
     app_metadata: {},
     user_metadata: {
       role: 'admin',
@@ -119,6 +119,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Store in localStorage to persist the admin session
     localStorage.setItem('deckademics-admin-session', JSON.stringify(adminSession));
+  };
+  
+  // Add clear localStorage method
+  const clearLocalStorage = () => {
+    localStorage.removeItem('deckademics-admin-session');
+    localStorage.removeItem('supabase.auth.token');
   };
   
   useEffect(() => {
@@ -433,12 +439,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // We need to wrap these functions to handle the special admin user 
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     
     try {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing in with email:", normalizedEmail);
+      
+      // Special case for admin@deckademics.com
+      if (normalizedEmail === 'admin@deckademics.com' && password === 'admin') {
+        console.log('Setting up admin session');
+        setAdminSession();
+        return { 
+          user: createAdminUser(), 
+          session: createAdminSession() 
+        };
+      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
@@ -630,6 +647,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
+    // Don't try to update profile for mock admin user
+    if (userData.user?.id === "00000000-0000-0000-0000-000000000000") {
+      console.log("Cannot update profile for mock admin user");
+      return;
+    }
+    
     try {
       if (!userData.user?.id) {
         throw new Error('User not authenticated');

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -35,6 +34,9 @@ export const useAdminStudents = () => {
   // Get auth context to verify authentication status
   const { session } = useAuth();
 
+  // Check if the current user is the mock admin
+  const isMockAdmin = session?.user?.id === "00000000-0000-0000-0000-000000000000";
+
   // Helper function to check authentication before performing database operations
   const checkAuthentication = () => {
     if (!session || !session.user) {
@@ -46,12 +48,18 @@ export const useAdminStudents = () => {
     return session;
   };
   
-  // Helper function to verify admin permissions
+  // Modified helper function to verify admin permissions - bypass for mock admin
   const verifyAdminPermissions = async () => {
     // First ensure we're authenticated
     const userSession = checkAuthentication();
     
-    // Now check if the user is actually an admin by trying to fetch their profile
+    // Automatic approval for mock admin
+    if (isMockAdmin) {
+      console.log("Mock admin detected - bypassing permissions check");
+      return true;
+    }
+    
+    // For real users, check if the user is actually an admin
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -178,8 +186,76 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching all students with improved reliability...");
       
-      // Verify admin permissions before proceeding
+      // Verify admin permissions before proceeding (bypassed for mock admin)
       await verifyAdminPermissions();
+      
+      // If this is the mock admin, return mock data
+      if (isMockAdmin) {
+        console.log("Using mock data for demo admin");
+        
+        // Create some mock students for demonstration
+        const mockActiveStudents = [
+          {
+            id: "mock-student-1",
+            level: "beginner",
+            enrollment_status: "active",
+            notes: null,
+            start_date: "2023-01-01",
+            profile: {
+              first_name: "John",
+              last_name: "Doe",
+              email: "john.doe@example.com"
+            },
+            instructor: null
+          },
+          {
+            id: "mock-student-2",
+            level: "intermediate",
+            enrollment_status: "active",
+            notes: "Progressing well",
+            start_date: "2023-02-15",
+            profile: {
+              first_name: "Jane",
+              last_name: "Smith",
+              email: "jane.smith@example.com"
+            },
+            instructor: null
+          }
+        ];
+        
+        const mockPendingStudents = [
+          {
+            id: "mock-student-3",
+            level: "beginner",
+            enrollment_status: "pending",
+            notes: null,
+            start_date: null,
+            profile: {
+              first_name: "Alex",
+              last_name: "Johnson",
+              email: "alex.johnson@example.com"
+            },
+            instructor: null
+          },
+          {
+            id: "mock-student-4",
+            level: "beginner",
+            enrollment_status: "pending",
+            notes: null,
+            start_date: null,
+            profile: {
+              first_name: "Sam",
+              last_name: "Williams",
+              email: "sam.williams@example.com"
+            },
+            instructor: null
+          }
+        ];
+        
+        return { activeStudents: mockActiveStudents, pendingStudents: mockPendingStudents };
+      }
+      
+      // For real admins, continue with actual database query
       
       // Get all profiles that have a student role
       const { data: studentProfiles, error: profilesError } = await supabase
@@ -281,11 +357,34 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Function to create a demo student
+  // Function to create a demo student - modified for mock admin
   const createDemoStudent = async () => {
     try {
-      // Verify admin permissions
+      // Verify admin permissions - bypassed for mock admin
       await verifyAdminPermissions();
+      
+      // For mock admin, create a mock student
+      if (isMockAdmin) {
+        console.log("Mock admin creating demo student");
+        
+        // Generate a mock timestamp
+        const timestamp = Date.now();
+        
+        // Return mock success data
+        queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+        
+        // Force a refresh after a delay
+        setTimeout(() => {
+          console.log("Refreshing student data after creating demo student...");
+          refetchStudents();
+        }, 1000);
+        
+        return {
+          success: true,
+          id: `mock-student-${timestamp}`,
+          message: "Demo student created successfully"
+        };
+      }
       
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
@@ -342,14 +441,20 @@ export const useAdminStudents = () => {
     }
   };
 
-  // Fix the mutation to approve a student
+  // Modified mutation to approve a student - handle mock admin case
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Starting approval process for student ID:", studentId);
       
       try {
-        // Verify admin permissions
+        // Verify admin permissions - bypassed for mock admin
         await verifyAdminPermissions();
+        
+        // For mock admin, just return success
+        if (isMockAdmin) {
+          console.log("Mock admin approved student:", studentId);
+          return { success: true, studentId, action: 'approved', data: { id: studentId, status: 'active' } };
+        }
         
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
@@ -491,14 +596,20 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Fix the mutation to decline a student
+  // Modified mutation to decline a student - handle mock admin case
   const declineStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Starting decline process for student ID:", studentId);
       
       try {
-        // Verify admin permissions
+        // Verify admin permissions - bypassed for mock admin
         await verifyAdminPermissions();
+        
+        // For mock admin, just return success
+        if (isMockAdmin) {
+          console.log("Mock admin declined student:", studentId);
+          return { success: true, studentId, action: 'declined', data: { id: studentId, status: 'declined' } };
+        }
         
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
@@ -626,14 +737,20 @@ export const useAdminStudents = () => {
     }
   });
 
-  // Fix the mutation for deactivate student
+  // Modified mutation for deactivate student - handle mock admin case
   const deactivateStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Deactivating student with ID:", studentId);
       
       try {
-        // Verify admin permissions
+        // Verify admin permissions - bypassed for mock admin
         await verifyAdminPermissions();
+        
+        // For mock admin, just return success
+        if (isMockAdmin) {
+          console.log("Mock admin deactivated student:", studentId);
+          return { success: true, studentId, action: 'deactivated', data: { id: studentId, status: 'inactive' } };
+        }
         
         // Verify student exists and check current status
         const { data: currentStudent, error: fetchError } = await supabase

@@ -20,11 +20,21 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
 
+  // Special case for admin with UUID 00000000-0000-0000-0000-000000000000
+  const isMockAdmin = session?.user?.id === "00000000-0000-0000-0000-000000000000";
+  
   // Check for user metadata in session for cases where profile creation fails
   useEffect(() => {
     if (!isLoading) {
       // If we have no session, we don't need to wait for a profile
       if (!session) {
+        setIsWaitingForProfile(false);
+        return;
+      }
+      
+      // If mock admin, no need to wait for profile
+      if (isMockAdmin) {
+        console.log("Mock admin detected, no need to wait for profile");
         setIsWaitingForProfile(false);
         return;
       }
@@ -44,10 +54,15 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       
       return () => clearTimeout(timer);
     }
-  }, [isLoading, session, userData.role]);
+  }, [isLoading, session, userData.role, isMockAdmin]);
   
   // Handle profile timeout - separate from waiting logic
   useEffect(() => {
+    // Skip for mock admin
+    if (isMockAdmin) {
+      return;
+    }
+    
     // Only run this if we have session but no role data
     const needsRole = session && !userData.profile && !userData.role && !session.user.user_metadata?.role;
     
@@ -76,10 +91,10 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       
       return () => clearInterval(interval);
     }
-  }, [isLoading, session, userData, signOut]);
+  }, [isLoading, session, userData, signOut, isMockAdmin]);
   
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 3000) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 3000 && !isMockAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-deckademics-dark">
         <div className="w-full max-w-md space-y-4">
@@ -104,12 +119,23 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }
   
+  // Special case for mock admin - always grant access to admin routes
+  if (isMockAdmin && allowedRoles.includes('admin')) {
+    console.log("Mock admin accessing admin route - granting access");
+    return <Outlet />;
+  }
+  
   // Get effective role either from userData or from session metadata
   const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
   
   // If user is authenticated but has no role or wrong role
   if (!effectiveRole || !allowedRoles.includes(effectiveRole)) {
     console.log("Access denied - redirecting to appropriate dashboard");
+    
+    // Special case for mock admin - redirect to admin dashboard
+    if (isMockAdmin) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
     
     // Use the role from user metadata if profile role is not available
     const roleForRedirect = effectiveRole || 'student';
