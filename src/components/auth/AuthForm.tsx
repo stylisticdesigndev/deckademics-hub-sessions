@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,12 +18,12 @@ interface AuthFormProps {
   disableSignup?: boolean;
 }
 
-// Admin credentials for direct login
+// Admin credentials
 const ADMIN_EMAIL = 'admin@deckademics.com';
 const ADMIN_PASSWORD = 'Admin123!';
 
 export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
-  const { signIn, signUp, setAdminSession, isLoading } = useAuth();
+  const { signIn, signUp, isLoading, setAdminSession } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',

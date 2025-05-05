@@ -32,9 +32,6 @@ interface InstructorCounts {
 
 export const useAdminDashboard = () => {
   const { session } = useAuth();
-  
-  // Check if the current user is the mock admin
-  const isMockAdmin = session?.user?.id === "00000000-0000-0000-0000-000000000000";
 
   return useQuery({
     queryKey: ['admin-dashboard'],
@@ -42,41 +39,6 @@ export const useAdminDashboard = () => {
       console.log("Fetching admin dashboard data");
       
       try {
-        // For mock admin, return mock dashboard data
-        if (isMockAdmin) {
-          console.log("Using mock dashboard data for demo admin");
-          
-          // Create mock recent activities
-          const recentActivities = [
-            {
-              id: "act-1",
-              action: "Approval",
-              details: "Student Jane Smith was approved",
-              timestamp: new Date(Date.now() - 3600000) // 1 hour ago
-            },
-            {
-              id: "act-2",
-              action: "Payment",
-              details: "Payment of $150 received from John Doe",
-              timestamp: new Date(Date.now() - 7200000) // 2 hours ago
-            },
-            {
-              id: "act-3",
-              action: "Instructor",
-              details: "New instructor David Johnson registered",
-              timestamp: new Date(Date.now() - 86400000) // 1 day ago
-            }
-          ];
-          
-          return {
-            totalStudents: 42,
-            pendingStudents: 5,
-            totalInstructors: 8,
-            pendingInstructors: 2,
-            recentActivities
-          };
-        }
-        
         // Get counts using aggregate functions to avoid RLS issues
         const { data: studentCounts, error: studentsError } = await supabase
           .rpc('get_student_counts');
