@@ -45,114 +45,6 @@ export const useAdminStudents = () => {
     return session;
   };
   
-  // Modified helper function to verify admin permissions
-  const verifyAdminPermissions = async () => {
-    // First ensure we're authenticated
-    const userSession = checkAuthentication();
-    
-    // For real users, check if the user is actually an admin
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userSession.user.id)
-        .single();
-      
-      if (error) throw error;
-      
-      if (!profile || profile.role !== 'admin') {
-        console.error("Permission denied: User is not an admin");
-        throw new Error("Access denied. You don't have permission to perform this operation.");
-      }
-      
-      return true;
-    } catch (err) {
-      console.error("Error verifying admin permissions:", err);
-      throw new Error("Failed to verify admin permissions.");
-    }
-  };
-
-  // Debug function to directly fetch all database data
-  const debugFetchStudents = async () => {
-    console.log("Debug: Directly fetching all data");
-    
-    try {
-      // Verify authentication before proceeding
-      const userSession = checkAuthentication();
-      
-      // Query all students
-      const { data: allStudents, error } = await supabase
-        .from('students')
-        .select('*');
-      
-      if (error) {
-        console.error("Debug: Error fetching all students:", error);
-        if (error.message?.includes('JWTError') || error.message?.includes('jwt expired')) {
-          toast.error("Your session has expired. Please sign in again.");
-        } else if (error.message?.includes('PGRST109') || error.message?.includes('Policy check failed')) {
-          toast.error("Access denied. Only admins can view student data.");
-        } else {
-          toast.error(`Database error: ${error.message}`);
-        }
-        throw error;
-      }
-      
-      console.log("Debug: All students in database:", allStudents || []);
-      
-      // Query all profiles
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (profilesError) {
-        console.error("Debug: Error fetching profiles:", profilesError);
-        if (profilesError.message?.includes('JWTError') || profilesError.message?.includes('jwt expired')) {
-          toast.error("Your session has expired. Please sign in again.");
-        } else if (profilesError.message?.includes('PGRST109') || profilesError.message?.includes('Policy check failed')) {
-          toast.error("Access denied. Only admins can view profile data.");
-        } else {
-          toast.error(`Database error: ${profilesError.message}`);
-        }
-        throw profilesError;
-      }
-      
-      console.log("Debug: All profiles in database:", allProfiles || []);
-      
-      // Create students manually from profiles
-      if (allProfiles && allProfiles.length > 0) {
-        const manuallyCreatedStudents = allProfiles
-          .filter(profile => profile.role === 'student')
-          .map(profile => {
-            // Check if a corresponding student record exists
-            const existingStudent = allStudents?.find(s => s.id === profile.id);
-            
-            return {
-              id: profile.id,
-              level: existingStudent?.level || 'beginner',
-              enrollment_status: existingStudent?.enrollment_status || 'active',
-              notes: existingStudent?.notes || null,
-              start_date: existingStudent?.start_date || null,
-              profile: {
-                first_name: profile.first_name || '',
-                last_name: profile.last_name || '',
-                email: profile.email || ''
-              }
-            };
-          });
-        
-        console.log("Manually created students from profiles:", manuallyCreatedStudents);
-      }
-      
-      // Return both for debugging
-      return { allStudents, allProfiles };
-    } catch (err: any) {
-      console.error("Debug: Unexpected error in debugFetchStudents:", err);
-      
-      handleError(err, "Failed to fetch debug data");
-      throw err;
-    }
-  };
-  
   // Centralized error handler
   const handleError = (error: any, fallbackMessage: string) => {
     console.error("Error in admin students operation:", error);
@@ -177,8 +69,8 @@ export const useAdminStudents = () => {
     try {
       console.log("Fetching all students with improved reliability...");
       
-      // Verify admin permissions before proceeding
-      await verifyAdminPermissions();
+      // Verify authentication before proceeding
+      checkAuthentication();
       
       // Get all profiles that have a student role
       const { data: studentProfiles, error: profilesError } = await supabase
@@ -283,9 +175,6 @@ export const useAdminStudents = () => {
   // Function to create a demo student - modified for mock admin
   const createDemoStudent = async () => {
     try {
-      // Verify admin permissions - bypassed for mock admin
-      await verifyAdminPermissions();
-      
       // Generate a unique timestamp to create unique email
       const timestamp = Date.now();
       const email = `demo${timestamp}@example.com`;
@@ -341,14 +230,95 @@ export const useAdminStudents = () => {
     }
   };
 
+  // Debug function to directly fetch all database data
+  const debugFetchStudents = async () => {
+    console.log("Debug: Directly fetching all data");
+    
+    try {
+      // Verify authentication before proceeding
+      const userSession = checkAuthentication();
+      
+      // Query all students
+      const { data: allStudents, error } = await supabase
+        .from('students')
+        .select('*');
+      
+      if (error) {
+        console.error("Debug: Error fetching all students:", error);
+        if (error.message?.includes('JWTError') || error.message?.includes('jwt expired')) {
+          toast.error("Your session has expired. Please sign in again.");
+        } else if (error.message?.includes('PGRST109') || error.message?.includes('Policy check failed')) {
+          toast.error("Access denied. Only admins can view student data.");
+        } else {
+          toast.error(`Database error: ${error.message}`);
+        }
+        throw error;
+      }
+      
+      console.log("Debug: All students in database:", allStudents || []);
+      
+      // Query all profiles
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profilesError) {
+        console.error("Debug: Error fetching profiles:", profilesError);
+        if (profilesError.message?.includes('JWTError') || profilesError.message?.includes('jwt expired')) {
+          toast.error("Your session has expired. Please sign in again.");
+        } else if (profilesError.message?.includes('PGRST109') || profilesError.message?.includes('Policy check failed')) {
+          toast.error("Access denied. Only admins can view profile data.");
+        } else {
+          toast.error(`Database error: ${profilesError.message}`);
+        }
+        throw profilesError;
+      }
+      
+      console.log("Debug: All profiles in database:", allProfiles || []);
+      
+      // Create students manually from profiles
+      if (allProfiles && allProfiles.length > 0) {
+        const manuallyCreatedStudents = allProfiles
+          .filter(profile => profile.role === 'student')
+          .map(profile => {
+            // Check if a corresponding student record exists
+            const existingStudent = allStudents?.find(s => s.id === profile.id);
+            
+            return {
+              id: profile.id,
+              level: existingStudent?.level || 'beginner',
+              enrollment_status: existingStudent?.enrollment_status || 'active',
+              notes: existingStudent?.notes || null,
+              start_date: existingStudent?.start_date || null,
+              profile: {
+                first_name: profile.first_name || '',
+                last_name: profile.last_name || '',
+                email: profile.email || ''
+              }
+            };
+          });
+        
+        console.log("Manually created students from profiles:", manuallyCreatedStudents);
+      }
+      
+      // Return both for debugging
+      return { allStudents, allProfiles };
+    } catch (err: any) {
+      console.error("Debug: Unexpected error in debugFetchStudents:", err);
+      
+      handleError(err, "Failed to fetch debug data");
+      throw err;
+    }
+  };
+
   // Modified mutation to approve a student - handle mock admin case
   const approveStudent = useMutation({
     mutationFn: async (studentId: string) => {
       console.log("Starting approval process for student ID:", studentId);
       
       try {
-        // Verify admin permissions - bypassed for mock admin
-        await verifyAdminPermissions();
+        // Verify authentication before proceeding
+        checkAuthentication();
         
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
@@ -496,8 +466,8 @@ export const useAdminStudents = () => {
       console.log("Starting decline process for student ID:", studentId);
       
       try {
-        // Verify admin permissions - bypassed for mock admin
-        await verifyAdminPermissions();
+        // Verify authentication before proceeding
+        checkAuthentication();
         
         // First, check if a student record exists
         const { data: checkStudent, error: checkError } = await supabase
@@ -631,8 +601,8 @@ export const useAdminStudents = () => {
       console.log("Deactivating student with ID:", studentId);
       
       try {
-        // Verify admin permissions - bypassed for mock admin
-        await verifyAdminPermissions();
+        // Verify authentication before proceeding
+        checkAuthentication();
         
         // Verify student exists and check current status
         const { data: currentStudent, error: fetchError } = await supabase
@@ -752,6 +722,87 @@ export const useAdminStudents = () => {
       refetchStudents();
     }
   });
+
+  // Function to directly fetch all database data
+  const debugFetchStudents = async () => {
+    console.log("Debug: Directly fetching all data");
+    
+    try {
+      // Verify authentication before proceeding
+      const userSession = checkAuthentication();
+      
+      // Query all students
+      const { data: allStudents, error } = await supabase
+        .from('students')
+        .select('*');
+      
+      if (error) {
+        console.error("Debug: Error fetching all students:", error);
+        if (error.message?.includes('JWTError') || error.message?.includes('jwt expired')) {
+          toast.error("Your session has expired. Please sign in again.");
+        } else if (error.message?.includes('PGRST109') || error.message?.includes('Policy check failed')) {
+          toast.error("Access denied. Only admins can view student data.");
+        } else {
+          toast.error(`Database error: ${error.message}`);
+        }
+        throw error;
+      }
+      
+      console.log("Debug: All students in database:", allStudents || []);
+      
+      // Query all profiles
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profilesError) {
+        console.error("Debug: Error fetching profiles:", profilesError);
+        if (profilesError.message?.includes('JWTError') || profilesError.message?.includes('jwt expired')) {
+          toast.error("Your session has expired. Please sign in again.");
+        } else if (profilesError.message?.includes('PGRST109') || profilesError.message?.includes('Policy check failed')) {
+          toast.error("Access denied. Only admins can view profile data.");
+        } else {
+          toast.error(`Database error: ${profilesError.message}`);
+        }
+        throw profilesError;
+      }
+      
+      console.log("Debug: All profiles in database:", allProfiles || []);
+      
+      // Create students manually from profiles
+      if (allProfiles && allProfiles.length > 0) {
+        const manuallyCreatedStudents = allProfiles
+          .filter(profile => profile.role === 'student')
+          .map(profile => {
+            // Check if a corresponding student record exists
+            const existingStudent = allStudents?.find(s => s.id === profile.id);
+            
+            return {
+              id: profile.id,
+              level: existingStudent?.level || 'beginner',
+              enrollment_status: existingStudent?.enrollment_status || 'active',
+              notes: existingStudent?.notes || null,
+              start_date: existingStudent?.start_date || null,
+              profile: {
+                first_name: profile.first_name || '',
+                last_name: profile.last_name || '',
+                email: profile.email || ''
+              }
+            };
+          });
+        
+        console.log("Manually created students from profiles:", manuallyCreatedStudents);
+      }
+      
+      // Return both for debugging
+      return { allStudents, allProfiles };
+    } catch (err: any) {
+      console.error("Debug: Unexpected error in debugFetchStudents:", err);
+      
+      handleError(err, "Failed to fetch debug data");
+      throw err;
+    }
+  };
 
   // Handle any errors
   if (studentsError) {

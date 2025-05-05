@@ -39,51 +39,13 @@ interface AuthContextProps {
   signUp: (email: string, password: string, role?: UserRole, metadata?: Record<string, any>) => Promise<{ user: User | null; session: Session | null; }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
-  setAdminSession: () => void; // New method for direct admin login
-  clearLocalStorage: () => void; // New method for clearing local storage
+  clearLocalStorage: () => void; // Method for clearing local storage
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 // Single instance for auth state storage
 let authChangeSubscription: { unsubscribe: () => void } | null = null;
-
-// Admin user mock with valid UUID format
-const createAdminUser = (): User => {
-  return {
-    id: "00000000-0000-0000-0000-000000000000", // Valid UUID format that works with Postgres
-    app_metadata: {},
-    user_metadata: {
-      role: 'admin',
-      first_name: 'Admin',
-      last_name: 'User'
-    },
-    aud: "authenticated",
-    created_at: new Date().toISOString(),
-    email: "admin@deckademics.com",
-    phone: "",
-    role: "",
-    updated_at: new Date().toISOString(),
-    identities: [],
-    phone_confirmed_at: null,
-    confirmed_at: new Date().toISOString(),
-    email_confirmed_at: new Date().toISOString(),
-    last_sign_in_at: new Date().toISOString(),
-    factors: null
-  };
-};
-
-// Create a mock session for admin
-const createAdminSession = (): Session => {
-  return {
-    access_token: "mock-admin-token",
-    refresh_token: "mock-admin-refresh-token",
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    token_type: "bearer",
-    user: createAdminUser()
-  };
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -97,38 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   console.log("Initializing AuthProvider with Supabase");
   
-  // Method to set up admin session without Supabase authentication
-  const setAdminSession = () => {
-    const adminSession = createAdminSession();
-    const adminUser = adminSession.user;
-    
-    setSession(adminSession);
-    
-    setUserData({
-      user: adminUser,
-      profile: {
-        id: adminUser.id,
-        first_name: 'Admin',
-        last_name: 'User',
-        email: 'admin@deckademics.com',
-        avatar_url: null,
-        role: 'admin',
-      },
-      role: 'admin',
-    });
-    
-    // Store in localStorage to persist the admin session
-    localStorage.setItem('deckademics-admin-session', JSON.stringify(adminSession));
-  };
-  
-  // Method to clear local storage - merged implementation from both declarations
+  // Method to clear local storage
   const clearLocalStorage = () => {
     try {
       console.log("Clearing all local storage");
       
       // Clear specific keys related to your app
-      localStorage.removeItem('deckademics-admin-session');
-      localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
       
       // Reset state
@@ -155,46 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     console.log("AuthProvider useEffect running - checking for sessions");
-    
-    // Check for admin session in localStorage first
-    const storedAdminSession = localStorage.getItem('deckademics-admin-session');
-    if (storedAdminSession) {
-      try {
-        const adminSession = JSON.parse(storedAdminSession) as Session;
-        // Check if admin session is still valid
-        if (adminSession.expires_at > Math.floor(Date.now() / 1000)) {
-          console.log("Found valid admin session in localStorage");
-          setSession(adminSession);
-          setUserData({
-            user: adminSession.user,
-            profile: {
-              id: adminSession.user.id,
-              first_name: 'Admin',
-              last_name: 'User',
-              email: 'admin@deckademics.com',
-              avatar_url: null,
-              role: 'admin',
-            },
-            role: 'admin',
-          });
-          
-          // If on an auth page, redirect to admin dashboard
-          if (window.location.pathname.includes('/auth/')) {
-            navigate('/admin/dashboard');
-          }
-          
-          setIsLoading(false);
-          return;
-        } else {
-          // Clear expired admin session
-          console.log("Found expired admin session, removing from localStorage");
-          localStorage.removeItem('deckademics-admin-session');
-        }
-      } catch (error) {
-        console.error("Error parsing stored admin session:", error);
-        localStorage.removeItem('deckademics-admin-session');
-      }
-    }
   
     // Set up auth state listener
     const { data } = supabase.auth.onAuthStateChange(
@@ -217,29 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (newSession?.user) {
           // Use setTimeout to avoid auth deadlocks
           setTimeout(() => {
-            // Special handling for admin@deckademics.com
-            if (newSession.user.email === 'admin@deckademics.com') {
-              console.log("Admin user detected, using direct role assignment");
-              setUserData({
-                user: newSession.user,
-                profile: {
-                  id: newSession.user.id,
-                  first_name: 'Admin',
-                  last_name: 'User',
-                  email: 'admin@deckademics.com',
-                  avatar_url: null,
-                  role: 'admin',
-                },
-                role: 'admin',
-              });
-              
-              // Only redirect on SIGNED_IN event, not on token refresh
-              if (event === 'SIGNED_IN') {
-                redirectBasedOnRole('admin');
-              }
-              return;
-            }
-            
             fetchUserProfile(newSession.user.id)
               .then(profile => {
                 if (profile?.role) {
@@ -274,30 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (currentSession?.user) {
           setSession(currentSession);
-          
-          // Special handling for admin@deckademics.com
-          if (currentSession.user.email === 'admin@deckademics.com') {
-            console.log("Admin user detected, using direct role assignment");
-            setUserData({
-              user: currentSession.user,
-              profile: {
-                id: currentSession.user.id,
-                first_name: 'Admin',
-                last_name: 'User',
-                email: 'admin@deckademics.com',
-                avatar_url: null,
-                role: 'admin',
-              },
-              role: 'admin',
-            });
-            
-            // If we're on an auth page, redirect to the admin dashboard
-            if (window.location.pathname.includes('/auth/')) {
-              redirectBasedOnRole('admin');
-            }
-            setIsLoading(false);
-            return;
-          }
           
           try {
             const profile = await fetchUserProfile(currentSession.user.id);
@@ -465,23 +314,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // We need to wrap these functions to handle the special admin user 
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     
     try {
       const normalizedEmail = email.trim().toLowerCase();
       console.log("Signing in with email:", normalizedEmail);
-      
-      // Special case for admin@deckademics.com
-      if (normalizedEmail === 'admin@deckademics.com' && password === 'admin') {
-        console.log('Setting up admin session');
-        setAdminSession();
-        return { 
-          user: createAdminUser(), 
-          session: createAdminSession() 
-        };
-      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
@@ -495,32 +333,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log("Sign in successful:", data.user?.email);
       
-      // Special handling for admin@deckademics.com
-      if (normalizedEmail === 'admin@deckademics.com') {
-        console.log("Admin user detected, using direct role assignment");
-        setUserData({
-          user: data.user,
-          profile: {
-            id: data.user?.id || '',
-            first_name: 'Admin',
-            last_name: 'User',
-            email: 'admin@deckademics.com',
-            avatar_url: null,
-            role: 'admin',
-          },
-          role: 'admin',
-        });
-        
-        toast({
-          title: 'Welcome Admin!',
-          description: 'You have successfully logged in as an administrator.',
-        });
-      } else {
-        toast({
-          title: 'Welcome back!',
-          description: 'You have successfully logged in.',
-        });
-      }
+      toast({
+        title: 'Welcome back!',
+        description: 'You have successfully logged in.',
+      });
       
       return { user: data.user, session: data.session };
     } catch (error: any) {
@@ -611,32 +427,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null
       });
       
-      // Check if this is an admin session and clear localStorage if so
-      const isAdmin = userData.role === 'admin' && userData.user?.email === 'admin@deckademics.com';
-      
-      if (isAdmin) {
-        console.log("Clearing admin session from localStorage");
-        localStorage.removeItem('deckademics-admin-session');
-      } 
-      
       // Force clear all possible authentication storage to ensure clean logout
       try {
         localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
-        localStorage.removeItem('supabase.auth.token');
       } catch (storageError) {
         console.error("Error clearing local storage:", storageError);
         // Continue with rest of logout process regardless
       }
       
-      // Then perform the Supabase signout if we're not an admin (which uses mock session)
-      if (!isAdmin) {
-        try {
-          const { error } = await supabase.auth.signOut();
-          if (error) throw error;
-        } catch (supabaseError) {
-          console.error("Error during Supabase sign out:", supabaseError);
-          // Continue with rest of logout process regardless
-        }
+      // Then perform the Supabase signout
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      } catch (supabaseError) {
+        console.error("Error during Supabase sign out:", supabaseError);
+        // Continue with rest of logout process regardless
       }
       
       console.log("Sign out completed successfully");
@@ -673,12 +478,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
-    // Don't try to update profile for mock admin user
-    if (userData.user?.id === "00000000-0000-0000-0000-000000000000") {
-      console.log("Cannot update profile for mock admin user");
-      return;
-    }
-    
     try {
       if (!userData.user?.id) {
         throw new Error('User not authenticated');
@@ -715,7 +514,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     updateProfile,
-    setAdminSession,
     clearLocalStorage,
   };
 

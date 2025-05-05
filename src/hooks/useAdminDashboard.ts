@@ -17,19 +17,6 @@ interface DashboardStats {
   }[];
 }
 
-interface StudentCounts {
-  total: number;
-  pending: number;
-  active: number;
-}
-
-interface InstructorCounts {
-  total: number;
-  pending: number;
-  active: number;
-  inactive: number;
-}
-
 export const useAdminDashboard = () => {
   const { session } = useAuth();
 
