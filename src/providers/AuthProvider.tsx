@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -703,37 +702,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: 'Error updating profile',
         description: error.message || 'Failed to update profile.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Method to clear local storage
-  const clearLocalStorage = () => {
-    try {
-      console.log("Clearing all local storage");
-      
-      // Clear specific keys related to your app
-      localStorage.removeItem('deckademics-admin-session');
-      localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
-      
-      // Reset state
-      setSession(null);
-      setUserData({
-        user: null,
-        profile: null,
-        role: null
-      });
-      
-      toast({
-        title: 'Local Storage Cleared',
-        description: 'Browser local storage has been cleared successfully.',
-      });
-    } catch (error) {
-      console.error('Error clearing local storage:', error);
-      toast({
-        title: 'Clear Storage Error',
-        description: 'Failed to clear local storage.',
         variant: 'destructive',
       });
     }
