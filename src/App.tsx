@@ -50,7 +50,7 @@ const App = () => (
     <BrowserRouter>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
+          <Toaster position="top-right" richColors closeButton />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />

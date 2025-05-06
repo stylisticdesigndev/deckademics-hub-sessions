@@ -3,8 +3,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://qeuzosggikxwnpyhulox.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldXpvc2dnaWt4d25weWh1bG94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzMwMDAsImV4cCI6MjA1OTU0OTAwMH0.6ebEh2HRX9YJlRjvKXKeybMnfnEXxfgwXbGtHhaDcQs";
+// Load Supabase URL and key from environment variables or use the hardcoded values as fallback
+// These values should be set in your .env file for production
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qeuzosggikxwnpyhulox.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldXpvc2dnaWt4d25weWh1bG94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzMwMDAsImV4cCI6MjA1OTU0OTAwMH0.6ebEh2HRX9YJlRjvKXKeybMnfnEXxfgwXbGtHhaDcQs";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
