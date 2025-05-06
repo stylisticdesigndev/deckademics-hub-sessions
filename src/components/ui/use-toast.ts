@@ -1,6 +1,5 @@
 
-import type { ToastProps } from "@/components/ui/toast";
-import { toast as hookToast, useToast as useToastHook } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 // Define a type for our toast functions using the same type as the hook
 export interface ToastOptions {
@@ -10,71 +9,66 @@ export interface ToastOptions {
   action?: React.ReactElement;
 }
 
-// Create a singleton toast state to avoid invalid hook calls
-let toastState: ReturnType<typeof useToastHook> | undefined;
-
-// Initialize the toast state in a component context
-export function initToastState() {
-  toastState = useToastHook();
-  return toastState;
-}
-
-// Export the hook for component usage
+// Export the hook for component usage, forwarding to the Sonner implementation
 export const useToast = () => {
-  // Get the hook state directly from the hook
-  const hookState = useToastHook();
-  
-  // Update the singleton toast state when used in a component
-  toastState = hookState;
-  
-  return hookState;
+  return {
+    toast: (options: ToastOptions) => {
+      if (options.variant === "destructive") {
+        return sonnerToast.error(options.description as string, {
+          description: options.title as string,
+          action: options.action
+        });
+      }
+      return sonnerToast(options.title as string, {
+        description: options.description as string,
+        action: options.action
+      });
+    }
+  };
 };
 
-// Create a safe wrapper for the toast function that doesn't require hooks
+// Create a direct export for the toast function
 export const toast = (props: ToastOptions) => {
   console.log("Toast called with props:", props);
   
-  // Try to use the hook state if it's available
-  if (toastState) {
-    return toastState.toast(props);
+  if (props.variant === "destructive") {
+    return sonnerToast.error(props.description as string, {
+      description: props.title as string,
+      action: props.action
+    });
   }
   
-  // Fallback to direct hook call (this is only used if toast is called before any component uses useToast)
-  console.warn("Toast called before initialization - using global toast method");
-  return hookToast(props);
+  return sonnerToast(props.title as string, {
+    description: props.description as string,
+    action: props.action
+  });
 };
 
 // Add helper methods for different toast variants
 toast.error = (message: string) => {
   console.error("Toast Error:", message);
-  return toast({
-    title: "Error",
-    description: message,
-    variant: "destructive",
+  return sonnerToast.error("Error", {
+    description: message
   });
 };
 
 toast.success = (message: string) => {
   console.log("Toast Success:", message);
-  return toast({
-    title: "Success",
-    description: message,
+  return sonnerToast.success("Success", {
+    description: message
   });
 };
 
 toast.info = (message: string) => {
   console.log("Toast Info:", message);
-  return toast({
-    title: "Info",
-    description: message,
+  return sonnerToast.info("Info", {
+    description: message
   });
 };
 
 toast.warning = (message: string) => {
   console.warn("Toast Warning:", message);
-  return toast({
-    variant: "destructive",
-    title: "Warning",
-    description: message,
+  return sonnerToast.warning("Warning", {
+    description: message
   });
 };
