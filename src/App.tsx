@@ -1,5 +1,5 @@
 
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -50,7 +50,7 @@ const App = () => (
     <BrowserRouter>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
