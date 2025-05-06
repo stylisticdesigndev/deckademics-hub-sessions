@@ -13,7 +13,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: false,
     storage: localStorage,
     flowType: 'pkce',
-    debug: true,
     storageKey: 'supabase.auth.token'
   }
 });
