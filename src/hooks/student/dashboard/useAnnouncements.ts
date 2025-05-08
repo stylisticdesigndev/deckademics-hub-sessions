@@ -17,6 +17,19 @@ export interface Announcement {
   type: 'event' | 'announcement' | 'update';
 }
 
+interface AuthorProfile {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface AnnouncementData {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+  profiles?: AuthorProfile | AuthorProfile[];
+}
+
 export function useAnnouncements(targetRole: string = 'student') {
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -47,8 +60,12 @@ export function useAnnouncements(targetRole: string = 'student') {
         if (Array.isArray(data) && data.length > 0) {
           const formattedAnnouncements: Announcement[] = [];
           for (const annRaw of data) {
+            if (!annRaw) continue;
+            
             let fullName = 'Admin';
             let initials = 'A';
+            
+            // Add null check before accessing profiles
             if (annRaw.profiles) {
               const pf = Array.isArray(annRaw.profiles) ? annRaw.profiles[0] : annRaw.profiles;
               if (pf) {
@@ -58,6 +75,7 @@ export function useAnnouncements(targetRole: string = 'student') {
                 initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
               }
             }
+            
             formattedAnnouncements.push({
               id: annRaw.id || '',
               title: annRaw.title || '',

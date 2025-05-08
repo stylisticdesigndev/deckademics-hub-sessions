@@ -53,7 +53,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.user.id);
+          .eq('instructor_id', userData.user.id as string);
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -89,6 +89,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           
           // Get progress data for these students
           if (enrollmentsData && enrollmentsData.length > 0) {
+            // Add null check for enrollmentsData
             const studentIds = enrollmentsData.map(e => e.student_id);
             
             // Get student progress
@@ -103,27 +104,32 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             }
             
             // Process and format student data
-            const formattedStudents = enrollmentsData.map(enrollment => {
-              // Each enrollment has a 'students' property with nested data
-              const student = enrollment.students as unknown as StudentData;
-              const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
-              const averageStudentProgress = studentProgress.length > 0 
-                ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
-                : 0;
+            // Add null checks for all data access
+            const formattedStudents = enrollmentsData
+              .filter(enrollment => enrollment && enrollment.student_id && enrollment.students)
+              .map(enrollment => {
+                // Each enrollment has a 'students' property with nested data
+                const student = enrollment.students as unknown as StudentData;
+                const progress = progressData || [];
+                // Filter progress data for this student and get average
+                const studentProgress = progress.filter(p => p && p.student_id === enrollment.student_id) || [];
+                const averageStudentProgress = studentProgress.length > 0 
+                  ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
+                  : 0;
+                  
+                // Get the first element's profile data
+                const studentProfile = student?.profiles?.[0];
+                const firstName = studentProfile?.first_name || '';
+                const lastName = studentProfile?.last_name || '';
                 
-              // Get the first element's profile data
-              const studentProfile = student?.profiles?.[0];
-              const firstName = studentProfile?.first_name || '';
-              const lastName = studentProfile?.last_name || '';
-              
-              return {
-                id: enrollment.student_id,
-                name: `${firstName} ${lastName}`.trim(),
-                progress: averageStudentProgress,
-                level: student?.level || 'Beginner',
-                hasNotes: !!student?.notes
-              };
-            });
+                return {
+                  id: enrollment.student_id,
+                  name: `${firstName} ${lastName}`.trim(),
+                  progress: averageStudentProgress,
+                  level: student?.level || 'Beginner',
+                  hasNotes: !!student?.notes
+                };
+              });
             
             // Remove duplicates (students enrolled in multiple classes)
             const uniqueStudents = formattedStudents.filter((student, index, self) => 
@@ -145,7 +151,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.user.id)
+            .eq('instructor_id', userData.user.id as string)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             

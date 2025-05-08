@@ -2,9 +2,20 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { Database } from '@/integrations/supabase/types';
+import { Database } from '@/types/database.types';
 
-export function useScheduleActions(schedule, instructorId, onScheduleUpdated, closeDialog) {
+type TeachingScheduleItem = {
+  id?: string;
+  day: string;
+  hours: string;
+};
+
+export function useScheduleActions(
+  schedule: TeachingScheduleItem[], 
+  instructorId: string, 
+  onScheduleUpdated: (newSchedule: TeachingScheduleItem[]) => void, 
+  closeDialog: (state: boolean) => void
+) {
   const { toast } = useToast();
   const { session, signOut } = useAuth();
 
@@ -47,14 +58,20 @@ export function useScheduleActions(schedule, instructorId, onScheduleUpdated, cl
       }
 
       if (schedule.length > 0) {
-        const scheduleData: Database['public']['Tables']['instructor_schedules']['Insert'][] = schedule.map(item => ({
+        // Define type for instructor schedules insert
+        type ScheduleInsert = Database['public']['Tables']['instructor_schedules']['Insert'];
+        
+        // Create properly typed schedule data
+        const scheduleData: ScheduleInsert[] = schedule.map(item => ({
           instructor_id: instructorId,
           day: item.day,
           hours: item.hours
         }));
+        
         const { error: insertError } = await supabase
           .from('instructor_schedules')
           .insert(scheduleData);
+          
         if (insertError) {
           if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
             toast({

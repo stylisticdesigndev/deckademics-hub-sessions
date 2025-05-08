@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/types/database.types';
 
 interface AnnouncementFormProps {
   isOpen: boolean;
@@ -30,14 +31,20 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
   // Create announcement mutation
   const createAnnouncementMutation = useMutation({
     mutationFn: async ({ title, content }: NewAnnouncement) => {
+      // Define type for announcement insert
+      type AnnouncementInsert = Database['public']['Tables']['announcements']['Insert'];
+      
+      // Create properly typed announcement object
+      const announcementData: AnnouncementInsert = {
+        title,
+        content,
+        author_id: authorId,
+        target_role: ['student', 'instructor', 'admin']
+      };
+
       const { data, error } = await supabase
         .from('announcements')
-        .insert([{
-          title,
-          content,
-          author_id: authorId,
-          target_role: ['student', 'instructor', 'admin']
-        }])
+        .insert(announcementData)
         .select()
         .single();
 
