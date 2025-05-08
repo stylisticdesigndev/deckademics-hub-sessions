@@ -95,8 +95,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               throw progressError;
             }
             
-            // Process and format student data - accessing object properties properly
+            // Process and format student data
             const formattedStudents = enrollmentsData.map(enrollment => {
+              // Each enrollment has a 'students' property which is the student object
               const student = enrollment.students;
               const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
               const averageStudentProgress = studentProgress.length > 0 
@@ -105,6 +106,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 
               return {
                 id: enrollment.student_id,
+                // Access the first element of the profiles array then get first_name and last_name
                 name: `${student.profiles[0]?.first_name || ''} ${student.profiles[0]?.last_name || ''}`.trim(),
                 progress: averageStudentProgress,
                 level: student.level || 'Beginner',
