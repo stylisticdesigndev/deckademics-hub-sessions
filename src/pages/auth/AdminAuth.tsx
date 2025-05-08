@@ -3,9 +3,10 @@ import React, { useEffect } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
@@ -56,9 +57,26 @@ const AdminAuthContent = () => {
         </AlertDescription>
       </Alert>
       
+      <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Authentication Issue</AlertTitle>
+        <AlertDescription>
+          The displayed admin credentials need to be reset in Supabase. 
+          Please use the Supabase dashboard to reset the password for admin@deckademics.com 
+          to match "Admin123!" or update the shown credentials to match the actual password.
+        </AlertDescription>
+      </Alert>
+      
       <AuthForm userType="admin" disableSignup={true} />
       
       <div className="text-center space-y-4">
+        <div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="https://supabase.com/dashboard/project/qeuzosggikxwnpyhulox/auth/users" target="_blank" rel="noopener noreferrer">
+              Open Supabase User Management
+            </a>
+          </Button>
+        </div>
         <div>
           <Link to="/" className="text-sm text-deckademics-primary hover:underline">
             Back to sign in options
