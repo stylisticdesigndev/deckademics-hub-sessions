@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
-import { toast } from 'sonner'; 
+import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
@@ -108,7 +109,9 @@ const Index = () => {
     
     if (session) {
       clearLocalStorage();
-      toast.success("Starting fresh login session");
+      toast({
+        title: "Starting fresh login session"
+      });
     }
   };
 

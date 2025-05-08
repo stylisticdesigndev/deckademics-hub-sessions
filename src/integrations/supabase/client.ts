@@ -17,7 +17,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
     },
-    // Only enable debug mode in development
-    debug: import.meta.env.DEV
+    // Set debug mode based on environment
+    logger: import.meta.env.DEV ? console : undefined
   }
 );

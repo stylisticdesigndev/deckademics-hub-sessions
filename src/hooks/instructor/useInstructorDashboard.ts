@@ -97,20 +97,23 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             
             // Process and format student data
             const formattedStudents = enrollmentsData.map(enrollment => {
-              // Each enrollment has a 'students' property which is the student object
+              // Each enrollment has a 'students' property with nested data
               const student = enrollment.students;
               const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
               const averageStudentProgress = studentProgress.length > 0 
                 ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
                 : 0;
                 
+              // Access the first element of the profiles array for first_name and last_name
+              const firstName = student?.profiles?.[0]?.first_name || '';
+              const lastName = student?.profiles?.[0]?.last_name || '';
+              
               return {
                 id: enrollment.student_id,
-                // Access the first element of the profiles array then get first_name and last_name
-                name: `${student.profiles[0]?.first_name || ''} ${student.profiles[0]?.last_name || ''}`.trim(),
+                name: `${firstName} ${lastName}`.trim(),
                 progress: averageStudentProgress,
-                level: student.level || 'Beginner',
-                hasNotes: !!student.notes
+                level: student?.level || 'Beginner',
+                hasNotes: !!student?.notes
               };
             });
             
