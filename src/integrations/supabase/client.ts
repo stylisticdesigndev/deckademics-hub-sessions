@@ -18,6 +18,6 @@ export const supabase = createClient(
       autoRefreshToken: true,
     },
     // Set debug mode based on environment
-    logger: import.meta.env.DEV ? console : undefined
+    debug: import.meta.env.DEV
   }
 );

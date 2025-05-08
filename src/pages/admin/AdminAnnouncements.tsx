@@ -159,7 +159,7 @@ const AdminAnnouncements = () => {
                 <CardHeader>
                   <CardTitle>{announcement.title}</CardTitle>
                   <CardDescription>
-                    Posted by {announcement.profiles?.first_name} {announcement.profiles?.last_name} on {new Date(announcement.published_at).toLocaleDateString()}
+                    Posted by {announcement.profiles?.first_name || 'Admin'} {announcement.profiles?.last_name || ''} on {new Date(announcement.published_at).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

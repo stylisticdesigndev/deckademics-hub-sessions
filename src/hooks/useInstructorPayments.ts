@@ -51,18 +51,26 @@ export const useInstructorPayments = () => {
         throw error;
       }
 
-      return paymentsData.map(payment => ({
-        id: payment.id,
-        instructorId: payment.instructor_id,
-        instructorName: `${payment.instructors.profiles[0]?.first_name || ''} ${payment.instructors.profiles[0]?.last_name || ''}`,
-        hourlyRate: payment.instructors.hourly_rate || 0,
-        hoursLogged: payment.hours_worked || 0,
-        totalAmount: payment.amount,
-        payPeriodStart: payment.payment_date,
-        payPeriodEnd: payment.payment_date, // You might want to add an end_date field in your DB
-        status: payment.status as 'pending' | 'paid',
-        lastUpdated: payment.payment_date
-      })) as InstructorPayment[];
+      return paymentsData.map(payment => {
+        // Safely access nested properties
+        const instructorProfile = payment.instructors?.profiles?.[0];
+        const firstName = instructorProfile?.first_name || '';
+        const lastName = instructorProfile?.last_name || '';
+        const hourlyRate = payment.instructors?.hourly_rate || 0;
+
+        return {
+          id: payment.id,
+          instructorId: payment.instructor_id,
+          instructorName: `${firstName} ${lastName}`.trim(),
+          hourlyRate: hourlyRate,
+          hoursLogged: payment.hours_worked || 0,
+          totalAmount: payment.amount,
+          payPeriodStart: payment.payment_date,
+          payPeriodEnd: payment.payment_date, // You might want to add an end_date field in your DB
+          status: payment.status as 'pending' | 'paid',
+          lastUpdated: payment.payment_date
+        };
+      }) as InstructorPayment[];
     }
   });
 

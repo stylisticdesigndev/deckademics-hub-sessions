@@ -74,17 +74,25 @@ export const useAdminAttendance = () => {
       if (error) throw error;
 
       // Transform the data to match our Student interface - with proper access to nested data
-      const transformedData = attendanceData.map(record => ({
-        id: record.id,
-        studentId: record.student_id,
-        name: `${record.students.profiles[0]?.first_name || ''} ${record.students.profiles[0]?.last_name || ''}`,
-        email: record.students.profiles[0]?.email || '',
-        classDate: new Date(record.date),
-        status: record.status as AttendanceStatus,
-        makeupDate: null, // We'll get this from a separate query
-        classTitle: record.classes.title || 'Unnamed Class',
-        notes: record.notes
-      }));
+      const transformedData = attendanceData.map(record => {
+        // Safely access nested properties
+        const studentProfile = record.students?.profiles?.[0];
+        const firstName = studentProfile?.first_name || '';
+        const lastName = studentProfile?.last_name || '';
+        const email = studentProfile?.email || '';
+        
+        return {
+          id: record.id,
+          studentId: record.student_id,
+          name: `${firstName} ${lastName}`.trim(),
+          email: email,
+          classDate: new Date(record.date),
+          status: record.status as AttendanceStatus,
+          makeupDate: null, // We'll get this from a separate query
+          classTitle: record.classes?.title || 'Unnamed Class',
+          notes: record.notes
+        };
+      });
 
       // Now fetch makeup dates for these records
       for (const record of transformedData) {

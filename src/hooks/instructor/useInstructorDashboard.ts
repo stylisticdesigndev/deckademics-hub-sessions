@@ -104,16 +104,17 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
                 : 0;
                 
-              // Access the first element of the profiles array for first_name and last_name
-              const firstName = student?.profiles?.[0]?.first_name || '';
-              const lastName = student?.profiles?.[0]?.last_name || '';
+              // Get the first element's profile data
+              const studentProfile = student.profiles && student.profiles[0];
+              const firstName = studentProfile?.first_name || '';
+              const lastName = studentProfile?.last_name || '';
               
               return {
                 id: enrollment.student_id,
                 name: `${firstName} ${lastName}`.trim(),
                 progress: averageStudentProgress,
-                level: student?.level || 'Beginner',
-                hasNotes: !!student?.notes
+                level: student.level || 'Beginner',
+                hasNotes: !!student.notes
               };
             });
             

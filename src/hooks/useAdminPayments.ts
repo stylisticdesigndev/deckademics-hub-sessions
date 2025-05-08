@@ -63,11 +63,17 @@ export const useAdminPayments = () => {
         const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
         const status = dueDate < today ? 'missed' : 'upcoming';
+        
+        // Safely access nested properties
+        const studentProfile = payment.students?.profiles?.[0];
+        const firstName = studentProfile?.first_name || '';
+        const lastName = studentProfile?.last_name || '';
+        const email = studentProfile?.email || '';
 
         return {
           id: payment.id,
-          studentName: `${payment.students.profiles[0]?.first_name || ''} ${payment.students.profiles[0]?.last_name || ''}`,
-          email: payment.students.profiles[0]?.email || '',
+          studentName: `${firstName} ${lastName}`.trim(),
+          email: email,
           amount: payment.amount,
           dueDate: format(dueDate, 'yyyy-MM-dd'),
           status,
