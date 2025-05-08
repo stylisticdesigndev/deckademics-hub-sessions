@@ -10,9 +10,11 @@ import { AuthProvider } from './providers/AuthProvider';
 // Ensure Supabase is properly initialized before rendering the app
 import { supabase } from './integrations/supabase/client';
 
-// Log Supabase connection status for debugging purposes
-console.log('Supabase client initialized', 
-  { url: import.meta.env.VITE_SUPABASE_URL || 'using fallback URL' });
+// Only log Supabase connection status in development mode
+if (import.meta.env.DEV) {
+  console.log('Supabase client initialized', 
+    { url: import.meta.env.VITE_SUPABASE_URL || 'using fallback URL' });
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');

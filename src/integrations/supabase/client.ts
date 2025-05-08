@@ -17,11 +17,16 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
+    // Only enable debug mode in development
+    debug: import.meta.env.DEV
   }
 );
 
 // Add connection status check
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Supabase auth state changed:', event);
+  // Only log auth state changes in development
+  if (import.meta.env.DEV) {
+    console.log('Supabase auth state changed:', event);
+  }
 });
