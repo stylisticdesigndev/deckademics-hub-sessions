@@ -95,7 +95,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               throw progressError;
             }
             
-            // Process and format student data - corrected to handle object structure properly
+            // Process and format student data - accessing object properties properly
             const formattedStudents = enrollmentsData.map(enrollment => {
               const student = enrollment.students;
               const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
@@ -105,7 +105,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 
               return {
                 id: enrollment.student_id,
-                name: `${student.profiles.first_name || ''} ${student.profiles.last_name || ''}`.trim(),
+                name: `${student.profiles[0]?.first_name || ''} ${student.profiles[0]?.last_name || ''}`.trim(),
                 progress: averageStudentProgress,
                 level: student.level || 'Beginner',
                 hasNotes: !!student.notes
