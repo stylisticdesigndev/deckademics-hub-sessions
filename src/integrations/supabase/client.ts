@@ -11,5 +11,13 @@ const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 export const supabase = createClient(
   supabaseUrl || fallbackUrl,
-  supabaseAnonKey || fallbackKey
+  supabaseAnonKey || fallbackKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    // Only enable debug mode in development
+    debug: import.meta.env.DEV
+  }
 );
