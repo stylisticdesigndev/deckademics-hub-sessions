@@ -13,6 +13,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 
+// Define profile type to accommodate both object and array structures from Supabase
 interface ProfileData {
   first_name?: string;
   last_name?: string;
@@ -24,8 +25,27 @@ interface Announcement {
   content: string;
   published_at: string;
   author_id?: string;
-  profiles?: ProfileData;
+  profiles?: ProfileData | ProfileData[];
 }
+
+// Helper function to safely extract author name from profiles data
+const getAuthorName = (profiles: ProfileData | ProfileData[] | undefined): { firstName: string, lastName: string } => {
+  if (!profiles) {
+    return { firstName: 'Admin', lastName: '' };
+  }
+
+  if (Array.isArray(profiles)) {
+    return {
+      firstName: profiles[0]?.first_name || 'Admin',
+      lastName: profiles[0]?.last_name || ''
+    };
+  }
+  
+  return {
+    firstName: profiles.first_name || 'Admin',
+    lastName: profiles.last_name || ''
+  };
+};
 
 const AdminAnnouncements = () => {
   const { toast } = useToast();
@@ -57,7 +77,7 @@ const AdminAnnouncements = () => {
         .order('published_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as Announcement[];
     }
   });
 
@@ -171,33 +191,32 @@ const AdminAnnouncements = () => {
               </CardContent>
             </Card>
           ) : (
-            announcements.map((announcement) => (
-              <Card key={announcement.id}>
-                <CardHeader>
-                  <CardTitle>{announcement.title}</CardTitle>
-                  <CardDescription>
-                    {/* Fix: Access the first element of profiles array if it's an array, otherwise use it directly */}
-                    Posted by {Array.isArray(announcement.profiles) 
-                      ? announcement.profiles[0]?.first_name || 'Admin' 
-                      : announcement.profiles?.first_name || 'Admin'} {Array.isArray(announcement.profiles)
-                      ? announcement.profiles[0]?.last_name || ''
-                      : announcement.profiles?.last_name || ''} on {new Date(announcement.published_at).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{announcement.content}</p>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
-                    disabled={deleteAnnouncementMutation.isPending}
-                  >
-                    Delete
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
+            announcements.map((announcement) => {
+              const authorInfo = getAuthorName(announcement.profiles);
+              
+              return (
+                <Card key={announcement.id}>
+                  <CardHeader>
+                    <CardTitle>{announcement.title}</CardTitle>
+                    <CardDescription>
+                      Posted by {authorInfo.firstName} {authorInfo.lastName} on {new Date(announcement.published_at).toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                      disabled={deleteAnnouncementMutation.isPending}
+                    >
+                      Delete
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })
           )}
         </div>
 
