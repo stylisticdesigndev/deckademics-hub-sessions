@@ -28,6 +28,11 @@ interface InstructorDashboardData {
   fetchError: string | null;
 }
 
+// Type guard to check if an object has a specific property
+function hasProperty<T, K extends string>(obj: T, prop: K): obj is T & { [key in K]: unknown } {
+  return obj !== null && typeof obj === 'object' && prop in obj;
+}
+
 export const useInstructorDashboard = (): InstructorDashboardData => {
   const { userData } = useAuth();
   const { toast } = useToast();
@@ -53,7 +58,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.user.id as any); // Type assertion for string compatibility
+          .eq('instructor_id', userData.user.id);
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -64,7 +69,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         
         // If instructor has classes, fetch students enrolled in those classes
         if (assignedClasses && assignedClasses.length > 0) {
-          const classIds = assignedClasses.map(c => c?.id).filter(Boolean);
+          const classIds = assignedClasses
+            .filter(c => c && hasProperty(c, 'id'))
+            .map(c => c.id)
+            .filter(Boolean);
           
           if (classIds.length === 0) {
             setStudents([]);
@@ -97,7 +105,11 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           if (enrollmentsData && Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
             // Add null check for enrollmentsData
             const studentIds = enrollmentsData
-              .filter(enrollment => enrollment && enrollment.student_id)
+              .filter(enrollment => 
+                enrollment && 
+                hasProperty(enrollment, 'student_id') && 
+                enrollment.student_id
+              )
               .map(e => e.student_id)
               .filter(Boolean);
             
@@ -122,11 +134,13 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             const formattedStudents = enrollmentsData
               .filter(enrollment => 
                 enrollment && 
+                hasProperty(enrollment, 'student_id') && 
+                hasProperty(enrollment, 'students') &&
                 enrollment.student_id && 
                 enrollment.students
               )
               .map(enrollment => {
-                if (!enrollment || !enrollment.students) return null;
+                if (!enrollment || !hasProperty(enrollment, 'students')) return null;
                 
                 // Each enrollment has a 'students' property with nested data
                 const student = enrollment.students as unknown as StudentData;
@@ -134,10 +148,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 
                 // Filter progress data for this student and get average with null safety
                 const studentProgress = progress
-                  .filter(p => p && p.student_id === enrollment.student_id) || [];
+                  .filter(p => p && hasProperty(p, 'student_id') && hasProperty(p, 'proficiency') && p.student_id === enrollment.student_id) || [];
                   
                 const averageStudentProgress = studentProgress.length > 0 
-                  ? Math.round(studentProgress.reduce((sum, p) => sum + (p?.proficiency || 0), 0) / studentProgress.length)
+                  ? Math.round(studentProgress.reduce((sum, p) => sum + (hasProperty(p, 'proficiency') ? Number(p.proficiency) || 0 : 0), 0) / studentProgress.length)
                   : 0;
                   
                 // Get the first element's profile data with null safety
@@ -175,7 +189,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.user.id as any) // Type assertion for string compatibility
+            .eq('instructor_id', userData.user.id)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             

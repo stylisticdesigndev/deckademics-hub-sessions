@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TablesInsert } from '@/integrations/supabase/types';
+import { Database } from '@/types/database.types';
 
 interface AnnouncementFormProps {
   isOpen: boolean;
@@ -35,8 +36,8 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
       const announcementData: TablesInsert<'announcements'> = {
         title,
         content,
-        author_id: authorId,
-        target_role: ['student', 'instructor', 'admin']
+        author_id: authorId || null,
+        target_role: ['student', 'instructor', 'admin'] as Database['public']['Enums']['user_role'][]
       };
 
       const { data, error } = await supabase
