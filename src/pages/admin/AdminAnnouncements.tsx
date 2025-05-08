@@ -18,10 +18,6 @@ interface ProfileData {
   last_name?: string;
 }
 
-interface AnnouncementAuthor {
-  profiles?: ProfileData[];
-}
-
 interface Announcement {
   id: string;
   title: string;
@@ -180,7 +176,12 @@ const AdminAnnouncements = () => {
                 <CardHeader>
                   <CardTitle>{announcement.title}</CardTitle>
                   <CardDescription>
-                    Posted by {announcement.profiles?.first_name || 'Admin'} {announcement.profiles?.last_name || ''} on {new Date(announcement.published_at).toLocaleDateString()}
+                    {/* Fix: Access the first element of profiles array if it's an array, otherwise use it directly */}
+                    Posted by {Array.isArray(announcement.profiles) 
+                      ? announcement.profiles[0]?.first_name || 'Admin' 
+                      : announcement.profiles?.first_name || 'Admin'} {Array.isArray(announcement.profiles)
+                      ? announcement.profiles[0]?.last_name || ''
+                      : announcement.profiles?.last_name || ''} on {new Date(announcement.published_at).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
