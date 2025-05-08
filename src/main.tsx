@@ -11,8 +11,8 @@ import { AuthProvider } from './providers/AuthProvider';
 import { supabase } from './integrations/supabase/client';
 
 // Log Supabase connection status for debugging purposes
-console.log('Supabase client initialized with URL:', 
-  supabase.supabaseUrl?.substring(0, 20) + '...');
+console.log('Supabase client initialized', 
+  { url: import.meta.env.VITE_SUPABASE_URL || 'using fallback URL' });
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');
