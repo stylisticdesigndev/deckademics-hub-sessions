@@ -38,7 +38,7 @@ export const useInstructorPayments = () => {
           instructors:instructor_id (
             id,
             hourly_rate,
-            profiles:profiles(
+            profiles(
               first_name,
               last_name
             )
@@ -54,7 +54,7 @@ export const useInstructorPayments = () => {
       return paymentsData.map(payment => ({
         id: payment.id,
         instructorId: payment.instructor_id,
-        instructorName: `${payment.instructors.profiles.first_name} ${payment.instructors.profiles.last_name}`,
+        instructorName: `${payment.instructors.profiles[0]?.first_name || ''} ${payment.instructors.profiles[0]?.last_name || ''}`,
         hourlyRate: payment.instructors.hourly_rate || 0,
         hoursLogged: payment.hours_worked || 0,
         totalAmount: payment.amount,

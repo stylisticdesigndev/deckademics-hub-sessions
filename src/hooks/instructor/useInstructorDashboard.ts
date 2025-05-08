@@ -42,7 +42,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         
         console.log("Fetching dashboard data for instructor:", userData.user.id);
         
-        // Fetch instructor's assigned students (through classes)
+        // Fetch instructor's assigned classes
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
@@ -95,16 +95,16 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               throw progressError;
             }
             
-            // Process and format student data
+            // Process and format student data - corrected to handle object structure properly
             const formattedStudents = enrollmentsData.map(enrollment => {
               const student = enrollment.students;
-              const studentProgress = progressData?.filter(p => p.student_id === student.id) || [];
+              const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
               const averageStudentProgress = studentProgress.length > 0 
                 ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
                 : 0;
                 
               return {
-                id: student.id,
+                id: enrollment.student_id,
                 name: `${student.profiles.first_name || ''} ${student.profiles.last_name || ''}`.trim(),
                 progress: averageStudentProgress,
                 level: student.level || 'Beginner',

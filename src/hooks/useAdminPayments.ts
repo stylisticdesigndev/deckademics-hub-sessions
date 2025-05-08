@@ -39,7 +39,7 @@ export const useAdminPayments = () => {
           student_id,
           students:student_id (
             id,
-            profiles:profiles(
+            profiles(
               first_name,
               last_name,
               email
@@ -66,8 +66,8 @@ export const useAdminPayments = () => {
 
         return {
           id: payment.id,
-          studentName: `${payment.students.profiles.first_name} ${payment.students.profiles.last_name}`,
-          email: payment.students.profiles.email,
+          studentName: `${payment.students.profiles[0]?.first_name || ''} ${payment.students.profiles[0]?.last_name || ''}`,
+          email: payment.students.profiles[0]?.email || '',
           amount: payment.amount,
           dueDate: format(dueDate, 'yyyy-MM-dd'),
           status,

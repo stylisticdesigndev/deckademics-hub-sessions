@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -61,7 +62,7 @@ export const useAdminAttendance = () => {
           class_id,
           students:student_id(
             id,
-            profile:profiles(first_name, last_name, email)
+            profiles(first_name, last_name, email)
           ),
           classes:class_id(
             title,
@@ -72,16 +73,16 @@ export const useAdminAttendance = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our Student interface
+      // Transform the data to match our Student interface - with proper access to nested data
       const transformedData = attendanceData.map(record => ({
         id: record.id,
         studentId: record.student_id,
-        name: `${record.students.profile.first_name} ${record.students.profile.last_name}`,
-        email: record.students.profile.email,
+        name: `${record.students.profiles[0]?.first_name || ''} ${record.students.profiles[0]?.last_name || ''}`,
+        email: record.students.profiles[0]?.email || '',
         classDate: new Date(record.date),
         status: record.status as AttendanceStatus,
         makeupDate: null, // We'll get this from a separate query
-        classTitle: record.classes.title,
+        classTitle: record.classes.title || 'Unnamed Class',
         notes: record.notes
       }));
 
@@ -176,7 +177,7 @@ export const useAdminAttendance = () => {
       return {
         missedCount: 0,
         scheduledMakeups: 0,
-        attendanceRate: 0 // Changed from hardcoded 90 to 0
+        attendanceRate: 0
       };
     }
 
