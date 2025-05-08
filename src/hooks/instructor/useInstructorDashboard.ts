@@ -105,7 +105,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             // Process and format student data
             const formattedStudents = enrollmentsData.map(enrollment => {
               // Each enrollment has a 'students' property with nested data
-              const student = enrollment.students as StudentData;
+              const student = enrollment.students as unknown as StudentData;
               const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
               const averageStudentProgress = studentProgress.length > 0 
                 ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
