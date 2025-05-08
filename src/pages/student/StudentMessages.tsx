@@ -10,11 +10,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 
+interface AuthorProfile {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+  profiles?: AuthorProfile;
+}
+
 const StudentMessages = () => {
   const { userData, session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [announcements, setAnnouncements] = useState([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   
   // Check if user has completed their profile
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
@@ -44,19 +57,23 @@ const StudentMessages = () => {
 
         // Format announcements
         if (data && data.length > 0) {
-          const formattedAnnouncements = data.map(ann => ({
-            id: ann.id,
-            title: ann.title || 'Announcement',
-            content: ann.content || '',
-            date: new Date(ann.published_at).toLocaleDateString(),
-            instructor: {
-              name: ann.profiles ? `${ann.profiles.first_name || ''} ${ann.profiles.last_name || ''}`.trim() : 'Admin',
-              initials: ann.profiles ? 
-                `${(ann.profiles.first_name || ' ')[0]}${(ann.profiles.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
-            },
-            isNew: true,
-            type: 'announcement',
-          }));
+          const formattedAnnouncements = data.map(ann => {
+            const authorProfile = ann.profiles as AuthorProfile;
+            
+            return {
+              id: ann.id,
+              title: ann.title || 'Announcement',
+              content: ann.content || '',
+              date: new Date(ann.published_at).toLocaleDateString(),
+              instructor: {
+                name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
+                initials: authorProfile ? 
+                  `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
+              },
+              isNew: true,
+              type: 'announcement',
+            };
+          });
           setAnnouncements(formattedAnnouncements);
         }
       } catch (err) {

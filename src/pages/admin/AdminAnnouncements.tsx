@@ -13,6 +13,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 
+interface ProfileData {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface AnnouncementAuthor {
+  profiles?: ProfileData[];
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+  author_id?: string;
+  profiles?: ProfileData;
+}
+
 const AdminAnnouncements = () => {
   const { toast } = useToast();
   const { userData } = useAuth();
@@ -35,7 +53,10 @@ const AdminAnnouncements = () => {
           content,
           published_at,
           author_id,
-          profiles:author_id (first_name, last_name)
+          profiles:author_id (
+            first_name,
+            last_name
+          )
         `)
         .order('published_at', { ascending: false });
 

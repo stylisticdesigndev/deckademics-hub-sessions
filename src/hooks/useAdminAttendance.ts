@@ -6,6 +6,22 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
+interface StudentProfile {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+interface StudentsData {
+  id?: string;
+  profiles?: StudentProfile[];
+}
+
+interface ClassData {
+  title?: string;
+  start_time?: string;
+}
+
 export interface Student {
   id: string;
   studentId: string;
@@ -76,10 +92,14 @@ export const useAdminAttendance = () => {
       // Transform the data to match our Student interface - with proper access to nested data
       const transformedData = attendanceData.map(record => {
         // Safely access nested properties
-        const studentProfile = record.students?.profiles?.[0];
+        const students = record.students as StudentsData;
+        const studentProfile = students?.profiles?.[0] as StudentProfile;
+        
         const firstName = studentProfile?.first_name || '';
         const lastName = studentProfile?.last_name || '';
         const email = studentProfile?.email || '';
+        
+        const classes = record.classes as ClassData;
         
         return {
           id: record.id,
@@ -89,7 +109,7 @@ export const useAdminAttendance = () => {
           classDate: new Date(record.date),
           status: record.status as AttendanceStatus,
           makeupDate: null, // We'll get this from a separate query
-          classTitle: record.classes?.title || 'Unnamed Class',
+          classTitle: classes?.title || 'Unnamed Class',
           notes: record.notes
         };
       });

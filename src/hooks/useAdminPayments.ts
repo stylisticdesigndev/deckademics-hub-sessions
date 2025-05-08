@@ -4,6 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addWeeks } from 'date-fns';
 
+interface StudentProfile {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+interface StudentsData {
+  id?: string;
+  profiles?: StudentProfile[];
+}
+
 export interface PaymentStats {
   missedPaymentsCount: number;
   upcomingPaymentsCount: number;
@@ -65,7 +76,9 @@ export const useAdminPayments = () => {
         const status = dueDate < today ? 'missed' : 'upcoming';
         
         // Safely access nested properties
-        const studentProfile = payment.students?.profiles?.[0];
+        const students = payment.students as StudentsData;
+        const studentProfile = students?.profiles?.[0] as StudentProfile;
+        
         const firstName = studentProfile?.first_name || '';
         const lastName = studentProfile?.last_name || '';
         const email = studentProfile?.email || '';

@@ -3,6 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface InstructorProfile {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface InstructorData {
+  id?: string;
+  hourly_rate?: number;
+  profiles?: InstructorProfile[];
+}
+
 export interface InstructorPayment {
   id: string; // Changed from number to string to match Supabase's UUID
   instructorId?: string; // Changed from number to string to match Supabase's UUID
@@ -53,10 +64,12 @@ export const useInstructorPayments = () => {
 
       return paymentsData.map(payment => {
         // Safely access nested properties
-        const instructorProfile = payment.instructors?.profiles?.[0];
+        const instructors = payment.instructors as InstructorData;
+        const instructorProfile = instructors?.profiles?.[0] as InstructorProfile;
+        
         const firstName = instructorProfile?.first_name || '';
         const lastName = instructorProfile?.last_name || '';
-        const hourlyRate = payment.instructors?.hourly_rate || 0;
+        const hourlyRate = instructors?.hourly_rate || 0;
 
         return {
           id: payment.id,

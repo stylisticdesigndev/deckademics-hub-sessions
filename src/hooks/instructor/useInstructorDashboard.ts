@@ -12,6 +12,13 @@ interface Student {
   hasNotes: boolean;
 }
 
+interface StudentData {
+  id: string;
+  level?: string;
+  notes?: string;
+  profiles?: { first_name?: string; last_name?: string }[];
+}
+
 interface InstructorDashboardData {
   students: Student[];
   todayClasses: number;
@@ -64,7 +71,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             .from('enrollments')
             .select(`
               student_id,
-              students!inner(
+              students:student_id(
                 id,
                 level,
                 notes,
@@ -98,14 +105,14 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             // Process and format student data
             const formattedStudents = enrollmentsData.map(enrollment => {
               // Each enrollment has a 'students' property with nested data
-              const student = enrollment.students;
+              const student = enrollment.students as StudentData;
               const studentProgress = progressData?.filter(p => p.student_id === enrollment.student_id) || [];
               const averageStudentProgress = studentProgress.length > 0 
                 ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
                 : 0;
                 
               // Get the first element's profile data
-              const studentProfile = student.profiles && student.profiles[0];
+              const studentProfile = student?.profiles?.[0];
               const firstName = studentProfile?.first_name || '';
               const lastName = studentProfile?.last_name || '';
               
@@ -113,8 +120,8 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 id: enrollment.student_id,
                 name: `${firstName} ${lastName}`.trim(),
                 progress: averageStudentProgress,
-                level: student.level || 'Beginner',
-                hasNotes: !!student.notes
+                level: student?.level || 'Beginner',
+                hasNotes: !!student?.notes
               };
             });
             

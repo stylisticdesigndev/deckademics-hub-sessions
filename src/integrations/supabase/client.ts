@@ -16,8 +16,6 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-    },
-    // Set debug mode based on environment
-    debug: import.meta.env.DEV
+    }
   }
 );
