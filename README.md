@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -36,29 +37,27 @@ npm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Supabase Integration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+This project is integrated with Supabase for backend functionality. The Supabase configuration files are located in the `supabase/` directory.
 
-**Use GitHub Codespaces**
+### Environment Variables
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Make sure to set up the following environment variables:
 
-## What technologies are used for this project?
+```
+VITE_SUPABASE_URL=https://qeuzosggikxwnpyhulox.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldXpvc2dnaWt4d25weWh1bG94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzMwMDAsImV4cCI6MjA1OTU0OTAwMH0.6ebEh2HRX9YJlRjvKXKeybMnfnEXxfgwXbGtHhaDcQs
+```
 
-This project is built with:
+### Local Development with Supabase
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+To fully utilize Supabase during development:
+
+1. Install the Supabase CLI: `npm install -g supabase`
+2. Start the local Supabase services: `supabase start`
+3. Apply migrations: `supabase db push`
+4. Deploy functions: `supabase functions deploy`
 
 ## How can I deploy this project?
 
