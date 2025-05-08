@@ -42,7 +42,7 @@ export function useScheduleActions(
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', instructorId as any); // Type assertion to resolve string compatibility issue
 
       if (deleteError) {
         if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
@@ -59,11 +59,11 @@ export function useScheduleActions(
 
       if (schedule.length > 0) {
         // Create properly typed schedule data
-        const scheduleData: TablesInsert<'instructor_schedules'>[] = schedule.map(item => ({
+        const scheduleData = schedule.map(item => ({
           instructor_id: instructorId,
           day: item.day,
           hours: item.hours
-        }));
+        })) as TablesInsert<'instructor_schedules'>[];
         
         const { error: insertError } = await supabase
           .from('instructor_schedules')

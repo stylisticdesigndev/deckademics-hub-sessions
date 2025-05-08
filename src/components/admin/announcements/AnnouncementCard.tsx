@@ -56,7 +56,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
       const { error } = await supabase
         .from('announcements')
         .delete()
-        .eq('id', id);
+        .eq('id', id as any); // Type assertion to resolve string compatibility issue
 
       if (error) throw error;
     },

@@ -59,6 +59,7 @@ export function useAnnouncements(targetRole: string = 'student') {
 
         if (Array.isArray(data) && data.length > 0) {
           const formattedAnnouncements: Announcement[] = [];
+          
           for (const annRaw of data) {
             if (!annRaw) continue;
             
@@ -67,10 +68,14 @@ export function useAnnouncements(targetRole: string = 'student') {
             
             // Add null check and additional type guards before accessing profiles
             if (annRaw.profiles) {
-              const pf = Array.isArray(annRaw.profiles) ? annRaw.profiles[0] : annRaw.profiles;
-              if (pf) {
-                const firstName = pf.first_name ?? '';
-                const lastName = pf.last_name ?? '';
+              // Handle both array and object profile formats
+              const profileData = Array.isArray(annRaw.profiles) 
+                ? annRaw.profiles[0] 
+                : annRaw.profiles;
+              
+              if (profileData) {
+                const firstName = profileData.first_name ?? '';
+                const lastName = profileData.last_name ?? '';
                 fullName = `${firstName} ${lastName}`.trim() || 'Admin';
                 initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
               }
