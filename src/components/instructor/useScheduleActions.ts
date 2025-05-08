@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { Database } from '@/types/database.types';
+import { TablesInsert } from '@/integrations/supabase/types';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -58,11 +58,8 @@ export function useScheduleActions(
       }
 
       if (schedule.length > 0) {
-        // Define type for instructor schedules insert
-        type ScheduleInsert = Database['public']['Tables']['instructor_schedules']['Insert'];
-        
         // Create properly typed schedule data
-        const scheduleData: ScheduleInsert[] = schedule.map(item => ({
+        const scheduleData: TablesInsert<'instructor_schedules'>[] = schedule.map(item => ({
           instructor_id: instructorId,
           day: item.day,
           hours: item.hours

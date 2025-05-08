@@ -56,7 +56,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
       const { error } = await supabase
         .from('announcements')
         .delete()
-        .eq('id', id as string);
+        .eq('id', id);
 
       if (error) throw error;
     },

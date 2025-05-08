@@ -65,7 +65,7 @@ export function useAnnouncements(targetRole: string = 'student') {
             let fullName = 'Admin';
             let initials = 'A';
             
-            // Add null check before accessing profiles
+            // Add null check and additional type guards before accessing profiles
             if (annRaw.profiles) {
               const pf = Array.isArray(annRaw.profiles) ? annRaw.profiles[0] : annRaw.profiles;
               if (pf) {

@@ -53,7 +53,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.user.id as string);
+          .eq('instructor_id', userData.user.id);
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -90,7 +90,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           // Get progress data for these students
           if (enrollmentsData && enrollmentsData.length > 0) {
             // Add null check for enrollmentsData
-            const studentIds = enrollmentsData.map(e => e.student_id);
+            const studentIds = enrollmentsData
+              .filter(enrollment => enrollment && enrollment.student_id)
+              .map(e => e.student_id);
             
             // Get student progress
             const { data: progressData, error: progressError } = await supabase
@@ -112,9 +114,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 const student = enrollment.students as unknown as StudentData;
                 const progress = progressData || [];
                 // Filter progress data for this student and get average
-                const studentProgress = progress.filter(p => p && p.student_id === enrollment.student_id) || [];
+                const studentProgress = progress
+                  .filter(p => p && p.student_id === enrollment.student_id) || [];
                 const averageStudentProgress = studentProgress.length > 0 
-                  ? Math.round(studentProgress.reduce((sum, p) => sum + (p.proficiency || 0), 0) / studentProgress.length)
+                  ? Math.round(studentProgress.reduce((sum, p) => sum + (p?.proficiency || 0), 0) / studentProgress.length)
                   : 0;
                   
                 // Get the first element's profile data
@@ -151,7 +154,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.user.id as string)
+            .eq('instructor_id', userData.user.id)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             
