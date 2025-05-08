@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,10 +7,13 @@ import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const [isResetting, setIsResetting] = useState(false);
   
   // Redirect if user is already logged in
   useEffect(() => {
@@ -29,6 +32,33 @@ const AdminAuthContent = () => {
       }
     }
   }, [session, navigate]);
+
+  const handleSendPasswordReset = async () => {
+    const adminEmail = 'admin@deckademics.com';
+    
+    try {
+      setIsResetting(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(adminEmail, {
+        redirectTo: `${window.location.origin}/auth/admin`
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Password reset email sent',
+        description: `A password reset link has been sent to ${adminEmail}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send password reset email',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
@@ -70,11 +100,24 @@ const AdminAuthContent = () => {
       <AuthForm userType="admin" disableSignup={true} />
       
       <div className="text-center space-y-4">
-        <div>
-          <Button variant="outline" size="sm" asChild>
+        <div className="flex justify-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            asChild
+          >
             <a href="https://supabase.com/dashboard/project/qeuzosggikxwnpyhulox/auth/users" target="_blank" rel="noopener noreferrer">
-              Open Supabase User Management
+              Supabase User Management
             </a>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSendPasswordReset}
+            disabled={isResetting}
+          >
+            {isResetting ? 'Sending...' : 'Send Password Reset'}
           </Button>
         </div>
         <div>
