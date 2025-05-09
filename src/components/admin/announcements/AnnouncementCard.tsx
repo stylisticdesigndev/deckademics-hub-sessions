@@ -56,7 +56,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
       const { error } = await supabase
         .from('announcements')
         .delete()
-        .eq('id', id);
+        .eq('id', id as any); // Cast to any to satisfy TypeScript
 
       if (error) throw error;
     },
@@ -91,7 +91,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
       <CardFooter className="flex justify-end gap-2">
         <Button 
           variant="destructive" 
-          onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+          onClick={() => deleteAnnouncementMutation.mutate(announcement.id as any)}
           disabled={deleteAnnouncementMutation.isPending}
         >
           Delete

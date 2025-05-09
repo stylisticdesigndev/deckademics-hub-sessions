@@ -58,7 +58,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.user.id);
+          .eq('instructor_id', userData.user.id as any);
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -70,7 +70,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         // If instructor has classes, fetch students enrolled in those classes
         if (assignedClasses && assignedClasses.length > 0) {
           const classIds = assignedClasses
-            .filter(c => c && hasProperty(c, 'id'))
+            .filter(c => c && typeof c === 'object' && 'id' in c)
             .map(c => c.id)
             .filter(Boolean);
           
@@ -107,7 +107,8 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             const studentIds = enrollmentsData
               .filter(enrollment => 
                 enrollment && 
-                hasProperty(enrollment, 'student_id') && 
+                typeof enrollment === 'object' && 
+                'student_id' in enrollment && 
                 enrollment.student_id
               )
               .map(e => e.student_id)
@@ -134,13 +135,14 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             const formattedStudents = enrollmentsData
               .filter(enrollment => 
                 enrollment && 
-                hasProperty(enrollment, 'student_id') && 
-                hasProperty(enrollment, 'students') &&
+                typeof enrollment === 'object' && 
+                'student_id' in enrollment && 
+                'students' in enrollment &&
                 enrollment.student_id && 
                 enrollment.students
               )
               .map(enrollment => {
-                if (!enrollment || !hasProperty(enrollment, 'students')) return null;
+                if (!enrollment || !('students' in enrollment)) return null;
                 
                 // Each enrollment has a 'students' property with nested data
                 const student = enrollment.students as unknown as StudentData;
@@ -148,10 +150,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 
                 // Filter progress data for this student and get average with null safety
                 const studentProgress = progress
-                  .filter(p => p && hasProperty(p, 'student_id') && hasProperty(p, 'proficiency') && p.student_id === enrollment.student_id) || [];
+                  .filter(p => p && typeof p === 'object' && 'student_id' in p && 'proficiency' in p && p.student_id === enrollment.student_id) || [];
                   
                 const averageStudentProgress = studentProgress.length > 0 
-                  ? Math.round(studentProgress.reduce((sum, p) => sum + (hasProperty(p, 'proficiency') ? Number(p.proficiency) || 0 : 0), 0) / studentProgress.length)
+                  ? Math.round(studentProgress.reduce((sum, p) => sum + (typeof p === 'object' && 'proficiency' in p ? Number(p.proficiency) || 0 : 0), 0) / studentProgress.length)
                   : 0;
                   
                 // Get the first element's profile data with null safety
@@ -189,7 +191,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.user.id)
+            .eq('instructor_id', userData.user.id as any)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             

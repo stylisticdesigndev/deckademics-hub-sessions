@@ -66,19 +66,17 @@ export function useAnnouncements(targetRole: string = 'student') {
             let fullName = 'Admin';
             let initials = 'A';
             
-            // Add null check and additional type guards before accessing profiles
-            if (annRaw.profiles) {
-              // Handle both array and object profile formats
-              const profileData = Array.isArray(annRaw.profiles) 
-                ? annRaw.profiles[0] 
-                : annRaw.profiles;
-              
-              if (profileData) {
-                const firstName = profileData.first_name ?? '';
-                const lastName = profileData.last_name ?? '';
-                fullName = `${firstName} ${lastName}`.trim() || 'Admin';
-                initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
-              }
+            // Add null checks and safer type handling
+            const profileData = annRaw.profiles && 
+              (Array.isArray(annRaw.profiles) 
+                ? (annRaw.profiles[0] as AuthorProfile | undefined)
+                : (annRaw.profiles as AuthorProfile | undefined));
+            
+            if (profileData) {
+              const firstName = profileData.first_name ?? '';
+              const lastName = profileData.last_name ?? '';
+              fullName = `${firstName} ${lastName}`.trim() || 'Admin';
+              initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
             }
             
             formattedAnnouncements.push({
