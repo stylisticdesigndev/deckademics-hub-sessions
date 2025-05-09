@@ -30,6 +30,11 @@ interface AnnouncementData {
   profiles?: AuthorProfile | AuthorProfile[];
 }
 
+// Type guard to check if the data is not an error object
+function isDataObject<T extends object>(obj: any): obj is T {
+  return obj && typeof obj === 'object' && !('code' in obj) && !('details' in obj) && !('hint' in obj) && !('message' in obj);
+}
+
 export function useAnnouncements(targetRole: string = 'student') {
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -61,22 +66,23 @@ export function useAnnouncements(targetRole: string = 'student') {
           const formattedAnnouncements: Announcement[] = [];
           
           for (const annRaw of data) {
-            if (!annRaw) continue;
+            if (!isDataObject(annRaw)) continue;
             
             let fullName = 'Admin';
             let initials = 'A';
             
             // Add null checks and safer type handling
-            const profileData = annRaw.profiles && 
-              (Array.isArray(annRaw.profiles) 
+            if (isDataObject(annRaw) && 'profiles' in annRaw && annRaw.profiles) {
+              const profileData = Array.isArray(annRaw.profiles) 
                 ? (annRaw.profiles[0] as AuthorProfile | undefined)
-                : (annRaw.profiles as AuthorProfile | undefined));
-            
-            if (profileData) {
-              const firstName = profileData.first_name ?? '';
-              const lastName = profileData.last_name ?? '';
-              fullName = `${firstName} ${lastName}`.trim() || 'Admin';
-              initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
+                : (annRaw.profiles as AuthorProfile | undefined);
+              
+              if (profileData) {
+                const firstName = profileData.first_name ?? '';
+                const lastName = profileData.last_name ?? '';
+                fullName = `${firstName} ${lastName}`.trim() || 'Admin';
+                initials = `${(firstName || ' ')[0] || ''}${(lastName || ' ')[0] || ''}`.trim().toUpperCase() || 'A';
+              }
             }
             
             formattedAnnouncements.push({

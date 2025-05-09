@@ -21,6 +21,11 @@ export interface ClassSession {
   isUpcoming: boolean;
 }
 
+// Type guard to check if object is a data object and not an error
+function isDataObject<T extends object>(obj: any): obj is T {
+  return obj && typeof obj === 'object' && !('code' in obj) && !('details' in obj) && !('hint' in obj) && !('message' in obj);
+}
+
 export function useUpcomingClasses() {
   const [upcomingClasses, setUpcomingClasses] = useState<ClassSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,13 +58,15 @@ export function useUpcomingClasses() {
       let formattedClasses: ClassSession[] = [];
       
       if (Array.isArray(classesData) && classesData.length > 0) {
-        const validClasses = classesData.filter(cls => cls && typeof cls === "object" && "instructor_id" in cls);
+        const validClasses = classesData.filter(cls => 
+          isDataObject(cls) && 'instructor_id' in cls
+        );
         
         // Fetch instructor profiles in a batch
         if (validClasses.length > 0) {
           const instructorIds = validClasses
             .map(cls => cls.instructor_id)
-            .filter((id): id is string => typeof id === "string");
+            .filter(Boolean) as string[];
             
           let instructorProfiles: Record<string, InstructorProfile> = {};
           
@@ -74,8 +81,8 @@ export function useUpcomingClasses() {
             } else if (Array.isArray(profiles)) {
               // Create a map for faster lookups
               profiles.forEach(profile => {
-                if (profile && profile.id) {
-                  instructorProfiles[profile.id] = profile as InstructorProfile;
+                if (isDataObject(profile) && 'id' in profile && profile.id) {
+                  instructorProfiles[profile.id as string] = profile as InstructorProfile;
                 }
               });
             }
@@ -83,13 +90,16 @@ export function useUpcomingClasses() {
           
           // Format classes with instructor information
           formattedClasses = validClasses.map(cls => {
+            if (!isDataObject(cls)) return null;
+            
             const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
             const endTime = cls.end_time ? new Date(cls.end_time) : new Date();
             const durationMs = endTime.getTime() - startTime.getTime();
             const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
             const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
             
-            const instructorProfile = cls.instructor_id ? instructorProfiles[cls.instructor_id] : null;
+            const instructorId = cls.instructor_id as string;
+            const instructorProfile = instructorId ? instructorProfiles[instructorId] : null;
             const instructorName = instructorProfile 
               ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
               : 'Not assigned';
@@ -105,15 +115,15 @@ export function useUpcomingClasses() {
               attendees: 0,
               isUpcoming: true,
             };
-          });
+          }).filter(Boolean) as ClassSession[];
         }
       }
       
       setUpcomingClasses(formattedClasses);
       
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error fetching upcoming classes:', e);
-      setFetchError(e instanceof Error ? e.message : 'Unknown error fetching classes');
+      setFetchError(e.message || 'Unknown error fetching classes');
       setUpcomingClasses([]);
     } finally {
       setLoading(false);

@@ -18,7 +18,7 @@ export function useStudentProgress(userId?: string) {
         const { data, error } = await supabase
           .from('student_progress')
           .select('skill_name, proficiency')
-          .eq('student_id', userId as string);
+          .eq('student_id', userId);
 
         setProgress(Array.isArray(data) ? data : []);
       } catch (e) {
