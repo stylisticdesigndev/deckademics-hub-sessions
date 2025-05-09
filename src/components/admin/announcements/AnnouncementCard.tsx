@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/types/database.types';
+import { asUUID } from '@/utils/supabaseHelpers';
 
 // Define profile type to accommodate both object and array structures from Supabase
 interface ProfileData {
@@ -56,7 +57,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
       const { error } = await supabase
         .from('announcements')
         .delete()
-        .eq('id', id);
+        .eq('id', asUUID(id));
 
       if (error) throw error;
     },

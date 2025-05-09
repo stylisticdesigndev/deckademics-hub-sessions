@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isDataObject, hasProperty, asUUID } from '@/utils/supabaseHelpers';
 
 interface Student {
   id: string;
@@ -26,16 +27,6 @@ interface InstructorDashboardData {
   totalStudents: number;
   loading: boolean;
   fetchError: string | null;
-}
-
-// Type guard to check if an object has a specific property and is not an error
-function hasProperty<T extends object, K extends string>(obj: T, prop: K): obj is T & Record<K, unknown> {
-  return obj !== null && typeof obj === 'object' && prop in obj && !('code' in obj) && !('message' in obj);
-}
-
-// Type guard to check if object is a data object and not an error
-function isDataObject<T extends object>(obj: any): obj is T {
-  return obj && typeof obj === 'object' && !('code' in obj) && !('details' in obj) && !('hint' in obj) && !('message' in obj);
 }
 
 export const useInstructorDashboard = (): InstructorDashboardData => {
@@ -63,7 +54,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', userData.user.id);
+          .eq('instructor_id', asUUID(userData.user.id));
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -76,7 +67,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         if (assignedClasses && Array.isArray(assignedClasses) && assignedClasses.length > 0) {
           const classIds = assignedClasses
             .filter(c => isDataObject(c) && hasProperty(c, 'id'))
-            .map(c => c.id)
+            .map(c => c.id as string)
             .filter(Boolean);
           
           if (classIds.length === 0) {
@@ -97,7 +88,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 profiles!inner(first_name, last_name)
               )
             `)
-            .in('class_id', classIds);
+            .in('class_id', classIds as any);
             
           if (enrollmentsError) {
             console.error("Error fetching enrollments:", enrollmentsError);
@@ -108,14 +99,13 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           
           // Get progress data for these students
           if (enrollmentsData && Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
-            // Add null check for enrollmentsData
+            // Safely extract student IDs with type checking
             const studentIds = enrollmentsData
               .filter(enrollment => 
                 isDataObject(enrollment) && 
-                hasProperty(enrollment, 'student_id') && 
-                enrollment.student_id
+                hasProperty(enrollment, 'student_id')
               )
-              .map(e => e.student_id)
+              .map(e => e.student_id as string)
               .filter(Boolean);
             
             if (studentIds.length === 0) {
@@ -128,7 +118,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             const { data: progressData, error: progressError } = await supabase
               .from('student_progress')
               .select('student_id, proficiency')
-              .in('student_id', studentIds);
+              .in('student_id', studentIds as any);
               
             if (progressError) {
               console.error("Error fetching student progress:", progressError);
@@ -140,9 +130,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               .filter(enrollment => 
                 isDataObject(enrollment) && 
                 hasProperty(enrollment, 'student_id') && 
-                hasProperty(enrollment, 'students') &&
-                enrollment.student_id && 
-                enrollment.students
+                hasProperty(enrollment, 'students')
               )
               .map(enrollment => {
                 if (!isDataObject(enrollment) || !hasProperty(enrollment, 'students')) return null;
@@ -153,10 +141,15 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 
                 // Filter progress data for this student and get average with null safety
                 const studentProgress = progress
-                  .filter(p => isDataObject(p) && hasProperty(p, 'student_id') && hasProperty(p, 'proficiency') && p.student_id === enrollment.student_id) || [];
+                  .filter(p => 
+                    isDataObject(p) && 
+                    hasProperty(p, 'student_id') && 
+                    hasProperty(p, 'proficiency') && 
+                    p.student_id === enrollment.student_id
+                  );
                   
                 const averageStudentProgress = studentProgress.length > 0 
-                  ? Math.round(studentProgress.reduce((sum, p) => sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? Number(p.proficiency) || 0 : 0), 0) / studentProgress.length)
+                  ? Math.round(studentProgress.reduce((sum, p) => sum + (Number(p.proficiency) || 0), 0) / studentProgress.length)
                   : 0;
                   
                 // Get the first element's profile data with null safety
@@ -194,7 +187,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', userData.user.id)
+            .eq('instructor_id', asUUID(userData.user.id))
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             

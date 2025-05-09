@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { asUUID } from '@/utils/supabaseHelpers';
 
 interface AnnouncementFormProps {
   isOpen: boolean;
@@ -34,13 +35,13 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
       const announcementData = {
         title,
         content,
-        author_id: authorId || null,
+        author_id: authorId ? asUUID(authorId) : null,
         target_role: ['student', 'instructor', 'admin']
       };
 
       const { data, error } = await supabase
         .from('announcements')
-        .insert(announcementData)
+        .insert(announcementData as any)
         .select()
         .single();
 

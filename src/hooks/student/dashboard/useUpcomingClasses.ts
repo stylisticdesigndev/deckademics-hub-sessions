@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
 
 export interface InstructorProfile {
   id: string;
@@ -19,11 +20,6 @@ export interface ClassSession {
   location: string;
   attendees: number;
   isUpcoming: boolean;
-}
-
-// Type guard to check if object is a data object and not an error
-function isDataObject<T extends object>(obj: any): obj is T {
-  return obj && typeof obj === 'object' && !('code' in obj) && !('details' in obj) && !('hint' in obj) && !('message' in obj);
 }
 
 export function useUpcomingClasses() {
@@ -58,30 +54,32 @@ export function useUpcomingClasses() {
       let formattedClasses: ClassSession[] = [];
       
       if (Array.isArray(classesData) && classesData.length > 0) {
+        // Filter and validate class data
         const validClasses = classesData.filter(cls => 
-          isDataObject(cls) && 'instructor_id' in cls
+          isDataObject(cls) && hasProperty(cls, 'instructor_id')
         );
         
         // Fetch instructor profiles in a batch
         if (validClasses.length > 0) {
           const instructorIds = validClasses
             .map(cls => cls.instructor_id)
-            .filter(Boolean) as string[];
+            .filter(Boolean);
             
           let instructorProfiles: Record<string, InstructorProfile> = {};
           
           if (instructorIds.length > 0) {
+            // Use the 'in' filter with array of values, not the array itself
             const { data: profiles, error: profilesError } = await supabase
               .from('profiles')
               .select('id, first_name, last_name')
-              .in('id', instructorIds);
+              .in('id', instructorIds as any);
               
             if (profilesError) {
               console.error('Error fetching instructor profiles:', profilesError);
             } else if (Array.isArray(profiles)) {
               // Create a map for faster lookups
               profiles.forEach(profile => {
-                if (isDataObject(profile) && 'id' in profile && profile.id) {
+                if (isDataObject(profile) && hasProperty(profile, 'id') && profile.id) {
                   instructorProfiles[profile.id as string] = profile as InstructorProfile;
                 }
               });
@@ -90,7 +88,9 @@ export function useUpcomingClasses() {
           
           // Format classes with instructor information
           formattedClasses = validClasses.map(cls => {
-            if (!isDataObject(cls)) return null;
+            if (!isDataObject(cls) || 
+                !hasProperty(cls, 'start_time') || 
+                !hasProperty(cls, 'end_time')) return null;
             
             const startTime = cls.start_time ? new Date(cls.start_time) : new Date();
             const endTime = cls.end_time ? new Date(cls.end_time) : new Date();

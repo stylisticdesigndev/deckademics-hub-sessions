@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
 
 export interface Announcement {
   id: string;
@@ -28,11 +29,6 @@ interface AnnouncementData {
   content: string;
   published_at: string;
   profiles?: AuthorProfile | AuthorProfile[];
-}
-
-// Type guard to check if the data is not an error object
-function isDataObject<T extends object>(obj: any): obj is T {
-  return obj && typeof obj === 'object' && !('code' in obj) && !('details' in obj) && !('hint' in obj) && !('message' in obj);
 }
 
 export function useAnnouncements(targetRole: string = 'student') {
@@ -66,13 +62,14 @@ export function useAnnouncements(targetRole: string = 'student') {
           const formattedAnnouncements: Announcement[] = [];
           
           for (const annRaw of data) {
+            // Verify we have a valid data object before processing
             if (!isDataObject(annRaw)) continue;
             
             let fullName = 'Admin';
             let initials = 'A';
             
-            // Add null checks and safer type handling
-            if (isDataObject(annRaw) && 'profiles' in annRaw && annRaw.profiles) {
+            // Process profile data safely with type checking
+            if (hasProperty(annRaw, 'profiles') && annRaw.profiles) {
               const profileData = Array.isArray(annRaw.profiles) 
                 ? (annRaw.profiles[0] as AuthorProfile | undefined)
                 : (annRaw.profiles as AuthorProfile | undefined);
@@ -85,18 +82,25 @@ export function useAnnouncements(targetRole: string = 'student') {
               }
             }
             
-            formattedAnnouncements.push({
-              id: annRaw.id || '',
-              title: annRaw.title || '',
-              content: annRaw.content || '',
-              date: annRaw.published_at ? new Date(annRaw.published_at).toLocaleDateString() : 'Unknown date',
-              instructor: {
-                name: fullName,
-                initials
-              },
-              isNew: true,
-              type: 'announcement',
-            });
+            // Only add objects with required properties
+            if (hasProperty(annRaw, 'id') && 
+                hasProperty(annRaw, 'title') && 
+                hasProperty(annRaw, 'content') && 
+                hasProperty(annRaw, 'published_at')) {
+              
+              formattedAnnouncements.push({
+                id: annRaw.id || '',
+                title: annRaw.title || '',
+                content: annRaw.content || '',
+                date: annRaw.published_at ? new Date(annRaw.published_at).toLocaleDateString() : 'Unknown date',
+                instructor: {
+                  name: fullName,
+                  initials
+                },
+                isNew: true,
+                type: 'announcement',
+              });
+            }
           }
           setAnnouncements(formattedAnnouncements);
         } else {

@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
+import { asUUID } from '@/utils/supabaseHelpers';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -37,11 +38,11 @@ export function useScheduleActions(
       return false;
     }
     try {
-      // Delete existing schedule
+      // Delete existing schedule - using type casting for UUID
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', asUUID(instructorId));
 
       if (deleteError) {
         if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
@@ -59,14 +60,14 @@ export function useScheduleActions(
       if (schedule.length > 0) {
         // Create properly typed schedule data
         const scheduleData = schedule.map(item => ({
-          instructor_id: instructorId,
+          instructor_id: asUUID(instructorId),
           day: item.day,
           hours: item.hours
         }));
         
         const { error: insertError } = await supabase
           .from('instructor_schedules')
-          .insert(scheduleData);
+          .insert(scheduleData as any);
           
         if (insertError) {
           if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
