@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
@@ -9,6 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+
+// Define the admin email as a constant that can be easily updated
+const ADMIN_EMAIL = 'admin@example.com';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
@@ -34,11 +36,9 @@ const AdminAuthContent = () => {
   }, [session, navigate]);
 
   const handleSendPasswordReset = async () => {
-    const adminEmail = 'admin@deckademics.com';
-    
     try {
       setIsResetting(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(adminEmail, {
+      const { error } = await supabase.auth.resetPasswordForEmail(ADMIN_EMAIL, {
         redirectTo: `${window.location.origin}/auth/admin`
       });
       
@@ -46,7 +46,7 @@ const AdminAuthContent = () => {
       
       toast({
         title: 'Password reset email sent',
-        description: `A password reset link has been sent to ${adminEmail}`,
+        description: `A password reset link has been sent to ${ADMIN_EMAIL}`,
       });
     } catch (error: any) {
       console.error('Error sending password reset:', error);
@@ -92,12 +92,12 @@ const AdminAuthContent = () => {
         <AlertTitle>Authentication Issue</AlertTitle>
         <AlertDescription>
           The displayed admin credentials need to be reset in Supabase. 
-          Please use the Supabase dashboard to reset the password for admin@deckademics.com 
+          Please use the Supabase dashboard to reset the password for {ADMIN_EMAIL} 
           to match "Admin123!" or update the shown credentials to match the actual password.
         </AlertDescription>
       </Alert>
       
-      <AuthForm userType="admin" disableSignup={true} />
+      <AuthForm userType="admin" disableSignup={true} adminEmail={ADMIN_EMAIL} />
       
       <div className="text-center space-y-4">
         <div className="flex justify-center gap-2">

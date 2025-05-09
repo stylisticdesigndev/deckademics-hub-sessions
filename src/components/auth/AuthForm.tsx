@@ -16,9 +16,10 @@ import { useNavigate } from 'react-router-dom';
 interface AuthFormProps {
   userType: UserRole;
   disableSignup?: boolean;
+  adminEmail?: string; // Add this new prop
 }
 
-export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
+export const AuthForm = ({ userType, disableSignup = false, adminEmail }: AuthFormProps) => {
   const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -38,10 +39,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     if (userType === 'admin') {
       setFormData(prev => ({
         ...prev,
-        email: 'admin@deckademics.com'
+        email: adminEmail || 'admin@example.com'
       }));
     }
-  }, [userType]);
+  }, [userType, adminEmail]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -286,7 +287,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
             {userType === 'admin' && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
                 <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
-                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: admin@deckademics.com</p>
+                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: {adminEmail || 'admin@example.com'}</p>
                 <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
               </div>
             )}
