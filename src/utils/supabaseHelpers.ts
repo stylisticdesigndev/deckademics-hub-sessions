@@ -75,6 +75,20 @@ export function asDatabaseParam<T>(value: any): T {
 }
 
 /**
+ * Type-safe way to handle UUID data
+ */
+export function asUUID(value: string): string {
+  return value;
+}
+
+/**
+ * Type-safe way to handle database type conversions
+ */
+export function asDbType<T>(value: any): T {
+  return value as T;
+}
+
+/**
  * Type-safe way to handle stringified JSON data
  */
 export function parseJson<T>(jsonString: string | null | undefined, defaultValue: T): T {
@@ -89,3 +103,21 @@ export function parseJson<T>(jsonString: string | null | undefined, defaultValue
     return defaultValue;
   }
 }
+
+/**
+ * Safely process an array of items using a mapper function
+ * Filters out items that don't match expected data structure
+ */
+export function processSafeItems<T>(
+  items: unknown[],
+  mapper: (item: Record<string, any>) => T
+): T[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .filter(item => isDataObject(item))
+    .map(item => mapper(item as Record<string, any>));
+}
+
