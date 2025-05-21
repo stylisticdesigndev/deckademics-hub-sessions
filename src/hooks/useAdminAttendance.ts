@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
-import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
+import { isDataObject, hasProperty, asDatabaseParam, safelyAccessProperty } from '@/utils/supabaseHelpers';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -86,44 +86,46 @@ export const useAdminAttendance = () => {
             start_time
           )
         `)
-        .eq('status', 'missed' as any);
+        .eq('status', asDatabaseParam('missed'));
 
       if (error) throw error;
 
       // Transform the data to match our Student interface - with proper access to nested data
-      const transformedData = attendanceData
+      const transformedData = (attendanceData || [])
         .filter(record => isDataObject(record))
         .map(record => {
           // Safely access nested properties
-          if (!isDataObject(record) || 
-              !hasProperty(record, 'students') || 
-              !hasProperty(record, 'classes') ||
-              !hasProperty(record, 'id') ||
-              !hasProperty(record, 'student_id') ||
-              !hasProperty(record, 'date') ||
-              !hasProperty(record, 'status')) {
-            return null;
-          }
+          if (!isDataObject(record)) return null;
           
-          const students = record.students as StudentsData;
-          const studentProfile = students?.profiles?.[0] as StudentProfile;
+          const id = safelyAccessProperty<string, 'id'>(record, 'id');
+          const student_id = safelyAccessProperty<string, 'student_id'>(record, 'student_id');
+          const date = safelyAccessProperty<string, 'date'>(record, 'date');
+          const status = safelyAccessProperty<AttendanceStatus, 'status'>(record, 'status');
+          const notes = safelyAccessProperty<string | null, 'notes'>(record, 'notes');
+          const students = safelyAccessProperty<StudentsData, 'students'>(record, 'students');
+          const classes = safelyAccessProperty<ClassData, 'classes'>(record, 'classes');
           
+          if (!id || !student_id || !date || !status) return null;
+          
+          // Handle nested profile data
+          const studentProfile = students?.profiles?.[0] as StudentProfile | undefined;
           const firstName = studentProfile?.first_name || '';
           const lastName = studentProfile?.last_name || '';
           const email = studentProfile?.email || '';
           
-          const classes = record.classes as ClassData;
+          // Handle class data
+          const classTitle = classes?.title || 'Unnamed Class';
           
           return {
-            id: record.id,
-            studentId: record.student_id,
+            id,
+            studentId: student_id,
             name: `${firstName} ${lastName}`.trim(),
-            email: email,
-            classDate: new Date(record.date),
-            status: record.status as AttendanceStatus,
+            email,
+            classDate: new Date(date),
+            status,
             makeupDate: null, // We'll get this from a separate query
-            classTitle: classes?.title || 'Unnamed Class',
-            notes: record.notes
+            classTitle,
+            notes
           };
         })
         .filter(Boolean) as Student[];
@@ -133,24 +135,31 @@ export const useAdminAttendance = () => {
         const { data: makeupData } = await supabase
           .from('attendance')
           .select('date')
-          .eq('student_id', record.studentId as any)
-          .eq('status', 'makeup' as any)
+          .eq('student_id', asDatabaseParam(record.studentId))
+          .eq('status', asDatabaseParam('makeup'))
           .gt('date', record.classDate.toISOString())
           .order('date', { ascending: true })
           .limit(1);
 
         if (makeupData && makeupData.length > 0) {
-          record.makeupDate = new Date(makeupData[0].date);
-          if (new Date() > record.makeupDate) {
-            // If the makeup date has passed, check if they attended
-            const { data: attendedData } = await supabase
-              .from('attendance')
-              .select('status')
-              .eq('student_id', record.studentId as any)
-              .eq('date', format(record.makeupDate, 'yyyy-MM-dd'));
+          const dateValue = safelyAccessProperty<string, 'date'>(makeupData[0], 'date');
+          if (dateValue) {
+            record.makeupDate = new Date(dateValue);
             
-            if (attendedData && attendedData.length > 0 && attendedData[0].status === 'attended') {
-              record.status = 'made-up';
+            if (new Date() > record.makeupDate) {
+              // If the makeup date has passed, check if they attended
+              const { data: attendedData } = await supabase
+                .from('attendance')
+                .select('status')
+                .eq('student_id', asDatabaseParam(record.studentId))
+                .eq('date', format(record.makeupDate, 'yyyy-MM-dd'));
+              
+              if (attendedData && attendedData.length > 0) {
+                const statusValue = safelyAccessProperty<string, 'status'>(attendedData[0], 'status');
+                if (statusValue === 'attended') {
+                  record.status = 'made-up';
+                }
+              }
             }
           }
         }
@@ -165,8 +174,8 @@ export const useAdminAttendance = () => {
     mutationFn: async ({ studentId, attendanceId, status }: { studentId: string, attendanceId: string, status: AttendanceStatus }) => {
       const { error } = await supabase
         .from('attendance')
-        .update({ status: status as any })
-        .eq('id', attendanceId);
+        .update({ status: asDatabaseParam(status) })
+        .eq('id', asDatabaseParam(attendanceId));
 
       if (error) throw error;
     },
@@ -186,19 +195,22 @@ export const useAdminAttendance = () => {
       const { data: missedAttendance, error: fetchError } = await supabase
         .from('attendance')
         .select('class_id')
-        .eq('id', missedClassId)
+        .eq('id', asDatabaseParam(missedClassId))
         .single();
 
       if (fetchError) throw fetchError;
+
+      const class_id = safelyAccessProperty<string, 'class_id'>(missedAttendance, 'class_id');
+      if (!class_id) throw new Error("Could not find class_id for makeup scheduling");
 
       // Create a new attendance record for the makeup class using the same class_id
       const { error } = await supabase
         .from('attendance')
         .insert({
-          student_id: studentId as any,
-          class_id: missedAttendance.class_id, // Include the class_id from the missed class
+          student_id: asDatabaseParam(studentId),
+          class_id: asDatabaseParam(class_id),
           date: format(date, 'yyyy-MM-dd'),
-          status: 'makeup' as any,
+          status: asDatabaseParam('makeup'),
           notes: `Makeup class for missed class on ${missedClassId}`
         });
 

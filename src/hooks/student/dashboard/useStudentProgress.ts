@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, processSafeItems } from '@/utils/supabaseHelpers';
+import { isDataObject, processSafeItems, asDatabaseParam } from '@/utils/supabaseHelpers';
 
 interface ProgressItem {
   skill_name: string;
@@ -21,11 +21,10 @@ export function useStudentProgress(userId?: string) {
     const fetchProgress = async () => {
       setLoading(true);
       try {
-        // Use any to bypass the type check and then manually verify the data
         const { data, error } = await supabase
           .from('student_progress')
           .select('skill_name, proficiency')
-          .eq('student_id', userId as any);
+          .eq('student_id', asDatabaseParam(userId));
 
         if (error) {
           console.error('Error fetching student progress:', error);

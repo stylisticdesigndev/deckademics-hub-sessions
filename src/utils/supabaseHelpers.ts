@@ -122,3 +122,11 @@ export function isPresent<T>(value: T | null | undefined): value is T {
 export function asDbType<T>(value: any): T {
   return value as T;
 }
+
+/**
+ * Helper function to safely type cast database fields to avoid TypeScript errors
+ * when working with Supabase's strongly typed client
+ */
+export function asDatabaseParam(value: any): any {
+  return value as any;
+}

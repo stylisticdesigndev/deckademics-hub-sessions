@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 // Define the admin email as a constant that can be easily updated
-const ADMIN_EMAIL = 'admin@example.com';
+const ADMIN_EMAIL = 'admin@deckademics.com';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
