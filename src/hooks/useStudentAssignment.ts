@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { asDatabaseParam } from '@/utils/supabaseHelpers';
+import { asDatabaseParam, asInsertParam } from '@/utils/supabaseHelpers';
 
 export interface StudentForAssignment {
   id: string;
@@ -81,11 +81,11 @@ export function useStudentAssignment() {
       console.log(`Assigning students ${studentIds.join(', ')} to instructor ${instructorId}`);
       
       // For each student, create an entry in the enrollments table
-      const enrollments = studentIds.map(studentId => ({
+      const enrollments = studentIds.map(studentId => asInsertParam({
         student_id: studentId,
         instructor_id: instructorId,
         status: 'active'
-      }));
+      }, 'enrollments'));
 
       // Insert the enrollments
       const { data, error } = await supabase

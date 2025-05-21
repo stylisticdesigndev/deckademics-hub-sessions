@@ -157,3 +157,62 @@ export function extractProfileData(profileData: any): { firstName: string, lastN
   // Default empty values
   return { firstName: '', lastName: '' };
 }
+
+/**
+ * Helper for type-safe database inserts
+ */
+export function asInsertParam<T extends TableNames>(
+  value: any,
+  _table?: T // Table name is only used for TypeScript inference
+): Database['public']['Tables'][T]['Insert'] {
+  return value as any;
+}
+
+/**
+ * Helper for type-safe database updates
+ */
+export function asUpdateParam<T extends TableNames>(
+  value: any,
+  _table?: T // Table name is only used for TypeScript inference
+): Database['public']['Tables'][T]['Update'] {
+  return value as any;
+}
+
+/**
+ * Helper for working with RPC functions
+ */
+export function asRpcParam<T extends keyof Database['public']['Functions']>(
+  value: any,
+  _function?: T // Function name is only used for TypeScript inference
+): Parameters<Database['public']['Functions'][T]>[0] {
+  return value as any;
+}
+
+/**
+ * Helper for using RPC function return types
+ */
+export function asRpcResult<T extends keyof Database['public']['Functions']>(
+  value: any,
+  _function?: T // Function name is only used for TypeScript inference
+): ReturnType<Database['public']['Functions'][T]> {
+  return value as any;
+}
+
+/**
+ * Safely cast a profile object to the expected structure
+ */
+export function asProfile(value: any): {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+} {
+  return {
+    id: value?.id || '',
+    email: value?.email || '',
+    first_name: value?.first_name || null,
+    last_name: value?.last_name || null,
+    role: value?.role || 'student'
+  };
+}

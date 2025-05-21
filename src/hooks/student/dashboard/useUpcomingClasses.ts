@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
+import { isDataObject, hasProperty, asProfile } from '@/utils/supabaseHelpers';
 
 export interface InstructorProfile {
   id?: string;
@@ -77,13 +77,14 @@ export function useUpcomingClasses() {
             if (profilesError) {
               console.error('Error fetching instructor profiles:', profilesError);
             } else if (Array.isArray(profiles)) {
-              // Create a map for faster lookups
+              // Create a map for faster lookups and ensure proper typing
               profiles.forEach(profile => {
                 if (isDataObject(profile) && hasProperty(profile, 'id') && profile.id) {
-                  instructorProfiles[profile.id as string] = {
-                    id: profile.id,
-                    first_name: profile.first_name,
-                    last_name: profile.last_name
+                  const safeProfile = asProfile(profile);
+                  instructorProfiles[safeProfile.id] = {
+                    id: safeProfile.id,
+                    first_name: safeProfile.first_name,
+                    last_name: safeProfile.last_name
                   };
                 }
               });

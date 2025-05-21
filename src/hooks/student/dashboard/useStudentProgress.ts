@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, processSafeItems, asDatabaseParam } from '@/utils/supabaseHelpers';
+import { isDataObject, processSafeItems, asDbType, asDatabaseParam } from '@/utils/supabaseHelpers';
 
 interface ProgressItem {
   skill_name: string;
