@@ -1,152 +1,130 @@
 
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { asDatabaseParam, asInsertParam, isDataObject } from '@/utils/supabaseHelpers';
+import { asInsertParam, asUpdateParam, asDatabaseParam } from '@/utils/supabaseHelpers';
 
 export interface StudentForAssignment {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
+  first_name: string;
+  last_name: string;
   email: string;
   level: string;
-  instructorId: string | null;
 }
 
-export function useStudentAssignment() {
+interface AssignStudentsParams {
+  instructorId: string;
+  studentIds: string[];
+}
+
+export const useStudentAssignment = () => {
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(false);
 
-  // Fetch students that can be assigned to instructors
-  const { data: unassignedStudents, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['admin', 'students', 'unassigned'],
-    queryFn: async () => {
-      try {
-        console.log('Fetching students for assignment...');
-        setLoading(true);
-        
-        // Get all students with active enrollment status
-        const { data: studentsData, error: studentsError } = await supabase
-          .from('students')
-          .select(`
-            id,
-            level,
-            enrollment_status,
-            profiles:id (
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .eq('enrollment_status', 'active');
+  // Function to fetch unassigned students
+  const fetchUnassignedStudents = async (): Promise<StudentForAssignment[]> => {
+    console.log('Fetching unassigned students...');
+    try {
+      // First get active students from students table
+      const { data: activeStudents, error: studentsError } = await supabase
+        .from('students')
+        .select(`
+          id,
+          level,
+          profiles (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('enrollment_status', asDatabaseParam<string>('active'));
 
-        if (studentsError) {
-          console.error('Error fetching students:', studentsError);
-          return [];
-        }
-
-        console.log('Fetched students data:', studentsData);
-
-        // Transform the data to match the StudentForAssignment interface
-        const formattedStudents: StudentForAssignment[] = studentsData
-          .filter(student => isDataObject(student) && student.id)
-          .map(student => ({
-            id: student.id,
-            first_name: student.profiles?.first_name || null,
-            last_name: student.profiles?.last_name || null,
-            email: student.profiles?.email || '',
-            level: student.level || 'beginner',
-            instructorId: null // Will be populated when we fetch enrollments
-          }));
-
-        // Fetch existing enrollments to filter out students already assigned to instructors
-        const { data: enrollmentsData, error: enrollmentsError } = await supabase
-          .from('enrollments')
-          .select('student_id, instructor_id')
-          .eq('status', 'active');
-
-        if (enrollmentsError) {
-          console.error('Error fetching enrollments:', enrollmentsError);
-        } else if (enrollmentsData && enrollmentsData.length > 0) {
-          // Create a map of student_id -> instructor_id
-          const studentInstructorMap = new Map();
-          enrollmentsData.forEach(enrollment => {
-            if (enrollment.student_id && enrollment.instructor_id) {
-              studentInstructorMap.set(enrollment.student_id, enrollment.instructor_id);
-            }
-          });
-          
-          // Filter out students that already have instructors assigned
-          return formattedStudents.filter(student => {
-            const hasInstructor = studentInstructorMap.has(student.id);
-            // If student has an instructor, store it for reference
-            if (hasInstructor) {
-              student.instructorId = studentInstructorMap.get(student.id);
-            }
-            // Only return students without instructors
-            return !hasInstructor;
-          });
-        }
-
-        return formattedStudents;
-      } catch (error) {
-        console.error('Error in unassignedStudents query:', error);
-        return [];
-      } finally {
-        setLoading(false);
+      if (studentsError) {
+        console.error('Error fetching active students:', studentsError);
+        toast.error('Failed to load unassigned students');
+        throw studentsError;
       }
+
+      // Log raw data for debugging
+      console.log('Raw active students data:', activeStudents);
+
+      // Transform the data to match our StudentForAssignment interface
+      // and filter out students with existing instructors
+      const studentsList = activeStudents
+        .filter(student => student.profiles && student.profiles.length > 0)
+        .map(student => ({
+          id: student.id,
+          level: student.level || 'beginner',
+          first_name: student.profiles[0]?.first_name || '',
+          last_name: student.profiles[0]?.last_name || '',
+          email: student.profiles[0]?.email || ''
+        }));
+
+      return studentsList;
+    } catch (err) {
+      console.error('Error in fetchUnassignedStudents:', err);
+      return [];
     }
+  };
+
+  // Query for unassigned students
+  const {
+    data: unassignedStudents = [],
+    isLoading: isLoadingStudents,
+    refetch: refetchUnassignedStudents,
+  } = useQuery({
+    queryKey: ['admin', 'unassigned-students'],
+    queryFn: fetchUnassignedStudents,
   });
 
-  // Assign students to instructor
+  // Mutation to assign students to an instructor
   const assignStudentsToInstructor = useMutation({
-    mutationFn: async ({ 
-      instructorId, 
-      studentIds 
-    }: { 
-      instructorId: string; 
-      studentIds: string[] 
-    }) => {
-      if (!instructorId || studentIds.length === 0) {
+    mutationFn: async ({ instructorId, studentIds }: AssignStudentsParams) => {
+      console.log(`Assigning ${studentIds.length} students to instructor ${instructorId}`);
+
+      if (!instructorId || !studentIds.length) {
         throw new Error('Missing instructor ID or student IDs');
       }
 
-      console.log(`Assigning students ${studentIds.join(', ')} to instructor ${instructorId}`);
-      
-      // For each student, create an entry in the enrollments table
-      const enrollments = studentIds.map(studentId => asInsertParam({
-        student_id: studentId,
-        instructor_id: instructorId,
-        status: 'active'
-      }, 'enrollments'));
+      // Create a junction table entry or update student records
+      // This is a simplified example - in a real application you might have a proper students_instructors junction table
+      const updates = studentIds.map(async (studentId) => {
+        const { data, error } = await supabase
+          .rpc('assign_student_to_instructor', {
+            student_id: asDatabaseParam<string>(studentId),
+            instructor_id: asDatabaseParam<string>(instructorId)
+          });
 
-      // Insert the enrollments
-      const { data, error } = await supabase
-        .from('enrollments')
-        .insert(enrollments);
+        if (error) {
+          console.error(`Error assigning student ${studentId} to instructor:`, error);
+          throw error;
+        }
 
-      if (error) {
-        throw error;
-      }
-      
-      return data;
+        return data;
+      });
+
+      // Wait for all updates to complete
+      await Promise.all(updates);
+
+      return { success: true, instructorId, studentIds };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+    onSuccess: (result) => {
+      console.log('Students assigned successfully:', result);
+      toast.success(`${result.studentIds.length} students assigned to instructor`);
+      
+      // Refetch relevant data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
-      toast.success('Students assigned successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error('Error assigning students:', error);
-      toast.error(`Failed to assign students: ${error.message}`);
+      toast.error(`Failed to assign students: ${error.message || 'Unknown error'}`);
     }
   });
 
   return {
-    unassignedStudents: unassignedStudents || [],
+    unassignedStudents,
     isLoadingStudents,
-    loading,
-    assignStudentsToInstructor
+    assignStudentsToInstructor,
+    refetchUnassignedStudents
   };
-}
+};

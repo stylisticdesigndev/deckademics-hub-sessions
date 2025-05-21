@@ -121,3 +121,23 @@ export function processSafeItems<T>(
     .map(item => mapper(item as Record<string, any>));
 }
 
+/**
+ * Type-safe way to handle Supabase responses for students
+ */
+export function asStudentData<T>(data: unknown): T {
+  return data as T;
+}
+
+/**
+ * Safe type assertion for instructor data
+ */
+export function asInstructorData<T>(data: unknown): T {
+  return data as T;
+}
+
+/**
+ * Safe type assertion for attendance data
+ */
+export function asAttendanceData<T>(data: unknown): T {
+  return data as T;
+}

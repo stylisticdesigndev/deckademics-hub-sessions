@@ -1,7 +1,9 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
+import { asInsertParam, asUpdateParam, asDatabaseParam, asStudentData } from '@/utils/supabaseHelpers';
 
 interface Profile {
   first_name: string;
@@ -76,7 +78,7 @@ export const useAdminStudents = () => {
       const { data: studentProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'student');
+        .eq('role', asDatabaseParam<string>('student'));
       
       if (profilesError) {
         console.error("Error fetching student profiles:", profilesError);
@@ -93,8 +95,7 @@ export const useAdminStudents = () => {
       // Get all student records with a longer timeout
       const { data: studentRecords, error: studentsError } = await supabase
         .from('students')
-        .select('*')
-        .abortSignal(AbortSignal.timeout(10000)); // 10 second timeout
+        .select('*');
       
       if (studentsError) {
         console.error("Error fetching student records:", studentsError);
@@ -339,11 +340,11 @@ export const useAdminStudents = () => {
             const { data: newStudent, error: insertError } = await supabase
               .from('students')
               .insert([
-                { 
+                asInsertParam<any>({ 
                   id: studentId,
                   level: 'beginner',
                   enrollment_status: 'active'
-                }
+                }, 'students')
               ])
               .select();
             
@@ -374,8 +375,8 @@ export const useAdminStudents = () => {
           // Update the existing student record to active
           const { data: updatedStudent, error: updateError } = await supabase
             .from('students')
-            .update({ enrollment_status: 'active' })
-            .eq('id', studentId)
+            .update(asUpdateParam<any>({ enrollment_status: 'active' }, 'students'))
+            .eq('id', asDatabaseParam<string>(studentId))
             .select();
           
           if (updateError) {
@@ -487,11 +488,11 @@ export const useAdminStudents = () => {
             const { data: newStudent, error: insertError } = await supabase
               .from('students')
               .insert([
-                { 
+                asInsertParam<any>({ 
                   id: studentId,
                   level: 'beginner',
                   enrollment_status: 'declined'
-                }
+                }, 'students')
               ])
               .select();
             
@@ -522,8 +523,8 @@ export const useAdminStudents = () => {
           // Update the existing student record to declined
           const { data: updatedStudent, error: updateError } = await supabase
             .from('students')
-            .update({ enrollment_status: 'declined' })
-            .eq('id', studentId)
+            .update(asUpdateParam<any>({ enrollment_status: 'declined' }, 'students'))
+            .eq('id', asDatabaseParam<string>(studentId))
             .select();
           
           if (updateError) {
@@ -619,11 +620,11 @@ export const useAdminStudents = () => {
             const { data: newStudent, error: insertError } = await supabase
               .from('students')
               .insert([
-                { 
+                asInsertParam<any>({ 
                   id: studentId,
                   level: 'beginner',
                   enrollment_status: 'inactive'
-                }
+                }, 'students')
               ])
               .select();
               
@@ -652,8 +653,8 @@ export const useAdminStudents = () => {
         // Update the student record
         const { data, error } = await supabase
           .from('students')
-          .update({ enrollment_status: 'inactive' })
-          .eq('id', studentId)
+          .update(asUpdateParam<any>({ enrollment_status: 'inactive' }, 'students'))
+          .eq('id', asDatabaseParam<string>(studentId))
           .select();
 
         if (error) {
