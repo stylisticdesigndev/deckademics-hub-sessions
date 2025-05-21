@@ -130,3 +130,30 @@ export function asDbType<T>(value: any): T {
 export function asDatabaseParam(value: any): any {
   return value as any;
 }
+
+/**
+ * Helper function to extract profile data from nested objects
+ * This is useful when Supabase returns different structures for the same query
+ */
+export function extractProfileData(profileData: any): { firstName: string, lastName: string, email?: string } {
+  // Handle array format (sometimes returned by Supabase)
+  if (Array.isArray(profileData)) {
+    return {
+      firstName: profileData[0]?.first_name || '',
+      lastName: profileData[0]?.last_name || '',
+      email: profileData[0]?.email
+    };
+  }
+  
+  // Handle object format
+  if (profileData && typeof profileData === 'object') {
+    return {
+      firstName: profileData.first_name || '',
+      lastName: profileData.last_name || '',
+      email: profileData.email
+    };
+  }
+  
+  // Default empty values
+  return { firstName: '', lastName: '' };
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
+import { useStudentAssignment, StudentForAssignment } from '@/hooks/useStudentAssignment';
 import {
   Card,
   CardContent,
@@ -76,19 +77,10 @@ const AdminInstructors = () => {
   const [showCreateInstructorDialog, setShowCreateInstructorDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   
-  // New state for student assignment
-  const [studentAssignments, setStudentAssignments] = useState<{[key: number]: string}>({});
-  const [showStudentReassignment, setShowStudentReassignment] = useState(false);
+  // State for student assignment
   const [showStudentAssignment, setShowStudentAssignment] = useState(false);
-  const [instructorToAssign, setInstructorToAssign] = useState<number | null>(null);
-  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
-  
-  // State for unassigned students
-  const [unassignedStudents, setUnassignedStudents] = useState<Student[]>([
-    { id: 201, name: 'Alex Miller', email: 'alex@example.com', level: 'Beginner', assignedTo: null },
-    { id: 202, name: 'Blake Taylor', email: 'blake@example.com', level: 'Intermediate', assignedTo: null },
-    { id: 203, name: 'Chris Jordan', email: 'chris@example.com', level: 'Advanced', assignedTo: null }
-  ]);
+  const [instructorToAssign, setInstructorToAssign] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   
   const {
     activeInstructors,
@@ -102,6 +94,13 @@ const AdminInstructors = () => {
     activateInstructor,
     createInstructor
   } = useAdminInstructors();
+  
+  // Use the new hook for student assignment
+  const {
+    unassignedStudents,
+    isLoadingStudents,
+    assignStudentsToInstructor
+  } = useStudentAssignment();
 
   // Get instructor by ID now works with the correct types
   const getInstructorById = (id: string) => {
@@ -212,39 +211,41 @@ const AdminInstructors = () => {
     setViewInstructorId(null);
   };
 
-  // New function to handle assigning students to an instructor
-  const handleAssignStudents = () => {
-    if (!instructorToAssign) {
-      toast.error("No instructor selected for assignment.");
-      return;
-    }
-    
-    // Reset state
-    setShowStudentAssignment(false);
-    setInstructorToAssign(null);
-    setStudentAssignments({});
-    
-    toast.success("Students Assigned: Students have been assigned successfully.");
-  };
-
-  // New function to manually open the student assignment dialog for any instructor
-  const handleOpenAssignStudents = (id: number) => {
+  // New function to handle opening the student assignment dialog
+  const handleOpenAssignStudents = (id: string) => {
     setInstructorToAssign(id);
+    setSelectedStudentIds([]);
     setShowStudentAssignment(true);
   };
 
-  // Function to handle reassigning students when deactivating an instructor
-  const handleReassignStudents = () => {
-    if (!instructorToDeactivate) {
-      toast.error("No instructor selected for deactivation.");
+  // New function to handle assigning students to an instructor
+  const handleAssignStudents = () => {
+    if (!instructorToAssign || selectedStudentIds.length === 0) {
+      toast.error("Please select at least one student to assign");
       return;
     }
     
-    // Complete the deactivation
-    confirmDeactivate();
-    setShowStudentReassignment(false);
-    
-    toast.success("Students Reassigned: Students have been reassigned successfully.");
+    assignStudentsToInstructor.mutate({
+      instructorId: instructorToAssign,
+      studentIds: selectedStudentIds
+    }, {
+      onSuccess: () => {
+        setShowStudentAssignment(false);
+        setInstructorToAssign(null);
+        setSelectedStudentIds([]);
+      }
+    });
+  };
+
+  // Toggle student selection for assignment
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
   };
 
   const showNoInstructorsMessage = () => {
@@ -426,7 +427,7 @@ const AdminInstructors = () => {
             </div>
             
             {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
-            <Dialog open={showStudentReassignment} onOpenChange={setShowStudentReassignment}>
+            <Dialog open={false} onOpenChange={() => {}}>
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>Reassign Students</DialogTitle>
@@ -443,13 +444,13 @@ const AdminInstructors = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      setShowStudentReassignment(false);
+                      setShowDeactivateDialog(false);
                       setInstructorToDeactivate(null);
                     }}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleReassignStudents}>
+                  <Button onClick={() => {}}>
                     Deactivate
                   </Button>
                 </DialogFooter>
@@ -466,7 +467,11 @@ const AdminInstructors = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                  {unassignedStudents.length > 0 ? (
+                  {isLoadingStudents ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : unassignedStudents.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -482,19 +487,18 @@ const AdminInstructors = () => {
                               <input 
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-gray-300"
-                                checked={studentAssignments[student.id] === instructorToAssign?.toString()}
-                                onChange={(e) => {
-                                  setStudentAssignments({
-                                    ...studentAssignments,
-                                    [student.id]: e.target.checked ? instructorToAssign!.toString() : ''
-                                  });
-                                }}
+                                checked={selectedStudentIds.includes(student.id)}
+                                onChange={() => toggleStudentSelection(student.id)}
                               />
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{student.name}</div>
-                                <div className="text-sm text-muted-foreground">{student.email}</div>
+                                <div className="font-medium">
+                                  {student.first_name} {student.last_name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {student.email}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>{student.level}</TableCell>
@@ -514,13 +518,23 @@ const AdminInstructors = () => {
                     onClick={() => {
                       setShowStudentAssignment(false);
                       setInstructorToAssign(null);
-                      setStudentAssignments({});
+                      setSelectedStudentIds([]);
                     }}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleAssignStudents} disabled={unassignedStudents.length === 0}>
-                    Assign Students
+                  <Button 
+                    onClick={handleAssignStudents} 
+                    disabled={isLoadingStudents || selectedStudentIds.length === 0 || assignStudentsToInstructor.isPending}
+                  >
+                    {assignStudentsToInstructor.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : (
+                      'Assign Students'
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -598,7 +612,7 @@ const AdminInstructors = () => {
                                       <Button 
                                         variant="ghost" 
                                         size="icon"
-                                        onClick={() => handleOpenAssignStudents(Number(instructor.id))}
+                                        onClick={() => handleOpenAssignStudents(instructor.id)}
                                         className="h-8 w-8"
                                       >
                                         <UserRound className="h-4 w-4" />
@@ -846,15 +860,6 @@ const AdminInstructors = () => {
     </DashboardLayout>
   );
 };
-
-// Define a student type for instructor's students
-interface Student {
-  id: number;
-  name: string;
-  email: string;
-  level: string;
-  assignedTo?: number | null;
-}
 
 // Define the InstructorWithProfile interface
 interface InstructorWithProfile {
