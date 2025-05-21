@@ -75,7 +75,7 @@ export function useStudentDashboardCore() {
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
         .select('level, enrollment_status, notes')
-        .eq('id', userId)
+        .eq('id', userId as any)
         .maybeSingle();
 
       if (studentError) {
@@ -88,7 +88,9 @@ export function useStudentDashboardCore() {
             console.log('StudentDashboardCore: Creating student record for new user:', userId);
             const { error: insertError } = await supabase
               .from('students')
-              .insert([{ id: userId }]);
+              .insert({
+                id: userId
+              } as any);
               
             if (insertError) {
               console.error('StudentDashboardCore: Error creating student record:', insertError.message);

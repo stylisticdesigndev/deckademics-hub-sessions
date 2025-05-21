@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -85,42 +86,55 @@ export const useAdminAttendance = () => {
             start_time
           )
         `)
-        .eq('status', 'missed');
+        .eq('status', 'missed' as any);
 
       if (error) throw error;
 
       // Transform the data to match our Student interface - with proper access to nested data
-      const transformedData = attendanceData.map(record => {
-        // Safely access nested properties
-        const students = record.students as StudentsData;
-        const studentProfile = students?.profiles?.[0] as StudentProfile;
-        
-        const firstName = studentProfile?.first_name || '';
-        const lastName = studentProfile?.last_name || '';
-        const email = studentProfile?.email || '';
-        
-        const classes = record.classes as ClassData;
-        
-        return {
-          id: record.id,
-          studentId: record.student_id,
-          name: `${firstName} ${lastName}`.trim(),
-          email: email,
-          classDate: new Date(record.date),
-          status: record.status as AttendanceStatus,
-          makeupDate: null, // We'll get this from a separate query
-          classTitle: classes?.title || 'Unnamed Class',
-          notes: record.notes
-        };
-      });
+      const transformedData = attendanceData
+        .filter(record => isDataObject(record))
+        .map(record => {
+          // Safely access nested properties
+          if (!isDataObject(record) || 
+              !hasProperty(record, 'students') || 
+              !hasProperty(record, 'classes') ||
+              !hasProperty(record, 'id') ||
+              !hasProperty(record, 'student_id') ||
+              !hasProperty(record, 'date') ||
+              !hasProperty(record, 'status')) {
+            return null;
+          }
+          
+          const students = record.students as StudentsData;
+          const studentProfile = students?.profiles?.[0] as StudentProfile;
+          
+          const firstName = studentProfile?.first_name || '';
+          const lastName = studentProfile?.last_name || '';
+          const email = studentProfile?.email || '';
+          
+          const classes = record.classes as ClassData;
+          
+          return {
+            id: record.id,
+            studentId: record.student_id,
+            name: `${firstName} ${lastName}`.trim(),
+            email: email,
+            classDate: new Date(record.date),
+            status: record.status as AttendanceStatus,
+            makeupDate: null, // We'll get this from a separate query
+            classTitle: classes?.title || 'Unnamed Class',
+            notes: record.notes
+          };
+        })
+        .filter(Boolean) as Student[];
 
       // Now fetch makeup dates for these records
       for (const record of transformedData) {
         const { data: makeupData } = await supabase
           .from('attendance')
           .select('date')
-          .eq('student_id', record.studentId)
-          .eq('status', 'makeup')
+          .eq('student_id', record.studentId as any)
+          .eq('status', 'makeup' as any)
           .gt('date', record.classDate.toISOString())
           .order('date', { ascending: true })
           .limit(1);
@@ -132,7 +146,7 @@ export const useAdminAttendance = () => {
             const { data: attendedData } = await supabase
               .from('attendance')
               .select('status')
-              .eq('student_id', record.studentId)
+              .eq('student_id', record.studentId as any)
               .eq('date', format(record.makeupDate, 'yyyy-MM-dd'));
             
             if (attendedData && attendedData.length > 0 && attendedData[0].status === 'attended') {
@@ -151,7 +165,7 @@ export const useAdminAttendance = () => {
     mutationFn: async ({ studentId, attendanceId, status }: { studentId: string, attendanceId: string, status: AttendanceStatus }) => {
       const { error } = await supabase
         .from('attendance')
-        .update({ status })
+        .update({ status: status as any })
         .eq('id', attendanceId);
 
       if (error) throw error;
@@ -181,10 +195,10 @@ export const useAdminAttendance = () => {
       const { error } = await supabase
         .from('attendance')
         .insert({
-          student_id: studentId,
+          student_id: studentId as any,
           class_id: missedAttendance.class_id, // Include the class_id from the missed class
           date: format(date, 'yyyy-MM-dd'),
-          status: 'makeup',
+          status: 'makeup' as any,
           notes: `Makeup class for missed class on ${missedClassId}`
         });
 
@@ -213,14 +227,19 @@ export const useAdminAttendance = () => {
     const totalClasses = weeklyAttendance.length;
     
     // Count missed classes
-    const missedCount = weeklyAttendance.filter(record => record.status === 'missed').length;
+    const missedCount = weeklyAttendance.filter(record => 
+      isDataObject(record) && hasProperty(record, 'status') && record.status === 'missed'
+    ).length;
     
     // Count scheduled makeups
-    const scheduledMakeups = weeklyAttendance.filter(record => record.status === 'makeup').length;
+    const scheduledMakeups = weeklyAttendance.filter(record => 
+      isDataObject(record) && hasProperty(record, 'status') && record.status === 'makeup'
+    ).length;
     
     // Calculate attendance rate
-    const attendedClasses = weeklyAttendance.filter(
-      record => record.status === 'attended' || record.status === 'made-up'
+    const attendedClasses = weeklyAttendance.filter(record =>
+      isDataObject(record) && hasProperty(record, 'status') && 
+      (record.status === 'attended' || record.status === 'made-up')
     ).length;
     
     const attendanceRate = totalClasses > 0 

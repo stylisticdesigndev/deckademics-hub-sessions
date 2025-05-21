@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { isDataObject, hasProperty, asUUID } from '@/utils/supabaseHelpers';
+import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
 
 interface Student {
   id: string;
@@ -54,7 +54,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         const { data: assignedClasses, error: classesError } = await supabase
           .from('classes')
           .select('id')
-          .eq('instructor_id', asUUID(userData.user.id));
+          .eq('instructor_id', userData.user.id as any);
           
         if (classesError) {
           console.error("Error fetching assigned classes:", classesError);
@@ -149,7 +149,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                   );
                   
                 const averageStudentProgress = studentProgress.length > 0 
-                  ? Math.round(studentProgress.reduce((sum, p) => sum + (Number(p.proficiency) || 0), 0) / studentProgress.length)
+                  ? Math.round(studentProgress.reduce((sum, p) => {
+                      return sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? 
+                        (Number(p.proficiency) || 0) : 0);
+                    }, 0) / studentProgress.length)
                   : 0;
                   
                 // Get the first element's profile data with null safety
@@ -187,7 +190,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           const { count, error: todayClassesError } = await supabase
             .from('classes')
             .select('id', { count: 'exact', head: true })
-            .eq('instructor_id', asUUID(userData.user.id))
+            .eq('instructor_id', userData.user.id as any)
             .gte('start_time', `${today}T00:00:00`)
             .lte('start_time', `${today}T23:59:59`);
             

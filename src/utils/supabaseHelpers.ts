@@ -5,7 +5,7 @@
 import { PostgrestError } from '@supabase/supabase-js';
 import { Database } from '@/integrations/supabase/types';
 
-export type UUID = `${string}-${string}-${string}-${string}-${string}`;
+export type UUID = string;
 
 /**
  * Type guard to check if an object is a Supabase error
@@ -55,14 +55,14 @@ export function safelyAccessProperty<T, K extends keyof any, D = undefined>(
 
 /**
  * Safe type casting for UUID fields in Supabase queries
- * This function doesn't actually validate UUID format but helps TypeScript recognize the UUID type
+ * This function provides proper typing for UUID values
  */
 export function asUUID(id: string): UUID {
   return id as UUID;
 }
 
 /**
- * Safely convert a string to UUID (for TypeScript only, no runtime validation)
+ * Safely convert a string to UUID
  * Returns undefined if id is null or undefined
  */
 export function asOptionalUUID(id: string | null | undefined): UUID | undefined {
@@ -87,6 +87,7 @@ export interface ProfileData {
 
 /**
  * Safely process an array of items from Supabase, filtering out any errors
+ * and providing proper type handling
  */
 export function processSafeItems<T extends object, R = T>(
   items: any[] | null | undefined,

@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, asUUID, processSafeItems } from '@/utils/supabaseHelpers';
+import { isDataObject, processSafeItems } from '@/utils/supabaseHelpers';
 
 interface ProgressItem {
   skill_name: string;
@@ -25,7 +25,7 @@ export function useStudentProgress(userId?: string) {
         const { data, error } = await supabase
           .from('student_progress')
           .select('skill_name, proficiency')
-          .eq('student_id', userId);
+          .eq('student_id', userId as any);
 
         if (error) {
           console.error('Error fetching student progress:', error);

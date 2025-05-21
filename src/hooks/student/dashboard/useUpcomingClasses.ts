@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
 
 export interface InstructorProfile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
+  id?: string;
+  first_name?: string | null;
+  last_name?: string | null;
   avatar_url?: string | null;
 }
 
@@ -80,7 +80,11 @@ export function useUpcomingClasses() {
               // Create a map for faster lookups
               profiles.forEach(profile => {
                 if (isDataObject(profile) && hasProperty(profile, 'id') && profile.id) {
-                  instructorProfiles[profile.id as string] = profile as InstructorProfile;
+                  instructorProfiles[profile.id as string] = {
+                    id: profile.id,
+                    first_name: profile.first_name,
+                    last_name: profile.last_name
+                  };
                 }
               });
             }

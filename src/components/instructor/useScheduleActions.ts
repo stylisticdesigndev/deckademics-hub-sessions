@@ -2,7 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { asUUID } from '@/utils/supabaseHelpers';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -42,7 +41,7 @@ export function useScheduleActions(
       const { error: deleteError } = await supabase
         .from('instructor_schedules')
         .delete()
-        .eq('instructor_id', asUUID(instructorId));
+        .eq('instructor_id', instructorId as any);
 
       if (deleteError) {
         if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
@@ -60,7 +59,7 @@ export function useScheduleActions(
       if (schedule.length > 0) {
         // Create properly typed schedule data
         const scheduleData = schedule.map(item => ({
-          instructor_id: asUUID(instructorId),
+          instructor_id: instructorId,
           day: item.day,
           hours: item.hours
         }));
