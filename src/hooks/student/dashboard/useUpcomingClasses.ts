@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, hasProperty, asProfile } from '@/utils/supabaseHelpers';
+import { isDataObject, hasProperty, asProfile, safelyAccessProperty } from '@/utils/supabaseHelpers';
 
 export interface InstructorProfile {
   id?: string;
@@ -80,12 +80,18 @@ export function useUpcomingClasses() {
               // Create a map for faster lookups and ensure proper typing
               profiles.forEach(profile => {
                 if (isDataObject(profile) && hasProperty(profile, 'id') && profile.id) {
-                  const safeProfile = asProfile(profile);
-                  instructorProfiles[safeProfile.id] = {
-                    id: safeProfile.id,
-                    first_name: safeProfile.first_name,
-                    last_name: safeProfile.last_name
-                  };
+                  // Use safelyAccessProperty instead of direct object access
+                  const safeId = safelyAccessProperty<string, 'id'>(profile, 'id');
+                  const safeFirstName = safelyAccessProperty<string | null, 'first_name'>(profile, 'first_name');
+                  const safeLastName = safelyAccessProperty<string | null, 'last_name'>(profile, 'last_name');
+                  
+                  if (safeId) {
+                    instructorProfiles[safeId] = {
+                      id: safeId,
+                      first_name: safeFirstName,
+                      last_name: safeLastName
+                    };
+                  }
                 }
               });
             }

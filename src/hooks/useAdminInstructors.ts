@@ -49,8 +49,13 @@ export const useAdminInstructors = () => {
         }
         
         console.log('All profiles:', data);
-        // Make sure we cast to the expected return type
-        return (data || []).map(user => asProfile(user));
+        
+        // Make sure we handle the response as an array
+        if (data && Array.isArray(data)) {
+          return data.map(user => asProfile(user));
+        }
+        
+        return [];
       } catch (error) {
         console.error('Error fetching profiles:', error);
         return [];

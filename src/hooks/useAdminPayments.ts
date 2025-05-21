@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addWeeks } from 'date-fns';
+import { isDataObject, safelyAccessProperty } from '@/utils/supabaseHelpers';
 
 interface StudentProfile {
   first_name?: string;
@@ -69,32 +70,50 @@ export const useAdminPayments = () => {
 
       // Transform the data to match our Payment interface
       return paymentsData.map(payment => {
-        const dueDate = new Date(payment.payment_date);
+        if (!isDataObject(payment)) {
+          return null;
+        }
+
+        const paymentDate = safelyAccessProperty<string, 'payment_date'>(payment, 'payment_date');
+        
+        if (!paymentDate) {
+          return null;
+        }
+        
+        const dueDate = new Date(paymentDate);
         const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
         const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
         const status = dueDate < today ? 'missed' : 'upcoming';
         
         // Safely access nested properties
-        const students = payment.students as StudentsData;
-        const studentProfile = students?.profiles?.[0] as StudentProfile;
+        const students = safelyAccessProperty<StudentsData, 'students'>(payment, 'students');
+        const studentProfile = students?.profiles?.[0] as StudentProfile | undefined;
         
         const firstName = studentProfile?.first_name || '';
         const lastName = studentProfile?.last_name || '';
         const email = studentProfile?.email || '';
+        
+        const paymentId = safelyAccessProperty<string, 'id'>(payment, 'id');
+        if (!paymentId) return null;
+        
+        const paymentAmount = safelyAccessProperty<number, 'amount'>(payment, 'amount') || 0;
+        
+        const paymentStatus = safelyAccessProperty<string, 'status'>(payment, 'status');
+        const partiallyPaid = paymentStatus === 'partially_paid';
 
         return {
-          id: payment.id,
+          id: paymentId,
           studentName: `${firstName} ${lastName}`.trim(),
           email: email,
-          amount: payment.amount,
+          amount: paymentAmount,
           dueDate: format(dueDate, 'yyyy-MM-dd'),
           status,
           daysPastDue: status === 'missed' ? daysDifference : undefined,
           daysTillDue: status === 'upcoming' ? daysTillDue : undefined,
-          partiallyPaid: payment.status === 'partially_paid'
+          partiallyPaid
         };
-      }) as Payment[];
+      }).filter(Boolean) as Payment[];
     }
   });
 

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
-import { isDataObject, hasProperty, asDatabaseParam, safelyAccessProperty } from '@/utils/supabaseHelpers';
+import { isDataObject, hasProperty, asDatabaseParam, safelyAccessProperty, asUpdateParam, asInsertParam } from '@/utils/supabaseHelpers';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -174,7 +174,7 @@ export const useAdminAttendance = () => {
     mutationFn: async ({ studentId, attendanceId, status }: { studentId: string, attendanceId: string, status: AttendanceStatus }) => {
       const { error } = await supabase
         .from('attendance')
-        .update({ status: asDatabaseParam(status) })
+        .update(asUpdateParam({ status: asDatabaseParam(status) }, 'attendance'))
         .eq('id', asDatabaseParam(attendanceId));
 
       if (error) throw error;
@@ -206,13 +206,13 @@ export const useAdminAttendance = () => {
       // Create a new attendance record for the makeup class using the same class_id
       const { error } = await supabase
         .from('attendance')
-        .insert({
+        .insert(asInsertParam({
           student_id: asDatabaseParam(studentId),
           class_id: asDatabaseParam(class_id),
           date: format(date, 'yyyy-MM-dd'),
           status: asDatabaseParam('makeup'),
           notes: `Makeup class for missed class on ${missedClassId}`
-        });
+        }, 'attendance'));
 
       if (error) throw error;
     },
