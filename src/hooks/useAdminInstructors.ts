@@ -40,7 +40,7 @@ export const useAdminInstructors = () => {
       try {
         const { data, error } = await supabase.rpc(
           'get_all_users',
-          asRpcParam({}, 'get_all_users')
+          {}
         );
         
         if (error) {
@@ -52,7 +52,13 @@ export const useAdminInstructors = () => {
         
         // Make sure we handle the response as an array
         if (data && Array.isArray(data)) {
-          return data.map(user => asProfile(user));
+          return data.map(user => ({
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role
+          })) as Profile[];
         }
         
         return [];
@@ -71,7 +77,7 @@ export const useAdminInstructors = () => {
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
-          asRpcParam({ status_param: 'active' }, 'get_instructors_with_profiles')
+          { status_param: 'active' }
         );
         
         if (error) {
@@ -96,7 +102,7 @@ export const useAdminInstructors = () => {
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
-          asRpcParam({ status_param: 'pending' }, 'get_instructors_with_profiles')
+          { status_param: 'pending' }
         );
         
         if (error) {
@@ -121,7 +127,7 @@ export const useAdminInstructors = () => {
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
-          asRpcParam({ status_param: 'inactive' }, 'get_instructors_with_profiles')
+          { status_param: 'inactive' }
         );
         
         if (error) {
@@ -142,7 +148,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update(asUpdateParam({ status: 'active' }, 'instructors'))
+        .update({ status: 'active' })
         .eq('id', instructorId);
 
       if (error) throw error;
@@ -162,7 +168,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update(asUpdateParam({ status: 'declined' }, 'instructors'))
+        .update({ status: 'declined' })
         .eq('id', instructorId);
 
       if (error) throw error;
@@ -182,7 +188,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update(asUpdateParam({ status: 'inactive' }, 'instructors'))
+        .update({ status: 'inactive' })
         .eq('id', instructorId);
 
       if (error) throw error;
@@ -202,7 +208,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update(asUpdateParam({ status: 'active' }, 'instructors'))
+        .update({ status: 'active' })
         .eq('id', instructorId);
 
       if (error) throw error;
@@ -225,11 +231,11 @@ export const useAdminInstructors = () => {
       try {
         const { data, error } = await supabase.rpc(
           'admin_create_instructor',
-          asRpcParam({
+          {
             user_id: userId,
             initial_status: 'pending',
             initial_hourly_rate: 25
-          }, 'admin_create_instructor')
+          }
         );
           
         if (error) {

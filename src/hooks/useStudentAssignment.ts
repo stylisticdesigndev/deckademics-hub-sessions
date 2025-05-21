@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { asDatabaseParam, asInsertParam } from '@/utils/supabaseHelpers';
+import { asDatabaseParam, asInsertParam, isDataObject } from '@/utils/supabaseHelpers';
 
 export interface StudentForAssignment {
   id: string;
@@ -27,11 +27,12 @@ export function useStudentAssignment() {
         setLoading(true);
         
         // Get all students with active enrollment status
-        const { data: students, error: studentsError } = await supabase
+        const { data: studentsData, error: studentsError } = await supabase
           .from('students')
           .select(`
             id,
             level,
+            enrollment_status,
             profiles:id (
               first_name,
               last_name,
@@ -45,15 +46,48 @@ export function useStudentAssignment() {
           return [];
         }
 
+        console.log('Fetched students data:', studentsData);
+
         // Transform the data to match the StudentForAssignment interface
-        const formattedStudents: StudentForAssignment[] = students.map(student => ({
-          id: student.id,
-          first_name: student.profiles?.first_name || null,
-          last_name: student.profiles?.last_name || null,
-          email: student.profiles?.email || '',
-          level: student.level || 'beginner',
-          instructorId: null // Will be populated when we fetch enrollments
-        }));
+        const formattedStudents: StudentForAssignment[] = studentsData
+          .filter(student => isDataObject(student) && student.id)
+          .map(student => ({
+            id: student.id,
+            first_name: student.profiles?.first_name || null,
+            last_name: student.profiles?.last_name || null,
+            email: student.profiles?.email || '',
+            level: student.level || 'beginner',
+            instructorId: null // Will be populated when we fetch enrollments
+          }));
+
+        // Fetch existing enrollments to filter out students already assigned to instructors
+        const { data: enrollmentsData, error: enrollmentsError } = await supabase
+          .from('enrollments')
+          .select('student_id, instructor_id')
+          .eq('status', 'active');
+
+        if (enrollmentsError) {
+          console.error('Error fetching enrollments:', enrollmentsError);
+        } else if (enrollmentsData && enrollmentsData.length > 0) {
+          // Create a map of student_id -> instructor_id
+          const studentInstructorMap = new Map();
+          enrollmentsData.forEach(enrollment => {
+            if (enrollment.student_id && enrollment.instructor_id) {
+              studentInstructorMap.set(enrollment.student_id, enrollment.instructor_id);
+            }
+          });
+          
+          // Filter out students that already have instructors assigned
+          return formattedStudents.filter(student => {
+            const hasInstructor = studentInstructorMap.has(student.id);
+            // If student has an instructor, store it for reference
+            if (hasInstructor) {
+              student.instructorId = studentInstructorMap.get(student.id);
+            }
+            // Only return students without instructors
+            return !hasInstructor;
+          });
+        }
 
         return formattedStudents;
       } catch (error) {

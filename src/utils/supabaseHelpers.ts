@@ -1,218 +1,91 @@
 
 /**
- * Type guard utility functions for Supabase query results
+ * Helper functions to safely access and handle Supabase data types
  */
-import { PostgrestError } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
-
-export type UUID = string;
 
 /**
- * Type guard to check if an object is a Supabase error
+ * Checks if a value is a non-null object (not an array)
  */
-export function isSupabaseError(obj: any): obj is PostgrestError {
-  return obj && 
-         typeof obj === 'object' && 
-         'code' in obj && 
-         'message' in obj;
+export function isDataObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
- * Type guard to check if an object is not an error response from Supabase
+ * Checks if an object has a specific property
  */
-export function isDataObject<T extends object>(obj: any): obj is T {
-  return obj && 
-         typeof obj === 'object' && 
-         !isSupabaseError(obj);
+export function hasProperty<K extends string>(obj: object, prop: K): obj is { [P in K]: unknown } {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
 /**
- * Type guard to check if object has a specific property
+ * Safely accesses a property on an object with type checking
  */
-export function hasProperty<T extends object, K extends string>(
-  obj: T, 
-  prop: K
-): obj is T & Record<K, unknown> {
-  return isDataObject(obj) && prop in obj;
-}
-
-/**
- * Safely access properties from Supabase query results that might be errors
- * @param obj The object to safely access property from
- * @param key The property key to access
- * @param defaultValue Optional default value if property doesn't exist
- */
-export function safelyAccessProperty<T, K extends keyof any, D = undefined>(
-  obj: any,
-  key: K,
-  defaultValue?: D
-): T | D | undefined {
-  if (!obj || isSupabaseError(obj) || !(key in obj)) {
-    return defaultValue;
-  }
-  return obj[key] as T;
-}
-
-/**
- * Safe type casting for UUID fields in Supabase queries
- * This function provides proper typing for UUID values
- */
-export function asUUID(id: string): UUID {
-  return id as UUID;
-}
-
-/**
- * Safely convert a string to UUID
- * Returns undefined if id is null or undefined
- */
-export function asOptionalUUID(id: string | null | undefined): UUID | undefined {
-  if (!id) return undefined;
-  return id as UUID;
-}
-
-/**
- * Convert an array of values to UUIDs for Supabase queries
- */
-export function asUUIDArray(ids: string[]): UUID[] {
-  return ids.map(id => id as UUID);
-}
-
-/**
- * Type for common Supabase data with profiles
- */
-export interface ProfileData {
-  first_name?: string;
-  last_name?: string;
-}
-
-/**
- * Safely process an array of items from Supabase, filtering out any errors
- * and providing proper type handling
- */
-export function processSafeItems<T extends object, R = T>(
-  items: any[] | null | undefined,
-  mapFn?: (item: T) => R
-): R[] {
-  if (!items || !Array.isArray(items)) return [];
-  
-  const validItems = items.filter(item => isDataObject<T>(item)) as T[];
-  
-  if (mapFn) {
-    return validItems.map(mapFn);
+export function safelyAccessProperty<T, K extends string>(obj: unknown, prop: K): T | undefined {
+  if (!isDataObject(obj)) {
+    return undefined;
   }
   
-  return validItems as unknown as R[];
+  if (!hasProperty(obj, prop)) {
+    return undefined;
+  }
+  
+  return obj[prop] as T;
 }
 
 /**
- * Get the table name from a Database type (for TypeScript only)
+ * Type-safe way to create parameters for database update operations
  */
-export type TableNames = keyof Database['public']['Tables'];
-
-/**
- * Checks if a value is present (not null or undefined)
- */
-export function isPresent<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
+export function asUpdateParam<T>(data: Record<string, any>, tableName?: string): T {
+  return data as T;
 }
 
 /**
- * Helper to cast a value as a database type
+ * Type-safe way to create parameters for database insert operations
  */
-export function asDbType<T>(value: any): T {
+export function asInsertParam<T>(data: Record<string, any>, tableName?: string): T {
+  return data as T;
+}
+
+/**
+ * Type-safe way to create parameters for RPC calls
+ */
+export function asRpcParam<T>(data: Record<string, any>, functionName?: string): T {
+  return data as T;
+}
+
+/**
+ * Type-safe way to handle RPC results
+ */
+export function asRpcResult<T>(data: unknown): T {
+  return data as T;
+}
+
+/**
+ * Type-safe way to handle profile data
+ */
+export function asProfile<T>(data: unknown): T {
+  return data as T;
+}
+
+/**
+ * Type-safe way to create a database filter parameter
+ */
+export function asDatabaseParam<T>(value: any): T {
   return value as T;
 }
 
 /**
- * Helper function to safely type cast database fields to avoid TypeScript errors
- * when working with Supabase's strongly typed client
+ * Type-safe way to handle stringified JSON data
  */
-export function asDatabaseParam(value: any): any {
-  return value as any;
-}
-
-/**
- * Helper function to extract profile data from nested objects
- * This is useful when Supabase returns different structures for the same query
- */
-export function extractProfileData(profileData: any): { firstName: string, lastName: string, email?: string } {
-  // Handle array format (sometimes returned by Supabase)
-  if (Array.isArray(profileData)) {
-    return {
-      firstName: profileData[0]?.first_name || '',
-      lastName: profileData[0]?.last_name || '',
-      email: profileData[0]?.email
-    };
+export function parseJson<T>(jsonString: string | null | undefined, defaultValue: T): T {
+  if (!jsonString) {
+    return defaultValue;
   }
   
-  // Handle object format
-  if (profileData && typeof profileData === 'object') {
-    return {
-      firstName: profileData.first_name || '',
-      lastName: profileData.last_name || '',
-      email: profileData.email
-    };
+  try {
+    return JSON.parse(jsonString) as T;
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    return defaultValue;
   }
-  
-  // Default empty values
-  return { firstName: '', lastName: '' };
-}
-
-/**
- * Helper for type-safe database inserts
- */
-export function asInsertParam<T extends TableNames>(
-  value: any,
-  _table?: T // Table name is only used for TypeScript inference
-): Database['public']['Tables'][T]['Insert'] {
-  return value as any;
-}
-
-/**
- * Helper for type-safe database updates
- */
-export function asUpdateParam<T extends TableNames>(
-  value: any,
-  _table?: T // Table name is only used for TypeScript inference
-): Database['public']['Tables'][T]['Update'] {
-  return value as any;
-}
-
-/**
- * Helper for working with RPC functions
- */
-export function asRpcParam<T extends keyof Database['public']['Functions']>(
-  value: any,
-  _function?: T // Function name is only used for TypeScript inference
-): Parameters<Database['public']['Functions'][T]>[0] {
-  return value as any;
-}
-
-/**
- * Helper for using RPC function return types
- */
-export function asRpcResult<T extends keyof Database['public']['Functions']>(
-  value: any,
-  _function?: T // Function name is only used for TypeScript inference
-): ReturnType<Database['public']['Functions'][T]> {
-  return value as any;
-}
-
-/**
- * Safely cast a profile object to the expected structure
- */
-export function asProfile(value: any): {
-  id: string;
-  email: string;
-  first_name: string | null;
-  last_name: string | null;
-  role: string;
-} {
-  return {
-    id: value?.id || '',
-    email: value?.email || '',
-    first_name: value?.first_name || null,
-    last_name: value?.last_name || null,
-    role: value?.role || 'student'
-  };
 }
