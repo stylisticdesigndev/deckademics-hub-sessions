@@ -33,7 +33,7 @@ export const useAppSettings = () => {
         throw error;
       }
 
-      return data as AppSettings;
+      return data as unknown as AppSettings;
     }
   });
 
@@ -44,8 +44,8 @@ export const useAppSettings = () => {
         .update({
           ...newSettings,
           updated_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .eq('id', settings?.id)
+        } as any)
+        .eq('id', settings?.id as any)
         .select()
         .single();
 

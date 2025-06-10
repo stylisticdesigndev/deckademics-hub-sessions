@@ -147,7 +147,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update({ status: 'active' as any })
+        .update({ status: 'active' } as any)
         .eq('id', instructorId as any);
 
       if (error) throw error;
@@ -167,7 +167,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update({ status: 'declined' as any })
+        .update({ status: 'declined' } as any)
         .eq('id', instructorId as any);
 
       if (error) throw error;
@@ -187,7 +187,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update({ status: 'inactive' as any })
+        .update({ status: 'inactive' } as any)
         .eq('id', instructorId as any);
 
       if (error) throw error;
@@ -207,7 +207,7 @@ export const useAdminInstructors = () => {
     mutationFn: async (instructorId: string) => {
       const { error } = await supabase
         .from('instructors')
-        .update({ status: 'active' as any })
+        .update({ status: 'active' } as any)
         .eq('id', instructorId as any);
 
       if (error) throw error;

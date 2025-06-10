@@ -75,43 +75,46 @@ export const useAdminStudents = () => {
 
       console.log('Raw active students data:', data);
 
-      return (data || [])
-        .filter(student => student && typeof student === 'object')
-        .map(student => {
-          // Add type guards for safe property access
-          if (!student || typeof student !== 'object') return null;
-          
-          const id = (student as any).id;
-          const level = (student as any).level || 'beginner';
-          const enrollment_status = (student as any).enrollment_status;
-          const instructor_id = (student as any).instructor_id;
-          const profiles = (student as any).profiles as any;
-          const instructors = (student as any).instructors as any;
+      const students: StudentWithProfile[] = [];
+      
+      if (data && Array.isArray(data)) {
+        for (const student of data) {
+          if (student && typeof student === 'object') {
+            const studentObj = student as any;
+            const id = studentObj.id;
+            const level = studentObj.level || 'beginner';
+            const enrollment_status = studentObj.enrollment_status;
+            const instructor_id = studentObj.instructor_id;
+            const profiles = studentObj.profiles;
+            const instructors = studentObj.instructors;
 
-          if (!id) return null;
+            if (id && profiles) {
+              students.push({
+                id,
+                level,
+                enrollment_status,
+                instructor_id,
+                profile: {
+                  first_name: profiles.first_name,
+                  last_name: profiles.last_name,
+                  email: profiles.email || ''
+                },
+                instructor: instructors ? {
+                  id: instructors.id,
+                  status: instructors.status,
+                  profile: {
+                    first_name: instructors.profiles?.first_name,
+                    last_name: instructors.profiles?.last_name,
+                    email: instructors.profiles?.email || ''
+                  }
+                } : undefined
+              });
+            }
+          }
+        }
+      }
 
-          return {
-            id,
-            level,
-            enrollment_status,
-            instructor_id,
-            profile: {
-              first_name: profiles?.first_name,
-              last_name: profiles?.last_name,
-              email: profiles?.email || ''
-            },
-            instructor: instructors ? {
-              id: instructors.id,
-              status: instructors.status,
-              profile: {
-                first_name: instructors.profiles?.first_name,
-                last_name: instructors.profiles?.last_name,
-                email: instructors.profiles?.email || ''
-              }
-            } : undefined
-          };
-        })
-        .filter(Boolean) as StudentWithProfile[];
+      return students;
     } catch (error) {
       console.error('Error in fetchActiveStudents:', error);
       return [];
@@ -145,33 +148,36 @@ export const useAdminStudents = () => {
 
       console.log('Raw pending students data:', data);
 
-      return (data || [])
-        .filter(student => student && typeof student === 'object')
-        .map(student => {
-          // Add type guards for safe property access
-          if (!student || typeof student !== 'object') return null;
-          
-          const id = (student as any).id;
-          const level = (student as any).level || 'beginner';
-          const enrollment_status = (student as any).enrollment_status;
-          const instructor_id = (student as any).instructor_id;
-          const profiles = (student as any).profiles as any;
+      const students: StudentWithProfile[] = [];
+      
+      if (data && Array.isArray(data)) {
+        for (const student of data) {
+          if (student && typeof student === 'object') {
+            const studentObj = student as any;
+            const id = studentObj.id;
+            const level = studentObj.level || 'beginner';
+            const enrollment_status = studentObj.enrollment_status;
+            const instructor_id = studentObj.instructor_id;
+            const profiles = studentObj.profiles;
 
-          if (!id) return null;
-
-          return {
-            id,
-            level,
-            enrollment_status,
-            instructor_id,
-            profile: {
-              first_name: profiles?.first_name,
-              last_name: profiles?.last_name,
-              email: profiles?.email || ''
+            if (id && profiles) {
+              students.push({
+                id,
+                level,
+                enrollment_status,
+                instructor_id,
+                profile: {
+                  first_name: profiles.first_name,
+                  last_name: profiles.last_name,
+                  email: profiles.email || ''
+                }
+              });
             }
-          };
-        })
-        .filter(Boolean) as StudentWithProfile[];
+          }
+        }
+      }
+
+      return students;
     } catch (error) {
       console.error('Error in fetchPendingStudents:', error);
       return [];
@@ -223,7 +229,7 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'active' as any })
+        .update({ enrollment_status: 'active' } as any)
         .eq('id', studentId as any);
 
       if (error) throw error;
@@ -243,7 +249,7 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'declined' as any })
+        .update({ enrollment_status: 'declined' } as any)
         .eq('id', studentId as any);
 
       if (error) throw error;
@@ -263,7 +269,7 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'inactive' as any })
+        .update({ enrollment_status: 'inactive' } as any)
         .eq('id', studentId as any);
 
       if (error) throw error;

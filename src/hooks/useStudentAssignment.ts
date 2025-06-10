@@ -39,7 +39,7 @@ export const useStudentAssignment = () => {
           )
         `)
         .eq('enrollment_status', 'active' as any)
-        .is('instructor_id', null); // Only get students without instructors
+        .is('instructor_id', null);
 
       if (error) {
         console.error('Error fetching unassigned students:', error);
@@ -49,32 +49,32 @@ export const useStudentAssignment = () => {
 
       console.log('Raw unassigned students data:', students);
 
-      // Transform the data to match our interface
-      const studentsList = (students || [])
-        .filter(student => student && student.profiles && typeof student === 'object')
-        .map(student => {
-          // Add type guards for safe property access
-          if (!student || typeof student !== 'object') return null;
-          
-          const id = (student as any).id;
-          const level = (student as any).level || 'beginner';
-          const enrollment_status = (student as any).enrollment_status;
-          const instructor_id = (student as any).instructor_id;
-          const profiles = (student as any).profiles as any;
+      const studentsList: StudentForAssignment[] = [];
 
-          if (!id || !profiles) return null;
+      if (students && Array.isArray(students)) {
+        for (const student of students) {
+          if (student && typeof student === 'object') {
+            const studentObj = student as any;
+            const id = studentObj.id;
+            const level = studentObj.level || 'beginner';
+            const enrollment_status = studentObj.enrollment_status;
+            const instructor_id = studentObj.instructor_id;
+            const profiles = studentObj.profiles;
 
-          return {
-            id,
-            level,
-            enrollment_status,
-            instructor_id,
-            first_name: profiles?.first_name || '',
-            last_name: profiles?.last_name || '',
-            email: profiles?.email || ''
-          };
-        })
-        .filter(Boolean) as StudentForAssignment[];
+            if (id && profiles) {
+              studentsList.push({
+                id,
+                level,
+                enrollment_status,
+                instructor_id,
+                first_name: profiles.first_name || '',
+                last_name: profiles.last_name || '',
+                email: profiles.email || ''
+              });
+            }
+          }
+        }
+      }
 
       console.log('Transformed unassigned students:', studentsList);
       return studentsList;

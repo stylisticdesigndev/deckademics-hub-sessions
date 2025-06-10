@@ -15,8 +15,8 @@ interface InstructorData {
 }
 
 export interface InstructorPayment {
-  id: string; // Changed from number to string to match Supabase's UUID
-  instructorId?: string; // Changed from number to string to match Supabase's UUID
+  id: string;
+  instructorId?: string;
   instructorName: string;
   hourlyRate: number;
   hoursLogged: number;
@@ -62,28 +62,47 @@ export const useInstructorPayments = () => {
         throw error;
       }
 
-      return paymentsData.map(payment => {
-        // Safely access nested properties
-        const instructors = payment.instructors as InstructorData;
-        const instructorProfile = instructors?.profiles?.[0] as InstructorProfile;
-        
-        const firstName = instructorProfile?.first_name || '';
-        const lastName = instructorProfile?.last_name || '';
-        const hourlyRate = instructors?.hourly_rate || 0;
+      const processedPayments: InstructorPayment[] = [];
 
-        return {
-          id: payment.id,
-          instructorId: payment.instructor_id,
-          instructorName: `${firstName} ${lastName}`.trim(),
-          hourlyRate: hourlyRate,
-          hoursLogged: payment.hours_worked || 0,
-          totalAmount: payment.amount,
-          payPeriodStart: payment.payment_date,
-          payPeriodEnd: payment.payment_date, // You might want to add an end_date field in your DB
-          status: payment.status as 'pending' | 'paid',
-          lastUpdated: payment.payment_date
-        };
-      }) as InstructorPayment[];
+      if (paymentsData && Array.isArray(paymentsData)) {
+        for (const payment of paymentsData) {
+          if (payment && typeof payment === 'object') {
+            const paymentObj = payment as any;
+            const instructors = paymentObj.instructors as InstructorData;
+            const instructorProfile = instructors?.profiles?.[0] as InstructorProfile;
+            
+            const firstName = instructorProfile?.first_name || '';
+            const lastName = instructorProfile?.last_name || '';
+            const hourlyRate = instructors?.hourly_rate || 0;
+
+            const id = paymentObj.id;
+            const instructor_id = paymentObj.instructor_id;
+            const hours_worked = paymentObj.hours_worked || 0;
+            const amount = paymentObj.amount;
+            const payment_date = paymentObj.payment_date;
+            const payment_date2 = paymentObj.payment_date;
+            const status = paymentObj.status as 'pending' | 'paid';
+            const payment_date3 = paymentObj.payment_date;
+
+            if (id) {
+              processedPayments.push({
+                id,
+                instructorId: instructor_id,
+                instructorName: `${firstName} ${lastName}`.trim(),
+                hourlyRate: hourlyRate,
+                hoursLogged: hours_worked,
+                totalAmount: amount,
+                payPeriodStart: payment_date,
+                payPeriodEnd: payment_date2,
+                status,
+                lastUpdated: payment_date3
+              });
+            }
+          }
+        }
+      }
+
+      return processedPayments;
     }
   });
 
