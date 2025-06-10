@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { InstructorNavigation } from "@/components/navigation/InstructorNavigation";
@@ -328,6 +327,16 @@ const InstructorStudents = () => {
     if (student) {
       setSelectedStudent(studentId);
       setProgressValue(student.progress);
+      setShowProgressDialog(true);
+    }
+  };
+
+  const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setSelectedStudent(studentId);
+      setSelectedModule(module);
+      setProgressValue(module.progress);
       setShowProgressDialog(true);
     }
   };
