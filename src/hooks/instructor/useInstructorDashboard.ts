@@ -40,10 +40,11 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   const [totalStudents, setTotalStudents] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  const instructorId = userData.user?.id;
+  const instructorId = userData?.user?.id || userData?.profile?.id;
   
   const fetchDashboardData = useCallback(async () => {
     if (!instructorId) {
+      console.log("No instructor ID found");
       setLoading(false);
       return;
     }
@@ -70,7 +71,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         throw studentsError;
       }
       
-      console.log("Assigned students:", assignedStudents);
+      console.log("Assigned students raw data:", assignedStudents);
       
       if (assignedStudents && Array.isArray(assignedStudents) && assignedStudents.length > 0) {
         // Get progress data for these students
@@ -82,9 +83,12 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           .map(student => student.id as string)
           .filter(Boolean);
         
+        console.log("Student IDs to fetch progress for:", studentIds);
+        
+        let progressData: any[] = [];
         if (studentIds.length > 0) {
           // Get student progress
-          const { data: progressData, error: progressError } = await supabase
+          const { data: progress, error: progressError } = await supabase
             .from('student_progress')
             .select('student_id, proficiency')
             .in('student_id', studentIds);
@@ -92,61 +96,68 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           if (progressError) {
             console.error("Error fetching student progress:", progressError);
             // Don't throw here, just log and continue without progress data
-          }
-          
-          // Process and format student data
-          const formattedStudents = assignedStudents
-            .filter(student => 
-              isDataObject(student) && 
-              hasProperty(student, 'id') && 
-              hasProperty(student, 'profiles')
-            )
-            .map(student => {
-              const studentData = student as unknown as StudentData;
-              const progress = progressData && Array.isArray(progressData) ? progressData : [];
-              
-              // Filter progress data for this student and get average
-              const studentProgress = progress
-                .filter(p => 
-                  isDataObject(p) && 
-                  hasProperty(p, 'student_id') && 
-                  hasProperty(p, 'proficiency') && 
-                  p.student_id === student.id
-                );
-                
-              const averageStudentProgress = studentProgress.length > 0 
-                ? Math.round(studentProgress.reduce((sum, p) => {
-                    return sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? 
-                      (Number(p.proficiency) || 0) : 0);
-                  }, 0) / studentProgress.length)
-                : 0;
-                
-              // Get profile data
-              const studentProfile = studentData?.profiles;
-              const firstName = studentProfile?.first_name || '';
-              const lastName = studentProfile?.last_name || '';
-              
-              return {
-                id: student.id as string,
-                name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
-                progress: averageStudentProgress,
-                level: studentData?.level || 'Beginner',
-                hasNotes: !!studentData?.notes
-              };
-            })
-            .filter(Boolean) as Student[];
-          
-          setStudents(formattedStudents);
-          setTotalStudents(formattedStudents.length);
-          
-          // Calculate average progress
-          if (formattedStudents.length > 0) {
-            const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
-            setAverageProgress(Math.round(totalProgress / formattedStudents.length));
+          } else {
+            progressData = progress || [];
           }
         }
+        
+        console.log("Progress data:", progressData);
+        
+        // Process and format student data
+        const formattedStudents = assignedStudents
+          .filter(student => 
+            isDataObject(student) && 
+            hasProperty(student, 'id') && 
+            hasProperty(student, 'profiles')
+          )
+          .map(student => {
+            const studentData = student as unknown as StudentData;
+            
+            // Filter progress data for this student and get average
+            const studentProgress = progressData
+              .filter(p => 
+                isDataObject(p) && 
+                hasProperty(p, 'student_id') && 
+                hasProperty(p, 'proficiency') && 
+                p.student_id === student.id
+              );
+              
+            const averageStudentProgress = studentProgress.length > 0 
+              ? Math.round(studentProgress.reduce((sum, p) => {
+                  return sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? 
+                    (Number(p.proficiency) || 0) : 0);
+                }, 0) / studentProgress.length)
+              : 0;
+              
+            // Get profile data
+            const studentProfile = studentData?.profiles;
+            const firstName = studentProfile?.first_name || '';
+            const lastName = studentProfile?.last_name || '';
+            
+            return {
+              id: student.id as string,
+              name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
+              progress: averageStudentProgress,
+              level: studentData?.level || 'Beginner',
+              hasNotes: !!studentData?.notes
+            };
+          })
+          .filter(Boolean) as Student[];
+        
+        console.log("Formatted students:", formattedStudents);
+        
+        setStudents(formattedStudents);
+        setTotalStudents(formattedStudents.length);
+        
+        // Calculate average progress
+        if (formattedStudents.length > 0) {
+          const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
+          setAverageProgress(Math.round(totalProgress / formattedStudents.length));
+        } else {
+          setAverageProgress(0);
+        }
       } else {
-        console.log("Instructor has no directly assigned students");
+        console.log("No students assigned to this instructor");
         setStudents([]);
         setTotalStudents(0);
         setAverageProgress(0);
@@ -166,6 +177,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         // Don't throw here, just log and continue
       } else {
         setTodayClasses(count || 0);
+        console.log("Today's classes count:", count);
       }
       
     } catch (error: any) {
@@ -183,8 +195,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   
   useEffect(() => {
     if (instructorId) {
+      console.log("useEffect triggered, fetching data for instructor:", instructorId);
       fetchDashboardData();
     } else {
+      console.log("No instructor ID, setting loading to false");
       setLoading(false);
     }
   }, [fetchDashboardData]);
