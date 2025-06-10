@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, User, Check } from 'lucide-react';
+import { Search, Filter, X, Edit } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -23,7 +23,6 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { StudentNoteDialog } from '@/components/notes/StudentNoteDialog';
 import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
@@ -336,11 +335,31 @@ const InstructorStudents = () => {
     if (!selectedStudent) return;
 
     try {
-      // Note: Since progress is calculated from student_progress table,
-      // we would need to update that table instead of the students table directly
-      // For now, we'll just update the local state as the original did
-      // In a real application, you'd want to insert/update records in student_progress table
-      
+      // Insert or update student progress record
+      const { error } = await supabase
+        .from('student_progress')
+        .upsert({
+          student_id: selectedStudent,
+          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+          skill_name: 'Overall Progress',
+          proficiency: progressValue,
+          assessment_date: new Date().toISOString(),
+          assessor_id: instructorId
+        }, {
+          onConflict: 'student_id,skill_name'
+        });
+
+      if (error) {
+        console.error('Error updating progress:', error);
+        toast({
+          title: "Error updating progress",
+          description: "Failed to save progress to database. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state only after successful database update
       setStudents(prevStudents => prevStudents.map(student => 
         student.id === selectedStudent ? { ...student, progress: progressValue } : student
       ));
@@ -349,13 +368,13 @@ const InstructorStudents = () => {
       
       toast({
         title: "Progress updated",
-        description: "Student progress has been successfully updated.",
+        description: "Student progress has been successfully saved.",
       });
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error('Unexpected error updating progress:', error);
       toast({
         title: "Error updating progress",
-        description: "Failed to update progress. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -371,79 +390,156 @@ const InstructorStudents = () => {
     }
   };
 
-  const handleModuleProgressUpdate = () => {
+  const handleModuleProgressUpdate = async () => {
     if (!selectedStudent || !selectedModule) return;
 
-    setStudents(prevStudents => prevStudents.map(student => {
-      if (student.id === selectedStudent && student.moduleProgress) {
-        const updatedModules = student.moduleProgress.map(module => 
-          module.moduleId === selectedModule.moduleId 
-            ? { ...module, progress: progressValue } 
-            : module
-        );
-        
-        const totalModules = updatedModules.length;
-        const overallProgress = Math.round(
-          updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
-        );
-        
-        return { 
-          ...student, 
-          moduleProgress: updatedModules,
-          progress: overallProgress
-        };
+    try {
+      // Save module progress to database
+      const { error } = await supabase
+        .from('student_progress')
+        .upsert({
+          student_id: selectedStudent,
+          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+          skill_name: selectedModule.moduleName,
+          proficiency: progressValue,
+          assessment_date: new Date().toISOString(),
+          assessor_id: instructorId
+        }, {
+          onConflict: 'student_id,skill_name'
+        });
+
+      if (error) {
+        console.error('Error updating module progress:', error);
+        toast({
+          title: "Error updating module progress",
+          description: "Failed to save module progress to database. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
-      return student;
-    }));
-    
-    setShowProgressDialog(false);
-    setSelectedModule(null);
-    
-    toast({
-      title: "Module progress updated",
-      description: "Student module progress has been successfully updated.",
-    });
+
+      // Update local state only after successful database update
+      setStudents(prevStudents => prevStudents.map(student => {
+        if (student.id === selectedStudent && student.moduleProgress) {
+          const updatedModules = student.moduleProgress.map(module => 
+            module.moduleId === selectedModule.moduleId 
+              ? { ...module, progress: progressValue } 
+              : module
+          );
+          
+          const totalModules = updatedModules.length;
+          const overallProgress = Math.round(
+            updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
+          );
+          
+          return { 
+            ...student, 
+            moduleProgress: updatedModules,
+            progress: overallProgress
+          };
+        }
+        return student;
+      }));
+      
+      setShowProgressDialog(false);
+      setSelectedModule(null);
+      
+      toast({
+        title: "Module progress updated",
+        description: "Student module progress has been successfully saved.",
+      });
+    } catch (error) {
+      console.error('Unexpected error updating module progress:', error);
+      toast({
+        title: "Error updating module progress",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const toggleLessonCompletion = (studentId: string, moduleId: string, lessonId: string) => {
-    setStudents(prevStudents => prevStudents.map(student => {
-      if (student.id === studentId && student.moduleProgress) {
-        const updatedModules = student.moduleProgress.map(module => {
-          if (module.moduleId === moduleId) {
-            const updatedLessons = module.lessons.map(lesson => 
-              lesson.id === lessonId ? { ...lesson, completed: !lesson.completed } : lesson
-            );
-            
-            const completedLessons = updatedLessons.filter(lesson => lesson.completed).length;
-            const moduleProgress = Math.round((completedLessons / updatedLessons.length) * 100);
-            
-            return { 
-              ...module, 
-              lessons: updatedLessons,
-              progress: moduleProgress
-            };
-          }
-          return module;
+  const toggleLessonCompletion = async (studentId: string, moduleId: string, lessonId: string) => {
+    try {
+      // Get current lesson state to toggle it
+      const student = students.find(s => s.id === studentId);
+      const module = student?.moduleProgress?.find(m => m.moduleId === moduleId);
+      const lesson = module?.lessons.find(l => l.id === lessonId);
+      
+      if (!lesson) return;
+
+      const newCompletionState = !lesson.completed;
+
+      // Save lesson completion to database
+      const { error } = await supabase
+        .from('student_progress')
+        .upsert({
+          student_id: studentId,
+          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+          skill_name: `${module?.moduleName} - ${lesson.title}`,
+          proficiency: newCompletionState ? 100 : 0,
+          assessment_date: new Date().toISOString(),
+          assessor_id: instructorId
+        }, {
+          onConflict: 'student_id,skill_name'
         });
-        
-        const totalModules = updatedModules.length;
-        const overallProgress = Math.round(
-          updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
-        );
-        
-        return { 
-          ...student, 
-          moduleProgress: updatedModules,
-          progress: overallProgress
-        };
+
+      if (error) {
+        console.error('Error updating lesson completion:', error);
+        toast({
+          title: "Error updating lesson",
+          description: "Failed to save lesson completion to database. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
-      return student;
-    }));
-    
-    toast({
-      title: "Lesson status updated",
-      description: "Student lesson status has been successfully updated.",
-    });
+
+      // Update local state only after successful database update
+      setStudents(prevStudents => prevStudents.map(student => {
+        if (student.id === studentId && student.moduleProgress) {
+          const updatedModules = student.moduleProgress.map(module => {
+            if (module.moduleId === moduleId) {
+              const updatedLessons = module.lessons.map(lesson => 
+                lesson.id === lessonId ? { ...lesson, completed: newCompletionState } : lesson
+              );
+              
+              const completedLessons = updatedLessons.filter(lesson => lesson.completed).length;
+              const moduleProgress = Math.round((completedLessons / updatedLessons.length) * 100);
+              
+              return { 
+                ...module, 
+                lessons: updatedLessons,
+                progress: moduleProgress
+              };
+            }
+            return module;
+          });
+          
+          const totalModules = updatedModules.length;
+          const overallProgress = Math.round(
+            updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
+          );
+          
+          return { 
+            ...student, 
+            moduleProgress: updatedModules,
+            progress: overallProgress
+          };
+        }
+        return student;
+      }));
+      
+      toast({
+        title: "Lesson status updated",
+        description: "Student lesson status has been successfully saved.",
+      });
+    } catch (error) {
+      console.error('Unexpected error updating lesson completion:', error);
+      toast({
+        title: "Error updating lesson",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
