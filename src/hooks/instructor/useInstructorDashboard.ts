@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,16 +40,23 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   const [totalStudents, setTotalStudents] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  const instructorId = userData?.user?.id || userData?.profile?.id;
+  // Use ref to track if request is in progress to prevent multiple simultaneous requests
+  const requestInProgress = useRef(false);
+  
+  // Memoize instructor ID to prevent unnecessary re-renders
+  const instructorId = useMemo(() => {
+    return userData?.user?.id || userData?.profile?.id;
+  }, [userData?.user?.id, userData?.profile?.id]);
   
   const fetchDashboardData = useCallback(async () => {
-    if (!instructorId) {
-      console.log("No instructor ID found");
+    if (!instructorId || requestInProgress.current) {
+      console.log("No instructor ID or request already in progress");
       setLoading(false);
       return;
     }
 
     try {
+      requestInProgress.current = true;
       setLoading(true);
       setFetchError(null);
       
@@ -183,15 +190,19 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
     } catch (error: any) {
       console.error('Error fetching instructor dashboard data:', error);
       setFetchError(error.message || 'Failed to load dashboard data');
-      toast({
-        title: 'Error fetching data',
-        description: error.message || 'An error occurred while fetching dashboard data',
-        variant: 'destructive',
-      });
+      // Toast error without including it in dependencies
+      setTimeout(() => {
+        toast({
+          title: 'Error fetching data',
+          description: error.message || 'An error occurred while fetching dashboard data',
+          variant: 'destructive',
+        });
+      }, 0);
     } finally {
       setLoading(false);
+      requestInProgress.current = false;
     }
-  }, [instructorId, toast]);
+  }, [instructorId]); // Only depend on instructorId, not toast
   
   useEffect(() => {
     if (instructorId) {
@@ -201,6 +212,11 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       console.log("No instructor ID, setting loading to false");
       setLoading(false);
     }
+    
+    // Cleanup function to cancel any pending requests
+    return () => {
+      requestInProgress.current = false;
+    };
   }, [fetchDashboardData]);
 
   return {
