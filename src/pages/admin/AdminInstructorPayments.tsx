@@ -84,8 +84,8 @@ const AdminInstructorPayments = () => {
       // Update payment status in the database
       const { error } = await supabase
         .from('instructor_payments')
-        .update({ status: 'paid' })
-        .eq('id', paymentId);
+        .update({ status: 'paid' } as any)
+        .eq('id', paymentId as any);
       
       if (error) throw error;
       
@@ -128,8 +128,8 @@ const AdminInstructorPayments = () => {
       // Update instructor's hourly rate in the database
       const { error } = await supabase
         .from('instructors')
-        .update({ hourly_rate: rate })
-        .eq('id', selectedInstructor.id);
+        .update({ hourly_rate: rate } as any)
+        .eq('id', selectedInstructor.id as any);
       
       if (error) throw error;
       
@@ -177,8 +177,8 @@ const AdminInstructorPayments = () => {
         .update({ 
           hours_worked: newHours,
           amount: newTotal,
-        })
-        .eq('id', editPaymentId);
+        } as any)
+        .eq('id', editPaymentId as any);
       
       if (error) throw error;
       

@@ -17,9 +17,7 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-    },
-    // Only enable debug mode in development
-    debug: import.meta.env.DEV
+    }
   }
 );
 

@@ -1,61 +1,44 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/providers/AuthProvider';
-import { processSafeItems, safelyAccessProperty } from '@/utils/supabaseHelpers';
 
-export interface StudentProgressItem {
+export interface StudentProgress {
   id: string;
-  skillName: string;
+  skill_name: string;
   proficiency: number;
+  assessment_date: string;
   notes?: string;
-  assessmentDate: string;
 }
 
-export const useStudentProgress = (studentId?: string) => {
-  const { session } = useAuth();
-  const currentUserId = session?.user?.id;
-  
-  // Use the provided studentId (for instructor view) or current user id (for student view)
-  const targetStudentId = studentId || currentUserId;
+export const useStudentProgress = (studentId: string) => {
+  return useQuery({
+    queryKey: ['student-progress', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      
+      try {
+        const { data, error } = await supabase
+          .from('student_progress')
+          .select('*')
+          .eq('student_id', studentId as any);
 
-  const fetchStudentProgress = async () => {
-    if (!targetStudentId) {
-      console.error("No student ID available for progress fetch");
-      return [];
-    }
+        if (error) {
+          console.error('Error fetching student progress:', error);
+          throw error;
+        }
 
-    const { data, error } = await supabase
-      .from('student_progress')
-      .select('*')
-      .eq('student_id', targetStudentId);
-
-    if (error) {
-      console.error("Error fetching student progress:", error);
-      throw new Error(`Failed to load progress data: ${error.message}`);
-    }
-
-    return processSafeItems(data || [], (item): StudentProgressItem => {
-      return {
-        id: safelyAccessProperty<string, 'id'>(item, 'id') || '',
-        skillName: safelyAccessProperty<string, 'skill_name'>(item, 'skill_name') || 'Unknown Skill',
-        proficiency: safelyAccessProperty<number, 'proficiency'>(item, 'proficiency') || 0,
-        notes: safelyAccessProperty<string, 'notes'>(item, 'notes'),
-        assessmentDate: safelyAccessProperty<string, 'assessment_date'>(item, 'assessment_date') || ''
-      };
-    });
-  };
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['student', targetStudentId, 'progress'],
-    queryFn: fetchStudentProgress,
-    enabled: !!targetStudentId,
-    staleTime: 5 * 60 * 1000 // 5 minutes
+        return (data || []).map((item: any) => ({
+          id: item.id,
+          skill_name: item.skill_name || '',
+          proficiency: item.proficiency || 0,
+          assessment_date: item.assessment_date || '',
+          notes: item.notes || ''
+        })) as StudentProgress[];
+      } catch (error) {
+        console.error('Error in student progress query:', error);
+        return [];
+      }
+    },
+    enabled: !!studentId
   });
-
-  return {
-    progressItems: data || [],
-    isLoading,
-    error
-  };
 };
