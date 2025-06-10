@@ -66,7 +66,7 @@ export const useAdminStudents = () => {
             )
           )
         `)
-        .eq('enrollment_status', 'active');
+        .eq('enrollment_status', 'active' as any);
 
       if (error) {
         console.error('Error fetching active students:', error);
@@ -78,14 +78,23 @@ export const useAdminStudents = () => {
       return (data || [])
         .filter(student => student && typeof student === 'object')
         .map(student => {
-          const profiles = student.profiles as any;
-          const instructors = student.instructors as any;
+          // Add type guards for safe property access
+          if (!student || typeof student !== 'object') return null;
+          
+          const id = (student as any).id;
+          const level = (student as any).level || 'beginner';
+          const enrollment_status = (student as any).enrollment_status;
+          const instructor_id = (student as any).instructor_id;
+          const profiles = (student as any).profiles as any;
+          const instructors = (student as any).instructors as any;
+
+          if (!id) return null;
 
           return {
-            id: student.id,
-            level: student.level || 'beginner',
-            enrollment_status: student.enrollment_status,
-            instructor_id: student.instructor_id,
+            id,
+            level,
+            enrollment_status,
+            instructor_id,
             profile: {
               first_name: profiles?.first_name,
               last_name: profiles?.last_name,
@@ -101,7 +110,8 @@ export const useAdminStudents = () => {
               }
             } : undefined
           };
-        });
+        })
+        .filter(Boolean) as StudentWithProfile[];
     } catch (error) {
       console.error('Error in fetchActiveStudents:', error);
       return [];
@@ -126,7 +136,7 @@ export const useAdminStudents = () => {
             email
           )
         `)
-        .eq('enrollment_status', 'pending');
+        .eq('enrollment_status', 'pending' as any);
 
       if (error) {
         console.error('Error fetching pending students:', error);
@@ -138,20 +148,30 @@ export const useAdminStudents = () => {
       return (data || [])
         .filter(student => student && typeof student === 'object')
         .map(student => {
-          const profiles = student.profiles as any;
+          // Add type guards for safe property access
+          if (!student || typeof student !== 'object') return null;
+          
+          const id = (student as any).id;
+          const level = (student as any).level || 'beginner';
+          const enrollment_status = (student as any).enrollment_status;
+          const instructor_id = (student as any).instructor_id;
+          const profiles = (student as any).profiles as any;
+
+          if (!id) return null;
 
           return {
-            id: student.id,
-            level: student.level || 'beginner',
-            enrollment_status: student.enrollment_status,
-            instructor_id: student.instructor_id,
+            id,
+            level,
+            enrollment_status,
+            instructor_id,
             profile: {
               first_name: profiles?.first_name,
               last_name: profiles?.last_name,
               email: profiles?.email || ''
             }
           };
-        });
+        })
+        .filter(Boolean) as StudentWithProfile[];
     } catch (error) {
       console.error('Error in fetchPendingStudents:', error);
       return [];
@@ -203,8 +223,8 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'active' })
-        .eq('id', studentId);
+        .update({ enrollment_status: 'active' as any })
+        .eq('id', studentId as any);
 
       if (error) throw error;
       return { success: true, studentId };
@@ -223,8 +243,8 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'declined' })
-        .eq('id', studentId);
+        .update({ enrollment_status: 'declined' as any })
+        .eq('id', studentId as any);
 
       if (error) throw error;
       return { success: true, studentId };
@@ -243,8 +263,8 @@ export const useAdminStudents = () => {
     mutationFn: async (studentId: string) => {
       const { error } = await supabase
         .from('students')
-        .update({ enrollment_status: 'inactive' })
-        .eq('id', studentId);
+        .update({ enrollment_status: 'inactive' as any })
+        .eq('id', studentId as any);
 
       if (error) throw error;
       return { success: true, studentId };

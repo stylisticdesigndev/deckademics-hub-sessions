@@ -85,7 +85,7 @@ export const useAdminAttendance = () => {
             start_time
           )
         `)
-        .eq('status', 'missed');
+        .eq('status', 'missed' as any);
 
       if (error) throw error;
 
@@ -93,13 +93,16 @@ export const useAdminAttendance = () => {
       const transformedData = (attendanceData || [])
         .filter(record => record && typeof record === 'object')
         .map(record => {
-          const id = record.id;
-          const student_id = record.student_id;
-          const date = record.date;
-          const status = record.status as AttendanceStatus;
-          const notes = record.notes;
-          const students = record.students as any;
-          const classes = record.classes as any;
+          // Add type guards to safely access properties
+          if (!record || typeof record !== 'object') return null;
+          
+          const id = (record as any).id;
+          const student_id = (record as any).student_id;
+          const date = (record as any).date;
+          const status = (record as any).status as AttendanceStatus;
+          const notes = (record as any).notes;
+          const students = (record as any).students as any;
+          const classes = (record as any).classes as any;
           
           if (!id || !student_id || !date || !status) return null;
           
@@ -131,29 +134,35 @@ export const useAdminAttendance = () => {
         const { data: makeupData } = await supabase
           .from('attendance')
           .select('date')
-          .eq('student_id', record.studentId)
-          .eq('status', 'makeup')
+          .eq('student_id', record.studentId as any)
+          .eq('status', 'makeup' as any)
           .gt('date', record.classDate.toISOString())
           .order('date', { ascending: true })
           .limit(1);
 
         if (makeupData && makeupData.length > 0) {
-          const dateValue = makeupData[0]?.date;
-          if (dateValue) {
-            record.makeupDate = new Date(dateValue);
-            
-            if (new Date() > record.makeupDate) {
-              // If the makeup date has passed, check if they attended
-              const { data: attendedData } = await supabase
-                .from('attendance')
-                .select('status')
-                .eq('student_id', record.studentId)
-                .eq('date', format(record.makeupDate, 'yyyy-MM-dd'));
+          const makeupRecord = makeupData[0];
+          if (makeupRecord && typeof makeupRecord === 'object' && 'date' in makeupRecord) {
+            const dateValue = (makeupRecord as any).date;
+            if (dateValue) {
+              record.makeupDate = new Date(dateValue);
               
-              if (attendedData && attendedData.length > 0) {
-                const statusValue = attendedData[0]?.status;
-                if (statusValue === 'attended') {
-                  record.status = 'made-up';
+              if (new Date() > record.makeupDate) {
+                // If the makeup date has passed, check if they attended
+                const { data: attendedData } = await supabase
+                  .from('attendance')
+                  .select('status')
+                  .eq('student_id', record.studentId as any)
+                  .eq('date', format(record.makeupDate, 'yyyy-MM-dd') as any);
+                
+                if (attendedData && attendedData.length > 0) {
+                  const attendedRecord = attendedData[0];
+                  if (attendedRecord && typeof attendedRecord === 'object' && 'status' in attendedRecord) {
+                    const statusValue = (attendedRecord as any).status;
+                    if (statusValue === 'attended') {
+                      record.status = 'made-up';
+                    }
+                  }
                 }
               }
             }
@@ -170,8 +179,8 @@ export const useAdminAttendance = () => {
     mutationFn: async ({ studentId, attendanceId, status }: { studentId: string, attendanceId: string, status: AttendanceStatus }) => {
       const { error } = await supabase
         .from('attendance')
-        .update({ status })
-        .eq('id', attendanceId);
+        .update({ status: status as any })
+        .eq('id', attendanceId as any);
 
       if (error) throw error;
     },
@@ -191,24 +200,28 @@ export const useAdminAttendance = () => {
       const { data: missedAttendance, error: fetchError } = await supabase
         .from('attendance')
         .select('class_id')
-        .eq('id', missedClassId)
+        .eq('id', missedClassId as any)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const class_id = missedAttendance?.class_id;
+      if (!missedAttendance || typeof missedAttendance !== 'object' || !('class_id' in missedAttendance)) {
+        throw new Error("Could not find class_id for makeup scheduling");
+      }
+
+      const class_id = (missedAttendance as any).class_id;
       if (!class_id) throw new Error("Could not find class_id for makeup scheduling");
 
       // Create a new attendance record for the makeup class using the same class_id
       const { error } = await supabase
         .from('attendance')
         .insert({
-          student_id: studentId,
+          student_id: studentId as any,
           class_id: class_id,
-          date: format(date, 'yyyy-MM-dd'),
-          status: 'makeup',
+          date: format(date, 'yyyy-MM-dd') as any,
+          status: 'makeup' as any,
           notes: `Makeup class for missed class on ${missedClassId}`
-        });
+        } as any);
 
       if (error) throw error;
     },
@@ -236,18 +249,18 @@ export const useAdminAttendance = () => {
     
     // Count missed classes
     const missedCount = weeklyAttendance.filter(record => 
-      record && typeof record === 'object' && 'status' in record && record.status === 'missed'
+      record && typeof record === 'object' && 'status' in record && (record as any).status === 'missed'
     ).length;
     
     // Count scheduled makeups
     const scheduledMakeups = weeklyAttendance.filter(record => 
-      record && typeof record === 'object' && 'status' in record && record.status === 'makeup'
+      record && typeof record === 'object' && 'status' in record && (record as any).status === 'makeup'
     ).length;
     
     // Calculate attendance rate
     const attendedClasses = weeklyAttendance.filter(record =>
       record && typeof record === 'object' && 'status' in record && 
-      (record.status === 'attended' || record.status === 'made-up')
+      ((record as any).status === 'attended' || (record as any).status === 'made-up')
     ).length;
     
     const attendanceRate = totalClasses > 0 

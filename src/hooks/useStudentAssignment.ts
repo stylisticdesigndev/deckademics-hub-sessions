@@ -38,7 +38,7 @@ export const useStudentAssignment = () => {
             email
           )
         `)
-        .eq('enrollment_status', 'active')
+        .eq('enrollment_status', 'active' as any)
         .is('instructor_id', null); // Only get students without instructors
 
       if (error) {
@@ -53,17 +53,28 @@ export const useStudentAssignment = () => {
       const studentsList = (students || [])
         .filter(student => student && student.profiles && typeof student === 'object')
         .map(student => {
-          const profiles = student.profiles as any;
+          // Add type guards for safe property access
+          if (!student || typeof student !== 'object') return null;
+          
+          const id = (student as any).id;
+          const level = (student as any).level || 'beginner';
+          const enrollment_status = (student as any).enrollment_status;
+          const instructor_id = (student as any).instructor_id;
+          const profiles = (student as any).profiles as any;
+
+          if (!id || !profiles) return null;
+
           return {
-            id: student.id,
-            level: student.level || 'beginner',
-            enrollment_status: student.enrollment_status,
-            instructor_id: student.instructor_id,
+            id,
+            level,
+            enrollment_status,
+            instructor_id,
             first_name: profiles?.first_name || '',
             last_name: profiles?.last_name || '',
             email: profiles?.email || ''
           };
-        });
+        })
+        .filter(Boolean) as StudentForAssignment[];
 
       console.log('Transformed unassigned students:', studentsList);
       return studentsList;
