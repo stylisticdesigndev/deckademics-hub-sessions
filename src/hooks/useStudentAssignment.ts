@@ -2,7 +2,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { asInsertParam, asUpdateParam, asDatabaseParam } from '@/utils/supabaseHelpers';
 
 export interface StudentForAssignment {
   id: string;
@@ -51,17 +50,20 @@ export const useStudentAssignment = () => {
       console.log('Raw unassigned students data:', students);
 
       // Transform the data to match our interface
-      const studentsList = students
-        .filter(student => student.profiles && student.profiles.length > 0)
-        .map(student => ({
-          id: student.id,
-          level: student.level || 'beginner',
-          enrollment_status: student.enrollment_status,
-          instructor_id: student.instructor_id,
-          first_name: student.profiles[0]?.first_name || '',
-          last_name: student.profiles[0]?.last_name || '',
-          email: student.profiles[0]?.email || ''
-        }));
+      const studentsList = (students || [])
+        .filter(student => student && student.profiles && typeof student === 'object')
+        .map(student => {
+          const profiles = student.profiles as any;
+          return {
+            id: student.id,
+            level: student.level || 'beginner',
+            enrollment_status: student.enrollment_status,
+            instructor_id: student.instructor_id,
+            first_name: profiles?.first_name || '',
+            last_name: profiles?.last_name || '',
+            email: profiles?.email || ''
+          };
+        });
 
       console.log('Transformed unassigned students:', studentsList);
       return studentsList;
@@ -94,8 +96,8 @@ export const useStudentAssignment = () => {
       const updates = studentIds.map(async (studentId) => {
         const { data, error } = await supabase
           .rpc('assign_student_to_instructor', {
-            student_id: asDatabaseParam<string>(studentId),
-            instructor_id: asDatabaseParam<string>(instructorId)
+            student_id: studentId,
+            instructor_id: instructorId
           });
 
         if (error) {

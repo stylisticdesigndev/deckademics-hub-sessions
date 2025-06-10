@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
-import { asProfile, asRpcParam, asRpcResult, asUpdateParam } from '@/utils/supabaseHelpers';
 
 interface Profile {
   id: string;
@@ -76,26 +75,33 @@ export const useAdminStudents = () => {
 
       console.log('Raw active students data:', data);
 
-      return (data || []).map(student => ({
-        id: student.id,
-        level: student.level || 'beginner',
-        enrollment_status: student.enrollment_status,
-        instructor_id: student.instructor_id,
-        profile: {
-          first_name: student.profiles?.first_name,
-          last_name: student.profiles?.last_name,
-          email: student.profiles?.email || ''
-        },
-        instructor: student.instructors ? {
-          id: student.instructors.id,
-          status: student.instructors.status,
-          profile: {
-            first_name: student.instructors.profiles?.first_name,
-            last_name: student.instructors.profiles?.last_name,
-            email: student.instructors.profiles?.email || ''
-          }
-        } : undefined
-      }));
+      return (data || [])
+        .filter(student => student && typeof student === 'object')
+        .map(student => {
+          const profiles = student.profiles as any;
+          const instructors = student.instructors as any;
+
+          return {
+            id: student.id,
+            level: student.level || 'beginner',
+            enrollment_status: student.enrollment_status,
+            instructor_id: student.instructor_id,
+            profile: {
+              first_name: profiles?.first_name,
+              last_name: profiles?.last_name,
+              email: profiles?.email || ''
+            },
+            instructor: instructors ? {
+              id: instructors.id,
+              status: instructors.status,
+              profile: {
+                first_name: instructors.profiles?.first_name,
+                last_name: instructors.profiles?.last_name,
+                email: instructors.profiles?.email || ''
+              }
+            } : undefined
+          };
+        });
     } catch (error) {
       console.error('Error in fetchActiveStudents:', error);
       return [];
@@ -129,17 +135,23 @@ export const useAdminStudents = () => {
 
       console.log('Raw pending students data:', data);
 
-      return (data || []).map(student => ({
-        id: student.id,
-        level: student.level || 'beginner',
-        enrollment_status: student.enrollment_status,
-        instructor_id: student.instructor_id,
-        profile: {
-          first_name: student.profiles?.first_name,
-          last_name: student.profiles?.last_name,
-          email: student.profiles?.email || ''
-        }
-      }));
+      return (data || [])
+        .filter(student => student && typeof student === 'object')
+        .map(student => {
+          const profiles = student.profiles as any;
+
+          return {
+            id: student.id,
+            level: student.level || 'beginner',
+            enrollment_status: student.enrollment_status,
+            instructor_id: student.instructor_id,
+            profile: {
+              first_name: profiles?.first_name,
+              last_name: profiles?.last_name,
+              email: profiles?.email || ''
+            }
+          };
+        });
     } catch (error) {
       console.error('Error in fetchPendingStudents:', error);
       return [];
