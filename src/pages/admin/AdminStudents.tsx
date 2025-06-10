@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import { StudentAssignmentDialog } from '@/components/admin/student-assignment/StudentAssignmentDialog';
 import {
   Card,
   CardContent,
@@ -430,15 +431,22 @@ const AdminStudents = () => {
                               <div className="flex justify-end gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => {}}
-                                      className="h-8 w-8"
-                                      disabled={processingStudentId === student.id}
+                                    <StudentAssignmentDialog
+                                      instructorId={student.instructor?.id || ''}
+                                      instructorName={student.instructor ? 
+                                        `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
+                                        'Select Instructor'
+                                      }
                                     >
-                                      <UserRound className="h-4 w-4" />
-                                    </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        disabled={processingStudentId === student.id}
+                                      >
+                                        <UserRound className="h-4 w-4" />
+                                      </Button>
+                                    </StudentAssignmentDialog>
                                   </TooltipTrigger>
                                   <TooltipContent>
                                     <p>Assign Instructor</p>

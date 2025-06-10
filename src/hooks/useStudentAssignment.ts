@@ -10,6 +10,8 @@ export interface StudentForAssignment {
   last_name: string;
   email: string;
   level: string;
+  enrollment_status: string;
+  instructor_id?: string;
 }
 
 interface AssignStudentsParams {
@@ -20,45 +22,48 @@ interface AssignStudentsParams {
 export const useStudentAssignment = () => {
   const queryClient = useQueryClient();
 
-  // Function to fetch unassigned students
+  // Function to fetch unassigned students (students without an instructor)
   const fetchUnassignedStudents = async (): Promise<StudentForAssignment[]> => {
     console.log('Fetching unassigned students...');
     try {
-      // First get active students from students table
-      const { data: activeStudents, error: studentsError } = await supabase
+      const { data: students, error } = await supabase
         .from('students')
         .select(`
           id,
           level,
+          enrollment_status,
+          instructor_id,
           profiles (
             first_name,
             last_name,
             email
           )
         `)
-        .eq('enrollment_status', asDatabaseParam<string>('active'));
+        .eq('enrollment_status', 'active')
+        .is('instructor_id', null); // Only get students without instructors
 
-      if (studentsError) {
-        console.error('Error fetching active students:', studentsError);
+      if (error) {
+        console.error('Error fetching unassigned students:', error);
         toast.error('Failed to load unassigned students');
-        throw studentsError;
+        throw error;
       }
 
-      // Log raw data for debugging
-      console.log('Raw active students data:', activeStudents);
+      console.log('Raw unassigned students data:', students);
 
-      // Transform the data to match our StudentForAssignment interface
-      // and filter out students with existing instructors
-      const studentsList = activeStudents
+      // Transform the data to match our interface
+      const studentsList = students
         .filter(student => student.profiles && student.profiles.length > 0)
         .map(student => ({
           id: student.id,
           level: student.level || 'beginner',
+          enrollment_status: student.enrollment_status,
+          instructor_id: student.instructor_id,
           first_name: student.profiles[0]?.first_name || '',
           last_name: student.profiles[0]?.last_name || '',
           email: student.profiles[0]?.email || ''
         }));
 
+      console.log('Transformed unassigned students:', studentsList);
       return studentsList;
     } catch (err) {
       console.error('Error in fetchUnassignedStudents:', err);
@@ -85,8 +90,7 @@ export const useStudentAssignment = () => {
         throw new Error('Missing instructor ID or student IDs');
       }
 
-      // Create a junction table entry or update student records
-      // This is a simplified example - in a real application you might have a proper students_instructors junction table
+      // Use the database function to assign each student
       const updates = studentIds.map(async (studentId) => {
         const { data, error } = await supabase
           .rpc('assign_student_to_instructor', {
@@ -114,6 +118,7 @@ export const useStudentAssignment = () => {
       // Refetch relevant data
       queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     },
     onError: (error: any) => {
       console.error('Error assigning students:', error);

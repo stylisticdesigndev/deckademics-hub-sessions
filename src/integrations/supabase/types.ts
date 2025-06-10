@@ -548,6 +548,7 @@ export type Database = {
         Row: {
           enrollment_status: string | null
           id: string
+          instructor_id: string | null
           level: string | null
           notes: string | null
           start_date: string | null
@@ -555,6 +556,7 @@ export type Database = {
         Insert: {
           enrollment_status?: string | null
           id: string
+          instructor_id?: string | null
           level?: string | null
           notes?: string | null
           start_date?: string | null
@@ -562,6 +564,7 @@ export type Database = {
         Update: {
           enrollment_status?: string | null
           id?: string
+          instructor_id?: string | null
           level?: string | null
           notes?: string | null
           start_date?: string | null
@@ -572,6 +575,13 @@ export type Database = {
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
             referencedColumns: ["id"]
           },
         ]
@@ -587,6 +597,10 @@ export type Database = {
           initial_status: string
           initial_hourly_rate: number
         }
+        Returns: Json
+      }
+      assign_student_to_instructor: {
+        Args: { student_id: string; instructor_id: string }
         Returns: Json
       }
       create_demo_student: {
