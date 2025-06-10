@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { InstructorNavigation } from "@/components/navigation/InstructorNavigation";
@@ -335,28 +336,56 @@ const InstructorStudents = () => {
     if (!selectedStudent) return;
 
     try {
-      // Insert or update student progress record
-      const { error } = await supabase
+      // Check if a progress record already exists for this student and skill
+      const { data: existingProgress } = await supabase
         .from('student_progress')
-        .upsert({
-          student_id: selectedStudent,
-          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
-          skill_name: 'Overall Progress',
-          proficiency: progressValue,
-          assessment_date: new Date().toISOString(),
-          assessor_id: instructorId
-        }, {
-          onConflict: 'student_id,skill_name'
-        });
+        .select('id')
+        .eq('student_id', selectedStudent)
+        .eq('skill_name', 'Overall Progress')
+        .single();
 
-      if (error) {
-        console.error('Error updating progress:', error);
-        toast({
-          title: "Error updating progress",
-          description: "Failed to save progress to database. Please try again.",
-          variant: "destructive",
-        });
-        return;
+      if (existingProgress) {
+        // Update existing record
+        const { error } = await supabase
+          .from('student_progress')
+          .update({
+            proficiency: progressValue,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          })
+          .eq('id', existingProgress.id);
+
+        if (error) {
+          console.error('Error updating progress:', error);
+          toast({
+            title: "Error updating progress",
+            description: "Failed to save progress to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('student_progress')
+          .insert({
+            student_id: selectedStudent,
+            course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+            skill_name: 'Overall Progress',
+            proficiency: progressValue,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          });
+
+        if (error) {
+          console.error('Error inserting progress:', error);
+          toast({
+            title: "Error updating progress",
+            description: "Failed to save progress to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Update local state only after successful database update
@@ -380,42 +409,60 @@ const InstructorStudents = () => {
     }
   };
 
-  const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
-    const student = students.find(s => s.id === studentId);
-    if (student) {
-      setSelectedStudent(studentId);
-      setSelectedModule(module);
-      setProgressValue(module.progress);
-      setShowProgressDialog(true);
-    }
-  };
-
   const handleModuleProgressUpdate = async () => {
     if (!selectedStudent || !selectedModule) return;
 
     try {
-      // Save module progress to database
-      const { error } = await supabase
+      // Check if a progress record already exists for this student and module
+      const { data: existingProgress } = await supabase
         .from('student_progress')
-        .upsert({
-          student_id: selectedStudent,
-          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
-          skill_name: selectedModule.moduleName,
-          proficiency: progressValue,
-          assessment_date: new Date().toISOString(),
-          assessor_id: instructorId
-        }, {
-          onConflict: 'student_id,skill_name'
-        });
+        .select('id')
+        .eq('student_id', selectedStudent)
+        .eq('skill_name', selectedModule.moduleName)
+        .single();
 
-      if (error) {
-        console.error('Error updating module progress:', error);
-        toast({
-          title: "Error updating module progress",
-          description: "Failed to save module progress to database. Please try again.",
-          variant: "destructive",
-        });
-        return;
+      if (existingProgress) {
+        // Update existing record
+        const { error } = await supabase
+          .from('student_progress')
+          .update({
+            proficiency: progressValue,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          })
+          .eq('id', existingProgress.id);
+
+        if (error) {
+          console.error('Error updating module progress:', error);
+          toast({
+            title: "Error updating module progress",
+            description: "Failed to save module progress to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('student_progress')
+          .insert({
+            student_id: selectedStudent,
+            course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+            skill_name: selectedModule.moduleName,
+            proficiency: progressValue,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          });
+
+        if (error) {
+          console.error('Error inserting module progress:', error);
+          toast({
+            title: "Error updating module progress",
+            description: "Failed to save module progress to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Update local state only after successful database update
@@ -468,29 +515,58 @@ const InstructorStudents = () => {
       if (!lesson) return;
 
       const newCompletionState = !lesson.completed;
+      const skillName = `${module?.moduleName} - ${lesson.title}`;
 
-      // Save lesson completion to database
-      const { error } = await supabase
+      // Check if a progress record already exists for this lesson
+      const { data: existingProgress } = await supabase
         .from('student_progress')
-        .upsert({
-          student_id: studentId,
-          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
-          skill_name: `${module?.moduleName} - ${lesson.title}`,
-          proficiency: newCompletionState ? 100 : 0,
-          assessment_date: new Date().toISOString(),
-          assessor_id: instructorId
-        }, {
-          onConflict: 'student_id,skill_name'
-        });
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('skill_name', skillName)
+        .single();
 
-      if (error) {
-        console.error('Error updating lesson completion:', error);
-        toast({
-          title: "Error updating lesson",
-          description: "Failed to save lesson completion to database. Please try again.",
-          variant: "destructive",
-        });
-        return;
+      if (existingProgress) {
+        // Update existing record
+        const { error } = await supabase
+          .from('student_progress')
+          .update({
+            proficiency: newCompletionState ? 100 : 0,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          })
+          .eq('id', existingProgress.id);
+
+        if (error) {
+          console.error('Error updating lesson completion:', error);
+          toast({
+            title: "Error updating lesson",
+            description: "Failed to save lesson completion to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('student_progress')
+          .insert({
+            student_id: studentId,
+            course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+            skill_name: skillName,
+            proficiency: newCompletionState ? 100 : 0,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          });
+
+        if (error) {
+          console.error('Error inserting lesson completion:', error);
+          toast({
+            title: "Error updating lesson",
+            description: "Failed to save lesson completion to database. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Update local state only after successful database update
