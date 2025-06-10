@@ -28,6 +28,18 @@ interface ModuleProgress {
   }[];
 }
 
+interface StudentWithProfile {
+  id: string;
+  level: string;
+  start_date: string;
+  profiles: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar_url: string;
+  };
+}
+
 export function useInstructorStudentsSimple(instructorId: string | undefined) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +64,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             start_date,
             profiles!inner(first_name, last_name, email, avatar_url)
           `)
-          .eq('instructor_id', instructorId);
+          .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
           
         if (studentsError) {
           console.error('Error fetching students:', studentsError);
