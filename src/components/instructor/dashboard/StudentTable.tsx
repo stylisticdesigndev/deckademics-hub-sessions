@@ -79,7 +79,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                   <TableRow 
                     key={student.id}
                     className="cursor-pointer hover:bg-muted/60"
-                    onClick={() => navigate(`/instructor/students/${student.id}`)}
+                    onClick={() => navigate('/instructor/students')}
                   >
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>
