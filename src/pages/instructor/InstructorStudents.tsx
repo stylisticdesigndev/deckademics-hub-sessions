@@ -60,7 +60,7 @@ const InstructorStudents = () => {
   const instructorId = session?.user?.id;
 
   // Use the simplified hook to fetch students
-  const { students: fetchedStudents, loading } = useInstructorStudentsSimple(instructorId);
+  const { students: fetchedStudents, loading, refetch, setStudents: updateStudents } = useInstructorStudentsSimple(instructorId);
   
   const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -205,13 +205,30 @@ const InstructorStudents = () => {
     if (!selectedStudent || !noteText.trim()) return;
     
     try {
+      console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId);
+      
       const currentDate = new Date();
       const formattedDate = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getDate()}`;
       const newNote = `${formattedDate}: ${noteText}`;
       
-      // Get current notes from the student
-      const currentStudent = students.find(s => s.id === selectedStudent);
-      const currentNotes = currentStudent?.notes || [];
+      // Get current notes from database first
+      const { data: currentStudentData, error: fetchError } = await supabase
+        .from('students')
+        .select('notes')
+        .eq('id', selectedStudent)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching current notes:', fetchError);
+        toast({
+          title: "Error fetching notes",
+          description: `Failed to fetch current notes: ${fetchError.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const currentNotes = currentStudentData?.notes ? currentStudentData.notes.split('\n').filter(note => note.trim()) : [];
       const updatedNotes = [newNote, ...currentNotes];
       
       // Update in database
@@ -224,18 +241,16 @@ const InstructorStudents = () => {
         console.error('Error updating student notes:', error);
         toast({
           title: "Error saving note",
-          description: "Failed to save note. Please try again.",
+          description: `Failed to save note: ${error.message}. Check permissions.`,
           variant: "destructive",
         });
         return;
       }
 
-      // Update local state
-      setStudents(prevStudents => prevStudents.map(student => 
-        student.id === selectedStudent 
-          ? { ...student, notes: updatedNotes } 
-          : student
-      ));
+      console.log('Note saved successfully, refreshing data...');
+      
+      // Refresh data from database to ensure consistency
+      refetch();
       
       setShowNoteDialog(false);
       setSelectedStudent(null);
@@ -249,7 +264,7 @@ const InstructorStudents = () => {
       console.error('Unexpected error saving note:', error);
       toast({
         title: "Error saving note",
-        description: "An unexpected error occurred. Please try again.",
+        description: `An unexpected error occurred: ${error}`,
         variant: "destructive",
       });
     }
@@ -369,11 +384,16 @@ const InstructorStudents = () => {
           console.error('Error updating progress:', error);
           toast({
             title: "Error updating progress",
-            description: "Failed to save progress to database. Please try again.",
+            description: `Failed to update progress: ${error.message}`,
             variant: "destructive",
           });
           return;
         }
+
+        console.log('Progress updated successfully, refreshing data...');
+        
+        // Refresh data from database to ensure consistency
+        refetch();
       } else {
         // Insert new record - convert percentage to proficiency scale (1-10)  
         const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
@@ -391,12 +411,17 @@ const InstructorStudents = () => {
         if (error) {
           console.error('Error inserting progress:', error);
           toast({
-            title: "Error updating progress",
-            description: "Failed to save progress to database. Please try again.",
+            title: "Error inserting progress", 
+            description: `Failed to create progress record: ${error.message}`,
             variant: "destructive",
           });
           return;
         }
+
+        console.log('Progress inserted successfully, refreshing data...');
+        
+        // Refresh data from database to ensure consistency
+        refetch();
       }
 
       // Update local state only after successful database update

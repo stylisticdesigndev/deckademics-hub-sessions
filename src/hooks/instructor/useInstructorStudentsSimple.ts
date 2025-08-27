@@ -44,13 +44,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchStudents = async () => {
     if (!instructorId) {
       setLoading(false);
       return;
     }
-
-    const fetchStudents = async () => {
       setLoading(true);
       try {
         console.log('Fetching students for instructor:', instructorId);
@@ -130,8 +128,13 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
       setLoading(false);
     };
 
+  useEffect(() => {
     fetchStudents();
   }, [instructorId]);
 
-  return { students, loading };
+  const refetch = () => {
+    fetchStudents();
+  };
+
+  return { students, loading, refetch, setStudents };
 }
