@@ -204,9 +204,9 @@ const InstructorStudents = () => {
   const handleAddNote = async () => {
     if (!selectedStudent || !noteText.trim()) return;
     
+    console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
+    
     try {
-      console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId);
-      
       const currentDate = new Date();
       const formattedDate = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getDate()}`;
       const newNote = `${formattedDate}: ${noteText}`;
@@ -222,35 +222,36 @@ const InstructorStudents = () => {
         console.error('Error fetching current notes:', fetchError);
         toast({
           title: "Error fetching notes",
-          description: `Failed to fetch current notes: ${fetchError.message}`,
+          description: `Failed to fetch current notes: ${fetchError.message}. Check database connection.`,
           variant: "destructive",
         });
         return;
       }
       
+      console.log('Current student data:', currentStudentData);
       const currentNotes = currentStudentData?.notes ? currentStudentData.notes.split('\n').filter(note => note.trim()) : [];
       const updatedNotes = [newNote, ...currentNotes];
       
+      console.log('Updating notes from:', currentNotes, 'to:', updatedNotes);
+      
       // Update in database
-      const { error } = await supabase
+      const { data: updateResult, error } = await supabase
         .from('students')
         .update({ notes: updatedNotes.join('\n') })
-        .eq('id', selectedStudent);
+        .eq('id', selectedStudent)
+        .select('notes');
 
       if (error) {
         console.error('Error updating student notes:', error);
         toast({
           title: "Error saving note",
-          description: `Failed to save note: ${error.message}. Check permissions.`,
+          description: `Failed to save note: ${error.message}. RLS Policy: ${error.hint || 'Check instructor permissions'}`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Note saved successfully, refreshing data...');
-      
-      // Refresh data from database to ensure consistency
-      refetch();
+      console.log('Note saved successfully, update result:', updateResult);
       
       setShowNoteDialog(false);
       setSelectedStudent(null);
@@ -258,8 +259,15 @@ const InstructorStudents = () => {
       
       toast({
         title: "Note added",
-        description: "Your note has been saved successfully.",
+        description: `Your note has been saved successfully: "${newNote}"`,
       });
+
+      // Refresh data from database with a small delay to ensure consistency
+      setTimeout(() => {
+        console.log('Refreshing student data after note update...');
+        refetch();
+      }, 500);
+
     } catch (error) {
       console.error('Unexpected error saving note:', error);
       toast({
@@ -359,18 +367,42 @@ const InstructorStudents = () => {
   const handleProgressUpdate = async () => {
     if (!selectedStudent) return;
 
+    console.log('Updating progress for student:', selectedStudent, 'Progress value:', progressValue, 'Instructor:', instructorId);
+
     try {
+      // First get a valid course_id from the courses table
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (courseError) {
+        console.error('Error fetching course:', courseError);
+        // Use a fallback - try to create without course_id if needed
+      }
+
+      const courseId = courseData?.id || '04e2bb7f-e11c-44e0-8153-399b93923e3b';
+
       // Check if a progress record already exists for this student and skill
       const { data: existingProgress, error: selectError } = await supabase
         .from('student_progress')
-        .select('id')
+        .select('id, proficiency')
         .eq('student_id', selectedStudent)
         .eq('skill_name', 'Overall Progress')
         .maybeSingle();
 
+      if (selectError) {
+        console.error('Error checking existing progress:', selectError);
+      }
+
+      // Convert percentage (0-100) to proficiency scale (1-10) - ensure proper conversion
+      const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10) || 1));
+      console.log('Converting progress:', progressValue, '% to proficiency:', proficiencyValue);
+
       if (existingProgress) {
-        // Update existing record - convert percentage to proficiency scale (1-10)
-        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
+        console.log('Updating existing progress record:', existingProgress.id);
+        // Update existing record
         const { error } = await supabase
           .from('student_progress')
           .update({
@@ -384,47 +416,44 @@ const InstructorStudents = () => {
           console.error('Error updating progress:', error);
           toast({
             title: "Error updating progress",
-            description: `Failed to update progress: ${error.message}`,
+            description: `Failed to update progress: ${error.message}. Check database permissions.`,
             variant: "destructive",
           });
           return;
         }
 
-        console.log('Progress updated successfully, refreshing data...');
-        
-        // Refresh data from database to ensure consistency
-        refetch();
+        console.log('Progress updated successfully');
       } else {
-        // Insert new record - convert percentage to proficiency scale (1-10)  
-        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
+        console.log('Creating new progress record');
+        // Insert new record
+        const insertData = {
+          student_id: selectedStudent,
+          course_id: courseId,
+          skill_name: 'Overall Progress',
+          proficiency: proficiencyValue,
+          assessment_date: new Date().toISOString(),
+          assessor_id: instructorId
+        };
+        console.log('Inserting progress data:', insertData);
+
         const { error } = await supabase
           .from('student_progress')
-          .insert({
-            student_id: selectedStudent,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
-            skill_name: 'Overall Progress',
-            proficiency: proficiencyValue,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          });
+          .insert(insertData);
 
         if (error) {
           console.error('Error inserting progress:', error);
           toast({
-            title: "Error inserting progress", 
-            description: `Failed to create progress record: ${error.message}`,
+            title: "Error saving progress", 
+            description: `Failed to create progress record: ${error.message}. Check database permissions.`,
             variant: "destructive",
           });
           return;
         }
 
-        console.log('Progress inserted successfully, refreshing data...');
-        
-        // Refresh data from database to ensure consistency
-        refetch();
+        console.log('Progress inserted successfully');
       }
 
-      // Update local state only after successful database update
+      // Update local state immediately for better UX
       setStudents(prevStudents => prevStudents.map(student => 
         student.id === selectedStudent ? { ...student, progress: progressValue } : student
       ));
@@ -433,13 +462,20 @@ const InstructorStudents = () => {
       
       toast({
         title: "Progress updated",
-        description: "Student progress has been successfully saved.",
+        description: `Student progress has been successfully saved (${progressValue}%).`,
       });
+
+      // Refresh data from database with a small delay to ensure consistency
+      setTimeout(() => {
+        console.log('Refreshing student data after progress update...');
+        refetch();
+      }, 500);
+
     } catch (error) {
       console.error('Unexpected error updating progress:', error);
       toast({
         title: "Error updating progress",
-        description: "An unexpected error occurred. Please try again.",
+        description: `An unexpected error occurred: ${error}. Please try again.`,
         variant: "destructive",
       });
     }
