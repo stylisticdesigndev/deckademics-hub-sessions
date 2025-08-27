@@ -129,11 +129,12 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 p.student_id === student.id
               );
               
+            // Convert proficiency (1-10 scale) to percentage (0-100 scale)
             const averageStudentProgress = studentProgress.length > 0 
               ? Math.round(studentProgress.reduce((sum, p) => {
                   return sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? 
                     (Number(p.proficiency) || 0) : 0);
-                }, 0) / studentProgress.length)
+                }, 0) / studentProgress.length * 10) // Multiply by 10 to convert to percentage
               : 0;
               
             // Get profile data
