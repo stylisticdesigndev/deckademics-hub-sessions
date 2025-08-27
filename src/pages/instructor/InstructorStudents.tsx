@@ -345,10 +345,6 @@ const InstructorStudents = () => {
     if (!selectedStudent) return;
 
     try {
-      console.log('handleProgressUpdate - Starting with selectedStudent:', selectedStudent);
-      console.log('handleProgressUpdate - progressValue:', progressValue);
-      console.log('handleProgressUpdate - instructorId:', instructorId);
-      
       // Check if a progress record already exists for this student and skill
       const { data: existingProgress, error: selectError } = await supabase
         .from('student_progress')
@@ -356,14 +352,10 @@ const InstructorStudents = () => {
         .eq('student_id', selectedStudent)
         .eq('skill_name', 'Overall Progress')
         .maybeSingle();
-        
-      console.log('handleProgressUpdate - existingProgress:', existingProgress);
-      console.log('handleProgressUpdate - selectError:', selectError);
 
       if (existingProgress) {
         // Update existing record - convert percentage to proficiency scale (1-10)
         const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
-        console.log('handleProgressUpdate - Updating existing record with proficiencyValue:', proficiencyValue);
         const { error } = await supabase
           .from('student_progress')
           .update({
@@ -372,8 +364,6 @@ const InstructorStudents = () => {
             assessor_id: instructorId
           })
           .eq('id', existingProgress.id);
-          
-        console.log('handleProgressUpdate - Update error:', error);
 
         if (error) {
           console.error('Error updating progress:', error);
@@ -387,22 +377,16 @@ const InstructorStudents = () => {
       } else {
         // Insert new record - convert percentage to proficiency scale (1-10)  
         const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
-        console.log('handleProgressUpdate - Inserting new record with proficiencyValue:', proficiencyValue);
-        const insertData = {
-          student_id: selectedStudent,
-          course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
-          skill_name: 'Overall Progress',
-          proficiency: proficiencyValue,
-          assessment_date: new Date().toISOString(),
-          assessor_id: instructorId
-        };
-        console.log('handleProgressUpdate - Insert data:', insertData);
-        
         const { error } = await supabase
           .from('student_progress')
-          .insert(insertData);
-          
-        console.log('handleProgressUpdate - Insert error:', error);
+          .insert({
+            student_id: selectedStudent,
+            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
+            skill_name: 'Overall Progress',
+            proficiency: proficiencyValue,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          });
 
         if (error) {
           console.error('Error inserting progress:', error);
@@ -476,7 +460,7 @@ const InstructorStudents = () => {
           .from('student_progress')
           .insert({
             student_id: selectedStudent,
-            course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
             skill_name: selectedModule.moduleName,
             proficiency: proficiencyValue,
             assessment_date: new Date().toISOString(),
@@ -580,7 +564,7 @@ const InstructorStudents = () => {
           .from('student_progress')
           .insert({
             student_id: studentId,
-            course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
+            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
             skill_name: skillName,
             proficiency: newCompletionState ? 10 : 1,
             assessment_date: new Date().toISOString(),
