@@ -136,9 +136,8 @@ const InstructorStudents = () => {
   
   // Update students when fetched data changes
   useEffect(() => {
-    if (fetchedStudents.length > 0) {
-      setStudents(fetchedStudents);
-    }
+    console.log('useEffect triggered - fetchedStudents:', fetchedStudents);
+    setStudents(fetchedStudents);
   }, [fetchedStudents]);
 
   const filteredStudents = students.filter(student => {
