@@ -354,11 +354,12 @@ const InstructorStudents = () => {
         .single();
 
       if (existingProgress) {
-        // Update existing record
+        // Update existing record - convert percentage to proficiency scale (1-10)
+        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
         const { error } = await supabase
           .from('student_progress')
           .update({
-            proficiency: progressValue,
+            proficiency: proficiencyValue,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           })
@@ -374,14 +375,15 @@ const InstructorStudents = () => {
           return;
         }
       } else {
-        // Insert new record
+        // Insert new record - convert percentage to proficiency scale (1-10)
+        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: selectedStudent,
             course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
             skill_name: 'Overall Progress',
-            proficiency: progressValue,
+            proficiency: proficiencyValue,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           });
@@ -431,11 +433,12 @@ const InstructorStudents = () => {
         .single();
 
       if (existingProgress) {
-        // Update existing record
+        // Update existing record - convert percentage to proficiency scale (1-10)
+        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
         const { error } = await supabase
           .from('student_progress')
           .update({
-            proficiency: progressValue,
+            proficiency: proficiencyValue,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           })
@@ -451,14 +454,15 @@ const InstructorStudents = () => {
           return;
         }
       } else {
-        // Insert new record
+        // Insert new record - convert percentage to proficiency scale (1-10)
+        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: selectedStudent,
             course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
             skill_name: selectedModule.moduleName,
-            proficiency: progressValue,
+            proficiency: proficiencyValue,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           });
@@ -535,11 +539,11 @@ const InstructorStudents = () => {
         .single();
 
       if (existingProgress) {
-        // Update existing record
+        // Update existing record - use proficiency scale (10 for completed, 1 for incomplete)
         const { error } = await supabase
           .from('student_progress')
           .update({
-            proficiency: newCompletionState ? 100 : 0,
+            proficiency: newCompletionState ? 10 : 1,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           })
@@ -555,14 +559,14 @@ const InstructorStudents = () => {
           return;
         }
       } else {
-        // Insert new record
+        // Insert new record - use proficiency scale (10 for completed, 1 for incomplete)
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: studentId,
             course_id: '00000000-0000-0000-0000-000000000000', // Default course ID
             skill_name: skillName,
-            proficiency: newCompletionState ? 100 : 0,
+            proficiency: newCompletionState ? 10 : 1,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           });

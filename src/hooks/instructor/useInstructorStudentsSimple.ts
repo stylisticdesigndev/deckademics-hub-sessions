@@ -92,11 +92,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           console.error('Error fetching progress:', progressError);
         }
 
-        // Calculate average progress for each student
+        // Calculate average progress for each student - convert proficiency (1-10) back to percentage (0-100)
         const progressById: { [id: string]: number } = {};
         studentIds.forEach((id) => {
           const records = (progressData || []).filter((row) => row.student_id === id);
-          const profs = records.map((r) => r.proficiency || 0);
+          const profs = records.map((r) => (r.proficiency || 1) * 10); // Convert 1-10 scale to 0-100 percentage
           progressById[id] = profs.length
             ? Math.round(profs.reduce((a, b) => a + b, 0) / profs.length)
             : 0;
