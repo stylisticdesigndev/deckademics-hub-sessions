@@ -32,6 +32,7 @@ interface StudentWithProfile {
   id: string;
   level: string;
   start_date: string;
+  notes: string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -60,6 +61,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             id,
             level,
             start_date,
+            notes,
             profiles!inner(first_name, last_name, email, avatar_url)
           `)
           .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
@@ -106,6 +108,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           const firstName = profile?.first_name || '';
           const lastName = profile?.last_name || '';
           
+          // Convert notes from string to array format
+          const notesArray = student.notes 
+            ? student.notes.split('\n').filter(note => note.trim().length > 0)
+            : [];
+          
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
@@ -117,6 +124,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             enrollmentDate: student.start_date?.slice(0, 10) || '',
             lastActive: '',
             nextClass: '',
+            notes: notesArray,
           };
         });
 
@@ -132,8 +140,10 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
     fetchStudents();
   }, [instructorId]);
 
-  const refetch = () => {
-    fetchStudents();
+  const refetch = async () => {
+    console.log('Refetching students data...');
+    await fetchStudents();
+    console.log('Students data refetched successfully');
   };
 
   return { students, loading, refetch, setStudents };
