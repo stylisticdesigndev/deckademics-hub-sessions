@@ -78,6 +78,8 @@ const InstructorStudents = () => {
   const [showLessonNoteDialog, setShowLessonNoteDialog] = useState(false);
   const [progressValue, setProgressValue] = useState(0);
   const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(false);
   
   const curriculumModules = [
     {
@@ -204,6 +206,7 @@ const InstructorStudents = () => {
   const handleAddNote = async () => {
     if (!selectedStudent || !noteText.trim()) return;
     
+    setIsAddingNote(true);
     console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
     
     try {
@@ -262,11 +265,9 @@ const InstructorStudents = () => {
         description: `Your note has been saved successfully: "${newNote}"`,
       });
 
-      // Refresh data from database with a small delay to ensure consistency
-      setTimeout(() => {
-        console.log('Refreshing student data after note update...');
-        refetch();
-      }, 500);
+      // Refresh data from database immediately
+      console.log('Refreshing student data after note update...');
+      await refetch();
 
     } catch (error) {
       console.error('Unexpected error saving note:', error);
@@ -275,6 +276,8 @@ const InstructorStudents = () => {
         description: `An unexpected error occurred: ${error}`,
         variant: "destructive",
       });
+    } finally {
+      setIsAddingNote(false);
     }
   };
   
@@ -307,12 +310,8 @@ const InstructorStudents = () => {
         return;
       }
 
-      // Update local state
-      setStudents(prevStudents => prevStudents.map(student => 
-        student.id === selectedStudent 
-          ? { ...student, notes: updatedNotes } 
-          : student
-      ));
+      // Refresh data from database immediately
+      await refetch();
       
       setShowLessonNoteDialog(false);
       setLessonNoteText('');
@@ -367,6 +366,7 @@ const InstructorStudents = () => {
   const handleProgressUpdate = async () => {
     if (!selectedStudent) return;
 
+    setIsUpdatingProgress(true);
     console.log('Updating progress for student:', selectedStudent, 'Progress value:', progressValue, 'Instructor:', instructorId);
 
     try {
@@ -453,11 +453,6 @@ const InstructorStudents = () => {
         console.log('Progress inserted successfully');
       }
 
-      // Update local state immediately for better UX
-      setStudents(prevStudents => prevStudents.map(student => 
-        student.id === selectedStudent ? { ...student, progress: progressValue } : student
-      ));
-      
       setShowProgressDialog(false);
       
       toast({
@@ -465,11 +460,9 @@ const InstructorStudents = () => {
         description: `Student progress has been successfully saved (${progressValue}%).`,
       });
 
-      // Refresh data from database with a small delay to ensure consistency
-      setTimeout(() => {
-        console.log('Refreshing student data after progress update...');
-        refetch();
-      }, 500);
+      // Refresh data from database immediately
+      console.log('Refreshing student data after progress update...');
+      await refetch();
 
     } catch (error) {
       console.error('Unexpected error updating progress:', error);
@@ -478,6 +471,8 @@ const InstructorStudents = () => {
         description: `An unexpected error occurred: ${error}. Please try again.`,
         variant: "destructive",
       });
+    } finally {
+      setIsUpdatingProgress(false);
     }
   };
 
@@ -965,10 +960,16 @@ const InstructorStudents = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setShowNoteDialog(false)}
+                disabled={isAddingNote}
               >
                 Cancel
               </Button>
-              <Button onClick={handleAddNote}>Save Note</Button>
+              <Button 
+                onClick={handleAddNote}
+                disabled={isAddingNote}
+              >
+                {isAddingNote ? "Saving..." : "Save Note"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1030,13 +1031,15 @@ const InstructorStudents = () => {
                   setShowProgressDialog(false);
                   setSelectedModule(null);
                 }}
+                disabled={isUpdatingProgress}
               >
                 Cancel
               </Button>
               <Button 
                 onClick={selectedModule ? handleModuleProgressUpdate : handleProgressUpdate}
+                disabled={isUpdatingProgress}
               >
-                Update Progress
+                {isUpdatingProgress ? "Updating..." : "Update Progress"}
               </Button>
             </DialogFooter>
           </DialogContent>
