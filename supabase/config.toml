@@ -26,3 +26,6 @@ port = 54326
 [functions]
 [functions.create-demo-student]
 verify_jwt = false
+
+[functions.reset-admin-password]
+verify_jwt = false
