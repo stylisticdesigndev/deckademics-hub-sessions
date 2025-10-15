@@ -6,6 +6,7 @@ import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -16,6 +17,8 @@ const AdminAuthContent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [isResetting, setIsResetting] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   
   // Redirect if user is already logged in
   useEffect(() => {
@@ -35,24 +38,46 @@ const AdminAuthContent = () => {
     }
   }, [session, navigate]);
 
-  const handleSendPasswordReset = async () => {
-    try {
-      setIsResetting(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(ADMIN_EMAIL, {
-        redirectTo: `${window.location.origin}/auth/admin`
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Password reset email sent',
-        description: `A password reset link has been sent to ${ADMIN_EMAIL}`,
-      });
-    } catch (error: any) {
-      console.error('Error sending password reset:', error);
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send password reset email',
+        description: 'Password must be at least 6 characters long',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsResetting(true);
+      const response = await fetch(
+        'https://qeuzosggikxwnpyhulox.supabase.co/functions/v1/reset-admin-password',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ newPassword }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Password reset successfully! You can now login.',
+      });
+      setShowPasswordReset(false);
+      setNewPassword('');
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset password',
         variant: 'destructive',
       });
     } finally {
@@ -87,39 +112,58 @@ const AdminAuthContent = () => {
         </AlertDescription>
       </Alert>
       
-      <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Authentication Issue</AlertTitle>
-        <AlertDescription>
-          The displayed admin credentials need to be reset in Supabase. 
-          Please use the Supabase dashboard to reset the password for {ADMIN_EMAIL} 
-          to match "Admin123!" or update the shown credentials to match the actual password.
-        </AlertDescription>
-      </Alert>
+      {!showPasswordReset && (
+        <Alert className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>First Time Setup</AlertTitle>
+          <AlertDescription>
+            Need to set the admin password? Use the "Set Admin Password" button below.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <AuthForm userType="admin" disableSignup={true} adminEmail={ADMIN_EMAIL} />
       
       <div className="text-center space-y-4">
-        <div className="flex justify-center gap-2">
+        {!showPasswordReset ? (
           <Button 
             variant="outline" 
-            size="sm" 
-            asChild
+            className="w-full" 
+            onClick={() => setShowPasswordReset(true)}
           >
-            <a href="https://supabase.com/dashboard/project/qeuzosggikxwnpyhulox/auth/users" target="_blank" rel="noopener noreferrer">
-              Supabase User Management
-            </a>
+            Set Admin Password
           </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSendPasswordReset}
-            disabled={isResetting}
-          >
-            {isResetting ? 'Sending...' : 'Send Password Reset'}
-          </Button>
-        </div>
+        ) : (
+          <div className="space-y-3 bg-white/10 p-4 rounded-lg">
+            <Input
+              type="password"
+              placeholder="Enter new password (min 6 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleResetPassword()}
+              className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleResetPassword}
+                disabled={isResetting}
+                className="flex-1"
+              >
+                {isResetting ? 'Setting Password...' : 'Set Password'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowPasswordReset(false);
+                  setNewPassword('');
+                }}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <div>
           <Link to="/" className="text-sm text-deckademics-primary hover:underline">
             Back to sign in options
