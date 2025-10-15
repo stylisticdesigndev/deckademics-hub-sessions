@@ -40,6 +40,15 @@ export function useAnnouncements(targetRole: string = 'student') {
     const fetchAnnouncements = async () => {
       setLoading(true);
       try {
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setAnnouncements([]);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch announcements with read status
         const { data, error } = await supabase
           .from('announcements')
           .select(`
@@ -48,7 +57,8 @@ export function useAnnouncements(targetRole: string = 'student') {
             content,
             published_at,
             author_id,
-            profiles:author_id (first_name, last_name)
+            profiles:author_id (first_name, last_name),
+            announcement_reads!left (id, read_at)
           `)
           .contains('target_role', [targetRole]);
 
@@ -82,6 +92,12 @@ export function useAnnouncements(targetRole: string = 'student') {
               }
             }
             
+            // Check if there's a read record for this announcement
+            const readRecords = hasProperty(annRaw, 'announcement_reads') && Array.isArray(annRaw.announcement_reads) 
+              ? annRaw.announcement_reads 
+              : [];
+            const isRead = readRecords.length > 0;
+            
             // Only add objects with required properties
             if (hasProperty(annRaw, 'id') && 
                 hasProperty(annRaw, 'title') && 
@@ -97,7 +113,7 @@ export function useAnnouncements(targetRole: string = 'student') {
                   name: fullName,
                   initials
                 },
-                isNew: true,
+                isNew: !isRead,
                 type: 'announcement',
               });
             }

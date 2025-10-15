@@ -36,7 +36,15 @@ const StudentMessages = () => {
     async function fetchAnnouncements() {
       try {
         setLoading(true);
-        // Fetch announcements targeting students
+        
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch announcements with read status
         const { data, error } = await supabase
           .from('announcements')
           .select(`
@@ -45,7 +53,8 @@ const StudentMessages = () => {
             content,
             published_at,
             author_id,
-            profiles:author_id (first_name, last_name)
+            profiles:author_id (first_name, last_name),
+            announcement_reads!left (id, read_at)
           `)
           .contains('target_role', ['student'])
           .order('published_at', { ascending: false });
@@ -55,10 +64,13 @@ const StudentMessages = () => {
           return;
         }
 
-        // Format announcements
+        // Format announcements with read status
         if (data && data.length > 0) {
-          const formattedAnnouncements = data.map(ann => {
+          const formattedAnnouncements = data.map((ann: any) => {
             const authorProfile = ann.profiles as AuthorProfile;
+            // Check if there's a read record for this announcement
+            const readRecords = Array.isArray(ann.announcement_reads) ? ann.announcement_reads : [];
+            const isRead = readRecords.length > 0;
             
             return {
               id: ann.id,
@@ -70,7 +82,7 @@ const StudentMessages = () => {
                 initials: authorProfile ? 
                   `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
               },
-              isNew: true,
+              isNew: !isRead,
               type: 'announcement',
             };
           });
@@ -86,17 +98,45 @@ const StudentMessages = () => {
     fetchAnnouncements();
   }, []);
 
-  const handleMarkAsRead = (id) => {
-    setAnnouncements(prevAnnouncements => 
-      prevAnnouncements.map(announcement => 
-        announcement.id === id ? { ...announcement, isNew: false } : announcement
-      )
-    );
-    
-    toast({
-      title: 'Marked as read',
-      description: 'The announcement has been marked as read.',
-    });
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      // Insert read record into database
+      const { error } = await supabase
+        .from('announcement_reads')
+        .insert({
+          announcement_id: id,
+          user_id: session?.user?.id
+        });
+
+      if (error) {
+        console.error('Error marking announcement as read:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to mark announcement as read.',
+        });
+        return;
+      }
+
+      // Update local state
+      setAnnouncements(prevAnnouncements => 
+        prevAnnouncements.map(announcement => 
+          announcement.id === id ? { ...announcement, isNew: false } : announcement
+        )
+      );
+      
+      toast({
+        title: 'Marked as read',
+        description: 'The announcement has been marked as read.',
+      });
+    } catch (err) {
+      console.error('Error in handleMarkAsRead:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to mark announcement as read.',
+      });
+    }
   };
   
   return (
