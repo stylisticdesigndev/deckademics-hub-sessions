@@ -33,7 +33,7 @@ const StudentProfile = () => {
     name: fullName || '',
     email: userData?.profile?.email || session?.user?.email || '',
     phone: userData?.profile?.phone || '',
-    bio: '',
+    bio: userData?.profile?.bio || '',
   });
 
   const [formData, setFormData] = useState({...profile});
@@ -61,22 +61,28 @@ const StudentProfile = () => {
           setStudentData(student);
         }
         
-        // Since bio is not directly in profiles table (according to the error), we need to handle it differently
-        // We could have it stored in students table, or we can use the notes field as bio for now
-        let bioText = '';
-        if (student && student.notes) {
-          bioText = student.notes;
+        // Fetch profile bio
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('bio')
+          .eq('id', studentId)
+          .single();
+          
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching profile data:', profileError);
         }
+        
+        const bioText = profileData?.bio || '';
         
         // Update the profile state with the bio
         setProfile(prev => ({
           ...prev,
-          bio: bioText || 'No bio provided yet.'
+          bio: bioText
         }));
         
         setFormData(prev => ({
           ...prev,
-          bio: bioText || 'No bio provided yet.'
+          bio: bioText
         }));
         
         // Try to fetch course and instructor data
@@ -168,21 +174,9 @@ const StudentProfile = () => {
       await updateProfile({
         first_name: firstName,
         last_name: lastName,
-        phone: formData.phone
+        phone: formData.phone,
+        bio: formData.bio
       });
-      
-      // Update the bio/notes in the students table
-      if (studentId) {
-        const { error: updateError } = await supabase
-          .from('students')
-          .update({ notes: formData.bio })
-          .eq('id', studentId);
-          
-        if (updateError) {
-          console.error('Error updating student notes:', updateError);
-          throw new Error('Failed to update bio');
-        }
-      }
       
       setProfile({...formData});
       setIsEditing(false);
@@ -399,6 +393,20 @@ const StudentProfile = () => {
                   )}
                 </CardContent>
               </Card>
+              
+              {studentData?.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Instructor Notes</CardTitle>
+                    <CardDescription>
+                      Notes from your instructor
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{studentData.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
