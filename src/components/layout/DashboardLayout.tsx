@@ -50,7 +50,7 @@ export const DashboardLayout = ({
     if (userData.profile) {
       return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
     }
-    return `${userType.charAt(0).toUpperCase() + userType.slice(1)} User`;
+    return userType ? `${userType.charAt(0).toUpperCase() + userType.slice(1)} User` : 'User';
   };
 
   // Fetch unread notification count
