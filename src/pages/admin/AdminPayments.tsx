@@ -2,17 +2,19 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
-import { toast } from 'sonner';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
 import { PaymentStatsCards } from '@/components/admin/payments/PaymentStatsCards';
 import { PaymentSearch } from '@/components/admin/payments/PaymentSearch';
 import { PaymentsTable } from '@/components/admin/payments/PaymentsTable';
 import { CreatePaymentDialog } from '@/components/admin/payments/CreatePaymentDialog';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import { useUpdatePayment } from '@/hooks/useUpdatePayment';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AdminPayments = () => {
-  const { missedPayments, upcomingPayments, isLoading, stats } = useAdminPayments();
+  const { missedPayments, upcomingPayments, allPayments, isLoading, stats } = useAdminPayments();
   const { activeStudents } = useAdminStudents();
+  const { updatePayment } = useUpdatePayment();
   const [searchQuery, setSearchQuery] = useState('');
 
   const students = activeStudents.map(student => ({
@@ -22,23 +24,29 @@ const AdminPayments = () => {
   }));
 
   const filteredMissedPayments = missedPayments.filter(payment =>
-    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.amount.toString().includes(searchQuery)
   );
 
   const filteredUpcomingPayments = upcomingPayments.filter(payment =>
-    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.amount.toString().includes(searchQuery)
   );
 
-  const handleMarkAsPaid = (paymentId: string, paymentType: 'full' | 'partial') => {
-    // Implementation will be added when we integrate with the payment processing system
-    toast(
-      paymentType === 'full' ? "Payment Marked as Paid" : "Payment Marked as Partially Paid", 
-      { 
-        description: paymentType === 'full' 
-          ? "The payment has been marked as fully paid and removed from the list." 
-          : "The payment has been marked as partially paid."
-      }
-    );
+  const filteredAllPayments = allPayments.filter(payment =>
+    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    payment.amount.toString().includes(searchQuery) ||
+    (payment.description && payment.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const handleMarkAsPaid = async (paymentId: string) => {
+    await updatePayment({
+      id: paymentId,
+      status: 'completed',
+    });
   };
 
   if (isLoading) {
@@ -67,19 +75,42 @@ const AdminPayments = () => {
         <PaymentStatsCards stats={stats} />
         <PaymentSearch searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-        <PaymentsTable
-          title="Missed Payments"
-          description="Students with past due payments"
-          payments={filteredMissedPayments}
-          onMarkAsPaid={handleMarkAsPaid}
-        />
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="pending">Pending ({filteredMissedPayments.length})</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming ({filteredUpcomingPayments.length})</TabsTrigger>
+            <TabsTrigger value="all">All Payments ({filteredAllPayments.length})</TabsTrigger>
+          </TabsList>
 
-        <PaymentsTable
-          title="Payment History"
-          description="Previous payments"
-          payments={filteredUpcomingPayments}
-          showActions={false}
-        />
+          <TabsContent value="pending">
+            <PaymentsTable
+              title="Pending Payments"
+              description="Students with pending payments"
+              payments={filteredMissedPayments}
+              onMarkAsPaid={handleMarkAsPaid}
+            />
+          </TabsContent>
+
+          <TabsContent value="upcoming">
+            <PaymentsTable
+              title="Upcoming Payments"
+              description="Scheduled future payments"
+              payments={filteredUpcomingPayments}
+              showActions={false}
+            />
+          </TabsContent>
+
+          <TabsContent value="all">
+            <PaymentsTable
+              title="All Payments"
+              description="Complete payment history with full management"
+              payments={filteredAllPayments}
+              showActions={false}
+              showEditDelete={true}
+              students={students}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

@@ -25,20 +25,23 @@ export interface PaymentStats {
 
 export interface Payment {
   id: string;
+  studentId: string;
   studentName: string;
   email: string;
   amount: number;
   dueDate: string;
-  status: 'missed' | 'upcoming';
+  paymentType: string;
+  status: string;
   daysPastDue?: number;
   daysTillDue?: number;
-  partiallyPaid: boolean;
+  partiallyPaid?: boolean;
+  description?: string;
 }
 
 export const useAdminPayments = () => {
   // Fetch all payments
   const { data: payments, isLoading } = useQuery({
-    queryKey: ['admin', 'payments'],
+    queryKey: ['adminPayments'],
     queryFn: async () => {
       const { data: paymentsData, error } = await supabase
         .from('payments')
@@ -46,6 +49,7 @@ export const useAdminPayments = () => {
           id,
           amount,
           payment_date,
+          payment_type,
           status,
           description,
           student_id,
@@ -82,8 +86,6 @@ export const useAdminPayments = () => {
           const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
-          const status = dueDate < today ? 'missed' : 'upcoming';
-          
           // Safely access nested properties
           const students = safelyAccessProperty<StudentsData, 'students'>(payment, 'students');
           const studentProfile = students?.profiles?.[0] as StudentProfile | undefined;
@@ -95,21 +97,26 @@ export const useAdminPayments = () => {
           const paymentId = safelyAccessProperty<string, 'id'>(payment, 'id');
           if (!paymentId) return null;
           
-          const paymentAmount = safelyAccessProperty<number, 'amount'>(payment, 'amount') || 0;
+          const studentId = safelyAccessProperty<string, 'student_id'>(payment, 'student_id');
+          if (!studentId) return null;
           
-          const paymentStatus = safelyAccessProperty<string, 'status'>(payment, 'status');
-          const partiallyPaid = paymentStatus === 'partially_paid';
+          const paymentAmount = safelyAccessProperty<number, 'amount'>(payment, 'amount') || 0;
+          const paymentType = safelyAccessProperty<string, 'payment_type'>(payment, 'payment_type') || 'other';
+          const paymentStatus = safelyAccessProperty<string, 'status'>(payment, 'status') || 'pending';
+          const description = safelyAccessProperty<string, 'description'>(payment, 'description');
 
           return {
             id: paymentId,
+            studentId: studentId,
             studentName: `${firstName} ${lastName}`.trim(),
             email: email,
             amount: paymentAmount,
             dueDate: format(dueDate, 'yyyy-MM-dd'),
-            status,
-            daysPastDue: status === 'missed' ? daysDifference : undefined,
-            daysTillDue: status === 'upcoming' ? daysTillDue : undefined,
-            partiallyPaid
+            paymentType: paymentType,
+            status: paymentStatus,
+            daysPastDue: daysDifference > 0 && paymentStatus === 'pending' ? daysDifference : undefined,
+            daysTillDue: daysTillDue > 0 ? daysTillDue : undefined,
+            description: description || undefined,
           };
         })
         .filter(Boolean) as Payment[];
@@ -126,8 +133,10 @@ export const useAdminPayments = () => {
       };
     }
 
-    const missedPayments = payments.filter(payment => payment.status === 'missed');
-    const upcomingPayments = payments.filter(payment => payment.status === 'upcoming');
+    const today = new Date();
+    const pendingPayments = payments.filter(p => p.status === 'pending');
+    const missedPayments = pendingPayments.filter(p => new Date(p.dueDate) < today);
+    const upcomingPayments = pendingPayments.filter(p => new Date(p.dueDate) >= today);
 
     return {
       missedPaymentsCount: missedPayments.length,
@@ -138,10 +147,12 @@ export const useAdminPayments = () => {
   };
 
   const stats = calculateStats();
+  const today = new Date();
 
   return {
-    missedPayments: payments?.filter(p => p.status === 'missed') || [],
-    upcomingPayments: payments?.filter(p => p.status === 'upcoming') || [],
+    missedPayments: payments?.filter(p => p.status === 'pending' && new Date(p.dueDate) < today) || [],
+    upcomingPayments: payments?.filter(p => p.status === 'pending' && new Date(p.dueDate) >= today) || [],
+    allPayments: payments || [],
     isLoading,
     stats
   };

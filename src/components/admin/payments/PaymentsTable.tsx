@@ -2,9 +2,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Payment } from "@/hooks/useAdminPayments";
+import { EditPaymentDialog } from "./EditPaymentDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useDeletePayment } from "@/hooks/useDeletePayment";
 
 interface PaymentsTableProps {
   title: string;
@@ -12,6 +15,8 @@ interface PaymentsTableProps {
   payments: Payment[];
   onMarkAsPaid?: (paymentId: string, paymentType: 'full' | 'partial') => void;
   showActions?: boolean;
+  showEditDelete?: boolean;
+  students?: Array<{ id: string; first_name: string; last_name: string }>;
 }
 
 export const PaymentsTable = ({ 
@@ -19,8 +24,11 @@ export const PaymentsTable = ({
   description,
   payments,
   onMarkAsPaid,
-  showActions = true
+  showActions = true,
+  showEditDelete = false,
+  students = []
 }: PaymentsTableProps) => {
+  const { deletePayment } = useDeletePayment();
   return (
     <Card>
       <CardHeader>
@@ -36,8 +44,9 @@ export const PaymentsTable = ({
                 <TableHead>Email</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Due Date</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
-                {showActions && <TableHead>Actions</TableHead>}
+                {(showActions || showEditDelete) && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -47,17 +56,17 @@ export const PaymentsTable = ({
                   <TableCell>{payment.email}</TableCell>
                   <TableCell>${payment.amount}</TableCell>
                   <TableCell>{payment.dueDate}</TableCell>
+                  <TableCell className="capitalize">{payment.paymentType}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={showActions ? "destructive" : "outline"} className={!showActions ? "bg-green-500/10 text-green-500" : ""}>
-                        {showActions ? `${payment.daysPastDue} days past due` : "Paid"}
-                      </Badge>
-                      {payment.partiallyPaid && (
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                          Partially Paid
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge 
+                      variant={
+                        payment.status === 'completed' ? 'default' :
+                        payment.status === 'pending' ? 'secondary' :
+                        payment.status === 'failed' ? 'destructive' : 'outline'
+                      }
+                    >
+                      {payment.status}
+                    </Badge>
                   </TableCell>
                   {showActions && onMarkAsPaid && (
                     <TableCell>
@@ -65,20 +74,43 @@ export const PaymentsTable = ({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          className="flex items-center gap-1 text-green-600 border-green-200 hover:bg-green-50"
+                          className="flex items-center gap-1"
                           onClick={() => onMarkAsPaid(payment.id, 'full')}
                         >
                           <Check className="h-3 w-3" />
-                          Fully Paid
+                          Mark Paid
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                          onClick={() => onMarkAsPaid(payment.id, 'partial')}
-                        >
-                          Partial
-                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                  {showEditDelete && (
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <EditPaymentDialog payment={payment} students={students} />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this payment for {payment.studentName}? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deletePayment(payment.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   )}
