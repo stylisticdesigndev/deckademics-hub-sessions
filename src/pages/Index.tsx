@@ -168,7 +168,7 @@ const Index = () => {
               onClick={ensureCleanAuthState}
             >
               <Link to="/auth/student" replace={true}>
-                Student Sign In
+                Student
               </Link>
             </Button>
             
@@ -180,7 +180,7 @@ const Index = () => {
               onClick={ensureCleanAuthState}
             >
               <Link to="/auth/instructor" replace={true}>
-                Instructor Sign In
+                Instructor
               </Link>
             </Button>
           </div>
