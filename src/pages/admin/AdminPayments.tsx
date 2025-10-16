@@ -7,10 +7,19 @@ import { useAdminPayments } from '@/hooks/useAdminPayments';
 import { PaymentStatsCards } from '@/components/admin/payments/PaymentStatsCards';
 import { PaymentSearch } from '@/components/admin/payments/PaymentSearch';
 import { PaymentsTable } from '@/components/admin/payments/PaymentsTable';
+import { CreatePaymentDialog } from '@/components/admin/payments/CreatePaymentDialog';
+import { useAdminStudents } from '@/hooks/useAdminStudents';
 
 const AdminPayments = () => {
   const { missedPayments, upcomingPayments, isLoading, stats } = useAdminPayments();
+  const { activeStudents } = useAdminStudents();
   const [searchQuery, setSearchQuery] = useState('');
+
+  const students = activeStudents.map(student => ({
+    id: student.id,
+    first_name: student.profile.first_name || '',
+    last_name: student.profile.last_name || '',
+  }));
 
   const filteredMissedPayments = missedPayments.filter(payment =>
     payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -45,11 +54,14 @@ const AdminPayments = () => {
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Payment Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Track and manage student payments
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Payment Management</h1>
+            <p className="text-muted-foreground mt-1">
+              Track and manage student payments
+            </p>
+          </div>
+          <CreatePaymentDialog students={students} />
         </div>
 
         <PaymentStatsCards stats={stats} />
