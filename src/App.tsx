@@ -41,6 +41,8 @@ import AdminInstructorPayments from "./pages/admin/AdminInstructorPayments";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCurriculum from "./pages/admin/AdminCurriculum";
+import StudentCurriculum from "./pages/student/StudentCurriculum";
+import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +75,7 @@ const App = () => (
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/progress" element={<StudentProgress />} />
+          <Route path="/student/curriculum" element={<StudentCurriculum />} />
           <Route path="/student/notes" element={<StudentNotes />} />
           <Route path="/student/classes" element={<StudentClasses />} />
           <Route path="/student/messages" element={<StudentMessages />} />
@@ -83,6 +86,7 @@ const App = () => (
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
           <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
           <Route path="/instructor/students" element={<InstructorStudents />} />
+          <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
           <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
           <Route path="/instructor/classes" element={<InstructorClasses />} />
           <Route path="/instructor/profile" element={<InstructorProfile />} />

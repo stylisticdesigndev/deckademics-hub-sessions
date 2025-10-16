@@ -7,7 +7,8 @@ import {
   MessageSquare,
   User,
   BarChart,
-  StickyNote
+  StickyNote,
+  BookOpen
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
@@ -45,6 +46,13 @@ export const StudentNavigation = () => {
       href: "/student/progress",
       active: pathname === "/student/progress",
       tooltip: "Check your learning progress"
+    },
+    {
+      title: "Curriculum",
+      icon: BookOpen,
+      href: "/student/curriculum",
+      active: pathname === "/student/curriculum",
+      tooltip: "View learning curriculum"
     },
     {
       title: "Notes",
