@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { useStudentDashboard } from '@/hooks/student/useStudentDashboard';
@@ -7,16 +7,25 @@ import { StudentStatsSection } from '@/components/student/dashboard/StudentStats
 import { ProgressSection } from '@/components/student/dashboard/ProgressSection';
 import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingClassesSection';
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
+import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
 import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentDashboard = () => {
   const { userData, session, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [studentId, setStudentId] = useState<string | undefined>();
+  
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setStudentId(user.id);
+    });
+  }, []);
   
   const {
     loading,
@@ -133,9 +142,11 @@ const StudentDashboard = () => {
             />
 
             <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Your Progress</h2>
-                <ProgressSection totalProgress={studentData.totalProgress} />
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Your Progress</h2>
+                  <ProgressSection totalProgress={studentData.totalProgress} />
+                </div>
                 
                 <UpcomingClassesSection 
                   classes={upcomingClasses} 
@@ -143,7 +154,9 @@ const StudentDashboard = () => {
                 />
               </div>
               
-              <div>
+              <div className="space-y-6">
+                <NotesSection studentId={studentId} />
+                
                 <AnnouncementsSection 
                   announcements={announcements} 
                   onAcknowledge={handleAcknowledgeAnnouncement} 
