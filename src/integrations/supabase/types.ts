@@ -529,6 +529,54 @@ export type Database = {
         }
         Relationships: []
       }
+      student_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          instructor_id: string
+          is_read: boolean
+          student_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          instructor_id: string
+          is_read?: boolean
+          student_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          is_read?: boolean
+          student_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_notes_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_progress: {
         Row: {
           assessment_date: string | null

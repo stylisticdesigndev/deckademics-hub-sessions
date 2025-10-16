@@ -1,13 +1,17 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   MessageSquare,
   User,
-  BarChart
+  BarChart,
+  StickyNote
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +21,15 @@ import {
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
+  const [studentId, setStudentId] = useState<string | undefined>();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setStudentId(user.id);
+    });
+  }, []);
+
+  const { data: unreadCount = 0 } = useUnreadNotesCount(studentId);
 
   const navItems = [
     {
@@ -32,6 +45,14 @@ export const StudentNavigation = () => {
       href: "/student/progress",
       active: pathname === "/student/progress",
       tooltip: "Check your learning progress"
+    },
+    {
+      title: "Notes",
+      icon: StickyNote,
+      href: "/student/notes",
+      active: pathname === "/student/notes",
+      tooltip: "View instructor notes",
+      badge: unreadCount
     },
     {
       title: "Messages",
@@ -58,14 +79,19 @@ export const StudentNavigation = () => {
               <Link
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+                  "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
                   item.active
                     ? "bg-deckademics-primary/10 text-deckademics-primary"
                     : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span>{item.title}</span>
+                <span className="flex-1">{item.title}</span>
+                {item.badge && item.badge > 0 && (
+                  <Badge variant="default" className="ml-auto h-5 min-w-5 flex items-center justify-center px-1.5">
+                    {item.badge}
+                  </Badge>
+                )}
               </Link>
             </TooltipTrigger>
             <TooltipContent>
