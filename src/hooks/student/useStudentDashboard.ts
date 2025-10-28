@@ -62,13 +62,13 @@ export const useStudentDashboard = () => {
     initialLoadRef.current = true;
   }, [userId, refreshData]);
   
-  // Handle retry on error with increasing delays
+  // Handle retry on error with minimal delays
   useEffect(() => {
-    if (fetchError && loadAttemptRef.current < 3) {
+    if (fetchError && loadAttemptRef.current < 2) {
       setHasErrorState(true);
       
-      // Use increasing delays for retries
-      const retryDelay = loadAttemptRef.current * 2000;
+      // Use minimal delay for retries (500ms only)
+      const retryDelay = 500;
       
       console.log(`StudentDashboard: Retry scheduled in ${retryDelay}ms (attempt ${loadAttemptRef.current + 1})`);
       
@@ -80,24 +80,24 @@ export const useStudentDashboard = () => {
       return () => clearTimeout(retryTimer);
     }
     
-    if (fetchError && loadAttemptRef.current >= 3) {
+    if (fetchError && loadAttemptRef.current >= 2) {
       console.error("StudentDashboard: Max retries reached, showing error to user");
       setHasErrorState(true);
       
-      toast.error("Could not load dashboard data after multiple attempts. Please try refreshing the page.");
+      toast.error("Could not load dashboard data. Please try refreshing the page.");
     }
   }, [fetchError, loadDashboardData]);
 
   // Initial load when component mounts and userId is available
   useEffect(() => {
-    if (!userId || loading || initialLoadRef.current) {
+    if (!userId || initialLoadRef.current) {
       return;
     }
     
     console.log("StudentDashboard: Performing initial load for userId:", userId);
     loadDashboardData();
     
-  }, [userId, loading, loadDashboardData]); 
+  }, [userId, loadDashboardData]);
 
   // Handle manual refresh button click
   const handleManualRefresh = useCallback(() => {

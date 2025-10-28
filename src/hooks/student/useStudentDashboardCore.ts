@@ -167,9 +167,6 @@ export function useStudentDashboardCore() {
     }
   }, [userId, upcomingClasses, progressData]); // Remove classesLoading and progressLoading to prevent loops
 
-  // Use a ref to track if this is the first render
-  const isInitialRender = useRef(true);
-
   useEffect(() => {
     // Log data dependencies
     console.log("StudentDashboardCore: Data dependencies updated", {
@@ -179,14 +176,7 @@ export function useStudentDashboardCore() {
       progressLoading
     });
     
-    // Skip data fetching on first render to allow all hooks to initialize
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      console.log("StudentDashboardCore: Skipping first render fetch");
-      return;
-    }
-    
-    // Only fetch data if we have necessary information and haven't fetched yet
+    // Fetch data immediately if we have userId and haven't fetched yet
     if (userId && !dataFetchedRef.current && !classesLoading && !progressLoading) {
       console.log("StudentDashboardCore: All dependencies ready, triggering fetch");
       fetchStudentInfo();
