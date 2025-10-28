@@ -59,27 +59,30 @@ export const DashboardLayout = ({
       if (!userData.user?.id) return;
       
       try {
-        let count = 0;
-        
-        // For now, we're using announcements as notifications
-        // This would be enhanced with a proper notifications system in the future
+        // Fetch announcements with read status
         const { data, error } = await supabase
           .from('announcements')
-          .select('id')
+          .select(`
+            id,
+            announcement_reads!left(id, user_id)
+          `)
           .contains('target_role', [userType])
-          .order('published_at', { ascending: false })
-          .limit(5);
+          .order('published_at', { ascending: false });
           
         if (error) {
           console.error('Error fetching notifications:', error);
           return;
         }
         
+        // Count announcements that haven't been read by this user
         if (data) {
-          count = data.length;
+          const unreadCount = data.filter(announcement => {
+            const readRecords = announcement.announcement_reads || [];
+            return !readRecords.some((record: any) => record.user_id === userData.user?.id);
+          }).length;
+          
+          setUnreadNotifications(unreadCount);
         }
-        
-        setUnreadNotifications(count);
       } catch (err) {
         console.error('Error counting notifications:', err);
       }
@@ -90,7 +93,27 @@ export const DashboardLayout = ({
     // Set up a timer to refresh notification count every minute
     const intervalId = setInterval(fetchNotificationCount, 60000);
     
-    return () => clearInterval(intervalId);
+    // Subscribe to announcement_reads changes to update count in real-time
+    const channel = supabase
+      .channel('announcement-reads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'announcement_reads',
+          filter: `user_id=eq.${userData.user?.id}`
+        },
+        () => {
+          fetchNotificationCount();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      clearInterval(intervalId);
+      supabase.removeChannel(channel);
+    };
   }, [userData.user?.id, userType]);
 
   // Handle notification click
