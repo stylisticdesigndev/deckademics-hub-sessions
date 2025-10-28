@@ -790,7 +790,7 @@ export type Database = {
         Returns: Json
       }
       get_all_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           email: string
           first_name: string
@@ -800,7 +800,7 @@ export type Database = {
         }[]
       }
       get_instructor_counts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active: number
           inactive: number
@@ -821,7 +821,7 @@ export type Database = {
         }[]
       }
       get_student_counts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active: number
           pending: number
@@ -850,6 +850,12 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_user_role: {
         Args: { user_id: string }
@@ -862,10 +868,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "instructor" | "student"
