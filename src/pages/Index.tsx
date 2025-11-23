@@ -22,8 +22,8 @@ const Index = () => {
   useEffect(() => {
     console.log("Index: Setting up background video");
     
-    // Check if video exists before setting the URL
-    const videoPath = '/lovable-uploads/dj-background.mp4';
+    // Use the new uploaded video
+    const videoPath = '/background-video.mp4';
     
     fetch(videoPath, { method: 'HEAD' })
       .then(response => {
