@@ -104,7 +104,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black relative">
+    <div className="min-h-screen flex flex-col relative">
       {backgroundVideoUrl && (
         <VideoBackground 
           videoSrc={backgroundVideoUrl} 
