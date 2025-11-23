@@ -260,6 +260,50 @@ export const useAdminInstructors = () => {
     }
   });
 
+  const addNewInstructor = useMutation({
+    mutationFn: async (instructorData: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      specialties?: string[];
+      hourlyRate?: number;
+    }) => {
+      console.log('Creating new instructor with auth user...');
+      
+      const { data, error } = await supabase.functions.invoke('create-instructor', {
+        body: {
+          email: instructorData.email,
+          firstName: instructorData.firstName,
+          lastName: instructorData.lastName,
+          specialties: instructorData.specialties || [],
+          hourlyRate: instructorData.hourlyRate || 25
+        }
+      });
+
+      if (error) {
+        console.error('Error calling create-instructor function:', error);
+        throw new Error(error.message);
+      }
+
+      if (data?.error) {
+        console.error('Error from create-instructor function:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('Instructor created successfully:', data);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      toast.success('New instructor created successfully. Password reset email sent.');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create instructor: ${error.message}`);
+    }
+  });
+
   return {
     activeInstructors: activeInstructors || [],
     pendingInstructors: pendingInstructors || [],
@@ -270,6 +314,7 @@ export const useAdminInstructors = () => {
     declineInstructor,
     deactivateInstructor,
     activateInstructor,
-    createInstructor
+    createInstructor,
+    addNewInstructor
   };
 };

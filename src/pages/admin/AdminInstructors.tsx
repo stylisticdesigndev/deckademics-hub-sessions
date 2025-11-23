@@ -68,9 +68,11 @@ const AdminInstructors = () => {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [addInstructorOpen, setAddInstructorOpen] = useState(false);
   const [newInstructor, setNewInstructor] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    specialization: '',
+    specialties: '',
+    hourlyRate: '25',
   });
   
   // New state for manual instructor creation
@@ -92,7 +94,8 @@ const AdminInstructors = () => {
     declineInstructor,
     deactivateInstructor,
     activateInstructor,
-    createInstructor
+    createInstructor,
+    addNewInstructor
   } = useAdminInstructors();
   
   // Use the new hook for student assignment
@@ -191,16 +194,38 @@ const AdminInstructors = () => {
     e.preventDefault();
     
     // Validate input
-    if (!newInstructor.name || !newInstructor.email) {
-      toast.error("Missing Information: Please fill in all required fields.");
+    if (!newInstructor.firstName || !newInstructor.lastName || !newInstructor.email) {
+      toast.error("Please fill in all required fields (first name, last name, and email).");
       return;
     }
     
-    // Reset form and close dialog
-    setNewInstructor({ name: '', email: '', specialization: '' });
-    setAddInstructorOpen(false);
-    
-    toast.success(`Instructor Added: ${newInstructor.name} has been added as an instructor.`);
+    // Parse specialties
+    const specialtiesArray = newInstructor.specialties
+      ? newInstructor.specialties.split(',').map(s => s.trim()).filter(s => s.length > 0)
+      : [];
+
+    // Parse hourly rate
+    const hourlyRate = parseFloat(newInstructor.hourlyRate) || 25;
+
+    addNewInstructor.mutate({
+      email: newInstructor.email,
+      firstName: newInstructor.firstName,
+      lastName: newInstructor.lastName,
+      specialties: specialtiesArray,
+      hourlyRate
+    }, {
+      onSuccess: () => {
+        // Reset form and close dialog
+        setNewInstructor({ 
+          firstName: '', 
+          lastName: '', 
+          email: '', 
+          specialties: '', 
+          hourlyRate: '25' 
+        });
+        setAddInstructorOpen(false);
+      }
+    });
   };
 
   const viewInstructor = (id: string) => {
@@ -382,36 +407,60 @@ const AdminInstructors = () => {
                     <DialogHeader>
                       <DialogTitle>Add New Instructor</DialogTitle>
                       <DialogDescription>
-                        Create a new instructor account. The instructor will receive an email to set up their password.
+                        Create a new instructor account with user authentication. A password reset email will be sent automatically to the instructor's email address.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="name" className="text-left">Name</Label>
+                        <Label htmlFor="firstName" className="text-left">First Name *</Label>
                         <Input
-                          id="name"
-                          value={newInstructor.name}
-                          onChange={(e) => setNewInstructor({...newInstructor, name: e.target.value})}
-                          placeholder="Enter full name"
+                          id="firstName"
+                          value={newInstructor.firstName}
+                          onChange={(e) => setNewInstructor({...newInstructor, firstName: e.target.value})}
+                          placeholder="Enter first name"
+                          required
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-left">Email</Label>
+                        <Label htmlFor="lastName" className="text-left">Last Name *</Label>
+                        <Input
+                          id="lastName"
+                          value={newInstructor.lastName}
+                          onChange={(e) => setNewInstructor({...newInstructor, lastName: e.target.value})}
+                          placeholder="Enter last name"
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="email" className="text-left">Email *</Label>
                         <Input
                           id="email"
                           type="email"
                           value={newInstructor.email}
                           onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
                           placeholder="Enter email address"
+                          required
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="specialization" className="text-left">Specialization</Label>
+                        <Label htmlFor="specialties" className="text-left">Specialties</Label>
                         <Input
-                          id="specialization"
-                          value={newInstructor.specialization}
-                          onChange={(e) => setNewInstructor({...newInstructor, specialization: e.target.value})}
-                          placeholder="E.g., Turntablism, Scratching, Beat Mixing"
+                          id="specialties"
+                          value={newInstructor.specialties}
+                          onChange={(e) => setNewInstructor({...newInstructor, specialties: e.target.value})}
+                          placeholder="E.g., Turntablism, Scratching (comma-separated)"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="hourlyRate" className="text-left">Hourly Rate ($)</Label>
+                        <Input
+                          id="hourlyRate"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newInstructor.hourlyRate}
+                          onChange={(e) => setNewInstructor({...newInstructor, hourlyRate: e.target.value})}
+                          placeholder="25.00"
                         />
                       </div>
                     </div>
@@ -419,7 +468,16 @@ const AdminInstructors = () => {
                       <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit">Add Instructor</Button>
+                      <Button type="submit" disabled={addNewInstructor.isPending}>
+                        {addNewInstructor.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          'Add Instructor'
+                        )}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
