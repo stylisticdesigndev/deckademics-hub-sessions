@@ -49,6 +49,28 @@ export function useStudentProgress(userId?: string) {
     };
 
     fetchProgress();
+
+    // Set up real-time subscription for progress updates
+    const channel = supabase
+      .channel('student_progress_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'student_progress',
+          filter: `student_id=eq.${userId}`
+        },
+        () => {
+          console.log('Progress data changed, refetching...');
+          fetchProgress();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   return { progress, loading };
