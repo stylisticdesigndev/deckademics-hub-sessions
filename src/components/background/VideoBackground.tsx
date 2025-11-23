@@ -14,53 +14,22 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
   // Reset states and check video availability when component mounts or video source changes
   useEffect(() => {
     console.log("VideoBackground: Initializing with source:", videoSrc);
-    setIsLoading(true);
+    setIsLoading(false); // Don't block the UI while loading
     setHasError(false);
     
     // Check if browser supports video
     if (!document.createElement('video').canPlayType) {
       console.error('VideoBackground: Video not supported by browser');
       setHasError(true);
-      setIsLoading(false);
       return;
     }
     
-    // Create a new image element to test if the fallback exists
-    const img = new Image();
-    img.onerror = () => {
-      console.error('VideoBackground: Fallback image not found:', fallbackSrc);
-    };
-    img.src = fallbackSrc;
-    
-    // Add cache buster to video URL
-    const timestamp = Date.now();
-    const videoUrl = videoSrc.includes('?') 
-      ? `${videoSrc}&cb=${timestamp}` 
-      : `${videoSrc}?cb=${timestamp}`;
-      
-    console.log("VideoBackground: Using URL with cache buster:", videoUrl);
-    
-    // Pre-check if video file exists
-    fetch(videoUrl, { method: 'HEAD' })
-      .then(response => {
-        if (!response.ok) {
-          console.error(`VideoBackground: Video file not accessible (Status ${response.status}):`, videoUrl);
-          throw new Error(`Video file check failed with status ${response.status}`);
-        }
-        return response;
-      })
-      .then(() => {
-        console.log("VideoBackground: Video file confirmed accessible");
-        if (videoRef.current) {
-          videoRef.current.src = videoUrl;
-          videoRef.current.load();
-        }
-      })
-      .catch(error => {
-        console.error("VideoBackground: Error checking video:", error);
-        setHasError(true);
-        setIsLoading(false);
-      });
+    // Load video directly without pre-checking
+    if (videoRef.current) {
+      videoRef.current.src = videoSrc;
+      videoRef.current.load();
+      console.log("VideoBackground: Video loading initiated");
+    }
       
     return () => {
       // Clean up
@@ -70,24 +39,20 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
         videoRef.current.load();
       }
     };
-  }, [videoSrc, fallbackSrc]);
+  }, [videoSrc]);
   
   const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    console.error('VideoBackground: Video failed to load:', e);
+    console.error('VideoBackground: Video failed to load, showing fallback');
     setHasError(true);
-    setIsLoading(false);
   };
   
   const handleVideoLoaded = () => {
     console.log('VideoBackground: Video loaded successfully');
-    setIsLoading(false);
     
     // Ensure video plays
     if (videoRef.current) {
       videoRef.current.play().catch(error => {
-        console.error('VideoBackground: Error playing video:', error);
-        // Still show video even if autoplay fails due to browser policies
-        setIsLoading(false);
+        console.log('VideoBackground: Autoplay prevented, video will play on user interaction');
       });
     }
   };
@@ -101,7 +66,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
           loop
           muted
           playsInline
-          className="object-cover w-full h-full"
+          className="object-cover w-full h-full opacity-80"
           onError={handleVideoError}
           onLoadedData={handleVideoLoaded}
         />
@@ -115,12 +80,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
           />
         </div>
       )}
-      {isLoading && !hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="w-8 h-8 border-4 border-deckademics-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
-      <div className="absolute inset-0 bg-black/40"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
     </div>
   );
 };
