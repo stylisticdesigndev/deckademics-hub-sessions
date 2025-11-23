@@ -5,6 +5,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
 const StudentAuth = () => {
   console.log("Rendering StudentAuth page");
@@ -49,7 +50,11 @@ const StudentAuth = () => {
   // Show loading state while checking auth
   if (isLoading || isCheckingAuth) {
     return (
-      <div className="min-h-screen flex flex-col bg-black relative">
+      <div className="min-h-screen flex flex-col relative">
+        <VideoBackground 
+          videoSrc="/background-video.mp4" 
+          fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+        />
         <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
           {/* Header logo removed */}
         </header>
@@ -76,7 +81,11 @@ const StudentAuth = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black relative">
+    <div className="min-h-screen flex flex-col relative">
+      <VideoBackground 
+        videoSrc="/background-video.mp4" 
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+      />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
         {/* Header logo removed */}
       </header>
