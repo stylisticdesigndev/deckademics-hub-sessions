@@ -22,30 +22,10 @@ const Index = () => {
   useEffect(() => {
     console.log("Index: Setting up background video");
     
-    // Use the new uploaded video
+    // Set video URL immediately without blocking
     const videoPath = '/background-video.mp4';
-    
-    fetch(videoPath, { method: 'HEAD' })
-      .then(response => {
-        if (!response.ok) {
-          console.error(`Index: Video file not accessible (Status ${response.status}):`, videoPath);
-          throw new Error('Video file not found');
-        }
-        return response;
-      })
-      .then(() => {
-        console.log("Index: Video exists, setting URL");
-        setBackgroundVideoUrl(videoPath);
-      })
-      .catch(error => {
-        console.error("Index: Error loading video:", error);
-        // Set the URL anyway, the VideoBackground component will handle the fallback
-        setBackgroundVideoUrl(videoPath);
-      })
-      .finally(() => {
-        // Always finish loading after video check
-        setTimeout(() => setIsLoading(false), 300);
-      });
+    setBackgroundVideoUrl(videoPath);
+    setIsLoading(false);
   }, []);
   
   // Check authentication state and clean up if necessary
