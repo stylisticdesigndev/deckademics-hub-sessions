@@ -145,23 +145,36 @@ const InstructorStudents = () => {
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesLevel = filterLevel === 'all' || student.level === filterLevel;
+    // Normalize levels for filtering
+    const normalizedStudentLevel = student.level.toLowerCase();
+    const normalizedFilterLevel = filterLevel.toLowerCase();
+    
+    const matchesLevel = filterLevel === 'all' || 
+                        normalizedStudentLevel === normalizedFilterLevel ||
+                        (normalizedFilterLevel === 'beginner' && normalizedStudentLevel === 'beginner') ||
+                        (normalizedFilterLevel === 'intermediate' && normalizedStudentLevel === 'intermediate') ||
+                        (normalizedFilterLevel === 'advanced' && normalizedStudentLevel === 'advanced');
     
     return matchesSearch && matchesLevel;
   });
 
   const studentsByLevel = {
-    Novice: filteredStudents.filter(s => s.level === 'Novice'),
-    Intermediate: filteredStudents.filter(s => s.level === 'Intermediate'),
-    Advanced: filteredStudents.filter(s => s.level === 'Advanced'),
+    Beginner: filteredStudents.filter(s => s.level.toLowerCase() === 'beginner'),
+    Intermediate: filteredStudents.filter(s => s.level.toLowerCase() === 'intermediate'),
+    Advanced: filteredStudents.filter(s => s.level.toLowerCase() === 'advanced'),
   };
   
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
+      // Map display value to database value - simplified
+      const dbLevel = newLevel.toLowerCase();
+      
+      console.log('Updating level:', { studentId, newLevel, dbLevel });
+      
       // Update in database first
       const { error } = await supabase
         .from('students')
-        .update({ level: newLevel })
+        .update({ level: dbLevel })
         .eq('id', studentId);
 
       if (error) {
@@ -174,16 +187,15 @@ const InstructorStudents = () => {
         return;
       }
 
-      // Update local state only after successful database update
-      setStudents(prevStudents => prevStudents.map(student => 
-        student.id === studentId ? { ...student, level: newLevel } : student
-      ));
       setIsEditingLevel(null);
       
       toast({
         title: "Level updated",
         description: "Student level has been successfully updated.",
       });
+      
+      // Refresh data from database
+      await refetch();
     } catch (error) {
       console.error('Unexpected error updating level:', error);
       toast({
@@ -732,9 +744,9 @@ const InstructorStudents = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="Novice">Novice</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -811,19 +823,19 @@ const InstructorStudents = () => {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Novice">Novice</SelectItem>
-                                  <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                  <SelectItem value="Advanced">Advanced</SelectItem>
+                                  <SelectItem value="beginner">Beginner</SelectItem>
+                                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="advanced">Advanced</SelectItem>
                                 </SelectContent>
                               </Select>
                             ) : (
                               <div className="flex items-center justify-center gap-2">
                                 <Badge variant="outline" className={cn(
-                                  student.level === 'Novice' && "border-green-500/50 text-green-500",
-                                  student.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
-                                  student.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                                  student.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                                  student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                                  student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
                                 )}>
-                                  {student.level}
+                                  {student.level.charAt(0).toUpperCase() + student.level.slice(1)}
                                 </Badge>
                                 <Button 
                                   variant="ghost" 
@@ -867,7 +879,7 @@ const InstructorStudents = () => {
                           <CardTitle className="flex items-center gap-2">
                             {level}
                             <Badge variant="outline" className={cn(
-                              level === 'Novice' && "border-green-500/50 text-green-500",
+                              level === 'Beginner' && "border-green-500/50 text-green-500",
                               level === 'Intermediate' && "border-blue-500/50 text-blue-500",
                               level === 'Advanced' && "border-purple-500/50 text-purple-500"
                             )}>
@@ -1082,11 +1094,11 @@ const InstructorStudents = () => {
                       <div>
                         <h3 className="font-medium text-muted-foreground">Level</h3>
                         <Badge variant="outline" className={cn(
-                          detailedStudent.level === 'Novice' && "border-green-500/50 text-green-500",
-                          detailedStudent.level === 'Intermediate' && "border-blue-500/50 text-blue-500",
-                          detailedStudent.level === 'Advanced' && "border-purple-500/50 text-purple-500"
+                          detailedStudent.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                          detailedStudent.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                          detailedStudent.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
                         )}>
-                          {detailedStudent.level}
+                          {detailedStudent.level.charAt(0).toUpperCase() + detailedStudent.level.slice(1)}
                         </Badge>
                       </div>
                       <div>
