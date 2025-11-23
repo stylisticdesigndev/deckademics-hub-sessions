@@ -66,7 +66,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
           loop
           muted
           playsInline
-          className="object-cover w-full h-full opacity-80"
+          className="object-cover w-full h-full"
           onError={handleVideoError}
           onLoadedData={handleVideoLoaded}
         />
@@ -80,7 +80,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, fall
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40"></div>
     </div>
   );
 };
