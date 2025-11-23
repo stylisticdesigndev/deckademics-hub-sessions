@@ -119,7 +119,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             email: profile?.email || '',
             avatar: profile?.avatar_url,
             progress: progressById[student.id] || 0,
-            level: student.level || 'Novice',
+            level: student.level || 'beginner',
             initials: (firstName[0] || '') + (lastName[0] || ''),
             enrollmentDate: student.start_date?.slice(0, 10) || '',
             lastActive: '',

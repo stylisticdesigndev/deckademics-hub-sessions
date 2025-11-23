@@ -316,6 +316,26 @@ export const useAdminStudents = () => {
     await Promise.all([refetchActive(), refetchPending()]);
   };
 
+  // Update student level mutation
+  const updateStudentLevel = useMutation({
+    mutationFn: async ({ studentId, level }: { studentId: string; level: string }) => {
+      const { error } = await supabase
+        .from('students')
+        .update({ level } as any)
+        .eq('id', studentId as any);
+
+      if (error) throw error;
+      return { success: true, studentId, level };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      toast.success('Student level updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update student level: ${error.message}`);
+    }
+  });
+
   return {
     activeStudents,
     pendingStudents,
@@ -323,6 +343,7 @@ export const useAdminStudents = () => {
     approveStudent,
     declineStudent,
     deactivateStudent,
+    updateStudentLevel,
     createDemoStudent,
     debugFetchStudents,
     refetchData

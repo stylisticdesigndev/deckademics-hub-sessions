@@ -27,7 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +61,7 @@ const AdminStudents = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
+  const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
   
   const {
     activeStudents,
@@ -62,6 +70,7 @@ const AdminStudents = () => {
     approveStudent,
     declineStudent,
     deactivateStudent,
+    updateStudentLevel,
     createDemoStudent,
     debugFetchStudents,
     refetchData
@@ -199,6 +208,18 @@ const AdminStudents = () => {
   const handleView = (id: string) => {
     setSelectedStudent(id);
     setShowViewStudentDialog(true);
+  };
+
+  const handleLevelChange = async (studentId: string, newLevel: string) => {
+    try {
+      await updateStudentLevel.mutateAsync({ studentId, level: newLevel });
+      setEditingLevelStudentId(null);
+      
+      // Refresh data
+      await refetchData();
+    } catch (error) {
+      console.error('Error updating level:', error);
+    }
   };
 
   const getStudentById = (id: string) => {
@@ -421,7 +442,39 @@ const AdminStudents = () => {
                                 `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
                                 'Not assigned'}
                             </TableCell>
-                            <TableCell>{student.level}</TableCell>
+                            <TableCell>
+                              {editingLevelStudentId === student.id ? (
+                                <Select
+                                  value={student.level}
+                                  onValueChange={(value) => handleLevelChange(student.id, value)}
+                                  disabled={updateStudentLevel.isPending}
+                                >
+                                  <SelectTrigger className="w-[130px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="beginner">Beginner</SelectItem>
+                                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                                    <SelectItem value="advanced">Advanced</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="capitalize">
+                                    {student.level}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => setEditingLevelStudentId(student.id)}
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell className="text-center">
                               <Badge variant="outline" className="bg-green-500/10 text-green-500">
                                 Active
