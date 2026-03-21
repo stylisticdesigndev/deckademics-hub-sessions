@@ -247,12 +247,12 @@ const StudentClasses = () => {
                           <ClassAttendanceCard
                             key={key}
                             date={date}
-                            title={activeClassInfo!.title}
+                            title={`${activeClassInfo!.title} — ${studentLevel}`}
                             time={classTime.time}
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
                             instructor={activeClassInfo!.instructorName}
-                            topic={topics[i % topics.length]}
+                            isNext={i === 0}
                             isNext={i === 0}
                             status={record || 'upcoming'}
                             onMarkAbsent={!record ? handleMarkAbsent : undefined}
