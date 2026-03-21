@@ -597,6 +597,44 @@ export type Database = {
         }
         Relationships: []
       }
+      student_absences: {
+        Row: {
+          absence_date: string
+          class_id: string
+          created_at: string | null
+          id: string
+          notified_instructor: boolean | null
+          reason: string | null
+          student_id: string
+        }
+        Insert: {
+          absence_date: string
+          class_id: string
+          created_at?: string | null
+          id?: string
+          notified_instructor?: boolean | null
+          reason?: string | null
+          student_id: string
+        }
+        Update: {
+          absence_date?: string
+          class_id?: string
+          created_at?: string | null
+          id?: string
+          notified_instructor?: boolean | null
+          reason?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_absences_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_notes: {
         Row: {
           content: string
