@@ -32,6 +32,7 @@ const InstructorAnnouncements = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [targetRole, setTargetRole] = useState<string>('student');
+  const [announcementType, setAnnouncementType] = useState<string>('announcement');
 
   // Fetch announcements
   const { data: announcements = [], isLoading } = useQuery({
