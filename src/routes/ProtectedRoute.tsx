@@ -64,7 +64,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
     
     // Only run this if we have session but no role data
-    const needsRole = session && !userData.profile && !userData.role && !session.user.user_metadata?.role;
+    const needsRole = session && !userData.profile && !userData.role;
     
     if (!isLoading && needsRole) {
       const interval = window.setInterval(() => {
