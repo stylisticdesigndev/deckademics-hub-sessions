@@ -77,7 +77,8 @@ const InstructorAnnouncements = () => {
           title: newAnnouncement.title,
           content: newAnnouncement.content,
           author_id: session.user.id,
-          target_role: newAnnouncement.target_role
+          target_role: newAnnouncement.target_role,
+          type: newAnnouncement.type
         } as any]);
 
       if (error) {
