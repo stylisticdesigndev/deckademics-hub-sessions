@@ -1,37 +1,37 @@
 
 
-# Fix Dashboard Desktop Layout — Eliminate Negative Space
+# Update Demo Pages for Consistency
 
-## Root Cause
-The dashboard uses `lg:grid-cols-2` (1024px breakpoint) for all two-column grids, but with the sidebar open (~256px), the content area at common desktop widths (1000-1280px viewport) often falls below 1024px, causing everything to stack single-column. This creates a tall, narrow left-aligned layout with excessive whitespace on the right.
+## Issues Found
 
-Additionally, `UpcomingClassesSection` and `AnnouncementsSection` render as bare fragments (h2 + content) rather than cards, so they look structurally different from their grid siblings (AttendanceChart, NotesSection) which are wrapped in cards.
+1. **StudentClasses demo**: `getMockData()` still uses `title: 'DJ Fundamentals'` — should reflect the level-only change (e.g., "Intermediate")
+2. **Demo toggle pattern is inconsistent** across pages:
+   - Dashboard & Progress use a `variant="ghost"` button (hidden when demo is active) + a primary-colored banner with "Switch to Live Data"
+   - Notes, Messages, Classes use a toggle-style button (`variant="outline"` when off, `variant="default"` when on) + a warning-colored Alert banner
+3. **No functional issues** with mock data shapes — announcements have `type`, skills have correct fields, attendance matches
 
-## Changes
+## Plan
 
-### 1. Dashboard grid breakpoints (`StudentDashboard.tsx`)
-- Change all three `lg:grid-cols-2` grids to `md:grid-cols-2` (768px breakpoint) so two-column layout activates at typical desktop content widths
-- Change stats section from `lg:grid-cols-4` to `md:grid-cols-4` in `StudentStatsSection.tsx`
-- Change stats gap from `gap-3` to `gap-4` for consistency
+### Standardize demo toggle to one pattern across all 5 pages
 
-### 2. Wrap UpcomingClassesSection in a Card (`UpcomingClassesSection.tsx`)
-- Wrap the entire section in a `Card` with `CardHeader` (title) and `CardContent` (class list)
-- Remove the bare `h2` and fragment wrapper
-- Change the inner class grid from `grid-cols-1 sm:grid-cols-2` to a simple `space-y-3` vertical list (nested grids inside a grid cell cause layout issues)
-- This matches the card structure of NotesSection (its grid sibling)
+Use the **toggle button + warning Alert** pattern (Notes/Messages/Classes style) as the standard — it's more discoverable since the button is always visible regardless of mode.
 
-### 3. Wrap AnnouncementsSection in a Card (`AnnouncementsSection.tsx`)
-- Wrap in a `Card` with `CardHeader` (title) and `CardContent`
-- Remove the bare `h2` and fragment wrapper
-- This matches NotesSection's card structure
+**Files to update:**
 
-### 4. OverallProgressRing fills space (`OverallProgressRing.tsx`)
-- Remove fixed `h-[200px]` — use `min-h-[200px] h-full` so it stretches to match its grid sibling's height
-- Add a title "Overall Progress" like SkillBreakdownChart has "Skill Breakdown" for structural parity
+### 1. `StudentDashboard.tsx`
+- Change demo button from `variant="ghost"` (only visible when not in demo) to always-visible toggle button matching Notes/Messages pattern
+- Change demo banner from primary-colored `div` to warning-colored `Alert` with `AlertTitle`/`AlertDescription`
 
-### 5. AttendanceChart height matching
-- Add `h-full` to the outer div so it stretches to match UpcomingClassesSection in the same grid row
+### 2. `StudentProgress.tsx`
+- Same change: replace ghost button + primary banner with toggle button + warning Alert
 
-## Result
-All grid sections use cards with consistent structure (title in header, content below). Two-column layout activates earlier so the dashboard fills the available width. No more bare headings floating outside cards. Every card in a grid row stretches to the same height.
+### 3. `StudentClasses.tsx`
+- In `getMockData()`, change `title: 'DJ Fundamentals'` to `title: 'Intermediate'` to reflect the level-only display change
+- Demo toggle already uses correct pattern — no toggle style changes needed
+
+### 4. `StudentNotes.tsx` — no changes needed (already correct pattern)
+### 5. `StudentMessages.tsx` — no changes needed (already correct pattern)
+
+### Result
+All 5 demo pages use the same toggle button style and warning Alert banner. Classes demo no longer references "DJ Fundamentals."
 
