@@ -29,7 +29,9 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-[200px] rounded-xl bg-card border border-border p-4">
+    <div className="flex flex-col rounded-xl bg-card border border-border p-6 min-h-[200px] h-full">
+      <h3 className="text-sm font-semibold text-foreground mb-4">Overall Progress</h3>
+      <div className="flex-1 flex items-center justify-center">
       <div className="relative w-40 h-40">
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
