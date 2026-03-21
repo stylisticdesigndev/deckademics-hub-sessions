@@ -60,9 +60,6 @@ const App = () => (
           <Route path="admin" element={<AdminAuth />} />
         </Route>
         
-        {/* Demo routes (public) */}
-        <Route path="/demo/messages" element={<StudentMessages />} />
-        
         {/* Profile Setup Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/profile-setup" element={<StudentProfileSetup />} />
