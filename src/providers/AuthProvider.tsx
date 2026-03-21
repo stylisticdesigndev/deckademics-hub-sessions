@@ -57,12 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  console.log("Initializing AuthProvider with Supabase");
+  if (import.meta.env.DEV) console.log("Initializing AuthProvider with Supabase");
   
   // Method to clear local storage
   const clearLocalStorage = () => {
     try {
-      console.log("Clearing all local storage");
+      if (import.meta.env.DEV) console.log("Clearing all local storage");
       
       // Clear specific keys related to your app
       localStorage.removeItem('sb-qeuzosggikxwnpyhulox-auth-token');
@@ -90,15 +90,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   
   useEffect(() => {
-    console.log("AuthProvider useEffect running - checking for sessions");
+    if (import.meta.env.DEV) console.log("AuthProvider useEffect running - checking for sessions");
   
     // Set up auth state listener
     const { data } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log("Auth state changed:", event, newSession?.user?.id);
+        if (import.meta.env.DEV) console.log("Auth state changed:", event, newSession?.user?.id);
         
         if (event === 'SIGNED_OUT') {
-          console.log("SIGNED_OUT event detected, clearing session and userData");
+          if (import.meta.env.DEV) console.log("SIGNED_OUT event detected, clearing session and userData");
           setSession(null);
           setUserData({
             user: null,
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log("Checking for existing session:", currentSession?.user?.id);
+        if (import.meta.env.DEV) console.log("Checking for existing session:", currentSession?.user?.id);
         
         if (currentSession?.user) {
           setSession(currentSession);
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log("Fetching user profile for ID:", userId);
+      if (import.meta.env.DEV) console.log("Fetching user profile for ID:", userId);
       
       // Use get_user_role function to avoid RLS recursion issues
       const { data: roleData, error: roleError } = await supabase.rpc('get_user_role', { 
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw roleError;
       }
       
-      console.log("Got user role:", roleData);
+      if (import.meta.env.DEV) console.log("Got user role:", roleData);
       
       // Fetch profile details directly without using recursion-prone RLS
       const { data: profileData, error: profileError } = await supabase
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (profileData) {
-        console.log("User profile fetched successfully:", profileData);
+        if (import.meta.env.DEV) console.log("User profile fetched successfully:", profileData);
         
         setUserData({
           user: session?.user || null,
@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const lastName = user_metadata.last_name || user_metadata.lastName || '';
       const email = session.user.email || '';
       
-      console.log("Creating profile from metadata:", { role, firstName, lastName, email });
+      if (import.meta.env.DEV) console.log("Creating profile from metadata:", { role, firstName, lastName, email });
       
       // Insert profile with the current user's ID
       const { data: profile, error: insertError } = await supabase
@@ -263,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw insertError;
       }
       
-      console.log("Profile created successfully:", profile);
+      if (import.meta.env.DEV) console.log("Profile created successfully:", profile);
       
       // If user is a student, add entry to students table
       if (role === 'student') {
@@ -303,7 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Helper function to redirect based on role
   const redirectBasedOnRole = (role: UserRole) => {
-    console.log("Redirecting based on role:", role);
+    if (import.meta.env.DEV) console.log("Redirecting based on role:", role);
     
     if (role === 'admin') {
       navigate('/admin/dashboard');
@@ -319,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      console.log("Signing in with email:", normalizedEmail);
+      if (import.meta.env.DEV) console.log("Signing in with email:", normalizedEmail);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
@@ -331,7 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { user: null, session: null, error };
       }
       
-      console.log("Sign in successful:", data.user?.email);
+      if (import.meta.env.DEV) console.log("Sign in successful:", data.user?.email);
       
       toast({
         title: 'Welcome back!',
@@ -362,7 +362,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      console.log("Signing up with email:", normalizedEmail, "role:", role);
+      if (import.meta.env.DEV) console.log("Signing up with email:", normalizedEmail, "role:", role);
       
       // Generate appropriate redirect URL based on role
       const redirectTo = `${window.location.origin}/${role}/profile-setup`;
@@ -385,7 +385,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      console.log("Sign up response:", data);
+      if (import.meta.env.DEV) console.log("Sign up response:", data);
       
       toast({
         title: 'Account created!',
@@ -417,7 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Modified signOut method with better session clearing
   const signOut = async () => {
-    console.log("Signing out user");
+    if (import.meta.env.DEV) console.log("Signing out user");
     try {
       // First explicitly clear our React state
       setSession(null);
@@ -444,7 +444,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Continue with rest of logout process regardless
       }
       
-      console.log("Sign out completed successfully");
+      if (import.meta.env.DEV) console.log("Sign out completed successfully");
       
       // Force clear any session that might be still in memory
       await supabase.auth.setSession({
