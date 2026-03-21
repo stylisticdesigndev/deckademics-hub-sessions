@@ -15,13 +15,53 @@ interface AuthorProfile {
   last_name?: string;
 }
 
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  published_at: string;
-  profiles?: AuthorProfile;
-}
+const demoAnnouncements = [
+  {
+    id: 'demo-1',
+    title: 'Spring Showcase Performance — Sign Up Now!',
+    content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set. Sign up with your instructor by April 5th. This is a great opportunity to show off what you\'ve learned this semester.',
+    date: new Date().toLocaleDateString(),
+    instructor: { name: 'Admin', initials: 'DA' },
+    isNew: true,
+    type: 'event' as const,
+  },
+  {
+    id: 'demo-2',
+    title: 'New Equipment in Classroom B',
+    content: 'We\'ve upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors. Please handle all equipment with care and report any issues to your instructor immediately.',
+    date: new Date(Date.now() - 2 * 86400000).toLocaleDateString(),
+    instructor: { name: 'DJ Marcus', initials: 'DM' },
+    isNew: true,
+    type: 'announcement' as const,
+  },
+  {
+    id: 'demo-3',
+    title: 'Schedule Change — No Classes March 28',
+    content: 'There will be no classes on Friday, March 28th due to building maintenance. All missed classes will be made up the following week. Please check with your instructor for your makeup time.',
+    date: new Date(Date.now() - 5 * 86400000).toLocaleDateString(),
+    instructor: { name: 'Admin', initials: 'DA' },
+    isNew: false,
+    type: 'update' as const,
+  },
+  {
+    id: 'demo-4',
+    title: 'Great Progress This Month!',
+    content: 'Just wanted to give a shoutout to all students — the progress I\'ve seen this month has been incredible. Keep practicing your transitions and beat matching. Remember, consistency is key!',
+    date: new Date(Date.now() - 8 * 86400000).toLocaleDateString(),
+    instructor: { name: 'DJ Marcus', initials: 'DM' },
+    isNew: false,
+    type: 'announcement' as const,
+  },
+  {
+    id: 'demo-5',
+    title: 'Curriculum Update for Intermediate Students',
+    content: 'We\'ve added new modules on harmonic mixing and live looping to the intermediate curriculum. These will be covered over the next 4 weeks. Make sure to review the updated lesson plan in your Curriculum tab.',
+    date: new Date(Date.now() - 12 * 86400000).toLocaleDateString(),
+    instructor: { name: 'Admin', initials: 'DA' },
+    isNew: false,
+    type: 'update' as const,
+  },
+];
 
 const StudentMessages = () => {
   const { userData, session } = useAuth();
@@ -29,22 +69,27 @@ const StudentMessages = () => {
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   
-  // Check if user has completed their profile
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+  const isDemoMode = !session;
   
   useEffect(() => {
+    if (isDemoMode) {
+      setAnnouncements(demoAnnouncements);
+      setLoading(false);
+      return;
+    }
+
     async function fetchAnnouncements() {
       try {
         setLoading(true);
         
-        // Get current user ID
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+          setAnnouncements(demoAnnouncements);
           setLoading(false);
           return;
         }
 
-        // Fetch announcements with read status
         const { data, error } = await supabase
           .from('announcements')
           .select(`
@@ -61,14 +106,13 @@ const StudentMessages = () => {
 
         if (error) {
           console.error('Error fetching announcements:', error);
+          setAnnouncements(demoAnnouncements);
           return;
         }
 
-        // Format announcements with read status
         if (data && data.length > 0) {
           const formattedAnnouncements = data.map((ann: any) => {
             const authorProfile = ann.profiles as AuthorProfile;
-            // Check if there's a read record for this announcement
             const readRecords = Array.isArray(ann.announcement_reads) ? ann.announcement_reads : [];
             const isRead = readRecords.length > 0;
             
@@ -87,20 +131,30 @@ const StudentMessages = () => {
             };
           });
           setAnnouncements(formattedAnnouncements);
+        } else {
+          setAnnouncements(demoAnnouncements);
         }
       } catch (err) {
         console.error('Error in fetchAnnouncements:', err);
+        setAnnouncements(demoAnnouncements);
       } finally {
         setLoading(false);
       }
     }
 
     fetchAnnouncements();
-  }, []);
+  }, [isDemoMode]);
 
   const handleMarkAsRead = async (id: string) => {
+    if (isDemoMode || id.startsWith('demo-')) {
+      setAnnouncements(prev => 
+        prev.map(a => a.id === id ? { ...a, isNew: false } : a)
+      );
+      toast({ title: 'Marked as read', description: 'The announcement has been marked as read.' });
+      return;
+    }
+
     try {
-      // Insert read record into database
       const { error } = await supabase
         .from('announcement_reads')
         .insert({
@@ -110,32 +164,18 @@ const StudentMessages = () => {
 
       if (error) {
         console.error('Error marking announcement as read:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to mark announcement as read.',
-        });
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
         return;
       }
 
-      // Update local state
-      setAnnouncements(prevAnnouncements => 
-        prevAnnouncements.map(announcement => 
-          announcement.id === id ? { ...announcement, isNew: false } : announcement
-        )
+      setAnnouncements(prev => 
+        prev.map(a => a.id === id ? { ...a, isNew: false } : a)
       );
       
-      toast({
-        title: 'Marked as read',
-        description: 'The announcement has been marked as read.',
-      });
+      toast({ title: 'Marked as read', description: 'The announcement has been marked as read.' });
     } catch (err) {
       console.error('Error in handleMarkAsRead:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to mark announcement as read.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
     }
   };
   
