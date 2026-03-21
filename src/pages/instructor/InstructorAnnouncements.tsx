@@ -115,7 +115,8 @@ const InstructorAnnouncements = () => {
     createAnnouncement.mutate({
       title: title.trim(),
       content: content.trim(),
-      target_role: targetRoles
+      target_role: targetRoles,
+      type: announcementType
     });
   };
 
