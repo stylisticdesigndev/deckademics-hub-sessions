@@ -1,24 +1,25 @@
 
 
-# Fix: Dashboard Showing Empty State Instead of Visual Charts
+# Fix Level Redundancy on Student Dashboard
 
-## Root Cause
-
-Line 93 in `StudentDashboard.tsx`:
-```js
-const showEmptyState = isEmpty || isFirstTimeUser;
-```
-
-`isFirstTimeUser` is `true` when there are no upcoming classes AND no progress data. `isEmpty` is `true` when there are no announcements AND no upcoming classes. Both conditions trigger `<EmptyDashboard />`, hiding the visual charts entirely.
-
-The visual chart components (OverallProgressRing, SkillBreakdownChart, AttendanceChart) already have their own "no data yet" empty states built in -- they should always render.
+## Problem
+The student's level is shown twice:
+1. In the welcome header: "You're at **Intermediate** level."
+2. In the stats card grid (the bordered box with the Award icon)
 
 ## Fix
 
-**File: `src/pages/student/StudentDashboard.tsx`**
-- Remove the `showEmptyState` conditional entirely
-- Always render the chart layout (stats, progress ring, skill breakdown, attendance, etc.)
-- The individual chart components already handle zero/empty data gracefully with placeholder visuals
+**File: `src/pages/student/StudentDashboard.tsx`** (lines 106-108)
 
-This is a single-line logic change -- remove the ternary that gates the charts behind `showEmptyState`.
+Change the subtitle from showing the level to showing the student's assigned instructor:
+
+```
+You're at Intermediate level.
+```
+becomes:
+```
+Your instructor: [Instructor Name]
+```
+
+Use `studentData.instructor` which is already available (it comes from `useStudentDashboardCore` and shows the instructor name or "Not assigned").
 
