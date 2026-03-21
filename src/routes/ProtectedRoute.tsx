@@ -14,11 +14,12 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
   const [waitTime, setWaitTime] = useState(0);
   
-  console.log("Protected route - Session:", !!session);
-  console.log("Protected route - Is loading:", isLoading);
-  console.log("Protected route - User data:", userData);
-  console.log("Protected route - User role:", userData?.role);
-  console.log("Protected route - Allowed roles:", allowedRoles);
+  if (import.meta.env.DEV) {
+    console.log("Protected route - Session:", !!session);
+    console.log("Protected route - Is loading:", isLoading);
+    console.log("Protected route - User role:", userData?.role);
+    console.log("Protected route - Allowed roles:", allowedRoles);
+  }
 
   const isMockAdmin = false; // Mock admin bypass removed for security
   
