@@ -123,15 +123,8 @@ const StudentClasses = () => {
     // Could scroll to that class card or open mark-absent dialog
   };
 
-  // Topics for variety
-  const topics = [
-    'Beat Matching & BPM Counting',
-    'EQ Control & Transitions',
-    'Scratching Techniques',
-    'Track Selection & Reading the Crowd',
-    'Harmonic Mixing Theory',
-    'Live Performance Prep',
-  ];
+  // Get student level for title
+  const studentLevel = demoMode ? 'Intermediate' : (userData.profile as any)?.level || 'Beginner';
 
   const getClassTime = () => {
     if (!activeClassInfo) return { time: '2:00 PM', duration: '1h 30m' };
