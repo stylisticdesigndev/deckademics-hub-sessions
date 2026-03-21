@@ -284,7 +284,7 @@ const InstructorStudents = () => {
       console.error('Unexpected error saving note:', error);
       toast({
         title: "Error saving note",
-        description: `An unexpected error occurred: ${error}`,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
