@@ -232,7 +232,13 @@ const StudentProfile = () => {
             {/* Row 1: Profile Header */}
             <Card>
               <CardContent className="flex items-center gap-4 py-5">
-                {isEditing && !isDemoActive ? (
+                {isDemoActive ? (
+                  <Avatar className="h-20 w-20">
+                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
                   <AvatarUpload
                     currentUrl={userData?.profile?.avatar_url}
                     onUpload={async (url) => {
@@ -243,17 +249,8 @@ const StudentProfile = () => {
                       }
                     }}
                     initials={initials}
-                    size="sm"
+                    size="md"
                   />
-                ) : (
-                  <Avatar className="h-16 w-16">
-                    {userData?.profile?.avatar_url && !isDemoActive ? (
-                      <AvatarImage src={userData.profile.avatar_url} alt="Profile photo" />
-                    ) : null}
-                    <AvatarFallback className="text-xl bg-primary text-primary-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
                 )}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{displayProfile.name || 'Student'}</h2>
