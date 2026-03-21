@@ -330,9 +330,9 @@ const StudentClasses = () => {
         </section>
 
         {demoMode && (
-          <Alert className="bg-amber-500/10 border-amber-500/30">
-            <Eye className="h-4 w-4 text-amber-500" />
-            <AlertTitle className="text-amber-500">Demo Mode Active</AlertTitle>
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
             <AlertDescription>
               Showing sample class data. Click "Live Data" to switch back to your real classes.
             </AlertDescription>
