@@ -23,6 +23,7 @@ import {
   mockAttendance,
   mockUpcomingClasses,
   mockAnnouncements,
+  mockNotes,
 } from '@/data/mockDashboardData';
 
 const StudentDashboard = () => {
@@ -184,7 +185,7 @@ const StudentDashboard = () => {
 
             {/* Notes + Announcements */}
             <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <NotesSection studentId={studentId} />
+              <NotesSection studentId={studentId} demoNotes={demoMode ? mockNotes : undefined} />
               <AnnouncementsSection 
                 announcements={activeAnnouncements} 
                 onAcknowledge={handleAcknowledgeAnnouncement} 
