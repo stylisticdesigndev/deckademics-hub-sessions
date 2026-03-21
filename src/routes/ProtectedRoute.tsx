@@ -126,7 +126,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }
   
   // Get effective role either from userData or from session metadata
-  const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
+  const effectiveRole = userData.role; // Never fall back to user_metadata.role — it's client-controlled
   
   // If user is authenticated but has no role or wrong role
   if (!effectiveRole || !allowedRoles.includes(effectiveRole)) {
