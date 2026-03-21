@@ -37,14 +37,14 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
           <RadialBarChart
             cx="50%"
             cy="50%"
-            innerRadius="70%"
+            innerRadius="78%"
             outerRadius="100%"
             startAngle={90}
             endAngle={-270}
             data={data}
-            barSize={12}
+            barSize={8}
           >
-            <RadialBar dataKey="value" cornerRadius={6} background={false} />
+            <RadialBar dataKey="value" cornerRadius={4} background={false} />
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
