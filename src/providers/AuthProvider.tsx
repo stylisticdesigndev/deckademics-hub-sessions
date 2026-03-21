@@ -236,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { user_metadata } = session.user;
       
       // Extract data from user metadata with safer fallbacks
-      const role = (user_metadata.role || 'student') as UserRole;
+      const role = 'student' as UserRole; // Never trust user_metadata.role - elevated roles assigned server-side only
       const firstName = user_metadata.first_name || user_metadata.firstName || '';
       const lastName = user_metadata.last_name || user_metadata.lastName || '';
       const email = session.user.email || '';

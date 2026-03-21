@@ -12,6 +12,53 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller and verify admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub;
+
+    // Verify caller is admin via user_roles table
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data: roleCheck } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerId)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleCheck) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: admin role required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { email, firstName, lastName, specialties, hourlyRate } = await req.json();
 
     if (!email || !firstName || !lastName) {
@@ -20,18 +67,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Create Supabase admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
 
     // Generate a temporary password
     const tempPassword = crypto.randomUUID();
@@ -70,7 +105,6 @@ serve(async (req) => {
       .eq('id', userId)
       .single();
 
-    // If no profile exists, create one
     if (!existingProfile) {
       console.log('Creating profile...');
       const { error: profileError } = await supabaseAdmin
@@ -85,7 +119,6 @@ serve(async (req) => {
 
       if (profileError) {
         console.error('Profile error:', profileError);
-        // Don't fail if profile creation fails, the trigger might have created it
       }
     }
 
@@ -120,7 +153,6 @@ serve(async (req) => {
 
     if (resetError) {
       console.error('Password reset email error:', resetError);
-      // Don't fail if email fails
     }
 
     return new Response(
@@ -135,7 +167,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in create-instructor function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

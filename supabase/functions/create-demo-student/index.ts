@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.14.0";
 
@@ -8,13 +7,57 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get request body
+    // Authenticate the caller and verify admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub;
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Verify caller is admin
+    const { data: roleCheck } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerId)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleCheck) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: admin role required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { email_address, first_name, last_name } = await req.json();
 
     if (!email_address) {
@@ -24,16 +67,8 @@ serve(async (req) => {
       );
     }
 
-    // Create a Supabase client with the Admin key to bypass RLS
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     console.log("Creating demo student with email:", email_address);
 
-    // Step 1: First create the auth user with admin API
-    console.log("Step 1: Creating auth user");
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email_address,
       email_confirm: true,
@@ -56,11 +91,8 @@ serve(async (req) => {
     const userId = authUser.user.id;
     console.log("Auth user created with ID:", userId);
 
-    // Wait to ensure the user is properly created
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Step 2: Check if profile was created by the trigger, if not create it manually
-    console.log("Step 2: Checking/creating profile");
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id')
@@ -81,19 +113,12 @@ serve(async (req) => {
 
       if (profileError) {
         console.error("Failed to create profile:", profileError);
-      } else {
-        console.log("Profile created manually");
       }
 
-      // Additional waiting time after profile creation
       await new Promise(resolve => setTimeout(resolve, 1000));
-    } else {
-      console.log("Profile already exists");
     }
 
-    // Step 3: Create student record with start_date
-    console.log("Step 3: Creating student record");
-    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
     
     const { data: studentData, error: studentError } = await supabaseAdmin
       .from('students')
@@ -124,10 +149,10 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error("Unexpected error in create-demo-student function:", error.message);
+    console.error("Unexpected error:", error.message);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
