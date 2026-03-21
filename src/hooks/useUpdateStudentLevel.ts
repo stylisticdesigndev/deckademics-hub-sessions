@@ -2,18 +2,22 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type StudentLevel = 'beginner' | 'intermediate' | 'advanced';
+export type StudentLevel = 'novice' | 'amateur' | 'intermediate' | 'advanced';
 
 export const LEVEL_DISPLAY_MAP: Record<StudentLevel, string> = {
-  beginner: 'Beginner',
+  novice: 'Novice',
+  amateur: 'Amateur',
   intermediate: 'Intermediate',
   advanced: 'Advanced'
 };
 
 export const LEVEL_VALUE_MAP: Record<string, StudentLevel> = {
-  'Beginner': 'beginner',
-  'Novice': 'beginner',
-  'beginner': 'beginner',
+  'Novice': 'novice',
+  'novice': 'novice',
+  'Beginner': 'novice',
+  'beginner': 'novice',
+  'Amateur': 'amateur',
+  'amateur': 'amateur',
   'Intermediate': 'intermediate',
   'intermediate': 'intermediate',
   'Advanced': 'advanced',

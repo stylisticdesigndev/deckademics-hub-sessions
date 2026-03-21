@@ -315,7 +315,7 @@ const AdminCurriculum = () => {
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          {['beginner', 'intermediate', 'advanced'].map(level => (
+          {['novice', 'amateur', 'intermediate', 'advanced'].map(level => (
             <TabsContent key={level} value={level} className="space-y-4">
               {getModulesByLevel(level).length === 0 ? (
                 <Card className="text-center p-6">

@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 interface CreateModuleData {
   title: string;
   description: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
+  level: 'novice' | 'amateur' | 'intermediate' | 'advanced';
   order_index: number;
 }
 
