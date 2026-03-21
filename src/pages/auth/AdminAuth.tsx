@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VideoBackground } from '@/components/background/VideoBackground';
 
-const ADMIN_EMAIL = 'whadhannen@gmail.com';
+// Admin email removed from client-side code for security
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();

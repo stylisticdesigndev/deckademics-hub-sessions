@@ -284,13 +284,6 @@ export const AuthForm = ({ userType, disableSignup = false, adminEmail }: AuthFo
               </Alert>
             )}
             
-            {userType === 'admin' && (
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
-                <p className="font-medium text-amber-800 dark:text-amber-300">Admin Credentials</p>
-                <p className="text-amber-700 dark:text-amber-400 mt-1">Email: {adminEmail || 'admin@example.com'}</p>
-                <p className="text-amber-700 dark:text-amber-400">Password: Admin123!</p>
-              </div>
-            )}
             
             {debugMode && (
               <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs overflow-auto">
