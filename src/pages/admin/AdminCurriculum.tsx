@@ -21,7 +21,7 @@ import { useUpdateCurriculumLesson } from '@/hooks/useUpdateCurriculumLesson';
 import { useDeleteCurriculumLesson } from '@/hooks/useDeleteCurriculumLesson';
 
 const AdminCurriculum = () => {
-  const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [selectedLevel, setSelectedLevel] = useState<'novice' | 'amateur' | 'intermediate' | 'advanced'>('novice');
   
   const { data: allModules = [], isLoading } = useCurriculumModules();
   const { data: allLessons = [] } = useCurriculumLessons();
