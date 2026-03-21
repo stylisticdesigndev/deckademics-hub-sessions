@@ -213,10 +213,10 @@ const StudentProfile = () => {
         </section>
 
         {isDemoActive && (
-          <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/10">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertTitle className="text-yellow-700">Demo Mode</AlertTitle>
-            <AlertDescription className="text-yellow-600">
+          <Alert variant="default" className="border-destructive/50 bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertTitle className="text-destructive">Demo Mode</AlertTitle>
+            <AlertDescription className="text-destructive/80">
               Viewing sample profile data. {session ? 'Toggle off to see your real profile.' : 'Log in to see your real profile.'}
             </AlertDescription>
           </Alert>
