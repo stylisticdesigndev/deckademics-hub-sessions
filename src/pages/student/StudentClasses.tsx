@@ -112,7 +112,7 @@ const StudentClasses = () => {
 
   // Build attendance map
   const attendanceMap = useMemo(() => {
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
+    const map = new Map<string, 'present' | 'absent'>();
     activeRecords.forEach(r => map.set(r.date, r.status as any));
     return map;
   }, [activeRecords]);
