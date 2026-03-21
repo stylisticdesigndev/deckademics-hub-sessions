@@ -70,12 +70,30 @@ function getMockData() {
   };
 }
 
+const LEVEL_DISPLAY: Record<string, string> = {
+  novice: 'Novice', amateur: 'Amateur', intermediate: 'Intermediate',
+  advanced: 'Advanced', beginner: 'Novice',
+};
+
 const StudentClasses = () => {
   const { userData, session } = useAuth();
   const { classInfo, attendanceRecords, loading, marking, markAbsent } = useStudentClassAttendance();
   const [demoMode, setDemoMode] = useState(false);
-  
-  const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+  const [studentLevel, setStudentLevel] = useState('');
+
+  // Fetch student level
+  React.useEffect(() => {
+    const fetchLevel = async () => {
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from('students')
+        .select('level')
+        .eq('id', session.user.id)
+        .single();
+      if (data?.level) setStudentLevel(LEVEL_DISPLAY[data.level] || data.level);
+    };
+    fetchLevel();
+  }, [session?.user?.id]);
 
   // Resolve data source
   const activeClassInfo = demoMode ? getMockData().classInfo : classInfo;
