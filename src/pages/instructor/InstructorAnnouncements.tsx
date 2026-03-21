@@ -94,6 +94,7 @@ const InstructorAnnouncements = () => {
       setTitle('');
       setContent('');
       setTargetRole('student');
+      setAnnouncementType('announcement');
     },
     onError: (error: Error) => {
       console.error('Error creating announcement:', error);
