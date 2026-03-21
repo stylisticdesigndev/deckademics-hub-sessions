@@ -7,16 +7,17 @@ import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
-import { BookOpen, BarChart, Layers, PlusCircle } from 'lucide-react';
+import { BookOpen, BarChart, Layers, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { mockSkills } from '@/data/mockDashboardData';
 
 const StudentProgress = () => {
   const { userData, session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState([]);
   const [courseInfo, setCourseInfo] = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
   
-  // Check if user has completed their profile
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const userId = session?.user?.id;
   
@@ -27,7 +28,6 @@ const StudentProgress = () => {
       try {
         setLoading(true);
         
-        // Fetch student progress data
         const { data: progress, error: progressError } = await supabase
           .from('student_progress')
           .select('*')
@@ -36,10 +36,8 @@ const StudentProgress = () => {
         if (progressError) {
           console.error('Error fetching student progress:', progressError);
         } else {
-          console.log('Student progress data:', progress);
           setProgressData(progress || []);
           
-          // If we have progress data with a course_id, fetch the course info
           if (progress && progress.length > 0 && progress[0].course_id) {
             const { data: course, error: courseError } = await supabase
               .from('courses')
@@ -63,27 +61,48 @@ const StudentProgress = () => {
     
     fetchProgressData();
   }, [userId]);
+
+  const activeProgressData = demoMode ? mockSkills : progressData;
+  const isLoading = !demoMode && loading;
   
-  // Calculate average progress
-  const averageProgress = progressData.length > 0 
-    ? Math.round(progressData.reduce((sum, item) => sum + (item.proficiency || 0), 0) / progressData.length) 
+  const averageProgress = activeProgressData.length > 0 
+    ? Math.round(activeProgressData.reduce((sum, item) => sum + (item.proficiency || 0), 0) / activeProgressData.length) 
     : 0;
   
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <section>
-          <h1 className="text-2xl font-bold">Your Learning Progress</h1>
-          <p className="text-muted-foreground mt-2">
-            Track your progress through the DJ school curriculum
-          </p>
+        <section className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Your Learning Progress</h1>
+            <p className="text-muted-foreground mt-2">
+              Track your progress through the DJ school curriculum
+            </p>
+          </div>
+          {!demoMode && (
+            <Button size="sm" variant="ghost" onClick={() => setDemoMode(true)} className="text-muted-foreground">
+              <Eye className="h-4 w-4 mr-1" /> Demo
+            </Button>
+          )}
         </section>
 
-        {loading ? (
+        {demoMode && (
+          <div className="rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Demo Mode — Showing sample data</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setDemoMode(false)}>
+              <EyeOff className="h-4 w-4 mr-1" /> Switch to Live Data
+            </Button>
+          </div>
+        )}
+
+        {isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading your progress...</p>
           </div>
-        ) : progressData.length > 0 ? (
+        ) : activeProgressData.length > 0 ? (
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -111,7 +130,7 @@ const StudentProgress = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {progressData.map((skill, index) => (
+                {activeProgressData.map((skill, index) => (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>{skill.skill_name}</span>
@@ -156,19 +175,19 @@ const StudentProgress = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <BookOpen className="h-8 w-8 text-deckademics-primary mb-2" />
+                <BookOpen className="h-8 w-8 text-primary mb-2" />
                 <h3 className="font-medium">Beginner Skills</h3>
                 <p className="text-sm text-muted-foreground mt-1">Learn the fundamentals of DJ equipment and basic mixing techniques</p>
               </div>
               
               <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <Layers className="h-8 w-8 text-deckademics-primary mb-2" />
+                <Layers className="h-8 w-8 text-primary mb-2" />
                 <h3 className="font-medium">Intermediate Skills</h3>
                 <p className="text-sm text-muted-foreground mt-1">Master beat matching, EQ control, and basic scratching techniques</p>
               </div>
               
               <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <BarChart className="h-8 w-8 text-deckademics-primary mb-2" />
+                <BarChart className="h-8 w-8 text-primary mb-2" />
                 <h3 className="font-medium">Advanced Skills</h3>
                 <p className="text-sm text-muted-foreground mt-1">Perfect advanced mixing, scratching, and performance techniques</p>
               </div>
