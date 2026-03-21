@@ -104,7 +104,7 @@ const StudentDashboard = () => {
         <section className="space-y-1">
           <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
           <p className="text-muted-foreground">
-            You're at <span className="text-primary font-medium">{studentData.level}</span> level.
+            Your instructor: <span className="text-primary font-medium">{studentData.instructor !== 'Not assigned' ? studentData.instructor : 'Not yet assigned'}</span>
           </p>
         </section>
 
