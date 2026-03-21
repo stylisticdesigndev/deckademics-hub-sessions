@@ -16,7 +16,7 @@ interface ClassAttendanceCardProps {
   location: string;
   instructor: string;
   isNext?: boolean;
-  status?: 'present' | 'absent' | 'late' | 'upcoming';
+  status?: 'present' | 'absent' | 'upcoming';
   onMarkAbsent?: (date: Date, reason?: string) => void;
   marking?: boolean;
 }

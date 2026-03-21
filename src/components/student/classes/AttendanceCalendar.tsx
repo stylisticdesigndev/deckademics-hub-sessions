@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 interface AttendanceDay {
   date: Date;
-  status: 'present' | 'absent' | 'late' | 'upcoming';
+  status: 'present' | 'absent' | 'upcoming';
 }
 
 interface AttendanceCalendarProps {
