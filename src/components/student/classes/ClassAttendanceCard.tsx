@@ -49,8 +49,6 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
         return <Badge className="bg-[hsl(var(--chart-2))] text-white">Present</Badge>;
       case 'absent':
         return <Badge variant="destructive">Absent</Badge>;
-      case 'late':
-        return <Badge className="bg-[hsl(var(--chart-4))] text-white">Late</Badge>;
       case 'upcoming':
         return isNext
           ? <Badge className="bg-primary text-primary-foreground">Next Class</Badge>
