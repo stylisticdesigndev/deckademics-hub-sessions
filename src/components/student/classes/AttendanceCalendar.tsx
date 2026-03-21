@@ -24,13 +24,11 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
 
   const presentDays = attendanceDays.filter(d => d.status === 'present').map(d => d.date);
   const absentDays = attendanceDays.filter(d => d.status === 'absent').map(d => d.date);
-  const lateDays = attendanceDays.filter(d => d.status === 'late').map(d => d.date);
   const upcomingDays = attendanceDays.filter(d => d.status === 'upcoming').map(d => d.date);
 
   const modifiers = {
     present: presentDays,
     absent: absentDays,
-    late: lateDays,
     upcoming: upcomingDays,
   };
 
@@ -42,11 +40,6 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
     },
     absent: {
       backgroundColor: 'hsl(var(--destructive))',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    late: {
-      backgroundColor: 'hsl(var(--chart-4))',
       color: 'white',
       borderRadius: '50%',
     },
