@@ -6,13 +6,27 @@ import { StickyNote, ArrowRight, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-interface NotesSectionProps {
-  studentId: string | undefined;
+interface DemoNote {
+  id: string;
+  title: string | null;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+  instructor?: { first_name: string | null; last_name: string | null };
 }
 
-export const NotesSection = ({ studentId }: NotesSectionProps) => {
+interface NotesSectionProps {
+  studentId: string | undefined;
+  demoNotes?: DemoNote[];
+}
+
+export const NotesSection = ({ studentId, demoNotes }: NotesSectionProps) => {
   const navigate = useNavigate();
-  const { notes, isLoading, unreadCount } = useStudentNotes(studentId);
+  const { notes: dbNotes, isLoading: dbLoading, unreadCount: dbUnreadCount } = useStudentNotes(studentId);
+  
+  const notes = demoNotes || dbNotes;
+  const isLoading = demoNotes ? false : dbLoading;
+  const unreadCount = demoNotes ? demoNotes.filter(n => !n.is_read).length : dbUnreadCount;
   
   // Show only the 3 most recent notes
   const recentNotes = notes.slice(0, 3);

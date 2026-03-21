@@ -23,6 +23,7 @@ import {
   mockAttendance,
   mockUpcomingClasses,
   mockAnnouncements,
+  mockNotes,
 } from '@/data/mockDashboardData';
 
 const StudentDashboard = () => {

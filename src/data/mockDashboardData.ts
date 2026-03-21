@@ -20,45 +20,61 @@ export const mockSkills = [
 ];
 
 export const mockAttendance = {
-  present: 18,
-  absent: 2,
-  late: 3,
-  total: 23,
+  present: 9,
+  absent: 1,
+  late: 2,
+  total: 12,
 };
 
 export const mockUpcomingClasses = [
   {
     id: 'mock-1',
-    title: 'Advanced Beat Matching',
+    title: 'Intermediate Class',
     date: 'Tomorrow',
     time: '3:00 PM',
     instructor: 'DJ Master K',
-    location: 'Studio A',
-    duration: '1 hour',
-    attendees: 6,
+    location: 'Classroom 1',
+    duration: '1h 30m',
+    attendees: 0,
     isUpcoming: true,
   },
   {
     id: 'mock-2',
-    title: 'Scratch Techniques 201',
-    date: 'Wednesday',
+    title: 'Intermediate Class',
+    date: 'Next Wednesday',
     time: '5:00 PM',
     instructor: 'DJ Master K',
-    location: 'Studio B',
-    duration: '1.5 hours',
-    attendees: 4,
+    location: 'Classroom 2',
+    duration: '1h 30m',
+    attendees: 0,
     isUpcoming: true,
   },
+];
+
+export const mockNotes = [
   {
-    id: 'mock-3',
-    title: 'Live Performance Prep',
-    date: 'Friday',
-    time: '2:00 PM',
-    instructor: 'DJ Master K',
-    location: 'Main Stage',
-    duration: '2 hours',
-    attendees: 8,
-    isUpcoming: true,
+    id: 'mock-note-1',
+    title: 'Great progress on transitions',
+    content: 'Your transitions between tracks are getting much smoother. Keep practicing the 16-bar blend technique we covered last session.',
+    is_read: false,
+    created_at: '2026-03-20T14:00:00Z',
+    instructor: { first_name: 'DJ Master', last_name: 'K' },
+  },
+  {
+    id: 'mock-note-2',
+    title: 'Practice EQ sweeps',
+    content: 'Focus on using the low-pass filter during buildups. Try the exercise where you sweep from 0 to full over 8 bars.',
+    is_read: true,
+    created_at: '2026-03-15T10:30:00Z',
+    instructor: { first_name: 'DJ Master', last_name: 'K' },
+  },
+  {
+    id: 'mock-note-3',
+    title: 'Homework: Mix 3 tracks',
+    content: 'Record a 15-minute mix blending at least 3 tracks. Focus on key matching and energy flow between songs.',
+    is_read: true,
+    created_at: '2026-03-10T09:00:00Z',
+    instructor: { first_name: 'DJ Master', last_name: 'K' },
   },
 ];
 
@@ -75,7 +91,7 @@ export const mockAnnouncements = [
   {
     id: 'mock-ann-2',
     title: 'New Equipment Arrived',
-    content: 'We just received the new Pioneer DDJ-REV7 controllers. They will be available in Studio A starting next week.',
+    content: 'We just received the new Pioneer DDJ-REV7 controllers. They will be available in Classroom 1 starting next week.',
     date: '2026-03-18',
     instructor: { name: 'Admin', initials: 'AD' },
     isNew: false,
