@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { Loader2 } from 'lucide-react';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -18,7 +20,24 @@ const AdminDashboard = () => {
     isLoading: isLoadingInstructors 
   } = useAdminInstructors();
 
-  // Handle dashboard data loading error
+  const { data: paymentStats } = useQuery({
+    queryKey: ['admin-payment-stats'],
+    queryFn: async () => {
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('status, payment_date');
+      if (error) throw error;
+      const pending = payments?.filter(p => p.status === 'pending').length || 0;
+      const overdue = payments?.filter(p => {
+        if (p.status !== 'pending') return false;
+        const payDate = p.payment_date ? new Date(p.payment_date) : null;
+        return payDate && payDate < new Date();
+      }).length || 0;
+      return { pending, overdue };
+    },
+    staleTime: 60000,
+  });
+
   useEffect(() => {
     if (error) {
       toast({
@@ -53,16 +72,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -79,16 +89,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Instructors</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -104,19 +105,8 @@ const AdminDashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Payment Status
-              </CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
+              <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </CardHeader>
@@ -126,8 +116,8 @@ const AdminDashboard = () => {
                 <span>Overdue</span>
               </div>
               <div className="flex justify-between text-lg font-bold">
-                <span>3</span>
-                <span>2</span>
+                <span>{paymentStats?.pending ?? 0}</span>
+                <span>{paymentStats?.overdue ?? 0}</span>
               </div>
             </CardContent>
           </Card>
@@ -151,7 +141,6 @@ const AdminDashboard = () => {
                   <div className="p-4">
                     <h3 className="font-medium">New Student Registrations</h3>
                     <div className="mt-2 divide-y">
-                      
                       <div className="py-4 text-center text-muted-foreground">
                         No pending student approvals
                       </div>

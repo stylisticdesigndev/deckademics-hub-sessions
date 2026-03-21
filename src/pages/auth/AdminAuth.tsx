@@ -3,14 +3,14 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert, AlertTriangle } from 'lucide-react';
-import { AuthProvider, useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
-// Define the admin email as a constant that can be easily updated
 const ADMIN_EMAIL = 'whadhannen@gmail.com';
 
 const AdminAuthContent = () => {
@@ -20,20 +20,15 @@ const AdminAuthContent = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   
-  // Redirect if user is already logged in
   useEffect(() => {
     if (session && session.user) {
       const role = session.user.user_metadata?.role;
       if (role === 'admin') {
         navigate('/admin/dashboard');
-      } else if (role) {
-        // If they have a different role, redirect to appropriate page
-        console.log(`User has ${role} role, redirecting appropriately`);
-        if (role === 'student') {
-          navigate('/student/dashboard');
-        } else if (role === 'instructor') {
-          navigate('/instructor/dashboard');
-        }
+      } else if (role === 'student') {
+        navigate('/student/dashboard');
+      } else if (role === 'instructor') {
+        navigate('/instructor/dashboard');
       }
     }
   }, [session, navigate]);
@@ -54,18 +49,13 @@ const AdminAuthContent = () => {
         'https://qeuzosggikxwnpyhulox.supabase.co/functions/v1/reset-admin-password',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ newPassword }),
         }
       );
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to reset password');
 
       toast({
         title: 'Success',
@@ -74,7 +64,6 @@ const AdminAuthContent = () => {
       setShowPasswordReset(false);
       setNewPassword('');
     } catch (error: any) {
-      console.error('Error resetting password:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to reset password',
@@ -95,9 +84,7 @@ const AdminAuthContent = () => {
             className="h-28 w-auto"
           />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
-          Admin Sign In
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Admin Sign In</h1>
         <p className="text-muted-foreground max-w-xs mx-auto">
           Access the administrative controls for Deckademics DJ School
         </p>
@@ -126,11 +113,7 @@ const AdminAuthContent = () => {
       
       <div className="text-center space-y-4">
         {!showPasswordReset ? (
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => setShowPasswordReset(true)}
-          >
+          <Button variant="outline" className="w-full" onClick={() => setShowPasswordReset(true)}>
             Set Admin Password
           </Button>
         ) : (
@@ -144,20 +127,10 @@ const AdminAuthContent = () => {
               className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
             />
             <div className="flex gap-2">
-              <Button
-                onClick={handleResetPassword}
-                disabled={isResetting}
-                className="flex-1"
-              >
+              <Button onClick={handleResetPassword} disabled={isResetting} className="flex-1">
                 {isResetting ? 'Setting Password...' : 'Set Password'}
               </Button>
-              <Button
-                onClick={() => {
-                  setShowPasswordReset(false);
-                  setNewPassword('');
-                }}
-                variant="outline"
-              >
+              <Button onClick={() => { setShowPasswordReset(false); setNewPassword(''); }} variant="outline">
                 Cancel
               </Button>
             </div>
@@ -176,15 +149,16 @@ const AdminAuthContent = () => {
 
 const AdminAuth = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-black relative">
+    <div className="min-h-screen flex flex-col relative">
+      <VideoBackground 
+        videoSrc="/background-video.mp4" 
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+      />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        {/* Header content */}
       </header>
       
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
-        <AuthProvider>
-          <AdminAuthContent />
-        </AuthProvider>
+        <AdminAuthContent />
       </main>
       
       <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
