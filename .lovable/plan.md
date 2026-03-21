@@ -1,32 +1,74 @@
 
 
-# Fix Student Profile Page Visual Hierarchy
+# Add Profile Picture Upload (Required)
 
-## Current Issues
-At the current viewport (1000px with sidebar), the page uses a `md:grid-cols-3` layout where:
-- Left column (2/3): Personal Information card with avatar, form fields, and bio
-- Right column (1/3): Course Info, Instructor, Instructor Notes, and Notification Preferences cards stacked vertically
-
-The right sidebar cards are narrow and create uneven visual weight. The empty states in Course Info and Instructor cards have excessive `py-8` padding. The overall layout doesn't flow cohesively.
+## Current State
+- "Upload Photo" buttons exist on all profile setup pages (Student, Instructor, Admin) but are **non-functional** — no click handler, no upload logic
+- The `profiles` table already has an `avatar_url` column
+- `DashboardLayout` already renders `AvatarImage` from `avatar_url`
+- No storage bucket exists for avatars
 
 ## Plan
 
-### 1. Restructure to full-width stacked layout
-Change from the 2/3 + 1/3 grid to a full-width layout where cards span the available width in a logical top-to-bottom flow:
+### 1. Database Migration — Create avatars storage bucket
+```sql
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
 
-**Row 1**: Profile header card (avatar + name/email + Edit button) — full width, compact  
-**Row 2**: Two-column grid — Personal Details (name, email, phone, bio form) | Course & Instructor info (combined into one card)  
-**Row 3**: Notification Preferences — full width
+-- Allow authenticated users to upload their own avatar
+CREATE POLICY "Users can upload their own avatar"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
 
-### 2. Combine Course Info + Instructor into one card
-Merge the separate Course Information and Instructor cards into a single "Enrollment Details" card with sections for course, level, duration, and instructor. Reduces card count and eliminates redundant headers.
+-- Allow users to update/delete their own avatar
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects FOR UPDATE TO authenticated
+USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
 
-### 3. Reduce empty state padding
-Change `py-8` to `py-4` on empty states to reduce negative space when no data is available.
+CREATE POLICY "Users can delete their own avatar"
+ON storage.objects FOR DELETE TO authenticated
+USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
 
-### 4. Pull avatar into a compact profile header
-Extract the avatar + name display from the form into a top-level full-width card. This creates a clear visual anchor at the top of the page. The form card below focuses purely on editable fields.
+-- Public read access
+CREATE POLICY "Anyone can view avatars"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+```
+
+### 2. Create shared `AvatarUpload` component
+**New file: `src/components/profile/AvatarUpload.tsx`**
+- Accepts `currentUrl`, `onUpload(url)`, `required`, `initials` props
+- Renders Avatar with AvatarImage (if URL exists) or AvatarFallback
+- Hidden file input triggered by "Upload Photo" / "Change Photo" button
+- On file select: uploads to `avatars/{userId}/{timestamp}.{ext}` via Supabase Storage
+- Shows loading state during upload
+- If `required` and no photo, shows a red validation message
+
+### 3. Wire up profile setup pages (make photo required)
+**Files: `StudentProfileSetup.tsx`, `InstructorProfileSetup.tsx`, `AdminProfileSetup.tsx`**
+- Replace static Avatar + non-functional button with `<AvatarUpload>`
+- Store `avatarUrl` in form state
+- On upload success, set `avatarUrl` state
+- On submit, include `avatar_url` in the `updateProfile()` call
+- Block form submission if no avatar uploaded (required validation)
+
+### 4. Wire up profile edit pages
+**Files: `StudentProfile.tsx`, `InstructorProfile.tsx`**
+- In edit mode, replace static Avatar with `<AvatarUpload>` (not required here, since they already passed setup)
+- Show current `avatar_url` from profile data
+- On upload, update `avatar_url` via `updateProfile()`
+- In view mode, show `AvatarImage` with the stored URL
+
+### 5. Update AuthProvider `updateProfile`
+**File: `src/providers/AuthProvider.tsx`**
+- Ensure `avatar_url` is included in the profile update query (it should already work since it accepts `Partial<Profile>`, but verify the Supabase update call passes it through)
 
 ### Files Changed
-- `src/pages/student/StudentProfile.tsx` — restructure layout, combine cards, add profile header card
+- Migration SQL (new storage bucket + policies)
+- `src/components/profile/AvatarUpload.tsx` (new)
+- `src/pages/student/StudentProfileSetup.tsx`
+- `src/pages/instructor/InstructorProfileSetup.tsx`
+- `src/pages/admin/AdminProfileSetup.tsx`
+- `src/pages/student/StudentProfile.tsx`
+- `src/pages/instructor/InstructorProfile.tsx`
+- `src/providers/AuthProvider.tsx` (if needed)
 
