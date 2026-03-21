@@ -253,7 +253,6 @@ const StudentClasses = () => {
                             location={activeClassInfo!.location}
                             instructor={activeClassInfo!.instructorName}
                             isNext={i === 0}
-                            isNext={i === 0}
                             status={record || 'upcoming'}
                             onMarkAbsent={!record ? handleMarkAbsent : undefined}
                             marking={marking}
