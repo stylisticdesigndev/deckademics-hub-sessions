@@ -317,10 +317,6 @@ const StudentProfile = () => {
                     {displayCourse ? (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-xs text-muted-foreground">Course</p>
-                          <p className="text-sm font-medium">{displayCourse.title}</p>
-                        </div>
-                        <div>
                           <p className="text-xs text-muted-foreground">Level</p>
                           <p className="text-sm font-medium capitalize">{displayLevel}</p>
                         </div>
