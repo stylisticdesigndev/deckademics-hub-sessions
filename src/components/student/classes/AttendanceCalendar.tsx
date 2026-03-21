@@ -34,9 +34,8 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
 
   const modifiersStyles = {
     present: {
-      backgroundColor: 'transparent',
-      border: '2px solid hsl(142, 71%, 45%)',
-      color: 'inherit',
+      backgroundColor: 'hsl(142, 71%, 45%)',
+      color: 'white',
       borderRadius: '50%',
     },
     absent: {
