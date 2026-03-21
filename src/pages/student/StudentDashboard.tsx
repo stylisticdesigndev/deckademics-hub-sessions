@@ -121,8 +121,6 @@ const StudentDashboard = () => {
 
         {loading ? (
           <DashboardSkeleton />
-        ) : showEmptyState ? (
-          <EmptyDashboard />
         ) : (
           <>
             <StudentStatsSection
