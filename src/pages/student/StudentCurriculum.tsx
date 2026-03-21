@@ -12,7 +12,30 @@ import { useAuth } from '@/providers/AuthProvider';
 import { LEVEL_VALUE_MAP } from '@/hooks/useUpdateStudentLevel';
 
 const StudentCurriculum = () => {
+  const { userId } = useAuth();
   const { data: allModules = [], isLoading } = useCurriculumModules();
+  const { data: allLessons = [] } = useCurriculumLessons();
+  const [activeTab, setActiveTab] = useState('novice');
+  const [levelLoading, setLevelLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLevel = async () => {
+      if (!userId) { setLevelLoading(false); return; }
+      const { data } = await supabase
+        .from('students')
+        .select('level')
+        .eq('id', userId)
+        .maybeSingle();
+      if (data?.level) {
+        const mapped = LEVEL_VALUE_MAP[data.level] || data.level;
+        if (['novice', 'amateur', 'intermediate', 'advanced'].includes(mapped)) {
+          setActiveTab(mapped);
+        }
+      }
+      setLevelLoading(false);
+    };
+    fetchLevel();
+  }, [userId]);
   const { data: allLessons = [] } = useCurriculumLessons();
 
   const getModulesByLevel = (level: string) =>
