@@ -142,8 +142,7 @@ const StudentClasses = () => {
     // Could scroll to that class card or open mark-absent dialog
   };
 
-  // Get student level for title
-  const studentLevel = demoMode ? 'Intermediate' : (userData.profile as any)?.level || 'Beginner';
+  const displayLevel = demoMode ? 'Intermediate' : studentLevel;
 
   const getClassTime = () => {
     if (!activeClassInfo) return { time: '2:00 PM', duration: '1h 30m' };
