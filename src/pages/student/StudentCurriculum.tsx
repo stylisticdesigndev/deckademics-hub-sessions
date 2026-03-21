@@ -57,10 +57,12 @@ const StudentCurriculum = () => {
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Learning Curriculum</h1>
-          <p className="text-muted-foreground">Explore our comprehensive DJ training program</p>
-        </div>
+        <section className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Learning Curriculum</h1>
+            <p className="text-muted-foreground mt-1">Explore our comprehensive DJ training program</p>
+          </div>
+        </section>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">

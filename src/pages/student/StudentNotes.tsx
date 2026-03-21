@@ -181,16 +181,13 @@ export default function StudentNotes() {
 
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
-      <div className="container max-w-4xl py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <StickyNote className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">My Notes</h1>
-              <p className="text-muted-foreground">
-                View notes from your instructors organized by date
-              </p>
-            </div>
+      <div className="space-y-6">
+        <section className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">My Notes</h1>
+            <p className="text-muted-foreground mt-1">
+              View notes from your instructors organized by date
+            </p>
           </div>
           <Button
             variant={demoMode ? "default" : "outline"}
@@ -201,10 +198,10 @@ export default function StudentNotes() {
             {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             {demoMode ? 'Live Data' : 'Demo'}
           </Button>
-        </div>
+        </section>
 
         {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30 mb-6">
+          <Alert className="bg-warning/10 border-warning/30">
             <Eye className="h-4 w-4 text-warning" />
             <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
             <AlertDescription>
