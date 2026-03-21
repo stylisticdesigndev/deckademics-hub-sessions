@@ -20,6 +20,7 @@ export interface Announcement {
   content: string;
   published_at: string;
   author_id?: string;
+  type?: string;
   profiles?: ProfileData | ProfileData[];
 }
 
