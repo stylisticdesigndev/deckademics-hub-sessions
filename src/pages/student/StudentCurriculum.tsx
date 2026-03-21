@@ -12,7 +12,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { LEVEL_VALUE_MAP } from '@/hooks/useUpdateStudentLevel';
 
 const StudentCurriculum = () => {
-  const { userId } = useAuth();
+  const { userData } = useAuth();
+  const userId = userData.user?.id;
   const { data: allModules = [], isLoading } = useCurriculumModules();
   const { data: allLessons = [] } = useCurriculumLessons();
   const [activeTab, setActiveTab] = useState('novice');
@@ -36,7 +37,6 @@ const StudentCurriculum = () => {
     };
     fetchLevel();
   }, [userId]);
-  const { data: allLessons = [] } = useCurriculumLessons();
 
   const getModulesByLevel = (level: string) =>
     allModules.filter(m => m.level === level).sort((a, b) => a.order_index - b.order_index);
