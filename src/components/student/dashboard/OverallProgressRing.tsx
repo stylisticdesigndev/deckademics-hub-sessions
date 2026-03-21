@@ -48,7 +48,7 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold text-foreground">{progress}%</span>
+          <span className="text-3xl font-semibold text-foreground">{progress}%</span>
           <span className="text-xs text-muted-foreground">Overall</span>
         </div>
       </div>
