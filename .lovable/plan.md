@@ -1,74 +1,24 @@
 
 
-# Add Profile Picture Upload (Required)
+# Fix Profile Picture Upload Visibility
 
-## Current State
-- "Upload Photo" buttons exist on all profile setup pages (Student, Instructor, Admin) but are **non-functional** — no click handler, no upload logic
-- The `profiles` table already has an `avatar_url` column
-- `DashboardLayout` already renders `AvatarImage` from `avatar_url`
-- No storage bucket exists for avatars
+## Problem
+The `AvatarUpload` component is only rendered when `isEditing` is true and demo mode is off. In all other states (view mode, demo mode), users see a plain avatar with initials and no upload button.
 
 ## Plan
 
-### 1. Database Migration — Create avatars storage bucket
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
+### `src/pages/student/StudentProfile.tsx`
 
--- Allow authenticated users to upload their own avatar
-CREATE POLICY "Users can upload their own avatar"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+**Profile Header Card (Row 1)** — Always show the `AvatarUpload` component in the header card, not just in edit mode:
 
--- Allow users to update/delete their own avatar
-CREATE POLICY "Users can update their own avatar"
-ON storage.objects FOR UPDATE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+- **Live data mode**: Always render `AvatarUpload` with `currentUrl={userData?.profile?.avatar_url}`. This shows the current photo (or fallback initials) plus the "Upload Photo" / "Change Photo" button at all times — no need to enter edit mode first.
+- **Demo mode**: Show `AvatarUpload` in a disabled/display-only state. Render the static `Avatar` with demo initials but add a visual indicator (e.g., a sample avatar image or just the initials). Since demo mode is read-only, keep the static avatar but use a larger size to match the live version's visual weight.
 
-CREATE POLICY "Users can delete their own avatar"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
--- Public read access
-CREATE POLICY "Anyone can view avatars"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'avatars');
-```
-
-### 2. Create shared `AvatarUpload` component
-**New file: `src/components/profile/AvatarUpload.tsx`**
-- Accepts `currentUrl`, `onUpload(url)`, `required`, `initials` props
-- Renders Avatar with AvatarImage (if URL exists) or AvatarFallback
-- Hidden file input triggered by "Upload Photo" / "Change Photo" button
-- On file select: uploads to `avatars/{userId}/{timestamp}.{ext}` via Supabase Storage
-- Shows loading state during upload
-- If `required` and no photo, shows a red validation message
-
-### 3. Wire up profile setup pages (make photo required)
-**Files: `StudentProfileSetup.tsx`, `InstructorProfileSetup.tsx`, `AdminProfileSetup.tsx`**
-- Replace static Avatar + non-functional button with `<AvatarUpload>`
-- Store `avatarUrl` in form state
-- On upload success, set `avatarUrl` state
-- On submit, include `avatar_url` in the `updateProfile()` call
-- Block form submission if no avatar uploaded (required validation)
-
-### 4. Wire up profile edit pages
-**Files: `StudentProfile.tsx`, `InstructorProfile.tsx`**
-- In edit mode, replace static Avatar with `<AvatarUpload>` (not required here, since they already passed setup)
-- Show current `avatar_url` from profile data
-- On upload, update `avatar_url` via `updateProfile()`
-- In view mode, show `AvatarImage` with the stored URL
-
-### 5. Update AuthProvider `updateProfile`
-**File: `src/providers/AuthProvider.tsx`**
-- Ensure `avatar_url` is included in the profile update query (it should already work since it accepts `Partial<Profile>`, but verify the Supabase update call passes it through)
+Specifically:
+1. Remove the `isEditing && !isDemoActive` conditional — always show `AvatarUpload` when not in demo mode
+2. In demo mode, show the static avatar (no upload capability, which is correct)
+3. Change `AvatarUpload` size from `"sm"` to `"md"` so the photo is more prominent in the header
 
 ### Files Changed
-- Migration SQL (new storage bucket + policies)
-- `src/components/profile/AvatarUpload.tsx` (new)
-- `src/pages/student/StudentProfileSetup.tsx`
-- `src/pages/instructor/InstructorProfileSetup.tsx`
-- `src/pages/admin/AdminProfileSetup.tsx`
-- `src/pages/student/StudentProfile.tsx`
-- `src/pages/instructor/InstructorProfile.tsx`
-- `src/providers/AuthProvider.tsx` (if needed)
+- `src/pages/student/StudentProfile.tsx` — restructure avatar rendering in the profile header card
 
