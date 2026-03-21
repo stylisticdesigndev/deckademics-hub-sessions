@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Calendar, CheckCircle, Eye, EyeOff, BookOpen, PlusCircle, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useStudentClassAttendance } from '@/hooks/student/useStudentClassAttendance';
 import { addDays, subDays, format, getDay, startOfDay, isBefore } from 'date-fns';
