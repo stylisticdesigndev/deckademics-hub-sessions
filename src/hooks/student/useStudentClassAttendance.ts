@@ -104,7 +104,7 @@ export function useStudentClassAttendance() {
         setAttendanceRecords(
           attendance.map(a => ({
             date: a.date,
-            status: (a.status as 'present' | 'absent' | 'late') || 'present',
+            status: (a.status as 'present' | 'absent') || 'present',
             classId: a.class_id,
           }))
         );
