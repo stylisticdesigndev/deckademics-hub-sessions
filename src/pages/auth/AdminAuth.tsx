@@ -1,24 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert, AlertTriangle } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { VideoBackground } from '@/components/background/VideoBackground';
-
-// Admin email removed from client-side code for security
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [isResetting, setIsResetting] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   
   useEffect(() => {
     if (session && session.user) {
