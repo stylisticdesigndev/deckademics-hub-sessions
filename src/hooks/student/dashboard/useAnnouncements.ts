@@ -115,7 +115,7 @@ export function useAnnouncements(targetRole: string = 'student') {
                   initials
                 },
                 isNew: !isRead,
-                type: 'announcement',
+                type: (hasProperty(annRaw, 'type') && annRaw.type) || 'announcement',
               });
             }
           }
