@@ -62,7 +62,7 @@ const StudentCurriculum = () => {
           <p className="text-muted-foreground">Explore our comprehensive DJ training program</p>
         </div>
 
-        <Tabs defaultValue="novice" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="novice">Novice</TabsTrigger>
             <TabsTrigger value="amateur">Amateur</TabsTrigger>
