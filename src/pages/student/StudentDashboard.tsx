@@ -37,8 +37,6 @@ const StudentDashboard = () => {
     progressData,
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
-    isEmpty,
-    isFirstTimeUser,
     fetchError
   } = useStudentDashboard();
 
