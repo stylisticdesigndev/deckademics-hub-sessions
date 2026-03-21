@@ -10,18 +10,26 @@ import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingC
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
-// EmptyDashboard removed - charts handle their own empty states
 import { useAuth } from '@/providers/AuthProvider';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import {
+  mockStudentData,
+  mockSkills,
+  mockAttendance,
+  mockUpcomingClasses,
+  mockAnnouncements,
+} from '@/data/mockDashboardData';
 
 const StudentDashboard = () => {
   const { userData, session, isLoading } = useAuth();
   const navigate = useNavigate();
   const [studentId, setStudentId] = useState<string | undefined>();
+  const [demoMode, setDemoMode] = useState(false);
   
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -88,27 +96,53 @@ const StudentDashboard = () => {
     );
   }
 
-  
-
-  // Build skills array from progressData
-  const skills = (progressData && Array.isArray(progressData))
-    ? progressData.map((p: any) => ({
-        skill_name: p.skill_name || 'Unknown',
-        proficiency: typeof p.proficiency === 'number' ? p.proficiency : 0,
-      }))
-    : [];
+  // Resolve data: demo mode overrides real data
+  const activeStudentData = demoMode ? mockStudentData : studentData;
+  const activeSkills = demoMode
+    ? mockSkills
+    : (progressData && Array.isArray(progressData))
+      ? progressData.map((p: any) => ({
+          skill_name: p.skill_name || 'Unknown',
+          proficiency: typeof p.proficiency === 'number' ? p.proficiency : 0,
+        }))
+      : [];
+  const activeAttendance = demoMode
+    ? mockAttendance
+    : (attendance ?? { present: 0, absent: 0, late: 0, total: 0 });
+  const activeUpcomingClasses = demoMode ? mockUpcomingClasses : upcomingClasses;
+  const activeAnnouncements = demoMode ? mockAnnouncements : announcements;
 
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <section className="space-y-1">
-          <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
-          <p className="text-muted-foreground">
-            Your instructor: <span className="text-primary font-medium">{studentData.instructor !== 'Not assigned' ? studentData.instructor : 'Not yet assigned'}</span>
-          </p>
+        {/* Demo Mode Banner */}
+        {demoMode && (
+          <div className="rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Demo Mode — Showing sample data</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setDemoMode(false)}>
+              <EyeOff className="h-4 w-4 mr-1" /> Switch to Live Data
+            </Button>
+          </div>
+        )}
+
+        <section className="space-y-1 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
+            <p className="text-muted-foreground">
+              Your instructor: <span className="text-primary font-medium">{activeStudentData.instructor !== 'Not assigned' ? activeStudentData.instructor : 'Not yet assigned'}</span>
+            </p>
+          </div>
+          {!demoMode && (
+            <Button size="sm" variant="ghost" onClick={() => setDemoMode(true)} className="text-muted-foreground">
+              <Eye className="h-4 w-4 mr-1" /> Demo
+            </Button>
+          )}
         </section>
 
-        {fetchError && (
+        {fetchError && !demoMode && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error loading dashboard</AlertTitle>
@@ -116,32 +150,32 @@ const StudentDashboard = () => {
           </Alert>
         )}
 
-        {loading ? (
+        {loading && !demoMode ? (
           <DashboardSkeleton />
         ) : (
           <>
             <StudentStatsSection
-              level={studentData.level}
-              totalProgress={studentData.totalProgress}
-              nextClass={studentData.nextClass}
-              instructor={studentData.instructor}
-              classesAttended={attendance?.present ?? 0}
+              level={activeStudentData.level}
+              totalProgress={activeStudentData.totalProgress}
+              nextClass={activeStudentData.nextClass}
+              instructor={activeStudentData.instructor}
+              classesAttended={activeAttendance.present}
             />
 
             {/* Charts Row */}
             <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-              <OverallProgressRing progress={studentData.totalProgress} />
-              <SkillBreakdownChart skills={skills} />
+              <OverallProgressRing progress={activeStudentData.totalProgress} />
+              <SkillBreakdownChart skills={activeSkills} />
             </section>
 
             {/* Attendance + Upcoming */}
             <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
               <AttendanceChart
-                attendance={attendance ?? { present: 0, absent: 0, late: 0, total: 0 }}
-                isLoading={attendanceLoading}
+                attendance={activeAttendance}
+                isLoading={!demoMode && attendanceLoading}
               />
               <UpcomingClassesSection 
-                classes={upcomingClasses} 
+                classes={activeUpcomingClasses} 
                 onAddToCalendar={handleAddToCalendar} 
               />
             </section>
@@ -150,7 +184,7 @@ const StudentDashboard = () => {
             <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
               <NotesSection studentId={studentId} />
               <AnnouncementsSection 
-                announcements={announcements} 
+                announcements={activeAnnouncements} 
                 onAcknowledge={handleAcknowledgeAnnouncement} 
               />
             </section>
