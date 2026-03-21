@@ -163,7 +163,7 @@ const StudentDashboard = () => {
             />
 
             {/* Charts Row */}
-            <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <OverallProgressRing progress={activeStudentData.totalProgress} />
               <SkillBreakdownChart skills={activeSkills} />
             </section>
