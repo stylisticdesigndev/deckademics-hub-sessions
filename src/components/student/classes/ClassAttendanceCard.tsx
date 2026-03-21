@@ -56,7 +56,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
     }
   };
 
-  const isPast = status === 'present' || status === 'absent' || status === 'late';
+  const isPast = status === 'present' || status === 'absent';
 
   return (
     <>
