@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface AttendanceRecord {
   date: string;
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent';
   classId: string;
 }
 
