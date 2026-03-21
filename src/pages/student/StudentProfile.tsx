@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 import { mockProfileData } from '@/data/mockDashboardData';
@@ -231,11 +232,29 @@ const StudentProfile = () => {
             {/* Row 1: Profile Header */}
             <Card>
               <CardContent className="flex items-center gap-4 py-5">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-xl bg-primary text-primary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                {isEditing && !isDemoActive ? (
+                  <AvatarUpload
+                    currentUrl={userData?.profile?.avatar_url}
+                    onUpload={async (url) => {
+                      try {
+                        await updateProfile({ avatar_url: url });
+                      } catch (e) {
+                        console.error('Error updating avatar:', e);
+                      }
+                    }}
+                    initials={initials}
+                    size="sm"
+                  />
+                ) : (
+                  <Avatar className="h-16 w-16">
+                    {userData?.profile?.avatar_url && !isDemoActive ? (
+                      <AvatarImage src={userData.profile.avatar_url} alt="Profile photo" />
+                    ) : null}
+                    <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{displayProfile.name || 'Student'}</h2>
                   <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
