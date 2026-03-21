@@ -36,7 +36,6 @@ export const DashboardLayout = ({
     signOut();
   };
 
-  // Get user initials for avatar fallback
   const getUserInitials = () => {
     if (userData.profile) {
       const first = userData.profile.first_name?.charAt(0) || '';
@@ -53,13 +52,11 @@ export const DashboardLayout = ({
     return userType ? `${userType.charAt(0).toUpperCase() + userType.slice(1)} User` : 'User';
   };
 
-  // Fetch unread notification count
   useEffect(() => {
     const fetchNotificationCount = async () => {
       if (!userData.user?.id) return;
       
       try {
-        // Fetch announcements with read status
         const { data, error } = await supabase
           .from('announcements')
           .select(`
@@ -69,12 +66,8 @@ export const DashboardLayout = ({
           .contains('target_role', [userType])
           .order('published_at', { ascending: false });
           
-        if (error) {
-          console.error('Error fetching notifications:', error);
-          return;
-        }
+        if (error) return;
         
-        // Count announcements that haven't been read by this user
         if (data) {
           const unreadCount = data.filter(announcement => {
             const readRecords = announcement.announcement_reads || [];
@@ -84,16 +77,14 @@ export const DashboardLayout = ({
           setUnreadNotifications(unreadCount);
         }
       } catch (err) {
-        console.error('Error counting notifications:', err);
+        // silently fail
       }
     };
     
     fetchNotificationCount();
     
-    // Set up a timer to refresh notification count every minute
     const intervalId = setInterval(fetchNotificationCount, 60000);
     
-    // Subscribe to announcement_reads changes to update count in real-time
     const channel = supabase
       .channel('announcement-reads-changes')
       .on(
@@ -116,13 +107,19 @@ export const DashboardLayout = ({
     };
   }, [userData.user?.id, userType]);
 
-  // Handle notification click
   const handleNotificationClick = () => {
-    // Navigate to the appropriate messages or notifications page based on user type
     if (userType === 'student' || userType === 'instructor') {
       navigate(`/${userType}/messages`);
     } else if (userType === 'admin') {
       navigate('/admin/announcements');
+    }
+  };
+
+  const handleProfileClick = () => {
+    if (userType === 'admin') {
+      navigate('/admin/settings');
+    } else {
+      navigate(`/${userType}/profile`);
     }
   };
 
@@ -157,9 +154,9 @@ export const DashboardLayout = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/${userType}/profile`)}>
+                  <DropdownMenuItem onClick={handleProfileClick}>
                     <User className="mr-2 h-4 w-4" />
-                    Profile
+                    {userType === 'admin' ? 'Settings' : 'Profile'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>

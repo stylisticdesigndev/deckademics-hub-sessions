@@ -34,24 +34,15 @@ const StudentClasses = () => {
       
       try {
         setLoading(true);
-        console.log("Fetching classes for student:", studentId);
         
-        // Get current date for comparing past and upcoming classes
-        const now = new Date().toISOString();
-        
-        // First get the enrollments for this student
         const { data: enrollments, error: enrollmentsError } = await supabase
           .from('enrollments')
           .select('class_id')
           .eq('student_id', studentId);
           
-        if (enrollmentsError) {
-          console.error("Error fetching enrollments:", enrollmentsError);
-          return;
-        }
+        if (enrollmentsError) return;
         
         if (!enrollments || enrollments.length === 0) {
-          console.log("No enrollments found for student");
           setClassSessions([]);
           setLoading(false);
           return;
@@ -59,23 +50,12 @@ const StudentClasses = () => {
         
         const classIds = enrollments.map(e => e.class_id);
         
-        // Fetch class details
         const { data: classesData, error: classesError } = await supabase
           .from('classes')
-          .select(`
-            id,
-            title,
-            location,
-            start_time,
-            end_time,
-            instructor_id
-          `)
+          .select('id, title, location, start_time, end_time, instructor_id')
           .in('id', classIds);
           
-        if (classesError) {
-          console.error("Error fetching classes:", classesError);
-          return;
-        }
+        if (classesError) return;
         
         if (!classesData || classesData.length === 0) {
           setClassSessions([]);
@@ -83,23 +63,16 @@ const StudentClasses = () => {
           return;
         }
         
-        console.log("Classes fetched:", classesData.length);
-        
         // Get instructor profiles
         const instructorIds = classesData
           .map(cls => cls.instructor_id)
           .filter((id): id is string => id !== null);
           
-        const { data: instructors, error: instructorsError } = await supabase
+        const { data: instructors } = await supabase
           .from('profiles')
           .select('id, first_name, last_name')
           .in('id', instructorIds);
           
-        if (instructorsError) {
-          console.error("Error fetching instructors:", instructorsError);
-        }
-        
-        // Create instructor map
         const instructorMap = new Map();
         if (instructors) {
           instructors.forEach(instructor => {
@@ -110,7 +83,19 @@ const StudentClasses = () => {
           });
         }
         
-        // Format class data
+        // Get enrollment counts per class
+        const { data: enrollmentCounts } = await supabase
+          .from('enrollments')
+          .select('class_id')
+          .in('class_id', classIds);
+        
+        const classEnrollmentMap = new Map<string, number>();
+        if (enrollmentCounts) {
+          enrollmentCounts.forEach(e => {
+            classEnrollmentMap.set(e.class_id, (classEnrollmentMap.get(e.class_id) || 0) + 1);
+          });
+        }
+        
         const formattedClasses: ClassSession[] = classesData.map(cls => {
           const startTime = new Date(cls.start_time);
           const endTime = new Date(cls.end_time);
@@ -123,7 +108,6 @@ const StudentClasses = () => {
             ? instructorMap.get(cls.instructor_id) 
             : 'Instructor';
           
-          // Generate a topic from the title
           let topic = '';
           if (cls.title.includes('Beat')) topic = 'Understanding tempo and phrase matching';
           else if (cls.title.includes('Scratch')) topic = 'Scratch techniques and patterns';
@@ -139,7 +123,7 @@ const StudentClasses = () => {
             time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             duration: `${durationHours > 0 ? `${durationHours}h ` : ''}${durationMinutes}m`,
             location: cls.location || 'Main Studio',
-            attendees: Math.floor(Math.random() * 8) + 3, // Random number between 3-10
+            attendees: classEnrollmentMap.get(cls.id) || 0,
             isUpcoming,
             topic,
           };
@@ -147,7 +131,7 @@ const StudentClasses = () => {
         
         setClassSessions(formattedClasses);
       } catch (error) {
-        console.error("Error fetching class data:", error);
+        if (import.meta.env.DEV) console.error("Error fetching class data:", error);
       } finally {
         setLoading(false);
       }
@@ -163,7 +147,6 @@ const StudentClasses = () => {
     });
   };
 
-  // Filter classes based on search and filter
   const filterClasses = (classes: ClassSession[]) => {
     return classes
       .filter(session => 
@@ -179,8 +162,6 @@ const StudentClasses = () => {
 
   const upcomingClasses = filterClasses(classSessions.filter(session => session.isUpcoming));
   const pastClasses = filterClasses(classSessions.filter(session => !session.isUpcoming));
-
-  // Get unique instructors for filter
   const instructors = [...new Set(classSessions.map(session => session.instructor))];
 
   const FirstTimeUserView = () => (

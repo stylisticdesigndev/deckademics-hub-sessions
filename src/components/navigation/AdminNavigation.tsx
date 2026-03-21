@@ -2,6 +2,8 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
   Users,
@@ -17,9 +19,26 @@ import {
 export const AdminNavigation = () => {
   const { pathname } = useLocation();
 
-  // Define the counts to use across the navigation
-  const pendingInstructorsCount = 2;
-  const pendingStudentsCount = 5;
+  const { data: studentCounts } = useQuery({
+    queryKey: ['admin-student-counts-nav'],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_student_counts');
+      return Array.isArray(data) ? data[0] : data;
+    },
+    staleTime: 60000,
+  });
+
+  const { data: instructorCounts } = useQuery({
+    queryKey: ['admin-instructor-counts-nav'],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_instructor_counts');
+      return Array.isArray(data) ? data[0] : data;
+    },
+    staleTime: 60000,
+  });
+
+  const pendingStudentsCount = studentCounts?.pending || 0;
+  const pendingInstructorsCount = instructorCounts?.pending || 0;
 
   const navItems = [
     {
@@ -95,7 +114,7 @@ export const AdminNavigation = () => {
         >
           <item.icon className="h-5 w-5" />
           <span>{item.title}</span>
-          {item.badge && (
+          {item.badge && item.badge > 0 && (
             <span className="ml-auto bg-deckademics-primary/10 text-deckademics-primary text-xs font-medium rounded-full px-2 py-0.5">
               {item.badge}
             </span>

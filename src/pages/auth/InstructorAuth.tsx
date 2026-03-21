@@ -5,53 +5,36 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VideoBackground } from '@/components/background/VideoBackground';
 
 const InstructorAuth = () => {
-  console.log("Rendering InstructorAuth page");
   const navigate = useNavigate();
   const { session, userData, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
-  // Improved session validation logic with debugging but avoid infinite redirects
   useEffect(() => {
-    // Skip redirect if we're still loading
-    if (isLoading) {
-      return;
-    }
+    if (isLoading) return;
     
-    console.log("InstructorAuth - Auth check complete:", { 
-      sessionExists: !!session, 
-      userId: session?.user?.id,
-      userRole: userData.role,
-      isLoading
-    });
-    
-    // Only proceed with redirects if we have session and role info
     if (session && session.user) {
-      console.log("Session detected on instructor auth page:", session.user.email);
       const role = userData.role || session.user.user_metadata?.role;
-      
       if (role) {
-        console.log(`User has ${role} role, redirecting appropriately`);
-        if (role === 'instructor') {
-          navigate('/instructor/dashboard', { replace: true });
-        } else if (role === 'student') {
-          navigate('/student/dashboard', { replace: true });
-        } else if (role === 'admin') {
-          navigate('/admin/dashboard', { replace: true });
-        }
+        if (role === 'instructor') navigate('/instructor/dashboard', { replace: true });
+        else if (role === 'student') navigate('/student/dashboard', { replace: true });
+        else if (role === 'admin') navigate('/admin/dashboard', { replace: true });
       }
     }
       
     setIsCheckingAuth(false);
   }, [session, userData, navigate, isLoading]);
 
-  // Show loading state while checking auth
   if (isLoading || isCheckingAuth) {
     return (
-      <div className="min-h-screen flex flex-col bg-black relative">
+      <div className="min-h-screen flex flex-col relative">
+        <VideoBackground 
+          videoSrc="/background-video.mp4" 
+          fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+        />
         <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-          {/* Header content */}
         </header>
         
         <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
@@ -76,9 +59,12 @@ const InstructorAuth = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black relative">
+    <div className="min-h-screen flex flex-col relative">
+      <VideoBackground 
+        videoSrc="/background-video.mp4" 
+        fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
+      />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        {/* Header content */}
       </header>
       
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
