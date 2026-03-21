@@ -10,7 +10,7 @@ import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingC
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
-import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
+// EmptyDashboard removed - charts handle their own empty states
 import { useAuth } from '@/providers/AuthProvider';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -37,8 +37,6 @@ const StudentDashboard = () => {
     progressData,
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
-    isEmpty,
-    isFirstTimeUser,
     fetchError
   } = useStudentDashboard();
 
@@ -107,7 +105,6 @@ const StudentDashboard = () => {
           <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
           <p className="text-muted-foreground">
             You're at <span className="text-primary font-medium">{studentData.level}</span> level.
-            {isEmpty && " Complete your profile and enroll in classes to get started."}
           </p>
         </section>
 
