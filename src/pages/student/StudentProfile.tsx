@@ -408,6 +408,8 @@ const StudentProfile = () => {
                   </CardContent>
                 </Card>
               )}
+              
+              <NotificationPreferencesCard />
             </div>
           </div>
         )}
