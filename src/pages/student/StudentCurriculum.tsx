@@ -36,9 +36,10 @@ const StudentCurriculum = () => {
           <p className="text-muted-foreground">Explore our comprehensive DJ training program</p>
         </div>
 
-        <Tabs defaultValue="beginner" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="beginner">Beginner</TabsTrigger>
+        <Tabs defaultValue="novice" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="novice">Novice</TabsTrigger>
+            <TabsTrigger value="amateur">Amateur</TabsTrigger>
             <TabsTrigger value="intermediate">Intermediate</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
