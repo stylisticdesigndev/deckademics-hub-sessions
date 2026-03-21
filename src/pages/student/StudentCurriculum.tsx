@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Book, BookOpen } from 'lucide-react';
 import { useCurriculumModules } from '@/hooks/useCurriculumModules';
 import { useCurriculumLessons } from '@/hooks/useCurriculumLessons';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
+import { LEVEL_VALUE_MAP } from '@/hooks/useUpdateStudentLevel';
 
 const StudentCurriculum = () => {
   const { data: allModules = [], isLoading } = useCurriculumModules();
