@@ -133,11 +133,15 @@ const StudentDashboard = () => {
               Your instructor: <span className="text-primary font-medium">{activeStudentData.instructor !== 'Not assigned' ? activeStudentData.instructor : 'Not yet assigned'}</span>
             </p>
           </div>
-          {!demoMode && (
-            <Button size="sm" variant="ghost" onClick={() => setDemoMode(true)} className="text-muted-foreground">
-              <Eye className="h-4 w-4 mr-1" /> Demo
-            </Button>
-          )}
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </section>
 
         {fetchError && !demoMode && (

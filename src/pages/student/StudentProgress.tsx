@@ -80,23 +80,25 @@ const StudentProgress = () => {
               Track your progress through the DJ school curriculum
             </p>
           </div>
-          {!demoMode && (
-            <Button size="sm" variant="ghost" onClick={() => setDemoMode(true)} className="text-muted-foreground">
-              <Eye className="h-4 w-4 mr-1" /> Demo
-            </Button>
-          )}
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </section>
 
         {demoMode && (
-          <div className="rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Demo Mode — Showing sample data</span>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setDemoMode(false)}>
-              <EyeOff className="h-4 w-4 mr-1" /> Switch to Live Data
-            </Button>
-          </div>
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              Showing sample progress data. Click "Live Data" to switch back.
+            </AlertDescription>
+          </Alert>
         )}
 
         {isLoading ? (

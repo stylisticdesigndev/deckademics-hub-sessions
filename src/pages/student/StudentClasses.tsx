@@ -58,7 +58,7 @@ function getMockData() {
   return {
     classInfo: {
       id: 'demo-class',
-      title: 'DJ Fundamentals',
+      title: 'Intermediate',
       location: 'Classroom 1',
       startTime: new Date().toISOString(),
       endTime: new Date().toISOString(),
