@@ -17,7 +17,7 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
         <h3 className="text-sm font-semibold text-foreground mb-4 self-start">Overall Progress</h3>
         <div className="relative w-32 h-32">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-foreground">0%</span>
@@ -37,18 +37,18 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
           <RadialBarChart
             cx="50%"
             cy="50%"
-            innerRadius="70%"
+            innerRadius="78%"
             outerRadius="100%"
             startAngle={90}
             endAngle={-270}
             data={data}
-            barSize={12}
+            barSize={8}
           >
-            <RadialBar dataKey="value" cornerRadius={6} background={false} />
+            <RadialBar dataKey="value" cornerRadius={4} background={false} />
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold text-foreground">{progress}%</span>
+          <span className="text-3xl font-semibold text-foreground">{progress}%</span>
           <span className="text-xs text-muted-foreground">Overall</span>
         </div>
       </div>

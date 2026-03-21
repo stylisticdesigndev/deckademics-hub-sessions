@@ -62,7 +62,7 @@ export const AttendanceChart = ({ attendance, isLoading }: AttendanceChartProps)
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={52}
+                innerRadius={62}
                 outerRadius={76}
                 dataKey="value"
                 stroke="none"
@@ -76,7 +76,7 @@ export const AttendanceChart = ({ attendance, isLoading }: AttendanceChartProps)
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-4xl font-bold text-foreground leading-none">{attendanceRate}%</span>
+            <span className="text-3xl font-semibold text-foreground leading-none">{attendanceRate}%</span>
             <span className="text-xs text-muted-foreground mt-1">attendance</span>
           </div>
         </div>
