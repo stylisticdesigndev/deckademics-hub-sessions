@@ -34,7 +34,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
 
   const modifiersStyles = {
     present: {
-      backgroundColor: 'hsl(var(--chart-2))',
+      backgroundColor: 'hsl(142, 71%, 45%)',
       color: 'white',
       borderRadius: '50%',
     },
