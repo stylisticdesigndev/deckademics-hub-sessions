@@ -61,7 +61,7 @@ const AdminCurriculum = () => {
       { ...newModule, order_index: maxOrder + 1 },
       {
         onSuccess: () => {
-          setNewModule({ title: '', description: '', level: 'beginner', order_index: 0 });
+          setNewModule({ title: '', description: '', level: 'novice', order_index: 0 });
           setIsAddModuleOpen(false);
         }
       }
