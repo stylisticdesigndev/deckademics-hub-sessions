@@ -232,11 +232,29 @@ const StudentProfile = () => {
             {/* Row 1: Profile Header */}
             <Card>
               <CardContent className="flex items-center gap-4 py-5">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-xl bg-primary text-primary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                {isEditing && !isDemoActive ? (
+                  <AvatarUpload
+                    currentUrl={userData?.profile?.avatar_url}
+                    onUpload={async (url) => {
+                      try {
+                        await updateProfile({ avatar_url: url });
+                      } catch (e) {
+                        console.error('Error updating avatar:', e);
+                      }
+                    }}
+                    initials={initials}
+                    size="sm"
+                  />
+                ) : (
+                  <Avatar className="h-16 w-16">
+                    {userData?.profile?.avatar_url && !isDemoActive ? (
+                      <AvatarImage src={userData.profile.avatar_url} alt="Profile photo" />
+                    ) : null}
+                    <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{displayProfile.name || 'Student'}</h2>
                   <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
