@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 
 interface Announcement {
@@ -24,25 +24,27 @@ interface AnnouncementsSectionProps {
 
 export const AnnouncementsSection = ({ announcements, onAcknowledge }: AnnouncementsSectionProps) => {
   return (
-    <>
-      <h2 className="text-xl font-semibold mb-4">Recent Announcements</h2>
-      {announcements.length > 0 ? (
-        <div className="space-y-4">
-          {announcements.map(announcement => (
-            <AnnouncementCard
-              key={announcement.id}
-              announcement={announcement}
-              onAcknowledge={onAcknowledge}
-            />
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <p>No announcements yet. Check back soon for updates!</p>
-          </CardContent>
-        </Card>
-      )}
-    </>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="text-sm font-semibold">Recent Announcements</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {announcements.length > 0 ? (
+          <div className="space-y-4">
+            {announcements.map(announcement => (
+              <AnnouncementCard
+                key={announcement.id}
+                announcement={announcement}
+                onAcknowledge={onAcknowledge}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            No announcements yet. Check back soon for updates!
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };

@@ -52,6 +52,7 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
           <span className="text-xs text-muted-foreground">Overall</span>
         </div>
       </div>
+      </div>
     </div>
   );
 };
