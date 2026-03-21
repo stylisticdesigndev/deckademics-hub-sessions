@@ -44,7 +44,7 @@ const StudentCurriculum = () => {
   const getLessonsForModule = (moduleId: string) =>
     allLessons.filter(l => l.module_id === moduleId).sort((a, b) => a.order_index - b.order_index);
 
-  if (isLoading) {
+  if (isLoading || levelLoading) {
     return (
       <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
         <div className="flex items-center justify-center h-64">
