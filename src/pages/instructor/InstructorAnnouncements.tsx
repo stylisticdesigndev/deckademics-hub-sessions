@@ -66,7 +66,7 @@ const InstructorAnnouncements = () => {
 
   // Create announcement mutation
   const createAnnouncement = useMutation({
-    mutationFn: async (newAnnouncement: { title: string; content: string; target_role: string[] }) => {
+    mutationFn: async (newAnnouncement: { title: string; content: string; target_role: string[]; type: string }) => {
       if (!session?.user?.id) {
         throw new Error('User not authenticated');
       }
