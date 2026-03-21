@@ -44,7 +44,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
   const statusBadge = () => {
     switch (status) {
       case 'present':
-        return <Badge className="bg-[hsl(var(--chart-2))] text-white">Present</Badge>;
+        return <Badge className="text-white" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}>Present</Badge>;
       case 'absent':
         return <Badge variant="destructive">Absent</Badge>;
       case 'upcoming':

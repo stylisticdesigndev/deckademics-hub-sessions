@@ -34,7 +34,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
 
   const modifiersStyles = {
     present: {
-      backgroundColor: 'hsl(var(--chart-2))',
+      backgroundColor: 'hsl(142, 71%, 45%)',
       color: 'white',
       borderRadius: '50%',
     },
@@ -107,7 +107,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
         {/* Legend */}
         <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
             Present
           </div>
           <div className="flex items-center gap-1.5 text-xs">
