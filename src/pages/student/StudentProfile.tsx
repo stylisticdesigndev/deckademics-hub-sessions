@@ -12,6 +12,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -407,6 +408,8 @@ const StudentProfile = () => {
                   </CardContent>
                 </Card>
               )}
+              
+              <NotificationPreferencesCard />
             </div>
           </div>
         )}
