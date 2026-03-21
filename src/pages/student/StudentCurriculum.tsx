@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +7,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Book, BookOpen } from 'lucide-react';
 import { useCurriculumModules } from '@/hooks/useCurriculumModules';
 import { useCurriculumLessons } from '@/hooks/useCurriculumLessons';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
+import { LEVEL_VALUE_MAP } from '@/hooks/useUpdateStudentLevel';
 
 const StudentCurriculum = () => {
+  const { userData } = useAuth();
+  const userId = userData.user?.id;
   const { data: allModules = [], isLoading } = useCurriculumModules();
   const { data: allLessons = [] } = useCurriculumLessons();
+  const [activeTab, setActiveTab] = useState('novice');
+  const [levelLoading, setLevelLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLevel = async () => {
+      if (!userId) { setLevelLoading(false); return; }
+      const { data } = await supabase
+        .from('students')
+        .select('level')
+        .eq('id', userId)
+        .maybeSingle();
+      if (data?.level) {
+        const mapped = LEVEL_VALUE_MAP[data.level] || data.level;
+        if (['novice', 'amateur', 'intermediate', 'advanced'].includes(mapped)) {
+          setActiveTab(mapped);
+        }
+      }
+      setLevelLoading(false);
+    };
+    fetchLevel();
+  }, [userId]);
 
   const getModulesByLevel = (level: string) =>
     allModules.filter(m => m.level === level).sort((a, b) => a.order_index - b.order_index);
@@ -18,7 +44,7 @@ const StudentCurriculum = () => {
   const getLessonsForModule = (moduleId: string) =>
     allLessons.filter(l => l.module_id === moduleId).sort((a, b) => a.order_index - b.order_index);
 
-  if (isLoading) {
+  if (isLoading || levelLoading) {
     return (
       <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
         <div className="flex items-center justify-center h-64">
@@ -36,7 +62,7 @@ const StudentCurriculum = () => {
           <p className="text-muted-foreground">Explore our comprehensive DJ training program</p>
         </div>
 
-        <Tabs defaultValue="novice" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="novice">Novice</TabsTrigger>
             <TabsTrigger value="amateur">Amateur</TabsTrigger>
