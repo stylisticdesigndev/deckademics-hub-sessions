@@ -184,12 +184,35 @@ const StudentMessages = () => {
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <section>
-          <h1 className="text-2xl font-bold">Messages & Updates</h1>
-          <p className="text-muted-foreground mt-2">
-            View messages and updates from your instructors and administrators
-          </p>
+        <section className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Messages & Updates</h1>
+            <p className="text-muted-foreground mt-2">
+              View messages and updates from your instructors and administrators
+            </p>
+          </div>
+          {session && (
+            <Button
+              variant={demoMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDemoMode(!demoMode)}
+              className="flex items-center gap-2"
+            >
+              {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {demoMode ? 'Live Data' : 'Demo'}
+            </Button>
+          )}
         </section>
+
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              Showing sample messages. Click "Live Data" to switch back.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {loading ? (
           <div className="text-center py-12">
