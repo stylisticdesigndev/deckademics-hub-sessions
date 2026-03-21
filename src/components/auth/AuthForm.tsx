@@ -34,15 +34,6 @@ export const AuthForm = ({ userType, disableSignup = false, adminEmail }: AuthFo
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginProcessing, setLoginProcessing] = useState(false);
 
-  // For testing - pre-fill admin email if on admin login
-  useEffect(() => {
-    if (userType === 'admin') {
-      setFormData(prev => ({
-        ...prev,
-        email: adminEmail || 'admin@example.com'
-      }));
-    }
-  }, [userType, adminEmail]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
