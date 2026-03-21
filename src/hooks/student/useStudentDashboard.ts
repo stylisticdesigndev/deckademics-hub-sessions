@@ -36,6 +36,7 @@ export const useStudentDashboard = () => {
     studentData,
     announcements,
     upcomingClasses,
+    progressData,
     handleAcknowledgeAnnouncement,
     handleAddToCalendar,
     isEmpty,
