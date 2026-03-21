@@ -187,6 +187,19 @@ const InstructorAnnouncements = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select value={announcementType} onValueChange={setAnnouncementType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="announcement">Announcement</SelectItem>
+                      <SelectItem value="event">Event</SelectItem>
+                      <SelectItem value="update">Update</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               <div className="space-y-2">

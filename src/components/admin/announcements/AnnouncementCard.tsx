@@ -80,10 +80,20 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
     }
   });
 
+  const typeBadge = () => {
+    const t = announcement.type || 'announcement';
+    if (t === 'event') return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Event</Badge>;
+    if (t === 'update') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Update</Badge>;
+    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Announcement</Badge>;
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{announcement.title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>{announcement.title}</CardTitle>
+          {typeBadge()}
+        </div>
         <CardDescription>
           Posted by {authorInfo.firstName} {authorInfo.lastName} on {new Date(announcement.published_at).toLocaleDateString()}
         </CardDescription>

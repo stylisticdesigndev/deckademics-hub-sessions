@@ -19,6 +19,7 @@ export const AnnouncementList = () => {
           content,
           published_at,
           author_id,
+          type,
           profiles:author_id (
             first_name,
             last_name
