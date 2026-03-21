@@ -1,55 +1,55 @@
 
 
-# Make Announcements System Fully Functional
+# Standardize Visual Hierarchy Across Student Pages
 
-## Current Gaps
-1. **No `type` column** in the `announcements` table -- all announcements default to `'announcement'` type on the student side. Events and updates are only in demo data.
-2. **No type selector** in the admin or instructor announcement creation forms.
-3. **No filter tabs** on the student messages page to filter by type.
-4. **Admin AnnouncementList** doesn't fetch or display the `type` field.
-5. **`announcement_reads` RLS** filters by `user_id = auth.uid()` on the left join, but the query doesn't filter reads by the current user -- so read status may be inaccurate (shows reads from ALL users).
-6. **Admin can't delete announcements** -- the `announcements` table has no DELETE RLS policy.
+## Problems Found
+
+After reviewing all 7 student pages, these are the specific layout inconsistencies causing poor visual flow:
+
+| Issue | Pages Affected |
+|-------|---------------|
+| Notes uses `max-w-4xl` container — narrower than all other pages | StudentNotes |
+| Notes title is `3xl` with a large icon; all others are `2xl` with no icon | StudentNotes |
+| Subtitle margin varies: `mt-2` vs `mt-1` | Messages, Profile, Progress |
+| Header flex alignment differs: `items-center` vs `items-start` | Messages |
+| Profile header has no flex layout (no Demo button alignment target) | Profile |
+| Curriculum header uses plain `div` instead of `section` | Curriculum |
+| Progress always shows "Getting Started" card below real data, adding unnecessary scroll | Progress |
+| Notes page has extra `py-6` padding on top of DashboardLayout's own `p-4 md:p-6` | Notes |
 
 ## Plan
 
-### 1. Database Migration
-Add a `type` column to the `announcements` table:
-```sql
-ALTER TABLE public.announcements 
-ADD COLUMN type text NOT NULL DEFAULT 'announcement';
-```
-Also add a DELETE policy for admins:
-```sql
-CREATE POLICY "Admins can delete announcements" 
-ON public.announcements FOR DELETE TO authenticated 
-USING (has_role(auth.uid(), 'admin'::app_role));
-```
+All changes are CSS/layout only — no logic or data changes.
 
-### 2. Admin Announcement Form (`AnnouncementForm.tsx`)
-- Add a `type` field (Select dropdown) with options: Event, Announcement, Update
-- Default to "announcement"
-- Include `type` in the insert mutation
+### 1. StudentNotes.tsx
+- Remove `container max-w-4xl py-6` wrapper — use `<div className="space-y-6">` like every other page
+- Remove `StickyNote` icon from header
+- Change title from `text-3xl` to `text-2xl`
+- Change header structure to match standard: `<section className="flex items-start justify-between">`
+- Change `mb-6` to spacing handled by parent `space-y-6`
 
-### 3. Instructor Announcement Form (`InstructorAnnouncements.tsx`)
-- Add a `type` selector (Event, Announcement, Update) alongside the existing target audience selector
-- Include `type` in the insert mutation
+### 2. StudentMessages.tsx
+- Change header `items-center` to `items-start`
+- Change subtitle `mt-2` to `mt-1`
 
-### 4. Admin Announcement List & Card
-- Fetch and display the `type` field
-- Show a colored badge for the type (blue=event, amber=announcement, green=update), matching the student-side card
+### 3. StudentProfile.tsx
+- Wrap header in `<section className="flex items-start justify-between">` for consistency
+- Change subtitle `mt-2` to `mt-1`
 
-### 5. Student Messages Page (`StudentMessages.tsx`)
-- Add filter tabs: All, Events, Announcements, Updates
-- Filter the displayed announcements by selected tab
-- Include `type` in the fetch query so real data has proper types
-- Fix the read status query to filter `announcement_reads` by the current user (`announcement_reads!left(id, read_at).eq(user_id, userId)` filter)
+### 4. StudentCurriculum.tsx
+- Change header wrapper from `div` to `section` with `flex items-start justify-between`
+- Add `mt-1` to subtitle (currently has none)
 
-### 6. Student Announcements Hook (`useAnnouncements.ts`)
-- Include `type` in the select query
-- Map the DB `type` value to the announcement object
+### 5. StudentProgress.tsx
+- Change subtitle `mt-2` to `mt-1`
+- Move "Getting Started" card inside the empty-state block only (don't show it when the student already has progress data — it adds unnecessary scroll)
 
-### Technical Details
-- The `type` column uses a plain `text` type (not enum) for simplicity, constrained by the UI dropdown options
-- All three valid values: `'event'`, `'announcement'`, `'update'`
-- Existing rows default to `'announcement'`
+### 6. StudentClasses.tsx
+- Change subtitle `mt-1` — already correct, no change needed
+
+### 7. StudentDashboard.tsx
+- Already the reference pattern — no changes needed
+
+## Summary
+Six files touched, all cosmetic. The result: every student page follows an identical header → content flow with consistent spacing, alignment, and typography.
 
