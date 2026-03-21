@@ -3,15 +3,88 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { useStudentNotes, StudentNote } from '@/hooks/student/useStudentNotes';
 import { useNotesNotifications } from '@/hooks/student/useNotesNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-import { StickyNote, Calendar, User } from 'lucide-react';
+import { StickyNote, Calendar, User, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+
+function getMockNotes(): StudentNote[] {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const threeDaysAgo = new Date(now);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const twoWeeksAgo = new Date(now);
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const threeWeeksAgo = new Date(now);
+  threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+
+  return [
+    {
+      id: 'demo-1',
+      student_id: 'demo',
+      instructor_id: 'demo-instructor',
+      title: 'Great progress on beat matching!',
+      content: 'You nailed the tempo sync today. Keep practicing with different BPM ranges (120-130) to build consistency. Try mixing two tracks with a 5 BPM difference and work your way up.',
+      is_read: false,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      instructor: { first_name: 'DJ', last_name: 'Marcus' },
+    },
+    {
+      id: 'demo-2',
+      student_id: 'demo',
+      instructor_id: 'demo-instructor',
+      title: 'EQ transition technique',
+      content: 'Remember the bass swap method we practiced: bring the incoming track\'s bass down, then swap bass frequencies at the phrase break. This creates a clean, seamless transition without frequency clashing.',
+      is_read: true,
+      created_at: yesterday.toISOString(),
+      updated_at: yesterday.toISOString(),
+      instructor: { first_name: 'DJ', last_name: 'Marcus' },
+    },
+    {
+      id: 'demo-3',
+      student_id: 'demo',
+      instructor_id: 'demo-instructor',
+      title: 'Homework: Build a 30-min set',
+      content: 'For next week, put together a 30-minute mix using at least 6 tracks. Focus on smooth transitions and maintaining energy flow. Record it and we\'ll review together in class.',
+      is_read: true,
+      created_at: threeDaysAgo.toISOString(),
+      updated_at: threeDaysAgo.toISOString(),
+      instructor: { first_name: 'DJ', last_name: 'Marcus' },
+    },
+    {
+      id: 'demo-4',
+      student_id: 'demo',
+      instructor_id: 'demo-instructor',
+      title: 'Scratching fundamentals review',
+      content: 'We covered baby scratches and forward scratches today. Your crossfader technique is improving. Practice the chirp scratch pattern we went over — start slow at 90 BPM before speeding up.',
+      is_read: true,
+      created_at: twoWeeksAgo.toISOString(),
+      updated_at: twoWeeksAgo.toISOString(),
+      instructor: { first_name: 'DJ', last_name: 'Marcus' },
+    },
+    {
+      id: 'demo-5',
+      student_id: 'demo',
+      instructor_id: 'demo-instructor',
+      title: 'Welcome to the program!',
+      content: 'Welcome to Deckademics! I\'m excited to be your instructor. We\'ll start with the fundamentals — understanding your equipment, basic mixing concepts, and ear training. See you next week!',
+      is_read: true,
+      created_at: threeWeeksAgo.toISOString(),
+      updated_at: threeWeeksAgo.toISOString(),
+      instructor: { first_name: 'DJ', last_name: 'Marcus' },
+    },
+  ];
+}
 
 export default function StudentNotes() {
   const [studentId, setStudentId] = useState<string | undefined>();
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -23,12 +96,14 @@ export default function StudentNotes() {
   useNotesNotifications(studentId);
 
   useEffect(() => {
-    // Mark all notes as read when viewing the page
+    if (demoMode) return;
     const unreadNotes = notes.filter(note => !note.is_read);
     unreadNotes.forEach(note => {
       markAsRead(note.id);
     });
-  }, [notes]);
+  }, [notes, demoMode]);
+
+  const activeNotes = demoMode ? getMockNotes() : notes;
 
   const groupNotesByDate = (notesList: StudentNote[]) => {
     const today = new Date();
@@ -59,7 +134,7 @@ export default function StudentNotes() {
     return groups;
   };
 
-  const groupedNotes = groupNotesByDate(notes);
+  const groupedNotes = groupNotesByDate(activeNotes);
 
   const renderNoteCard = (note: StudentNote) => (
     <Card key={note.id} className={!note.is_read ? 'border-primary' : ''}>
@@ -102,20 +177,43 @@ export default function StudentNotes() {
     );
   };
 
+  const showContent = demoMode || (!isLoading && activeNotes.length > 0);
+
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="container max-w-4xl py-6">
-        <div className="flex items-center gap-3 mb-6">
-          <StickyNote className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">My Notes</h1>
-            <p className="text-muted-foreground">
-              View notes from your instructors organized by date
-            </p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <StickyNote className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">My Notes</h1>
+              <p className="text-muted-foreground">
+                View notes from your instructors organized by date
+              </p>
+            </div>
           </div>
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </div>
 
-        {isLoading ? (
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30 mb-6">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              Showing sample instructor notes. Click "Live Data" to switch back.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!demoMode && isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <Card key={i}>
@@ -129,7 +227,7 @@ export default function StudentNotes() {
               </Card>
             ))}
           </div>
-        ) : notes.length === 0 ? (
+        ) : !showContent ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <StickyNote className="h-12 w-12 text-muted-foreground mb-4" />
