@@ -75,7 +75,7 @@ const StudentProgress = () => {
         <section className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">Your Learning Progress</h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-1">
               Track your progress through the DJ school curriculum
             </p>
           </div>
