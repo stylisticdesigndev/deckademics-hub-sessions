@@ -335,7 +335,7 @@ const AdminCurriculum = () => {
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
                             <CardTitle>{module.title}</CardTitle>
-                            <Badge variant="secondary">{module.level}</Badge>
+                            
                           </div>
                           <CardDescription>{module.description}</CardDescription>
                         </div>

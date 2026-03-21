@@ -93,7 +93,7 @@ const StudentCurriculum = () => {
                               {index + 1}
                             </span>
                             <CardTitle>{module.title}</CardTitle>
-                            <Badge variant="secondary">{module.level}</Badge>
+                            
                           </div>
                           <CardDescription className="ml-10">{module.description}</CardDescription>
                         </div>
