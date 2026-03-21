@@ -7,12 +7,117 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, CheckCircle, Search, X, CalendarRange, BookOpen, PlusCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Search, X, CalendarRange, BookOpen, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+
+const getMockClasses = (): ClassSession[] => {
+  const now = new Date();
+  
+  const future = (daysAhead: number, hour: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + daysAhead);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  };
+  
+  const past = (daysAgo: number, hour: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  };
+
+  return [
+    {
+      id: 'demo-1',
+      title: 'Beat Matching Fundamentals',
+      instructor: 'DJ Marcus',
+      date: future(1, 14).toLocaleDateString(),
+      time: '2:00 PM',
+      duration: '1h 30m',
+      location: 'Studio A',
+      attendees: 6,
+      isUpcoming: true,
+      topic: 'Understanding tempo and phrase matching',
+    },
+    {
+      id: 'demo-2',
+      title: 'Scratching Techniques',
+      instructor: 'DJ Kira',
+      date: future(3, 10).toLocaleDateString(),
+      time: '10:00 AM',
+      duration: '2h',
+      location: 'Studio B',
+      attendees: 4,
+      isUpcoming: true,
+      topic: 'Baby scratch, chirp, and transformer techniques',
+    },
+    {
+      id: 'demo-3',
+      title: 'Harmonic Mixing Workshop',
+      instructor: 'DJ Marcus',
+      date: future(5, 16).toLocaleDateString(),
+      time: '4:00 PM',
+      duration: '1h',
+      location: 'Main Hall',
+      attendees: 8,
+      isUpcoming: true,
+      topic: 'Key matching and harmonic mixing theory',
+    },
+    {
+      id: 'demo-4',
+      title: 'Live Performance Prep',
+      instructor: 'DJ Kira',
+      date: future(7, 18).toLocaleDateString(),
+      time: '6:00 PM',
+      duration: '2h',
+      location: 'Studio A',
+      attendees: 5,
+      isUpcoming: true,
+      topic: 'Building energy and reading the crowd',
+    },
+    {
+      id: 'demo-5',
+      title: 'Intro to Beat Matching',
+      instructor: 'DJ Marcus',
+      date: past(3, 14).toLocaleDateString(),
+      time: '2:00 PM',
+      duration: '1h 30m',
+      location: 'Studio A',
+      attendees: 7,
+      isUpcoming: false,
+      topic: 'Basic beat alignment and BPM counting',
+    },
+    {
+      id: 'demo-6',
+      title: 'EQ & Transitions',
+      instructor: 'DJ Kira',
+      date: past(7, 10).toLocaleDateString(),
+      time: '10:00 AM',
+      duration: '1h 30m',
+      location: 'Studio B',
+      attendees: 5,
+      isUpcoming: false,
+      topic: 'Using EQ for smooth track transitions',
+    },
+    {
+      id: 'demo-7',
+      title: 'Music Theory for DJs',
+      instructor: 'DJ Marcus',
+      date: past(14, 16).toLocaleDateString(),
+      time: '4:00 PM',
+      duration: '1h',
+      location: 'Main Hall',
+      attendees: 9,
+      isUpcoming: false,
+      topic: 'Understanding keys, scales, and energy levels',
+    },
+  ];
+};
 
 const StudentClasses = () => {
   const { toast } = useToast();
@@ -21,6 +126,7 @@ const StudentClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [classSessions, setClassSessions] = useState<ClassSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   
   const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const studentId = session?.user?.id;
@@ -63,7 +169,6 @@ const StudentClasses = () => {
           return;
         }
         
-        // Get instructor profiles
         const instructorIds = classesData
           .map(cls => cls.instructor_id)
           .filter((id): id is string => id !== null);
@@ -83,7 +188,6 @@ const StudentClasses = () => {
           });
         }
         
-        // Get enrollment counts per class
         const { data: enrollmentCounts } = await supabase
           .from('enrollments')
           .select('class_id')
@@ -147,6 +251,8 @@ const StudentClasses = () => {
     });
   };
 
+  const displayClasses = demoMode ? getMockClasses() : classSessions;
+
   const filterClasses = (classes: ClassSession[]) => {
     return classes
       .filter(session => 
@@ -160,9 +266,11 @@ const StudentClasses = () => {
       });
   };
 
-  const upcomingClasses = filterClasses(classSessions.filter(session => session.isUpcoming));
-  const pastClasses = filterClasses(classSessions.filter(session => !session.isUpcoming));
-  const instructors = [...new Set(classSessions.map(session => session.instructor))];
+  const upcomingClasses = filterClasses(displayClasses.filter(session => session.isUpcoming));
+  const pastClasses = filterClasses(displayClasses.filter(session => !session.isUpcoming));
+  const instructors = [...new Set(displayClasses.map(session => session.instructor))];
+
+  const showContent = demoMode || (!isFirstTimeUser && !loading && classSessions.length > 0);
 
   const FirstTimeUserView = () => (
     <div className="space-y-6">
@@ -203,21 +311,44 @@ const StudentClasses = () => {
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <section>
-          <h1 className="text-2xl font-bold">Class Schedule</h1>
-          <p className="text-muted-foreground mt-2">
-            View and manage your upcoming and past DJ classes
-          </p>
+        <section className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">Class Schedule</h1>
+            <p className="text-muted-foreground mt-2">
+              View and manage your upcoming and past DJ classes
+            </p>
+          </div>
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </section>
 
-        {isFirstTimeUser ? (
-          <FirstTimeUserView />
-        ) : loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading your classes...</p>
-          </div>
-        ) : classSessions.length === 0 ? (
-          <NoClassesView />
+        {demoMode && (
+          <Alert className="bg-amber-500/10 border-amber-500/30">
+            <Eye className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-500">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              Showing sample class data. Click "Live Data" to switch back to your real classes.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!showContent && !demoMode ? (
+          isFirstTimeUser ? (
+            <FirstTimeUserView />
+          ) : loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading your classes...</p>
+            </div>
+          ) : (
+            <NoClassesView />
+          )
         ) : (
           <>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -262,11 +393,11 @@ const StudentClasses = () => {
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="upcoming" className="flex gap-2">
                   <Calendar className="h-4 w-4" />
-                  Upcoming Classes
+                  Upcoming Classes ({upcomingClasses.length})
                 </TabsTrigger>
                 <TabsTrigger value="past" className="flex gap-2">
                   <CheckCircle className="h-4 w-4" />
-                  Past Classes
+                  Past Classes ({pastClasses.length})
                 </TabsTrigger>
               </TabsList>
               
