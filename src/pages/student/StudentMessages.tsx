@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
-import { MessageSquare, PlusCircle } from 'lucide-react';
+import { MessageSquare, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface AuthorProfile {
   first_name?: string;
