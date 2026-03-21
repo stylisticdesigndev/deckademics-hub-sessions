@@ -169,7 +169,7 @@ const StudentDashboard = () => {
             </section>
 
             {/* Attendance + Upcoming */}
-            <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <AttendanceChart
                 attendance={activeAttendance}
                 isLoading={!demoMode && attendanceLoading}
