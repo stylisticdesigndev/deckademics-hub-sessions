@@ -308,8 +308,9 @@ const AdminCurriculum = () => {
         </Dialog>
 
         <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="beginner">Beginner</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="novice">Novice</TabsTrigger>
+            <TabsTrigger value="amateur">Amateur</TabsTrigger>
             <TabsTrigger value="intermediate">Intermediate</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
