@@ -27,7 +27,6 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
   time,
   duration,
   location,
-  topic,
   isNext = false,
   status = 'upcoming',
   onMarkAbsent,
