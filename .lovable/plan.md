@@ -1,34 +1,21 @@
 
 
-# Update Curriculum Levels to Four Tiers
+# Auto-Select Student's Level Tab on Curriculum Page
 
-## Current State
+## Problem
+The curriculum page always defaults to the "Novice" tab regardless of the student's actual level.
 
-The curriculum pages use three levels: **Beginner**, **Intermediate**, **Advanced**. The student table uses **Novice**, **Intermediate**, **Advanced**. Your school actually has four levels: **Novice**, **Amateur**, **Intermediate**, **Advanced**.
+## Fix
 
-The `curriculum_modules` database table has a CHECK constraint limiting levels to `('beginner', 'intermediate', 'advanced')`.
+**File: `src/pages/student/StudentCurriculum.tsx`**
 
-## Changes Required
+1. Import `useAuth` and `supabase`, add a query to fetch the student's level from the `students` table
+2. Use the fetched level (e.g. `'intermediate'`) as the `defaultValue` for the `<Tabs>` component
+3. Since `defaultValue` only works on initial render, use controlled `value`/`onValueChange` state instead, initialized to `'novice'` and updated via `useEffect` once the student's level is fetched
 
-### 1. Database Migration
-- Alter the `curriculum_modules` table CHECK constraint to allow four values: `'novice', 'amateur', 'intermediate', 'advanced'`
-- Update any existing `'beginner'` rows to `'novice'` (since Novice is the entry level)
-
-### 2. Update Type Definitions
-- **`src/hooks/useCurriculumModules.ts`** — Change level type to `'novice' | 'amateur' | 'intermediate' | 'advanced'`
-- **`src/hooks/useCreateCurriculumModule.ts`** — Same type update
-- **`src/hooks/useUpdateCurriculumModule.ts`** — Same type update
-- **`src/hooks/useUpdateStudentLevel.ts`** — Add `'amateur'` to `StudentLevel` type and display/value maps
-
-### 3. Update Student Curriculum Page
-- **`src/pages/student/StudentCurriculum.tsx`** — Change tabs from 3 to 4: Novice, Amateur, Intermediate, Advanced. Update the level array and `grid-cols-3` to `grid-cols-4`.
-
-### 4. Update Admin Curriculum Page
-- **`src/pages/admin/AdminCurriculum.tsx`** — Same tab changes (4 tabs), update Select dropdown options in module create/edit dialogs to include all four levels.
-
-### 5. Update Instructor Curriculum Page
-- **`src/pages/instructor/InstructorCurriculum.tsx`** — Same tab changes (4 tabs).
-
-### 6. Update Student Progress Page
-- **`src/pages/student/StudentProgress.tsx`** — Update the "Getting Started" card to show four level tiers instead of three.
+## Technical Detail
+- Query: `supabase.from('students').select('level').eq('id', userId).single()`
+- Map the DB value (e.g. `'beginner'` → `'novice'`) using existing `LEVEL_VALUE_MAP`
+- Fall back to `'novice'` if no level found
+- Show loading state while both curriculum and student level are loading
 
