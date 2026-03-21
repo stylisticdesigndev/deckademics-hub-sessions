@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface AttendanceRecord {
   date: string;
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent';
   classId: string;
 }
 
@@ -104,7 +104,7 @@ export function useStudentClassAttendance() {
         setAttendanceRecords(
           attendance.map(a => ({
             date: a.date,
-            status: (a.status as 'present' | 'absent' | 'late') || 'present',
+            status: (a.status as 'present' | 'absent') || 'present',
             classId: a.class_id,
           }))
         );

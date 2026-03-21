@@ -15,9 +15,8 @@ interface ClassAttendanceCardProps {
   duration: string;
   location: string;
   instructor: string;
-  topic?: string;
   isNext?: boolean;
-  status?: 'present' | 'absent' | 'late' | 'upcoming';
+  status?: 'present' | 'absent' | 'upcoming';
   onMarkAbsent?: (date: Date, reason?: string) => void;
   marking?: boolean;
 }
@@ -28,7 +27,6 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
   time,
   duration,
   location,
-  topic,
   isNext = false,
   status = 'upcoming',
   onMarkAbsent,
@@ -49,8 +47,6 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
         return <Badge className="bg-[hsl(var(--chart-2))] text-white">Present</Badge>;
       case 'absent':
         return <Badge variant="destructive">Absent</Badge>;
-      case 'late':
-        return <Badge className="bg-[hsl(var(--chart-4))] text-white">Late</Badge>;
       case 'upcoming':
         return isNext
           ? <Badge className="bg-primary text-primary-foreground">Next Class</Badge>
@@ -60,7 +56,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
     }
   };
 
-  const isPast = status === 'present' || status === 'absent' || status === 'late';
+  const isPast = status === 'present' || status === 'absent';
 
   return (
     <>
@@ -80,10 +76,6 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
               </div>
 
               <h3 className="font-semibold">{title}</h3>
-
-              {topic && (
-                <p className="text-sm text-muted-foreground">Topic: {topic}</p>
-              )}
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">

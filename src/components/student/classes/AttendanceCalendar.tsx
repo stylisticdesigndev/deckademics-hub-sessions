@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 interface AttendanceDay {
   date: Date;
-  status: 'present' | 'absent' | 'late' | 'upcoming';
+  status: 'present' | 'absent' | 'upcoming';
 }
 
 interface AttendanceCalendarProps {
@@ -24,13 +24,11 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
 
   const presentDays = attendanceDays.filter(d => d.status === 'present').map(d => d.date);
   const absentDays = attendanceDays.filter(d => d.status === 'absent').map(d => d.date);
-  const lateDays = attendanceDays.filter(d => d.status === 'late').map(d => d.date);
   const upcomingDays = attendanceDays.filter(d => d.status === 'upcoming').map(d => d.date);
 
   const modifiers = {
     present: presentDays,
     absent: absentDays,
-    late: lateDays,
     upcoming: upcomingDays,
   };
 
@@ -42,11 +40,6 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
     },
     absent: {
       backgroundColor: 'hsl(var(--destructive))',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    late: {
-      backgroundColor: 'hsl(var(--chart-4))',
       color: 'white',
       borderRadius: '50%',
     },
@@ -120,10 +113,6 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
           <div className="flex items-center gap-1.5 text-xs">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--destructive))' }} />
             Absent
-          </div>
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-4))' }} />
-            Late
           </div>
           <div className="flex items-center gap-1.5 text-xs">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />

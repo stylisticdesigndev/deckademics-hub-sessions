@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Calendar, CheckCircle, Eye, EyeOff, BookOpen, PlusCircle, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useStudentClassAttendance } from '@/hooks/student/useStudentClassAttendance';
 import { addDays, subDays, format, getDay, startOfDay, isBefore } from 'date-fns';
@@ -44,7 +45,7 @@ function getMockData() {
   const dates = getWeeklyDates(dayOfWeek, 8, 4);
   const today = startOfDay(new Date());
   
-  const statuses = ['present', 'present', 'present', 'late', 'present', 'absent', 'present', 'present'] as const;
+  const statuses = ['present', 'present', 'present', 'present', 'present', 'absent', 'present', 'present'] as const;
   
   const attendanceRecords = dates
     .filter(d => isBefore(d, today))
@@ -70,11 +71,31 @@ function getMockData() {
   };
 }
 
+const LEVEL_DISPLAY: Record<string, string> = {
+  novice: 'Novice', amateur: 'Amateur', intermediate: 'Intermediate',
+  advanced: 'Advanced', beginner: 'Novice',
+};
+
 const StudentClasses = () => {
   const { userData, session } = useAuth();
   const { classInfo, attendanceRecords, loading, marking, markAbsent } = useStudentClassAttendance();
   const [demoMode, setDemoMode] = useState(false);
-  
+  const [studentLevel, setStudentLevel] = useState('');
+
+  // Fetch student level
+  React.useEffect(() => {
+    const fetchLevel = async () => {
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from('students')
+        .select('level')
+        .eq('id', session.user.id)
+        .single();
+      if (data?.level) setStudentLevel(LEVEL_DISPLAY[data.level] || data.level);
+    };
+    fetchLevel();
+  }, [session?.user?.id]);
+
   const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
 
   // Resolve data source
@@ -91,7 +112,7 @@ const StudentClasses = () => {
 
   // Build attendance map
   const attendanceMap = useMemo(() => {
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
+    const map = new Map<string, 'present' | 'absent'>();
     activeRecords.forEach(r => map.set(r.date, r.status as any));
     return map;
   }, [activeRecords]);
@@ -104,7 +125,7 @@ const StudentClasses = () => {
       const isPast = isBefore(d, today);
       return {
         date: d,
-        status: record || (isPast ? 'present' : 'upcoming') as 'present' | 'absent' | 'late' | 'upcoming',
+        status: record || (isPast ? 'present' : 'upcoming') as 'present' | 'absent' | 'upcoming',
       };
     });
   }, [allDates, attendanceMap, today]);
@@ -123,15 +144,7 @@ const StudentClasses = () => {
     // Could scroll to that class card or open mark-absent dialog
   };
 
-  // Topics for variety
-  const topics = [
-    'Beat Matching & BPM Counting',
-    'EQ Control & Transitions',
-    'Scratching Techniques',
-    'Track Selection & Reading the Crowd',
-    'Harmonic Mixing Theory',
-    'Live Performance Prep',
-  ];
+  const displayLevel = demoMode ? 'Intermediate' : studentLevel;
 
   const getClassTime = () => {
     if (!activeClassInfo) return { time: '2:00 PM', duration: '1h 30m' };
@@ -254,12 +267,11 @@ const StudentClasses = () => {
                           <ClassAttendanceCard
                             key={key}
                             date={date}
-                            title={activeClassInfo!.title}
+                            title={`${activeClassInfo!.title}${displayLevel ? ` — ${displayLevel}` : ''}`}
                             time={classTime.time}
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
                             instructor={activeClassInfo!.instructorName}
-                            topic={topics[i % topics.length]}
                             isNext={i === 0}
                             status={record || 'upcoming'}
                             onMarkAbsent={!record ? handleMarkAbsent : undefined}
@@ -283,12 +295,11 @@ const StudentClasses = () => {
                           <ClassAttendanceCard
                             key={key}
                             date={date}
-                            title={activeClassInfo!.title}
+                            title={`${activeClassInfo!.title}${displayLevel ? ` — ${displayLevel}` : ''}`}
                             time={classTime.time}
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
                             instructor={activeClassInfo!.instructorName}
-                            topic={topics[i % topics.length]}
                             status={record || 'present'}
                           />
                         );
