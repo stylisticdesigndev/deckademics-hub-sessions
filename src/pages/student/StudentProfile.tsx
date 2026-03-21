@@ -203,7 +203,8 @@ const StudentProfile = () => {
             <h1 className="text-2xl font-bold">Profile</h1>
             <p className="text-muted-foreground mt-1">
             View and manage your personal information
-          </p>
+            </p>
+          </div>
         </section>
 
         {loading ? (

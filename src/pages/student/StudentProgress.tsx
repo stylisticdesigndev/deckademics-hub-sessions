@@ -164,42 +164,6 @@ const StudentProgress = () => {
             )}
           </div>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
-            <CardDescription>
-              What to expect in your DJ journey
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <BookOpen className="h-8 w-8 text-primary mb-2" />
-                <h3 className="font-medium">Novice</h3>
-                <p className="text-sm text-muted-foreground mt-1">Learn the fundamentals of DJ equipment and basic music theory</p>
-              </div>
-              
-              <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <BookOpen className="h-8 w-8 text-primary mb-2" />
-                <h3 className="font-medium">Amateur</h3>
-                <p className="text-sm text-muted-foreground mt-1">Build on basics with intro to mixing techniques and song structure</p>
-              </div>
-              
-              <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <Layers className="h-8 w-8 text-primary mb-2" />
-                <h3 className="font-medium">Intermediate</h3>
-                <p className="text-sm text-muted-foreground mt-1">Master beat matching, EQ control, and basic scratching techniques</p>
-              </div>
-              
-              <div className="p-4 border rounded-lg flex flex-col items-center text-center">
-                <BarChart className="h-8 w-8 text-primary mb-2" />
-                <h3 className="font-medium">Advanced</h3>
-                <p className="text-sm text-muted-foreground mt-1">Perfect advanced mixing, scratching, and performance techniques</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

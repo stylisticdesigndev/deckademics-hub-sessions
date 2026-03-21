@@ -193,10 +193,10 @@ const StudentMessages = () => {
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
       <div className="space-y-6">
-        <section className="flex items-center justify-between">
+        <section className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">Messages & Updates</h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-1">
               View messages and updates from your instructors and administrators
             </p>
           </div>

@@ -198,10 +198,10 @@ export default function StudentNotes() {
             {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             {demoMode ? 'Live Data' : 'Demo'}
           </Button>
-        </div>
+        </section>
 
         {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30 mb-6">
+          <Alert className="bg-warning/10 border-warning/30">
             <Eye className="h-4 w-4 text-warning" />
             <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
             <AlertDescription>
