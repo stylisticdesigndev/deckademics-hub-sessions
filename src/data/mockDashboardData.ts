@@ -34,6 +34,9 @@ export const mockUpcomingClasses = [
     time: '3:00 PM',
     instructor: 'DJ Master K',
     location: 'Studio A',
+    duration: '1 hour',
+    attendees: 6,
+    isUpcoming: true,
   },
   {
     id: 'mock-2',
@@ -42,6 +45,9 @@ export const mockUpcomingClasses = [
     time: '5:00 PM',
     instructor: 'DJ Master K',
     location: 'Studio B',
+    duration: '1.5 hours',
+    attendees: 4,
+    isUpcoming: true,
   },
   {
     id: 'mock-3',
@@ -50,6 +56,9 @@ export const mockUpcomingClasses = [
     time: '2:00 PM',
     instructor: 'DJ Master K',
     location: 'Main Stage',
+    duration: '2 hours',
+    attendees: 8,
+    isUpcoming: true,
   },
 ];
 
