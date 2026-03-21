@@ -10,7 +10,7 @@ import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingC
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
-import { EmptyDashboard } from '@/components/student/dashboard/EmptyDashboard';
+// EmptyDashboard removed - charts handle their own empty states
 import { useAuth } from '@/providers/AuthProvider';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
