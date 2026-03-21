@@ -40,7 +40,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       }
       
       // If we have a valid role from userData or metadata, we can proceed
-      if (userData.role || (session.user && session.user.user_metadata?.role)) {
+      if (userData.role) {
         console.log("Role found, proceeding with route protection");
         setIsWaitingForProfile(false);
         return;
