@@ -42,7 +42,7 @@ export const AttendanceChart = ({ attendance, isLoading }: AttendanceChartProps)
   const attendanceRate = Math.round((attendance.present / attendance.total) * 100);
 
   return (
-    <div className="rounded-xl bg-card border border-border p-6">
+    <div className="rounded-xl bg-card border border-border p-6 h-full">
       <h3 className="text-sm font-semibold text-foreground mb-4">Attendance</h3>
       <div className="flex items-center gap-6">
         <div className="relative w-28 h-28 shrink-0">
