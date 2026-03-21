@@ -96,6 +96,8 @@ const StudentClasses = () => {
     fetchLevel();
   }, [session?.user?.id]);
 
+  const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
+
   // Resolve data source
   const activeClassInfo = demoMode ? getMockData().classInfo : classInfo;
   const activeRecords = demoMode ? getMockData().attendanceRecords : attendanceRecords;
