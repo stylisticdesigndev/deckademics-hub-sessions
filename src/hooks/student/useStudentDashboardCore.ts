@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
