@@ -223,17 +223,28 @@ const InstructorProfile = () => {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex flex-col sm:flex-row gap-4 items-center pb-4">
-                      <Avatar className="h-24 w-24">
-                        <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">
-                          {getInitials(profile.name)}
-                        </AvatarFallback>
-                      </Avatar>
-
                       {isEditing ? (
-                        <Button type="button" variant="outline">
-                          Upload New Photo
-                        </Button>
-                      ) : null}
+                        <AvatarUpload
+                          currentUrl={userData?.profile?.avatar_url}
+                          onUpload={async (url) => {
+                            try {
+                              await updateProfile({ avatar_url: url });
+                            } catch (e) {
+                              console.error('Error updating avatar:', e);
+                            }
+                          }}
+                          initials={getInitials(profile.name)}
+                        />
+                      ) : (
+                        <Avatar className="h-24 w-24">
+                          {userData?.profile?.avatar_url ? (
+                            <AvatarImage src={userData.profile.avatar_url} alt="Profile photo" />
+                          ) : null}
+                          <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">
+                            {getInitials(profile.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
 
                     <div className="space-y-4">
