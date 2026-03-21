@@ -117,15 +117,13 @@ const StudentDashboard = () => {
       <div className="space-y-6">
         {/* Demo Mode Banner */}
         {demoMode && (
-          <div className="rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Demo Mode — Showing sample data</span>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setDemoMode(false)}>
-              <EyeOff className="h-4 w-4 mr-1" /> Switch to Live Data
-            </Button>
-          </div>
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              Showing sample dashboard data. Click "Live Data" to switch back.
+            </AlertDescription>
+          </Alert>
         )}
 
         <section className="space-y-1 flex items-start justify-between">
