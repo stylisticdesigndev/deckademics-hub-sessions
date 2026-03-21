@@ -95,7 +95,7 @@ export function useAnnouncements(targetRole: string = 'student') {
             
             // Check if there's a read record for this announcement
             const readRecords = hasProperty(annRaw, 'announcement_reads') && Array.isArray(annRaw.announcement_reads) 
-              ? annRaw.announcement_reads 
+              ? annRaw.announcement_reads.filter((r: any) => r.user_id === user.id)
               : [];
             const isRead = readRecords.length > 0;
             
