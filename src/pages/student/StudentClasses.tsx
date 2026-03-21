@@ -125,7 +125,7 @@ const StudentClasses = () => {
       const isPast = isBefore(d, today);
       return {
         date: d,
-        status: record || (isPast ? 'present' : 'upcoming') as 'present' | 'absent' | 'late' | 'upcoming',
+        status: record || (isPast ? 'present' : 'upcoming') as 'present' | 'absent' | 'upcoming',
       };
     });
   }, [allDates, attendanceMap, today]);
