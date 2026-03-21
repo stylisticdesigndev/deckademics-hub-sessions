@@ -105,6 +105,7 @@ const StudentDashboard = () => {
           <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
           <p className="text-muted-foreground">
             You're at <span className="text-primary font-medium">{studentData.level}</span> level.
+          </p>
         </section>
 
         {fetchError && (
