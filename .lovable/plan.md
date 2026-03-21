@@ -1,21 +1,17 @@
 
 
-# Auto-Select Student's Level Tab on Curriculum Page
+# Remove Redundant Level Badge from Curriculum Module Cards
 
 ## Problem
-The curriculum page always defaults to the "Novice" tab regardless of the student's actual level.
+Each curriculum module card shows a purple "intermediate" (or other level) badge chip next to the title. This is redundant since the student is already viewing that level's tab.
 
 ## Fix
 
-**File: `src/pages/student/StudentCurriculum.tsx`**
+Remove the `<Badge variant="secondary">{module.level}</Badge>` from module cards in:
 
-1. Import `useAuth` and `supabase`, add a query to fetch the student's level from the `students` table
-2. Use the fetched level (e.g. `'intermediate'`) as the `defaultValue` for the `<Tabs>` component
-3. Since `defaultValue` only works on initial render, use controlled `value`/`onValueChange` state instead, initialized to `'novice'` and updated via `useEffect` once the student's level is fetched
+1. **`src/pages/student/StudentCurriculum.tsx`** — Remove the Badge from the module card header
+2. **`src/pages/instructor/InstructorCurriculum.tsx`** — Same removal
+3. **`src/pages/admin/AdminCurriculum.tsx`** — Same removal (in the display cards, keep it in edit forms where it's functional)
 
-## Technical Detail
-- Query: `supabase.from('students').select('level').eq('id', userId).single()`
-- Map the DB value (e.g. `'beginner'` → `'novice'`) using existing `LEVEL_VALUE_MAP`
-- Fall back to `'novice'` if no level found
-- Show loading state while both curriculum and student level are loading
+Also remove unused `Badge` imports if no other badges remain in those files.
 
