@@ -44,8 +44,9 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
       borderRadius: '50%',
     },
     upcoming: {
-      backgroundColor: 'hsl(var(--primary))',
-      color: 'hsl(var(--primary-foreground))',
+      backgroundColor: 'transparent',
+      border: '2px dashed hsl(142, 71%, 45%)',
+      color: 'inherit',
       borderRadius: '50%',
     },
   };
