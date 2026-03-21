@@ -8,21 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, BookOpen, GraduationCap } from 'lucide-react';
+import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
+import { mockProfileData } from '@/data/mockDashboardData';
 
 const StudentProfile = () => {
   const { toast } = useToast();
   const { userData, updateProfile, session } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
   const [courseData, setCourseData] = useState<any>(null);
   const [instructorData, setInstructorData] = useState<any>(null);
   
+  const isDemoActive = !session || demoMode;
+
   const fullName = userData?.profile 
     ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim()
     : session?.user?.user_metadata 
@@ -39,8 +44,32 @@ const StudentProfile = () => {
   const [formData, setFormData] = useState({...profile});
   
   const studentId = session?.user?.id;
+
+  // Resolve display data based on demo mode
+  const displayProfile = isDemoActive ? {
+    name: mockProfileData.name,
+    email: mockProfileData.email,
+    phone: mockProfileData.phone,
+    bio: mockProfileData.bio,
+  } : profile;
+
+  const displayFormData = isDemoActive ? {
+    name: mockProfileData.name,
+    email: mockProfileData.email,
+    phone: mockProfileData.phone,
+    bio: mockProfileData.bio,
+  } : formData;
+
+  const displayCourse = isDemoActive ? mockProfileData.course : courseData;
+  const displayInstructor = isDemoActive ? mockProfileData.instructor : instructorData;
+  const displayLevel = isDemoActive ? mockProfileData.course.level : (courseData?.level || studentData?.level || 'Beginner');
   
   useEffect(() => {
+    if (isDemoActive) {
+      setLoading(false);
+      return;
+    }
+
     const fetchStudentData = async () => {
       if (!studentId) return;
       
@@ -70,7 +99,6 @@ const StudentProfile = () => {
         }
         
         const bioText = profileData?.bio || '';
-        
         setProfile(prev => ({ ...prev, bio: bioText }));
         setFormData(prev => ({ ...prev, bio: bioText }));
         
@@ -101,7 +129,6 @@ const StudentProfile = () => {
                   .single();
                 if (!courseError) setCourseData(course);
               }
-              
               if (classData.instructor_id) {
                 const { data: instructor, error: instructorError } = await supabase
                   .from('profiles')
@@ -121,7 +148,7 @@ const StudentProfile = () => {
     };
     
     fetchStudentData();
-  }, [studentId]);
+  }, [studentId, isDemoActive]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -159,8 +186,8 @@ const StudentProfile = () => {
     }
   };
 
-  const initials = profile.name 
-    ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() 
+  const initials = displayProfile.name 
+    ? displayProfile.name.split(' ').map(n => n[0]).join('').toUpperCase() 
     : '?';
 
   return (
@@ -173,7 +200,27 @@ const StudentProfile = () => {
               View and manage your personal information
             </p>
           </div>
+          {session && (
+            <Button
+              variant={demoMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDemoMode(!demoMode)}
+            >
+              {demoMode ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+              {demoMode ? 'Live Data' : 'Demo'}
+            </Button>
+          )}
         </section>
+
+        {isDemoActive && (
+          <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/10">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-700">Demo Mode</AlertTitle>
+            <AlertDescription className="text-yellow-600">
+              Viewing sample profile data. {session ? 'Toggle off to see your real profile.' : 'Log in to see your real profile.'}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {loading ? (
           <div className="text-center py-8">
@@ -190,10 +237,10 @@ const StudentProfile = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold truncate">{profile.name || 'Student'}</h2>
-                  <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
+                  <h2 className="text-lg font-semibold truncate">{displayProfile.name || 'Student'}</h2>
+                  <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
                 </div>
-                {!isEditing && (
+                {!isEditing && !isDemoActive && (
                   <Button type="button" onClick={() => setIsEditing(true)}>
                     Edit Profile
                   </Button>
@@ -215,7 +262,7 @@ const StudentProfile = () => {
                       <Label htmlFor="name">Full Name</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="name" name="name" placeholder="Your name" className="pl-10" value={formData.name} onChange={handleChange} disabled={!isEditing} />
+                        <Input id="name" name="name" placeholder="Your name" className="pl-10" value={displayFormData.name} onChange={handleChange} disabled={!isEditing || isDemoActive} />
                       </div>
                     </div>
                     
@@ -223,7 +270,7 @@ const StudentProfile = () => {
                       <Label htmlFor="email">Email</Label>
                       <div className="relative">
                         <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="email" name="email" type="email" placeholder="Your email" className="pl-10" value={formData.email} onChange={handleChange} disabled={true} />
+                        <Input id="email" name="email" type="email" placeholder="Your email" className="pl-10" value={displayFormData.email} onChange={handleChange} disabled={true} />
                       </div>
                     </div>
                     
@@ -231,16 +278,16 @@ const StudentProfile = () => {
                       <Label htmlFor="phone">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={formData.phone} onChange={handleChange} disabled={!isEditing} />
+                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing || isDemoActive} />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={formData.bio} onChange={handleChange} disabled={!isEditing} />
+                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing || isDemoActive} />
                     </div>
                   </CardContent>
-                  {isEditing && (
+                  {isEditing && !isDemoActive && (
                     <CardFooter className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => { setIsEditing(false); setFormData({...profile}); }}>
                         Cancel
@@ -254,7 +301,7 @@ const StudentProfile = () => {
                 </Card>
               </form>
 
-              {/* Enrollment Details (Course + Instructor combined) */}
+              {/* Enrollment Details */}
               <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-lg">Enrollment Details</CardTitle>
@@ -267,19 +314,19 @@ const StudentProfile = () => {
                       <BookOpen className="h-4 w-4" />
                       <span>Course</span>
                     </div>
-                    {courseData ? (
+                    {displayCourse ? (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <p className="text-xs text-muted-foreground">Course</p>
-                          <p className="text-sm font-medium">{courseData.title}</p>
+                          <p className="text-sm font-medium">{displayCourse.title}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Level</p>
-                          <p className="text-sm font-medium capitalize">{courseData.level || studentData?.level || 'Beginner'}</p>
+                          <p className="text-sm font-medium capitalize">{displayLevel}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Duration</p>
-                          <p className="text-sm font-medium">{courseData.duration_weeks || 12} weeks</p>
+                          <p className="text-sm font-medium">{displayCourse.duration_weeks || 12} weeks</p>
                         </div>
                       </div>
                     ) : (
@@ -297,15 +344,15 @@ const StudentProfile = () => {
                       <GraduationCap className="h-4 w-4" />
                       <span>Instructor</span>
                     </div>
-                    {instructorData ? (
+                    {displayInstructor ? (
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
                           <AvatarFallback className="bg-accent text-accent-foreground text-sm">
-                            {`${instructorData.first_name?.[0] || ''}${instructorData.last_name?.[0] || ''}`.toUpperCase()}
+                            {`${displayInstructor.first_name?.[0] || ''}${displayInstructor.last_name?.[0] || ''}`.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{`${instructorData.first_name || ''} ${instructorData.last_name || ''}`.trim()}</p>
+                          <p className="text-sm font-medium">{`${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}</p>
                           <p className="text-xs text-muted-foreground">DJ Instructor</p>
                         </div>
                       </div>
@@ -315,17 +362,6 @@ const StudentProfile = () => {
                       </p>
                     )}
                   </div>
-
-                  {/* Instructor Notes */}
-                  {studentData?.notes && (
-                    <>
-                      <hr className="border-border" />
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Instructor Notes</p>
-                        <p className="text-sm whitespace-pre-wrap">{studentData.notes}</p>
-                      </div>
-                    </>
-                  )}
                 </CardContent>
               </Card>
             </div>

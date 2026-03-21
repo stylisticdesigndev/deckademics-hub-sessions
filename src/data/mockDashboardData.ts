@@ -98,3 +98,19 @@ export const mockAnnouncements = [
     type: 'announcement' as const,
   },
 ];
+
+export const mockProfileData = {
+  name: 'Alex Johnson',
+  email: 'alex.johnson@example.com',
+  phone: '(555) 123-4567',
+  bio: 'Aspiring DJ with a passion for house and techno. Currently learning advanced mixing techniques and building my first live set.',
+  course: {
+    title: 'DJ Production & Performance',
+    level: 'Intermediate',
+    duration_weeks: 12,
+  },
+  instructor: {
+    first_name: 'DJ Master',
+    last_name: 'K',
+  },
+};
