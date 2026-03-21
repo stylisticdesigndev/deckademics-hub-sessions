@@ -284,7 +284,7 @@ const InstructorStudents = () => {
       console.error('Unexpected error saving note:', error);
       toast({
         title: "Error saving note",
-        description: `An unexpected error occurred: ${error}`,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -479,7 +479,7 @@ const InstructorStudents = () => {
       console.error('Unexpected error updating progress:', error);
       toast({
         title: "Error updating progress",
-        description: `An unexpected error occurred: ${error}. Please try again.`,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
