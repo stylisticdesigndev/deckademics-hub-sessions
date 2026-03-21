@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
 import { useStudentProgress } from './dashboard/useStudentProgress';
@@ -16,191 +16,122 @@ export interface StudentData {
 }
 
 export function useStudentDashboardCore() {
-  const { userData, session } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [studentData, setStudentData] = useState<StudentData>({
-    level: 'Beginner',
-    totalProgress: 0,
-    currentModule: 'Not started',
-    moduleProgress: 0,
-    hoursCompleted: 0,
-    instructor: 'Not assigned',
-    nextClass: 'Not scheduled',
-  });
+  const { session } = useAuth();
+  const [studentLoading, setStudentLoading] = useState(true);
+  const [studentLevel, setStudentLevel] = useState('Beginner');
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  
-  // Use refs to track states and prevent infinite loops
-  const dataFetchedRef = useRef(false);
+
   const isMountedRef = useRef(true);
-  const fetchAttemptRef = useRef(0);
-  const startTimeRef = useRef(Date.now());
+  const dataFetchedRef = useRef(false);
 
-  // Get userId from session safely
   const userId = session?.user?.id;
-
-  // Log initial state
-  useEffect(() => {
-    console.log("StudentDashboardCore: Initializing", { 
-      userId, 
-      sessionExists: !!session,
-      startTime: new Date(startTimeRef.current).toISOString()
-    });
-  }, []);
 
   const { upcomingClasses, loading: classesLoading } = useUpcomingClasses();
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);
 
+  // Reset refs on mount (fixes React StrictMode double-mount)
+  useEffect(() => {
+    isMountedRef.current = true;
+    dataFetchedRef.current = false;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Fetch student record independently - no waiting for classes/progress
   const fetchStudentInfo = useCallback(async () => {
-    // Exit early if user ID is missing, component unmounted, or if we've tried too many times
-    if (!userId || !isMountedRef.current || fetchAttemptRef.current > 3) {
-      console.log("StudentDashboardCore: Early exit from fetchStudentInfo", {
-        userId: !!userId,
-        isMounted: isMountedRef.current,
-        attempts: fetchAttemptRef.current
-      });
-      return;
-    }
-    
-    // Increment the fetch attempt counter to prevent infinite loops
-    fetchAttemptRef.current += 1;
-    
-    console.log(`StudentDashboardCore: Fetching student info (attempt ${fetchAttemptRef.current}) for userId:`, userId);
-    
+    if (!userId || !isMountedRef.current) return;
+
     try {
-      setLoading(true);
+      setStudentLoading(true);
       setFetchError(null);
-      
-      // First check if student record exists
+
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
         .select('level, enrollment_status, notes')
         .eq('id', userId as any)
         .maybeSingle();
 
+      if (!isMountedRef.current) return;
+
       if (studentError) {
-        console.error('StudentDashboardCore: Error fetching student info:', studentError);
-        setFetchError(studentError.message);
-        
-        // If student record doesn't exist, create one
         if (studentError.code === 'PGRST116') {
-          try {
-            console.log('StudentDashboardCore: Creating student record for new user:', userId);
-            const { error: insertError } = await supabase
-              .from('students')
-              .insert({
-                id: userId
-              } as any);
-              
-            if (insertError) {
-              console.error('StudentDashboardCore: Error creating student record:', insertError.message);
-              setFetchError(`Failed to create student record: ${insertError.message}`);
-            } else {
-              // Successful creation, use default values
-              if (isMountedRef.current) {
-                setStudentData(prev => ({
-                  ...prev,
-                  level: 'Beginner'
-                }));
-                console.log('StudentDashboardCore: Successfully created student record');
-              }
-            }
-          } catch (insertError) {
-            console.error('StudentDashboardCore: Exception creating student record:', insertError);
+          // Student record doesn't exist, create one
+          const { error: insertError } = await supabase
+            .from('students')
+            .insert({ id: userId } as any);
+
+          if (insertError && isMountedRef.current) {
+            setFetchError(`Failed to create student record: ${insertError.message}`);
           }
-        }
-      } else if (studentInfo && typeof studentInfo === 'object' && isMountedRef.current) {
-        console.log('StudentDashboardCore: Retrieved student info:', studentInfo);
-        setStudentData(prev => ({
-          ...prev,
-          level: studentInfo.level || 'Beginner'
-        }));
-      }
-
-      // Determine first-time user status
-      const isFirstLogin = upcomingClasses.length === 0 && 
-        (!progressData || progressData.length === 0);
-      
-      if (isMountedRef.current) {
-        setIsFirstTimeUser(isFirstLogin);
-        console.log('StudentDashboardCore: First time user status:', isFirstLogin);
-
-        // Only update next class if there are upcoming classes
-        if (upcomingClasses.length > 0) {
-          setStudentData(prev => ({
-            ...prev,
-            nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
-            instructor: upcomingClasses[0].instructor
-          }));
-          console.log('StudentDashboardCore: Updated next class info with:', upcomingClasses[0]);
-        }
-        
-        // Calculate progress if data is available
-        if (progressData && Array.isArray(progressData) && progressData.length > 0) {
-          const totalProficiency = progressData.reduce((sum: number, item: any) =>
-            sum + (('proficiency' in item && typeof item.proficiency === 'number') ? item.proficiency : 0)
-          , 0);
-          const avgProgress = Math.round(totalProficiency / progressData.length);
-          setStudentData(prev => ({
-            ...prev,
-            totalProgress: avgProgress
-          }));
-          console.log('StudentDashboardCore: Calculated progress:', avgProgress);
         } else {
-          console.log('StudentDashboardCore: No progress data available');
+          setFetchError(studentError.message);
         }
-        
-        // Mark data as fetched to prevent duplicate fetches
-        dataFetchedRef.current = true;
+      } else if (studentInfo && typeof studentInfo === 'object') {
+        setStudentLevel(studentInfo.level || 'Beginner');
       }
-      
+
+      dataFetchedRef.current = true;
     } catch (e: any) {
-      console.error('StudentDashboardCore: Error in fetchStudentInfo:', e);
       if (isMountedRef.current) {
         setFetchError(e.message || 'An unknown error occurred');
       }
     } finally {
       if (isMountedRef.current) {
-        setLoading(false);
-        console.log('StudentDashboardCore: Completed fetchStudentInfo');
+        setStudentLoading(false);
       }
     }
-  }, [userId, upcomingClasses, progressData]); // Remove classesLoading and progressLoading to prevent loops
+  }, [userId]);
 
+  // Fetch immediately when userId is available
   useEffect(() => {
-    // Log data dependencies
-    console.log("StudentDashboardCore: Data dependencies updated", {
-      upcomingClassesCount: upcomingClasses.length,
-      progressDataAvailable: !!progressData,
-      classesLoading,
-      progressLoading
-    });
-    
-    // Fetch data immediately if we have userId and haven't fetched yet
-    if (userId && !dataFetchedRef.current && !classesLoading && !progressLoading) {
-      console.log("StudentDashboardCore: All dependencies ready, triggering fetch");
+    if (userId && !dataFetchedRef.current) {
       fetchStudentInfo();
     } else if (!userId) {
-      console.log("StudentDashboardCore: No userId available, setting loading to false");
-      setLoading(false);
+      setStudentLoading(false);
     }
-  }, [userId, classesLoading, progressLoading, fetchStudentInfo, upcomingClasses, progressData]);
+  }, [userId, fetchStudentInfo]);
 
-  // Cleanup when component unmounts
+  // Derive totalProgress reactively from progressData
+  const totalProgress = useMemo(() => {
+    if (!progressData || !Array.isArray(progressData) || progressData.length === 0) return 0;
+    const total = progressData.reduce((sum: number, item: any) =>
+      sum + (typeof item.proficiency === 'number' ? item.proficiency : 0), 0);
+    return Math.round(total / progressData.length);
+  }, [progressData]);
+
+  // Derive nextClass and instructor reactively from upcomingClasses
+  const nextClassInfo = useMemo(() => {
+    if (upcomingClasses.length > 0) {
+      return {
+        nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
+        instructor: upcomingClasses[0].instructor
+      };
+    }
+    return { nextClass: 'Not scheduled', instructor: 'Not assigned' };
+  }, [upcomingClasses]);
+
+  // Derive first-time user status
   useEffect(() => {
-    return () => {
-      console.log("StudentDashboardCore: Component unmounting");
-      isMountedRef.current = false;
-      
-      // Log performance metrics
-      const elapsedTime = Date.now() - startTimeRef.current;
-      console.log(`StudentDashboardCore: Lifetime ${elapsedTime}ms, fetch attempts: ${fetchAttemptRef.current}`);
-    };
-  }, []);
+    if (!classesLoading && !progressLoading && dataFetchedRef.current) {
+      setIsFirstTimeUser(upcomingClasses.length === 0 && (!progressData || progressData.length === 0));
+    }
+  }, [classesLoading, progressLoading, upcomingClasses, progressData]);
+
+  const studentData: StudentData = useMemo(() => ({
+    level: studentLevel,
+    totalProgress,
+    currentModule: 'Not started',
+    moduleProgress: 0,
+    hoursCompleted: 0,
+    instructor: nextClassInfo.instructor,
+    nextClass: nextClassInfo.nextClass,
+  }), [studentLevel, totalProgress, nextClassInfo]);
 
   return {
     userId,
-    loading: loading || classesLoading || progressLoading,
+    loading: studentLoading || classesLoading || progressLoading,
     studentData,
     isFirstTimeUser,
     progressData,
