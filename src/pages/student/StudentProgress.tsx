@@ -5,6 +5,7 @@ import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
 import { BookOpen, BarChart, Layers, PlusCircle, Eye, EyeOff } from 'lucide-react';
