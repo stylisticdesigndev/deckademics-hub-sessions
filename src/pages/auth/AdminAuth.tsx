@@ -33,46 +33,6 @@ const AdminAuthContent = () => {
     }
   }, [session, navigate]);
 
-  const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 6 characters long',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsResetting(true);
-      const response = await fetch(
-        'https://qeuzosggikxwnpyhulox.supabase.co/functions/v1/reset-admin-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ newPassword }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to reset password');
-
-      toast({
-        title: 'Success',
-        description: 'Password reset successfully! You can now login.',
-      });
-      setShowPasswordReset(false);
-      setNewPassword('');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to reset password',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   return (
     <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
