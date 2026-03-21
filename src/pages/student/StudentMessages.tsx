@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AuthorProfile {
   first_name?: string;
@@ -70,6 +71,7 @@ const StudentMessages = () => {
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [demoMode, setDemoMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const isDemoMode = !session || demoMode;
@@ -100,8 +102,9 @@ const StudentMessages = () => {
             content,
             published_at,
             author_id,
+            type,
             profiles:author_id (first_name, last_name),
-            announcement_reads!left (id, read_at)
+            announcement_reads!left (id, read_at, user_id)
           `)
           .contains('target_role', ['student'])
           .order('published_at', { ascending: false });
@@ -115,7 +118,9 @@ const StudentMessages = () => {
         if (data && data.length > 0) {
           const formattedAnnouncements = data.map((ann: any) => {
             const authorProfile = ann.profiles as AuthorProfile;
-            const readRecords = Array.isArray(ann.announcement_reads) ? ann.announcement_reads : [];
+            const readRecords = Array.isArray(ann.announcement_reads) 
+              ? ann.announcement_reads.filter((r: any) => r.user_id === user.id) 
+              : [];
             const isRead = readRecords.length > 0;
             
             return {
@@ -129,7 +134,7 @@ const StudentMessages = () => {
                   `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
               },
               isNew: !isRead,
-              type: 'announcement',
+              type: ann.type || 'announcement',
             };
           });
           setAnnouncements(formattedAnnouncements);
@@ -146,6 +151,10 @@ const StudentMessages = () => {
 
     fetchAnnouncements();
   }, [isDemoMode]);
+
+  const filteredAnnouncements = activeTab === 'all' 
+    ? announcements 
+    : announcements.filter(a => a.type === activeTab);
 
   const handleMarkAsRead = async (id: string) => {
     if (isDemoMode || id.startsWith('demo-')) {
@@ -214,13 +223,22 @@ const StudentMessages = () => {
           </Alert>
         )}
 
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="event">Events</TabsTrigger>
+            <TabsTrigger value="announcement">Announcements</TabsTrigger>
+            <TabsTrigger value="update">Updates</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading messages...</p>
           </div>
-        ) : announcements.length > 0 ? (
+        ) : filteredAnnouncements.length > 0 ? (
           <div className="space-y-4">
-            {announcements.map(announcement => (
+            {filteredAnnouncements.map(announcement => (
               <AnnouncementCard
                 key={announcement.id}
                 announcement={announcement}
@@ -231,14 +249,18 @@ const StudentMessages = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium">No messages yet</h3>
+            <h3 className="text-xl font-medium">
+              {activeTab === 'all' ? 'No messages yet' : `No ${activeTab}s yet`}
+            </h3>
             <p className="text-muted-foreground mt-2 mb-6">
               {isNewUser 
                 ? "Complete your profile to start receiving messages from instructors."
-                : "You don't have any messages at the moment."}
+                : activeTab === 'all' 
+                  ? "You don't have any messages at the moment."
+                  : `No ${activeTab}s to display right now.`}
             </p>
             
-            {isNewUser && (
+            {isNewUser && activeTab === 'all' && (
               <div className="flex gap-4 mt-2">
                 <Button asChild>
                   <Link to="/student/profile">
