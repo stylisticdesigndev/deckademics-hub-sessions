@@ -5,7 +5,7 @@ export interface CurriculumModule {
   id: string;
   title: string;
   description: string | null;
-  level: 'beginner' | 'intermediate' | 'advanced';
+  level: 'novice' | 'amateur' | 'intermediate' | 'advanced';
   order_index: number;
   created_at: string;
   updated_at: string;

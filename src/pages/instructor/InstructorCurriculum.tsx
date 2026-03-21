@@ -36,14 +36,15 @@ const InstructorCurriculum = () => {
           <p className="text-muted-foreground">Reference guide for student instruction</p>
         </div>
 
-        <Tabs defaultValue="beginner" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="beginner">Beginner</TabsTrigger>
+        <Tabs defaultValue="novice" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="novice">Novice</TabsTrigger>
+            <TabsTrigger value="amateur">Amateur</TabsTrigger>
             <TabsTrigger value="intermediate">Intermediate</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
-          {['beginner', 'intermediate', 'advanced'].map(level => (
+          {['novice', 'amateur', 'intermediate', 'advanced'].map(level => (
             <TabsContent key={level} value={level} className="space-y-4">
               {getModulesByLevel(level).length === 0 ? (
                 <Card className="text-center p-6">

@@ -21,7 +21,7 @@ import { useUpdateCurriculumLesson } from '@/hooks/useUpdateCurriculumLesson';
 import { useDeleteCurriculumLesson } from '@/hooks/useDeleteCurriculumLesson';
 
 const AdminCurriculum = () => {
-  const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [selectedLevel, setSelectedLevel] = useState<'novice' | 'amateur' | 'intermediate' | 'advanced'>('novice');
   
   const { data: allModules = [], isLoading } = useCurriculumModules();
   const { data: allLessons = [] } = useCurriculumLessons();
@@ -42,7 +42,7 @@ const AdminCurriculum = () => {
   const [newModule, setNewModule] = useState({
     title: '',
     description: '',
-    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    level: 'novice' as 'novice' | 'amateur' | 'intermediate' | 'advanced',
     order_index: 0
   });
 
@@ -61,7 +61,7 @@ const AdminCurriculum = () => {
       { ...newModule, order_index: maxOrder + 1 },
       {
         onSuccess: () => {
-          setNewModule({ title: '', description: '', level: 'beginner', order_index: 0 });
+          setNewModule({ title: '', description: '', level: 'novice', order_index: 0 });
           setIsAddModuleOpen(false);
         }
       }
@@ -178,7 +178,8 @@ const AdminCurriculum = () => {
                       <SelectValue placeholder="Select a level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="novice">Novice</SelectItem>
+                      <SelectItem value="amateur">Amateur</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
                       <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
@@ -226,7 +227,8 @@ const AdminCurriculum = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="novice">Novice</SelectItem>
+                      <SelectItem value="amateur">Amateur</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
                       <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
@@ -306,13 +308,14 @@ const AdminCurriculum = () => {
         </Dialog>
 
         <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="beginner">Beginner</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="novice">Novice</TabsTrigger>
+            <TabsTrigger value="amateur">Amateur</TabsTrigger>
             <TabsTrigger value="intermediate">Intermediate</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          {['beginner', 'intermediate', 'advanced'].map(level => (
+          {['novice', 'amateur', 'intermediate', 'advanced'].map(level => (
             <TabsContent key={level} value={level} className="space-y-4">
               {getModulesByLevel(level).length === 0 ? (
                 <Card className="text-center p-6">
