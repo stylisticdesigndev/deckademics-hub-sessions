@@ -107,7 +107,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
         {/* Legend */}
         <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t">
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="h-3 w-3 rounded-full" style={{ border: '2px solid hsl(142, 71%, 45%)', backgroundColor: 'transparent' }} />
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
             Present
           </div>
           <div className="flex items-center gap-1.5 text-xs">
@@ -117,6 +117,10 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
           <div className="flex items-center gap-1.5 text-xs">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />
             Upcoming
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="h-3 w-3 rounded-full" style={{ border: '2px solid hsl(var(--primary))', backgroundColor: 'transparent' }} />
+            Today
           </div>
         </div>
       </CardContent>
