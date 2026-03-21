@@ -14,11 +14,12 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
   const [waitTime, setWaitTime] = useState(0);
   
-  console.log("Protected route - Session:", !!session);
-  console.log("Protected route - Is loading:", isLoading);
-  console.log("Protected route - User data:", userData);
-  console.log("Protected route - User role:", userData?.role);
-  console.log("Protected route - Allowed roles:", allowedRoles);
+  if (import.meta.env.DEV) {
+    console.log("Protected route - Session:", !!session);
+    console.log("Protected route - Is loading:", isLoading);
+    console.log("Protected route - User role:", userData?.role);
+    console.log("Protected route - Allowed roles:", allowedRoles);
+  }
 
   const isMockAdmin = false; // Mock admin bypass removed for security
   
@@ -39,7 +40,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       }
       
       // If we have a valid role from userData or metadata, we can proceed
-      if (userData.role || (session.user && session.user.user_metadata?.role)) {
+      if (userData.role) {
         console.log("Role found, proceeding with route protection");
         setIsWaitingForProfile(false);
         return;
@@ -63,7 +64,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
     
     // Only run this if we have session but no role data
-    const needsRole = session && !userData.profile && !userData.role && !session.user.user_metadata?.role;
+    const needsRole = session && !userData.profile && !userData.role;
     
     if (!isLoading && needsRole) {
       const interval = window.setInterval(() => {
@@ -125,7 +126,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }
   
   // Get effective role either from userData or from session metadata
-  const effectiveRole = userData.role || (session.user.user_metadata?.role as UserRole);
+  const effectiveRole = userData.role; // Never fall back to user_metadata.role — it's client-controlled
   
   // If user is authenticated but has no role or wrong role
   if (!effectiveRole || !allowedRoles.includes(effectiveRole)) {
