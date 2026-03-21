@@ -20,8 +20,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   console.log("Protected route - User role:", userData?.role);
   console.log("Protected route - Allowed roles:", allowedRoles);
 
-  // Special case for admin with UUID 00000000-0000-0000-0000-000000000000
-  const isMockAdmin = session?.user?.id === "00000000-0000-0000-0000-000000000000";
+  const isMockAdmin = false; // Mock admin bypass removed for security
   
   // Check for user metadata in session for cases where profile creation fails
   useEffect(() => {

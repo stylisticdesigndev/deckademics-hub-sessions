@@ -1,24 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert, AlertTriangle } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { VideoBackground } from '@/components/background/VideoBackground';
-
-const ADMIN_EMAIL = 'whadhannen@gmail.com';
 
 const AdminAuthContent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [isResetting, setIsResetting] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   
   useEffect(() => {
     if (session && session.user) {
@@ -33,46 +24,6 @@ const AdminAuthContent = () => {
     }
   }, [session, navigate]);
 
-  const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 6 characters long',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsResetting(true);
-      const response = await fetch(
-        'https://qeuzosggikxwnpyhulox.supabase.co/functions/v1/reset-admin-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ newPassword }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to reset password');
-
-      toast({
-        title: 'Success',
-        description: 'Password reset successfully! You can now login.',
-      });
-      setShowPasswordReset(false);
-      setNewPassword('');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to reset password',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   return (
     <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
@@ -99,49 +50,12 @@ const AdminAuthContent = () => {
         </AlertDescription>
       </Alert>
       
-      {!showPasswordReset && (
-        <Alert className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>First Time Setup</AlertTitle>
-          <AlertDescription>
-            Need to set the admin password? Use the "Set Admin Password" button below.
-          </AlertDescription>
-        </Alert>
-      )}
+      <AuthForm userType="admin" disableSignup={true} />
       
-      <AuthForm userType="admin" disableSignup={true} adminEmail={ADMIN_EMAIL} />
-      
-      <div className="text-center space-y-4">
-        {!showPasswordReset ? (
-          <Button variant="outline" className="w-full" onClick={() => setShowPasswordReset(true)}>
-            Set Admin Password
-          </Button>
-        ) : (
-          <div className="space-y-3 bg-white/10 p-4 rounded-lg">
-            <Input
-              type="password"
-              placeholder="Enter new password (min 6 characters)"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleResetPassword()}
-              className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
-            />
-            <div className="flex gap-2">
-              <Button onClick={handleResetPassword} disabled={isResetting} className="flex-1">
-                {isResetting ? 'Setting Password...' : 'Set Password'}
-              </Button>
-              <Button onClick={() => { setShowPasswordReset(false); setNewPassword(''); }} variant="outline">
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        <div>
-          <Link to="/" className="text-sm text-deckademics-primary hover:underline">
-            Back to sign in options
-          </Link>
-        </div>
+      <div className="text-center">
+        <Link to="/" className="text-sm text-deckademics-primary hover:underline">
+          Back to sign in options
+        </Link>
       </div>
     </div>
   );
