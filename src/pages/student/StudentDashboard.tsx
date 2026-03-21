@@ -90,7 +90,7 @@ const StudentDashboard = () => {
     );
   }
 
-  const showEmptyState = isEmpty || isFirstTimeUser;
+  
 
   // Build skills array from progressData
   const skills = (progressData && Array.isArray(progressData))
