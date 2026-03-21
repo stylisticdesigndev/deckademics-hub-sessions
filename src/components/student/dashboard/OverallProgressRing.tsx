@@ -13,7 +13,8 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
 
   if (progress === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[200px] rounded-xl bg-card border border-border p-6">
+      <div className="flex flex-col items-center justify-center min-h-[200px] h-full rounded-xl bg-card border border-border p-6">
+        <h3 className="text-sm font-semibold text-foreground mb-4 self-start">Overall Progress</h3>
         <div className="relative w-32 h-32">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
             <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
