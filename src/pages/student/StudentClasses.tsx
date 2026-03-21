@@ -44,7 +44,7 @@ function getMockData() {
   const dates = getWeeklyDates(dayOfWeek, 8, 4);
   const today = startOfDay(new Date());
   
-  const statuses = ['present', 'present', 'present', 'late', 'present', 'absent', 'present', 'present'] as const;
+  const statuses = ['present', 'present', 'present', 'present', 'present', 'absent', 'present', 'present'] as const;
   
   const attendanceRecords = dates
     .filter(d => isBefore(d, today))
