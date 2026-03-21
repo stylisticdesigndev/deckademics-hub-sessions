@@ -57,8 +57,9 @@ export function useAnnouncements(targetRole: string = 'student') {
             content,
             published_at,
             author_id,
+            type,
             profiles:author_id (first_name, last_name),
-            announcement_reads!left (id, read_at)
+            announcement_reads!left (id, read_at, user_id)
           `)
           .contains('target_role', [targetRole]);
 
@@ -94,7 +95,7 @@ export function useAnnouncements(targetRole: string = 'student') {
             
             // Check if there's a read record for this announcement
             const readRecords = hasProperty(annRaw, 'announcement_reads') && Array.isArray(annRaw.announcement_reads) 
-              ? annRaw.announcement_reads 
+              ? annRaw.announcement_reads.filter((r: any) => r.user_id === user.id)
               : [];
             const isRead = readRecords.length > 0;
             
@@ -114,7 +115,7 @@ export function useAnnouncements(targetRole: string = 'student') {
                   initials
                 },
                 isNew: !isRead,
-                type: 'announcement',
+                type: (hasProperty(annRaw, 'type') && annRaw.type) || 'announcement',
               });
             }
           }

@@ -55,6 +55,7 @@ export type Database = {
           published_at: string | null
           target_role: Database["public"]["Enums"]["user_role"][] | null
           title: string
+          type: string
           updated_at: string | null
         }
         Insert: {
@@ -65,6 +66,7 @@ export type Database = {
           published_at?: string | null
           target_role?: Database["public"]["Enums"]["user_role"][] | null
           title: string
+          type?: string
           updated_at?: string | null
         }
         Update: {
@@ -75,6 +77,7 @@ export type Database = {
           published_at?: string | null
           target_role?: Database["public"]["Enums"]["user_role"][] | null
           title?: string
+          type?: string
           updated_at?: string | null
         }
         Relationships: [

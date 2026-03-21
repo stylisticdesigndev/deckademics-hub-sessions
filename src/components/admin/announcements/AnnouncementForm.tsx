@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,23 +19,24 @@ interface AnnouncementFormProps {
 interface NewAnnouncement {
   title: string;
   content: string;
+  type: string;
 }
 
 export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementFormProps) => {
   const { toast } = useToast();
   const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncement>({
     title: '',
-    content: ''
+    content: '',
+    type: 'announcement'
   });
   const queryClient = useQueryClient();
 
-  // Create announcement mutation
   const createAnnouncementMutation = useMutation({
-    mutationFn: async ({ title, content }: NewAnnouncement) => {
-      // Create announcement with proper typing
+    mutationFn: async ({ title, content, type }: NewAnnouncement) => {
       const announcementData = {
         title,
         content,
+        type,
         author_id: authorId ? asDatabaseParam(authorId) : null,
         target_role: ['student', 'instructor', 'admin']
       };
@@ -51,7 +53,7 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       onClose();
-      setNewAnnouncement({ title: '', content: '' });
+      setNewAnnouncement({ title: '', content: '', type: 'announcement' });
       toast({
         title: 'Announcement Created',
         description: 'Your announcement has been published successfully.',
@@ -81,7 +83,7 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
   };
 
   const handleClose = () => {
-    setNewAnnouncement({ title: '', content: '' });
+    setNewAnnouncement({ title: '', content: '', type: 'announcement' });
     onClose();
   };
 
@@ -103,6 +105,19 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
               value={newAnnouncement.title}
               onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
             />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="type" className="text-sm font-medium">Type</label>
+            <Select value={newAnnouncement.type} onValueChange={(val) => setNewAnnouncement({...newAnnouncement, type: val})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="announcement">Announcement</SelectItem>
+                <SelectItem value="event">Event</SelectItem>
+                <SelectItem value="update">Update</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <label htmlFor="content" className="text-sm font-medium">Content</label>

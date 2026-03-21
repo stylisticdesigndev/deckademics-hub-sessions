@@ -32,6 +32,7 @@ const InstructorAnnouncements = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [targetRole, setTargetRole] = useState<string>('student');
+  const [announcementType, setAnnouncementType] = useState<string>('announcement');
 
   // Fetch announcements
   const { data: announcements = [], isLoading } = useQuery({
@@ -65,7 +66,7 @@ const InstructorAnnouncements = () => {
 
   // Create announcement mutation
   const createAnnouncement = useMutation({
-    mutationFn: async (newAnnouncement: { title: string; content: string; target_role: string[] }) => {
+    mutationFn: async (newAnnouncement: { title: string; content: string; target_role: string[]; type: string }) => {
       if (!session?.user?.id) {
         throw new Error('User not authenticated');
       }
@@ -76,7 +77,8 @@ const InstructorAnnouncements = () => {
           title: newAnnouncement.title,
           content: newAnnouncement.content,
           author_id: session.user.id,
-          target_role: newAnnouncement.target_role
+          target_role: newAnnouncement.target_role,
+          type: newAnnouncement.type
         } as any]);
 
       if (error) {
@@ -92,6 +94,7 @@ const InstructorAnnouncements = () => {
       setTitle('');
       setContent('');
       setTargetRole('student');
+      setAnnouncementType('announcement');
     },
     onError: (error: Error) => {
       console.error('Error creating announcement:', error);
@@ -112,7 +115,8 @@ const InstructorAnnouncements = () => {
     createAnnouncement.mutate({
       title: title.trim(),
       content: content.trim(),
-      target_role: targetRoles
+      target_role: targetRoles,
+      type: announcementType
     });
   };
 
@@ -180,6 +184,19 @@ const InstructorAnnouncements = () => {
                       <SelectItem value="student">Students Only</SelectItem>
                       <SelectItem value="instructor">Instructors Only</SelectItem>
                       <SelectItem value="all">Everyone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select value={announcementType} onValueChange={setAnnouncementType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="announcement">Announcement</SelectItem>
+                      <SelectItem value="event">Event</SelectItem>
+                      <SelectItem value="update">Update</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
