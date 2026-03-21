@@ -16,10 +16,9 @@ import { useNavigate } from 'react-router-dom';
 interface AuthFormProps {
   userType: UserRole;
   disableSignup?: boolean;
-  adminEmail?: string; // Add this new prop
 }
 
-export const AuthForm = ({ userType, disableSignup = false, adminEmail }: AuthFormProps) => {
+export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
   const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
