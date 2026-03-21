@@ -22,8 +22,8 @@ export const mockSkills = [
 export const mockAttendance = {
   present: 9,
   absent: 1,
-  late: 2,
-  total: 12,
+  late: 0,
+  total: 10,
 };
 
 export const mockUpcomingClasses = [
