@@ -85,7 +85,7 @@ export function useStudentClassAttendance() {
       setClassInfo({
         id: cls.id,
         title: cls.title,
-        location: cls.location || 'Main Studio',
+        location: cls.location || 'Classroom 1',
         startTime: cls.start_time,
         endTime: cls.end_time,
         instructorId: cls.instructor_id,
