@@ -267,7 +267,7 @@ const StudentClasses = () => {
                           <ClassAttendanceCard
                             key={key}
                             date={date}
-                            title={`${activeClassInfo!.title}${displayLevel ? ` — ${displayLevel}` : ''}`}
+                            title={displayLevel || 'Class'}
                             time={classTime.time}
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
@@ -295,7 +295,7 @@ const StudentClasses = () => {
                           <ClassAttendanceCard
                             key={key}
                             date={date}
-                            title={`${activeClassInfo!.title}${displayLevel ? ` — ${displayLevel}` : ''}`}
+                            title={displayLevel || 'Class'}
                             time={classTime.time}
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
