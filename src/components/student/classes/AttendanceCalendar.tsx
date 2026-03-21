@@ -115,10 +115,6 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
             Absent
           </div>
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-4))' }} />
-            Late
-          </div>
-          <div className="flex items-center gap-1.5 text-xs">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />
             Upcoming
           </div>
