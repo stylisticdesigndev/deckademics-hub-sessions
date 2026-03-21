@@ -69,9 +69,10 @@ const StudentMessages = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [demoMode, setDemoMode] = useState(false);
   
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
-  const isDemoMode = !session;
+  const isDemoMode = !session || demoMode;
   
   useEffect(() => {
     if (isDemoMode) {
