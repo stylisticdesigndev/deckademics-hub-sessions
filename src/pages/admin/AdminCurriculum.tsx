@@ -42,7 +42,7 @@ const AdminCurriculum = () => {
   const [newModule, setNewModule] = useState({
     title: '',
     description: '',
-    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    level: 'novice' as 'novice' | 'amateur' | 'intermediate' | 'advanced',
     order_index: 0
   });
 
