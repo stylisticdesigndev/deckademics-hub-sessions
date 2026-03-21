@@ -17,7 +17,7 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
         <h3 className="text-sm font-semibold text-foreground mb-4 self-start">Overall Progress</h3>
         <div className="relative w-32 h-32">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-foreground">0%</span>
