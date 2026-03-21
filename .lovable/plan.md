@@ -1,22 +1,58 @@
 
 
-# Differentiate "Present" and "Today" in Attendance Calendar
+# Add Notification Preferences to Student Profile
 
-## Problem
-"Present" (green outline circle) and "Today" (primary border circle) look too similar — both are outline-style circles, making them hard to distinguish.
+## Overview
+Add a "Notification Preferences" card to the student profile page with toggles for email and SMS alerts on announcements. Store preferences in a new `notification_preferences` table.
 
-## Solution
-Change "Present" from an outline circle to a **filled green circle** (solid green background with white text). This clearly separates it from "Today," which remains an outline/border style.
+## Database Changes
 
-Add "Today" to the legend so all visual indicators are documented.
+**New table: `notification_preferences`**
+```sql
+CREATE TABLE public.notification_preferences (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  email_notifications boolean NOT NULL DEFAULT true,
+  sms_notifications boolean NOT NULL DEFAULT false,
+  phone_number text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
-## Changes
+ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
 
-**File: `src/components/student/classes/AttendanceCalendar.tsx`**
+-- Users can view/update their own preferences
+CREATE POLICY "Users can view own preferences" ON public.notification_preferences
+  FOR SELECT TO authenticated USING (user_id = auth.uid());
 
-1. **Present modifier style** (lines 36-41): Change from green border/transparent background to solid green fill with white text
-2. **Today class** (line 102): Keep as-is (border outline style) — already distinct as a thin primary-colored border
-3. **Legend** (lines 109-122): 
-   - Update "Present" indicator to a filled green circle
-   - Add a 4th legend item: "Today" with a circle matching the `day_today` style (thin primary border, no fill)
+CREATE POLICY "Users can insert own preferences" ON public.notification_preferences
+  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update own preferences" ON public.notification_preferences
+  FOR UPDATE TO authenticated USING (user_id = auth.uid());
+
+-- Admins can view all
+CREATE POLICY "Admins can view all preferences" ON public.notification_preferences
+  FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin'::app_role));
+```
+
+Defaults: email ON, SMS OFF (SMS requires a phone number).
+
+## Frontend Changes
+
+### 1. Create `useNotificationPreferences` hook
+- Fetches/upserts the user's notification preferences from `notification_preferences`
+- Provides `preferences` state and `updatePreferences` mutation
+
+### 2. Add "Notification Preferences" card to `StudentProfile.tsx`
+- New card in the right sidebar (below Instructor card)
+- Toggle for "Email Notifications" with description: "Receive announcements and updates via email"
+- Toggle for "SMS Notifications" with description: "Receive important alerts via text message"
+- Phone number input field (shown when SMS is enabled)
+- Auto-saves on toggle change (no save button needed)
+- Uses the `Switch` component already in the project
+
+## Notes
+- This creates the preference storage and UI only. Actual email/SMS sending would be a separate implementation step using an edge function + Twilio (for SMS) or email infrastructure.
+- The toggles will be functional for saving preferences immediately, ready for when the notification sending backend is wired up.
 
