@@ -11,7 +11,10 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { userData, isLoading, session, signOut } = useAuth();
-  const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
+  const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
+    // If auth is already loaded and we have a role, no need to wait
+    return isLoading || (!userData.role && !!session);
+  });
   const [waitTime, setWaitTime] = useState(0);
   
   if (import.meta.env.DEV) {
