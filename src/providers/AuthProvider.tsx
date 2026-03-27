@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .then(profile => {
                 if (profile?.role) {
                   // Only redirect on SIGNED_IN event, not on token refresh
-                  if (event === 'SIGNED_IN') {
+                  if (event === 'SIGNED_IN' && window.location.pathname.includes('/auth/')) {
                     redirectBasedOnRole(profile.role);
                   }
                 }
