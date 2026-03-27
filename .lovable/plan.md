@@ -1,33 +1,33 @@
 
 
-# Fix: Tab Switch Redirects to Dashboard
+# Fix Logo Flicker on Section Navigation
+
+## Problem
+When navigating between sections (e.g., Classes → Progress → Profile), the `ProtectedRoute` component re-mounts and its `isWaitingForProfile` state starts as `true`. This briefly shows the full-screen skeleton loader instead of the `DashboardLayout`, causing the logo to disappear and the navbar to shift until the profile check resolves (typically within one render cycle).
 
 ## Root Cause
-
-In `src/providers/AuthProvider.tsx` (line 96-137), the `onAuthStateChange` listener redirects to the dashboard on every `SIGNED_IN` event (line 119-121). When Supabase refreshes the token after tab focus, it can re-emit `SIGNED_IN`, triggering `redirectBasedOnRole()` which always navigates to `/{role}/dashboard` — overriding the current page.
+In `src/routes/ProtectedRoute.tsx` (line 14), `isWaitingForProfile` is initialized to `true` every time the component mounts. Combined with the loading check on line 97, this causes a brief flash of the skeleton screen even when auth data is already available in context.
 
 ## Fix
 
-**File: `src/providers/AuthProvider.tsx`**
+**File: `src/routes/ProtectedRoute.tsx`**
 
-In the `onAuthStateChange` callback (around line 119), add a check so the redirect only happens when the user is currently on an auth page (e.g. `/auth/student`). If they're already on a protected route, skip the redirect.
+Initialize `isWaitingForProfile` based on whether we already have the data we need. If `isLoading` is already `false` and `userData.role` is already set, there's no reason to wait.
 
-Change:
+Change line 14 from:
 ```ts
-if (event === 'SIGNED_IN') {
-  redirectBasedOnRole(profile.role);
-}
+const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
 ```
-
 To:
 ```ts
-if (event === 'SIGNED_IN' && window.location.pathname.includes('/auth/')) {
-  redirectBasedOnRole(profile.role);
-}
+const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
+  // If auth is already loaded and we have a role, no need to wait
+  return isLoading || (!userData.role && !!session);
+});
 ```
 
-This mirrors the existing guard on line 155 used during `initializeAuth`. The user will only be redirected to their dashboard when signing in from an auth page — not when returning to the tab or on token refresh.
+This ensures that on subsequent navigations (when auth data is already cached in the AuthProvider context), the skeleton loader is skipped entirely and the `DashboardLayout` with the logo renders immediately.
 
 ### Files Changed
-- `src/providers/AuthProvider.tsx` (1 line change)
+- `src/routes/ProtectedRoute.tsx` — 1 line change
 
