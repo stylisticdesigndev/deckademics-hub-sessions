@@ -64,9 +64,9 @@ export default function StudentNotes() {
 
   // Combined notes sorted by date
   const combinedNotes: CombinedNote[] = [
-    ...instructorNotes.map(n => ({ type: 'instructor' as const, data: n })),
-    ...personalNotes.map(n => ({ type: 'personal' as const, data: n })),
-  ].sort((a, b) => new Date(b.data.created_at).getTime() - new Date(a.data.created_at).getTime());
+    ...instructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
+    ...personalNotes.map(n => ({ type: 'personal' as const, data: n, created_at: n.created_at })),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const handleCreateNote = (data: { title?: string; content: string }) => {
     createNote.mutate(data, {
