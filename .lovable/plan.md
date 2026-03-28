@@ -1,46 +1,40 @@
 
 
-# Add Week/Day/Month View Filter to Instructor Classes
+# Fix Student Side Not Reflecting Instructor Updates
 
-## Summary
-Replace the current week-only dropdown filter with a view mode selector (Week, Day, Month) that filters classes by time period relative to the current date. Week view remains the default.
+## Problems Found
+
+### 1. Student progress not visible — Missing RLS policy
+The `student_progress` table has NO SELECT policy for students. Only instructors can read progress data. This means the student dashboard's progress ring, skill breakdown, and progress page all return empty results even when the instructor has updated them.
+
+### 2. Student Messages page shows only announcements, not direct messages
+The instructor sends messages via the `messages` table, but `StudentMessages.tsx` only queries the `announcements` table. Students have no way to see direct messages from their instructor.
+
+---
 
 ## Changes
 
-### File: `src/pages/instructor/InstructorClasses.tsx`
-
-1. **Add a `viewMode` state** defaulting to `'week'` with options `'day'`, `'week'`, `'month'`
-2. **Add date-based filtering logic**:
-   - **Day**: show only classes matching today's date
-   - **Week**: show classes within the current Monday–Sunday range
-   - **Month**: show classes within the current calendar month
-   - Parse `cls.date` strings back to `Date` objects for comparison (for live data, use `start_time`; for mock data, parse the formatted date string)
-3. **Replace the week dropdown** with a view mode selector (3 toggle buttons or a Select with Day/Week/Month options) placed alongside the search bar
-4. **Remove the old `filter` state and `weekOptions`** logic since filtering is now date-range-based
-5. **Keep the search filter** as-is (student name, room, title still searchable)
-6. **Update the table's "Class Week" column** to remain visible — it still shows which curriculum week the class belongs to
-
-### UI Layout
-- Search bar on the left (unchanged)
-- View mode selector on the right: three buttons (Day | Week | Month) using a toggle group or segmented control, with "Week" active by default
-
-### Filtering Logic (pseudocode)
-```text
-today = new Date()
-if viewMode === 'day':
-  filter where classDate === today (same year/month/day)
-if viewMode === 'week':
-  startOfWeek = Monday of current week
-  endOfWeek = Sunday of current week
-  filter where classDate >= startOfWeek && classDate <= endOfWeek
-if viewMode === 'month':
-  filter where classDate.month === today.month && classDate.year === today.year
+### Database Migration — Add student SELECT policy on student_progress
+```sql
+CREATE POLICY "Students can view their own progress"
+  ON public.student_progress
+  FOR SELECT
+  TO authenticated
+  USING (student_id = auth.uid());
 ```
 
-### Mock Data Note
-The mock data uses hardcoded date strings. To make the filter meaningful in demo mode, update `mockInstructorClasses` in `src/data/mockInstructorData.ts` to use dates relative to today (e.g., today, yesterday, next week, etc.) so all three views show relevant results.
+### Rewrite `src/pages/student/StudentMessages.tsx`
+Transform from announcements-only to a tabbed view with two sections:
+- **Messages tab** (default): Queries `messages` table where `receiver_id = auth.uid()`, shows subject, content, sender name (joined from profiles), sent date, and read/unread status. Clicking a message marks it as read (updates `read_at`).
+- **Announcements tab**: Keeps existing announcements logic (query announcements targeted at students).
 
-## Files Changed
-- `src/pages/instructor/InstructorClasses.tsx` — replace week filter with day/week/month view mode
-- `src/data/mockInstructorData.ts` — update mock class dates to be relative to current date
+Add an unread messages count badge on the Messages nav item in `StudentNavigation.tsx`.
+
+### Update `src/components/navigation/StudentNavigation.tsx`
+Add unread message count badge to the Messages nav item by querying `messages` where `receiver_id = user.id AND read_at IS NULL`.
+
+### Files Changed
+- SQL migration (new RLS policy on `student_progress`)
+- `src/pages/student/StudentMessages.tsx` — add direct messages inbox alongside announcements
+- `src/components/navigation/StudentNavigation.tsx` — add unread messages badge
 
