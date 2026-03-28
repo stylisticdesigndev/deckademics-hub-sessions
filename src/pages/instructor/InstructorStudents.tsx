@@ -475,6 +475,9 @@ const InstructorStudents = () => {
       setStudents(prev => prev.map(s => 
         s.id === selectedStudent ? { ...s, progress: progressValue } : s
       ));
+      if (detailedStudent && detailedStudent.id === selectedStudent) {
+        setDetailedStudent(prev => prev ? { ...prev, progress: progressValue } : prev);
+      }
       
       toast({
         title: "Progress updated",
