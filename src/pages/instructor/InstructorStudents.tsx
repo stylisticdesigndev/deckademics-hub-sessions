@@ -706,11 +706,26 @@ const InstructorStudents = () => {
   return (
     <>
       <div className="space-y-6">
-        <section>
-          <h1 className="text-2xl font-bold">Student Management</h1>
-          <p className="text-muted-foreground mt-2">
-            View and manage all your students
-          </p>
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>Showing sample student data. Click "Live Data" to switch back.</AlertDescription>
+          </Alert>
+        )}
+
+        <section className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Student Management</h1>
+            <p className="text-muted-foreground mt-2">View and manage all your students</p>
+          </div>
+          <Button
+            variant={demoMode ? "default" : "outline"} size="sm"
+            onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </section>
 
         <Card>
