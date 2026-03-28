@@ -1,64 +1,26 @@
 
 
-# Fix Live Progress Updates + Add Student To-Do Feature
+# Match Student Levels to Curriculum Levels
 
-## Problem 1: Progress Checkboxes Don't Update Live
+## Problem
+The curriculum uses 4 levels: **Novice, Amateur, Intermediate, Advanced**. But the student management pages (both instructor and admin) only show 3 levels: **Beginner, Intermediate, Advanced** — missing "Amateur" entirely and using "Beginner" instead of "Novice."
 
-**Root cause**: The `toggleLessonCompletion` function updates the `students` array state, but the modal reads from a separate `detailedStudent` state variable. Since `setDetailedStudent` is never called after toggling, the UI stays stale until the modal is closed and reopened.
+The `useUpdateStudentLevel.ts` hook already has the correct 4-level system with proper mappings, but the UI dropdowns and badge colors don't match.
 
-**Fix**: After updating `setStudents`, also update `setDetailedStudent` with the same modified student data. This is a ~5-line addition inside `toggleLessonCompletion`.
+## Changes
 
-### File: `src/pages/instructor/InstructorStudents.tsx`
+### 1. `src/pages/instructor/InstructorStudents.tsx`
+- Update all level filter/select dropdowns from `beginner/intermediate/advanced` to `novice/amateur/intermediate/advanced`
+- Update `studentsByLevel` grouping to use all 4 levels: Novice, Amateur, Intermediate, Advanced
+- Update all badge color mappings to cover 4 levels (novice=green, amateur=yellow, intermediate=blue, advanced=purple)
+- Update the level edit dropdown in the student detail modal to show all 4 levels
 
-After the `setStudents(...)` call (line 647-679), add a matching `setDetailedStudent` update that applies the same lesson toggle logic to the detailed student if it matches the toggled student ID.
+### 2. `src/pages/admin/AdminStudents.tsx`
+- Update the level select dropdown from `beginner/intermediate/advanced` to `novice/amateur/intermediate/advanced`
 
-## Problem 2: Student To-Do Feature
+### 3. `src/hooks/instructor/useInstructorStudentsSimple.ts`
+- Remove the `beginner → novice` normalization hack since levels will now be stored correctly
+- Keep the lowercase normalization for safe comparison
 
-Yes — a to-do list makes sense. The Progress tab tracks curriculum completion (what the admin defines). But instructors often need to assign ad-hoc tasks: "practice crossfader transitions," "watch this tutorial," "bring headphones next week." These don't belong in the curriculum.
-
-**Proposal**: Add a "Tasks" tab to the student detail modal, alongside Info/Notes/Progress. Instructors can:
-- Add a task with a title and optional description
-- Mark tasks as complete/incomplete
-- Delete tasks
-- See tasks sorted by status (incomplete first) then date
-
-### Database: New `student_tasks` table
-
-```text
-student_tasks
-├── id (uuid, PK)
-├── student_id (uuid, NOT NULL)
-├── instructor_id (uuid, NOT NULL)
-├── title (text, NOT NULL)
-├── description (text, nullable)
-├── completed (boolean, default false)
-├── created_at (timestamptz)
-├── updated_at (timestamptz)
-```
-
-RLS policies:
-- Instructors can CRUD tasks where `instructor_id = auth.uid()`
-- Students can SELECT tasks where `student_id = auth.uid()`
-- Students can UPDATE tasks where `student_id = auth.uid()` (to mark complete)
-- Admins can manage all
-
-### UI: New "Tasks" tab in student detail modal
-
-- Simple list with checkbox, title, and description
-- "Add Task" button with inline form (title + optional description)
-- Completed tasks show strikethrough and move to bottom
-- Delete button (trash icon) on each task
-
-## Files Changed
-
-1. `src/pages/instructor/InstructorStudents.tsx` — fix `setDetailedStudent` sync + add Tasks tab UI
-2. **New migration** — create `student_tasks` table with RLS
-3. `src/hooks/instructor/useInstructorStudentsSimple.ts` — optionally fetch tasks per student (or fetch on-demand in the tab)
-
-## Technical Details
-
-- The `setDetailedStudent` fix ensures the checkbox visually toggles immediately after the DB write succeeds
-- The Tasks tab fetches tasks on-demand when the tab is selected, keeping the initial student load fast
-- Tasks are independent from curriculum — they won't affect the Progress percentage
-- Students will be able to see their tasks on their own dashboard (future enhancement)
+These changes align all student-facing level UI with the curriculum's 4-tier system.
 
