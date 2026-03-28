@@ -326,6 +326,25 @@ const StudentMessages = () => {
     if (insertError) throw insertError;
   };
 
+  const handleSaveToNotes = (msg: { id: string; content: string; sent_at: string; image_url?: string | null }) => {
+    if (!userId) return;
+    const activeInstructor = instructors.find(i => i.id === activeInstructorId);
+    const title = `From ${activeInstructor?.name || 'Instructor'} — ${format(new Date(msg.sent_at), 'MMM d, yyyy')}`;
+    const content = msg.image_url
+      ? `${msg.content}\n\n📎 Image: ${msg.image_url}`
+      : msg.content;
+
+    createNote.mutate({ title, content }, {
+      onSuccess: () => {
+        setSavedMessageIds(prev => new Set(prev).add(msg.id));
+        toast({ title: 'Saved to notes', description: 'Message saved to your personal notes.' });
+      },
+      onError: () => {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to save note.' });
+      },
+    });
+  };
+
   const handleSendReply = async (content: string) => {
     if (isDemoMode || !userId || !activeInstructorId) return;
 
