@@ -1,23 +1,52 @@
 
 
-# Truncated "All" Tab with "View All" Links
+# Student Personal Notes + Instructor Notes Combined View
 
 ## Summary
-Limit the "All" tab to show only the 5 most recent items (messages + announcements combined by date), with "View all messages →" and "View all announcements →" links that switch to the respective tabs.
+Create a new `student_personal_notes` table for student-authored notes, and update the Notes page to show both personal notes and instructor notes in a unified, tabbed interface.
 
-## Changes
+## Database Changes
 
-### `src/pages/student/StudentMessages.tsx`
+### New table: `student_personal_notes`
+- `id` (uuid, PK, default gen_random_uuid())
+- `student_id` (uuid, NOT NULL) — references the student
+- `title` (text, nullable)
+- `content` (text, NOT NULL)
+- `created_at` (timestamptz, default now())
+- `updated_at` (timestamptz, default now())
 
-1. In the "All" `TabsContent`, limit displayed items to the 5 most recent by merging conversations and announcements into a single sorted-by-date list, then slicing to 5.
+### RLS Policies
+- Students can SELECT, INSERT, UPDATE, DELETE their own notes (`student_id = auth.uid()`)
+- Admins can SELECT all (via `has_role`)
+- Instructors can SELECT notes for their assigned students
 
-2. Add "View all messages →" and "View all announcements →" links at the bottom that programmatically switch the active tab. This requires converting from `defaultValue` to controlled `Tabs` with a `value` state.
+### Trigger
+- `update_updated_at` trigger on UPDATE
 
-3. Messages and Announcements tabs remain unchanged — they show the full untruncated lists.
+## Frontend Changes
 
-### Technical Details
-- Add `const [activeTab, setActiveTab] = useState("all")` and use controlled `<Tabs value={activeTab} onValueChange={setActiveTab}>`
-- In the "All" tab, create a combined array of conversations (using `lastMessageAt`) and announcements (using `date`), sort by recency, take first 5
-- Render each item using existing `ConversationItem` or `AnnouncementCard` based on type
-- Add clickable "View all →" links that call `setActiveTab("messages")` / `setActiveTab("announcements")`
+### `src/hooks/student/useStudentPersonalNotes.ts` (new)
+- Hook to CRUD personal notes from `student_personal_notes`
+- `useQuery` to fetch, `useMutation` for create/update/delete
+
+### `src/pages/student/StudentNotes.tsx`
+- Add tabs: "All", "My Notes", "Instructor Notes"
+- "All" tab shows both types merged by date (like the messages pattern)
+- "My Notes" tab shows only personal notes with a "New Note" button
+- "Instructor Notes" tab shows existing instructor notes
+- Add a floating or header "Add Note" button that opens a dialog
+- Each personal note card has edit/delete actions
+
+### `src/components/student/notes/PersonalNoteDialog.tsx` (new)
+- Dialog with title (optional) and content (required) fields
+- Used for both creating and editing personal notes
+
+### Note card rendering
+- Personal notes get a distinct visual indicator (e.g., different icon or subtle label like "My Note")
+- Instructor notes keep the existing instructor name/date display
+
+## Technical Details
+- Separate table avoids polluting the instructor-student notes relationship
+- The `student_notes` table and hook remain unchanged — instructor notes continue working as-is
+- Personal notes use the same date-grouping logic (Today, Yesterday, This Week, Earlier)
 
