@@ -97,8 +97,9 @@ const StudentMessages = () => {
   const [announcementFilter, setAnnouncementFilter] = useState('all');
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
 
-  const isDemoMode = !session || demoMode;
+  const { createNote } = useStudentPersonalNotes(userId);
   const userId = session?.user?.id;
 
   useEffect(() => {
