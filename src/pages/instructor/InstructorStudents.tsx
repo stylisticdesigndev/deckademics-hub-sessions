@@ -197,17 +197,14 @@ const InstructorStudents = () => {
     const normalizedStudentLevel = student.level.toLowerCase();
     const normalizedFilterLevel = filterLevel.toLowerCase();
     
-    const matchesLevel = filterLevel === 'all' || 
-                        normalizedStudentLevel === normalizedFilterLevel ||
-                        (normalizedFilterLevel === 'beginner' && normalizedStudentLevel === 'beginner') ||
-                        (normalizedFilterLevel === 'intermediate' && normalizedStudentLevel === 'intermediate') ||
-                        (normalizedFilterLevel === 'advanced' && normalizedStudentLevel === 'advanced');
+    const matchesLevel = filterLevel === 'all' || normalizedStudentLevel === normalizedFilterLevel;
     
     return matchesSearch && matchesLevel;
   });
 
   const studentsByLevel = {
-    Beginner: filteredStudents.filter(s => s.level.toLowerCase() === 'beginner'),
+    Novice: filteredStudents.filter(s => s.level.toLowerCase() === 'novice'),
+    Amateur: filteredStudents.filter(s => s.level.toLowerCase() === 'amateur'),
     Intermediate: filteredStudents.filter(s => s.level.toLowerCase() === 'intermediate'),
     Advanced: filteredStudents.filter(s => s.level.toLowerCase() === 'advanced'),
   };
@@ -788,7 +785,8 @@ const InstructorStudents = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="novice">Novice</SelectItem>
+                      <SelectItem value="amateur">Amateur</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
                       <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
@@ -868,7 +866,8 @@ const InstructorStudents = () => {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="beginner">Beginner</SelectItem>
+                                  <SelectItem value="novice">Novice</SelectItem>
+                                  <SelectItem value="amateur">Amateur</SelectItem>
                                   <SelectItem value="intermediate">Intermediate</SelectItem>
                                   <SelectItem value="advanced">Advanced</SelectItem>
                                 </SelectContent>
@@ -876,7 +875,8 @@ const InstructorStudents = () => {
                             ) : (
                               <div className="flex items-center justify-center gap-2">
                                 <Badge variant="outline" className={cn(
-                                  student.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                                  student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                                  student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
                                   student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
                                   student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
                                 )}>
@@ -943,7 +943,8 @@ const InstructorStudents = () => {
                             </div>
                             <Badge variant="outline" className={cn(
                               "shrink-0",
-                              student.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                              student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                              student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
                               student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
                               student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
                             )}>
@@ -992,7 +993,8 @@ const InstructorStudents = () => {
                           <CardTitle className="flex items-center gap-2">
                             {level}
                             <Badge variant="outline" className={cn(
-                              level === 'Beginner' && "border-green-500/50 text-green-500",
+                              level === 'Novice' && "border-green-500/50 text-green-500",
+                              level === 'Amateur' && "border-yellow-500/50 text-yellow-500",
                               level === 'Intermediate' && "border-blue-500/50 text-blue-500",
                               level === 'Advanced' && "border-purple-500/50 text-purple-500"
                             )}>
@@ -1208,7 +1210,8 @@ const InstructorStudents = () => {
                       <div>
                         <h3 className="font-medium text-muted-foreground">Level</h3>
                         <Badge variant="outline" className={cn(
-                          detailedStudent.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                          detailedStudent.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                          detailedStudent.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
                           detailedStudent.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
                           detailedStudent.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
                         )}>
