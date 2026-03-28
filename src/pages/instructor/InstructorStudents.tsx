@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil } from 'lucide-react';
+import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mockInstructorStudents } from '@/data/mockInstructorData';
@@ -89,6 +90,9 @@ const InstructorStudents = () => {
   const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [editingNote, setEditingNote] = useState<StudentNote | null>(null);
+  const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
+  const [editNoteText, setEditNoteText] = useState('');
   
   const curriculumModules = [
     {
@@ -146,7 +150,7 @@ const InstructorStudents = () => {
   // Update students when fetched data changes
   useEffect(() => {
     if (demoMode) {
-      setStudents(mockInstructorStudents as Student[]);
+      setStudents(mockInstructorStudents as unknown as Student[]);
     } else {
       setStudents(fetchedStudents);
     }
