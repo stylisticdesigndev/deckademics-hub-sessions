@@ -64,6 +64,7 @@ const InstructorStudents = () => {
   const { students: fetchedStudents, loading, refetch, setStudents: updateStudents } = useInstructorStudentsSimple(instructorId);
   
   const [students, setStudents] = useState<Student[]>([]);
+  const [demoMode, setDemoMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
