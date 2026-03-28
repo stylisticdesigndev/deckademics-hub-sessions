@@ -262,6 +262,7 @@ const InstructorMessages = () => {
           currentUserId={demoMode ? 'demo-instructor' : session?.user?.id || ''}
           studentName={activeConvo.studentName}
           studentInitials={activeConvo.initials}
+          studentAvatarUrl={activeConvo.avatarUrl}
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveStudentId(null)}
