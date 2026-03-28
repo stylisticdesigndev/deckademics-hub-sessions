@@ -173,6 +173,26 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             }
           }
           
+          // Build moduleProgress for this student
+          const studentLevel = student.level || 'beginner';
+          const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
+          const studentModules = allModules.filter((m) => m.level === studentLevel);
+          const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {
+            const modLessons = lessonsByModule[mod.id] || [];
+            const lessons = modLessons.map((l) => ({
+              id: l.id,
+              title: l.title,
+              completed: studentSkills.has(l.title),
+            }));
+            const completedCount = lessons.filter((l) => l.completed).length;
+            return {
+              moduleId: mod.id,
+              moduleName: mod.title,
+              progress: modLessons.length ? Math.round((completedCount / modLessons.length) * 100) : 0,
+              lessons,
+            };
+          });
+
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
@@ -185,6 +205,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             lastActive: '',
             nextClass: '',
             notes: notesById[student.id] || [],
+            moduleProgress,
           };
         });
 
