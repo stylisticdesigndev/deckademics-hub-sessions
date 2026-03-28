@@ -1,61 +1,49 @@
 
 
-# Restructure Instructor Messages and Announcements
+# Fix 4 Instructor-Side Issues
 
-## Summary
-- **Messages page** becomes a direct messaging tool for instructors to send individual messages to their assigned students (1-to-1 or 1-to-many individually). No global announcements here.
-- **Announcements page** becomes a read-only feed of admin-sent announcements/notifications (no instructor creation form). Instructor-created announcements are removed.
+## Issues
 
-## Changes
+### 1. Profile photo upload not working
+**Root cause**: In `InstructorProfile.tsx` (line 187-198), the `AvatarUpload` component only appears when `isEditing` is true. But the upload itself should work — the issue is likely that the instructor needs to click "Edit Profile" first. However, looking at the `AvatarUpload` component, it uses `supabase.storage.from('avatars').upload()` which requires the `avatars` bucket to exist (it does) and proper RLS policies. The upload should work once editing is enabled. The real UX issue is the avatar should always be uploadable without entering edit mode.
 
-### 1. Rewrite `src/pages/instructor/InstructorMessages.tsx`
-Replace the current announcements feed with a proper messaging UI:
-- **Compose section**: Form with multi-select student picker (from assigned students), subject, and message body. Sends individual `messages` table rows for each selected student.
-- **Inbox/Sent tabs**: Show conversations using the existing `messages` table (sender_id/receiver_id).
-- **Message thread view**: Click a conversation to see the thread.
-- **Demo mode**: Mock conversations with demo students showing sample messages back and forth.
-- Uses the existing `messages` table (columns: sender_id, receiver_id, subject, content, sent_at, read_at, is_archived).
+**Fix**: Show `AvatarUpload` component always (not only when editing). Remove the conditional that hides it behind `isEditing`.
 
-### 2. Rewrite `src/pages/instructor/InstructorAnnouncements.tsx`
-Convert from create+list to read-only list:
-- Remove the announcement creation form entirely.
-- Show announcements targeted at instructors (from the `announcements` table where `target_role` contains 'instructor'), with read tracking via `announcement_reads`.
-- Keep demo mode with mock admin announcements.
-- Add tab filtering (All/Events/Announcements/Updates) like the student messages page.
-- Add "mark as read" functionality.
+### 2. Dashboard progress showing percentage twice
+**Root cause**: In `StudentTable.tsx` (line 87-91), the `ProgressBar` component has `showPercentage` defaulting to `true` (ProgressBar.tsx line 9), which renders "XX%" above the bar. Then line 91 adds a second `<span>{student.progress}%</span>` next to it — resulting in the percentage appearing twice.
 
-### 3. Update `src/components/navigation/InstructorNavigation.tsx`
-- Update Messages tooltip to "Message your students"
-- Update Announcements tooltip to "View admin announcements"
+**Fix**: Pass `showPercentage={false}` to the `ProgressBar` in `StudentTable.tsx` since there's already an explicit percentage span next to it.
 
-### 4. Add RLS policy for messages UPDATE
-The `messages` table currently blocks UPDATE. We need a policy so users can mark messages as read (update `read_at`):
-- Add UPDATE policy: receivers can update their own received messages (for read_at).
+### 3. Student progress adds 5% more than the changed amount
+**Root cause**: In `InstructorStudents.tsx` (line 416), the conversion from percentage to proficiency uses `Math.round(progressValue / 10)`, storing a 1-10 scale value. When reading back in `useInstructorStudentsSimple.ts` (line 99), it multiplies by 10: `(r.proficiency || 1) * 10`. The problem is `Math.round` — setting progress to 45% stores `Math.round(45/10) = Math.round(4.5) = 5`, which reads back as 50%. Setting 35% stores `Math.round(3.5) = 4`, reads back as 40%.
 
-### 5. Update `src/data/mockInstructorData.ts`
-- Replace `mockInstructorMessages` with demo direct messages (conversations with students).
-- Replace `mockInstructorAnnouncements` with read-only admin announcements.
-- Add mock data for inbox/sent conversations.
+**Fix**: Use `Math.floor` instead of `Math.round` in the conversion, or better yet, store the actual percentage (0-100) directly and stop doing the scale conversion. The cleanest fix: change `Math.round(progressValue / 10)` to `Math.floor(progressValue / 10)` won't fully solve it. Instead, change the proficiency storage to use the raw percentage divided by 10 with `Math.round` BUT also change the read-back to use `Math.round` properly. Actually the simplest fix: just store `progressValue` directly as proficiency (0-100 range) and stop the x10 conversion on read. But the DB column seems designed for 1-10 scale.
 
-### 6. Remove instructor INSERT policy on announcements
-Since instructors should no longer create announcements, remove the "Instructors can create announcements" RLS policy from the `announcements` table via migration.
+Better approach: Use `Math.round(progressValue / 10)` on write (keep as-is) but when reading, acknowledge the rounding. The real issue is the slider step is 5, so values like 45, 35, 55 round up. Fix: change the slider step from 5 to 10, so the values always align with the 1-10 proficiency scale (10, 20, 30... 100).
 
-## Database Migration
-```sql
--- Allow receivers to mark messages as read
-CREATE POLICY "Receivers can update their messages"
-ON public.messages FOR UPDATE TO authenticated
-USING (receiver_id = auth.uid())
-WITH CHECK (receiver_id = auth.uid());
+### 4. Responsive scaling for all screen sizes
+**Fix areas**:
+- `StudentTable.tsx` dashboard table: use responsive table or card layout on mobile
+- `InstructorStudents.tsx` list view: the 8-column grid doesn't work on mobile — switch to stacked cards on small screens
+- `InstructorProfile.tsx`: already has `md:grid-cols-3`, looks okay
+- `InstructorMessages.tsx`, `InstructorClasses.tsx`: check and fix any fixed-width elements
+- `DashboardLayout.tsx`: already uses sidebar collapse, looks okay
 
--- Remove instructor announcement creation ability
-DROP POLICY IF EXISTS "Instructors can create announcements" ON public.announcements;
-```
+## Files to Change
 
-## Files Changed
-- `src/pages/instructor/InstructorMessages.tsx` (full rewrite)
-- `src/pages/instructor/InstructorAnnouncements.tsx` (full rewrite)
-- `src/components/navigation/InstructorNavigation.tsx` (tooltip updates)
-- `src/data/mockInstructorData.ts` (new mock message data)
-- SQL migration (messages UPDATE policy, remove instructor announcement INSERT policy)
+1. **`src/pages/instructor/InstructorProfile.tsx`** — Always show AvatarUpload (remove `isEditing` condition)
+2. **`src/components/instructor/dashboard/StudentTable.tsx`** — Pass `showPercentage={false}` to ProgressBar; add responsive card view for mobile
+3. **`src/pages/instructor/InstructorStudents.tsx`** — Change progress slider step from 5 to 10; add responsive mobile layout for the student list grid
+4. **`src/hooks/instructor/useInstructorStudentsSimple.ts`** — No changes needed (conversion is consistent)
+5. **`src/pages/instructor/InstructorDashboard.tsx`** — Minor responsive tweaks if needed
+
+## Technical Details
+
+**Progress fix**: Change slider step from `5` to `10` on line 1054 of InstructorStudents.tsx. This ensures values always map cleanly to the 1-10 proficiency scale (e.g., 40% → proficiency 4 → reads back as 40%).
+
+**Double percentage fix**: Line 88-91 of StudentTable.tsx — add `showPercentage={false}` prop to `<ProgressBar>`.
+
+**Avatar fix**: Lines 187-198 of InstructorProfile.tsx — show `AvatarUpload` always, not conditionally on `isEditing`.
+
+**Responsive fixes**: Replace rigid grid layouts with flex-wrap or stacked layouts on small screens using Tailwind responsive breakpoints (`sm:`, `md:`, `lg:`).
 
