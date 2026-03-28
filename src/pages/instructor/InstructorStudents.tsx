@@ -153,6 +153,11 @@ const InstructorStudents = () => {
       setStudents(mockInstructorStudents as unknown as Student[]);
     } else {
       setStudents(fetchedStudents);
+      // Keep detailedStudent in sync
+      if (detailedStudent) {
+        const updated = fetchedStudents.find(s => s.id === detailedStudent.id);
+        if (updated) setDetailedStudent(updated);
+      }
     }
   }, [fetchedStudents, demoMode]);
 
