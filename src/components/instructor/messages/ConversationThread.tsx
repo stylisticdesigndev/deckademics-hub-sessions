@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ThreadMessage {
   id: string;
@@ -11,6 +13,7 @@ interface ThreadMessage {
   content: string;
   sent_at: string;
   subject: string | null;
+  image_url?: string | null;
 }
 
 interface ConversationThreadProps {
@@ -19,7 +22,7 @@ interface ConversationThreadProps {
   studentInitials: string;
   studentAvatarUrl?: string | null;
   messages: ThreadMessage[];
-  onSendReply: (content: string) => Promise<void>;
+  onSendReply: (content: string, imageUrl?: string) => Promise<void>;
   onBack: () => void;
   sending?: boolean;
 }
@@ -35,16 +38,66 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   sending = false,
 }) => {
   const [replyText, setReplyText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: 'destructive', title: 'Invalid file', description: 'Please select an image file.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'File too large', description: 'Max 5MB allowed.' });
+      return;
+    }
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${currentUserId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('message-attachments').upload(path, file);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
+      return null;
+    }
+    const { data } = supabase.storage.from('message-attachments').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const handleSend = async () => {
-    if (!replyText.trim() || sending) return;
-    await onSendReply(replyText.trim());
+    if ((!replyText.trim() && !selectedImage) || sending || uploading) return;
+    
+    let imageUrl: string | undefined;
+    if (selectedImage) {
+      setUploading(true);
+      const url = await uploadImage(selectedImage);
+      setUploading(false);
+      if (!url) return;
+      imageUrl = url;
+    }
+
+    await onSendReply(replyText.trim() || (imageUrl ? '' : ''), imageUrl);
     setReplyText('');
+    removeImage();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -53,6 +106,8 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
       handleSend();
     }
   };
+
+  const isBusy = sending || uploading;
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)]">
@@ -93,7 +148,16 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
                         : 'bg-muted rounded-bl-md'
                     }`}
                   >
-                    {msg.content}
+                    {msg.image_url && (
+                      <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
+                        <img
+                          src={msg.image_url}
+                          alt="Attachment"
+                          className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
+                        />
+                      </a>
+                    )}
+                    {msg.content && msg.content}
                   </div>
                   <p className={`text-[11px] text-muted-foreground mt-1 ${isMe ? 'text-right' : ''}`}>
                     {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
@@ -106,8 +170,39 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
         <div ref={bottomRef} />
       </div>
 
+      {/* Image preview */}
+      {imagePreview && (
+        <div className="px-2 pb-2">
+          <div className="relative inline-block">
+            <img src={imagePreview} alt="Preview" className="h-20 rounded-lg border object-cover" />
+            <button
+              onClick={removeImage}
+              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Reply input */}
       <div className="border-t pt-3 flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 h-[42px] w-[42px]"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isBusy}
+        >
+          <ImagePlus className="h-4 w-4" />
+        </Button>
         <Textarea
           placeholder="Type a message..."
           value={replyText}
@@ -118,7 +213,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
         />
         <Button
           onClick={handleSend}
-          disabled={!replyText.trim() || sending}
+          disabled={(!replyText.trim() && !selectedImage) || isBusy}
           size="icon"
           className="shrink-0 h-[42px] w-[42px]"
         >

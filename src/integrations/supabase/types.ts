@@ -479,6 +479,7 @@ export type Database = {
         Row: {
           content: string
           id: string
+          image_url: string | null
           is_archived: boolean | null
           read_at: string | null
           receiver_id: string
@@ -489,6 +490,7 @@ export type Database = {
         Insert: {
           content: string
           id?: string
+          image_url?: string | null
           is_archived?: boolean | null
           read_at?: string | null
           receiver_id: string
@@ -499,6 +501,7 @@ export type Database = {
         Update: {
           content?: string
           id?: string
+          image_url?: string | null
           is_archived?: boolean | null
           read_at?: string | null
           receiver_id?: string

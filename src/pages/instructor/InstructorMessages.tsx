@@ -24,6 +24,7 @@ interface Message {
   content: string;
   sent_at: string;
   read_at: string | null;
+  image_url?: string | null;
 }
 
 interface StudentOption {
