@@ -175,10 +175,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           
           // Build moduleProgress for this student
           const studentLevel = student.level || 'beginner';
-          const normalizedLevel = (() => {
-            const l = studentLevel.toLowerCase();
-            return l === 'beginner' ? 'novice' : l;
-          })();
+          const normalizedLevel = studentLevel.toLowerCase();
           const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
           const studentModules = allModules.filter((m) => m.level.toLowerCase() === normalizedLevel);
           const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {

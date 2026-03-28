@@ -448,7 +448,8 @@ const AdminStudents = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="beginner">Beginner</SelectItem>
+                                    <SelectItem value="novice">Novice</SelectItem>
+                                    <SelectItem value="amateur">Amateur</SelectItem>
                                     <SelectItem value="intermediate">Intermediate</SelectItem>
                                     <SelectItem value="advanced">Advanced</SelectItem>
                                   </SelectContent>
