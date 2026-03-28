@@ -53,6 +53,48 @@ export function useStudentDashboardActions(fetchStudentInfo: () => void) {
     }
   }, [setAnnouncements, toast]);
 
+  const handleDismissAnnouncement = useCallback(async (id: string) => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if a read record already exists
+      const { data: existing } = await supabase
+        .from('announcement_reads')
+        .select('id')
+        .eq('announcement_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record to dismissed
+        const { error } = await supabase
+          .from('announcement_reads')
+          .update({ dismissed: true } as any)
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        // Insert new record as dismissed
+        const { error } = await supabase
+          .from('announcement_reads')
+          .insert({
+            announcement_id: id,
+            user_id: user.id,
+            dismissed: true,
+          } as any);
+        if (error) throw error;
+      }
+
+      // Remove from local state
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Announcement dismissed', description: 'This announcement has been removed from your feed.' });
+    } catch (err) {
+      console.error('Error dismissing announcement:', err);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to dismiss announcement.' });
+    }
+  }, [setAnnouncements, toast]);
+
   const handleAddToCalendar = useCallback((id: string) => {
     toast({
       title: 'Added to calendar',
@@ -60,7 +102,6 @@ export function useStudentDashboardActions(fetchStudentInfo: () => void) {
     });
   }, [toast]);
 
-  // Prevent unnecessary rerenders by wrapping this in useCallback
   const refreshData = useCallback(() => {
     console.log("Refreshing student dashboard data");
     fetchStudentInfo();
@@ -71,6 +112,7 @@ export function useStudentDashboardActions(fetchStudentInfo: () => void) {
     announcementsLoading,
     setAnnouncements,
     handleAcknowledgeAnnouncement,
+    handleDismissAnnouncement,
     handleAddToCalendar,
     refreshData
   };

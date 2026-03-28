@@ -20,9 +20,10 @@ interface Announcement {
 interface AnnouncementsSectionProps {
   announcements: Announcement[];
   onAcknowledge: (id: string) => void;
+  onDismiss: (id: string) => void;
 }
 
-export const AnnouncementsSection = ({ announcements, onAcknowledge }: AnnouncementsSectionProps) => {
+export const AnnouncementsSection = ({ announcements, onAcknowledge, onDismiss }: AnnouncementsSectionProps) => {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -36,6 +37,7 @@ export const AnnouncementsSection = ({ announcements, onAcknowledge }: Announcem
                 key={announcement.id}
                 announcement={announcement}
                 onAcknowledge={onAcknowledge}
+                onDismiss={onDismiss}
               />
             ))}
           </div>

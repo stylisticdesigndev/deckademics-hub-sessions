@@ -98,6 +98,10 @@ export function useAnnouncements(targetRole: string = 'student') {
               ? annRaw.announcement_reads.filter((r: any) => r.user_id === user.id)
               : [];
             const isRead = readRecords.length > 0;
+            const isDismissed = readRecords.some((r: any) => r.dismissed === true);
+            
+            // Skip dismissed announcements entirely
+            if (isDismissed) continue;
             
             // Only add objects with required properties
             if (hasProperty(annRaw, 'id') && 

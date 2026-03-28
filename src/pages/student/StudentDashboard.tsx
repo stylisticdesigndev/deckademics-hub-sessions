@@ -43,6 +43,7 @@ const StudentDashboard = () => {
     upcomingClasses,
     progressData,
     handleAcknowledgeAnnouncement,
+    handleDismissAnnouncement,
     handleAddToCalendar,
     fetchError
   } = useStudentDashboard();
@@ -186,7 +187,8 @@ const StudentDashboard = () => {
               <NotesSection studentId={studentId} demoNotes={demoMode ? mockNotes : undefined} />
               <AnnouncementsSection 
                 announcements={activeAnnouncements} 
-                onAcknowledge={handleAcknowledgeAnnouncement} 
+                onAcknowledge={handleAcknowledgeAnnouncement}
+                onDismiss={handleDismissAnnouncement}
               />
             </section>
           </>

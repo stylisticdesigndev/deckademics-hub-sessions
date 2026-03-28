@@ -1,0 +1,1 @@
+ALTER TABLE public.announcement_reads ADD COLUMN dismissed boolean NOT NULL DEFAULT false;

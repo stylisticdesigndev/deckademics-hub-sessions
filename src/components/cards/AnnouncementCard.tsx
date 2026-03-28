@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
 
 export interface Announcement {
   id: string;
@@ -23,12 +24,14 @@ export interface Announcement {
 interface AnnouncementCardProps {
   announcement: Announcement;
   onAcknowledge?: (id: string) => void;
+  onDismiss?: (id: string) => void;
   className?: string;
 }
 
 export const AnnouncementCard = ({ 
   announcement, 
   onAcknowledge,
+  onDismiss,
   className 
 }: AnnouncementCardProps) => {
   const typeBadgeColor = {
@@ -92,6 +95,17 @@ export const AnnouncementCard = ({
             onClick={() => onAcknowledge(announcement.id)}
           >
             Mark as read
+          </Button>
+        )}
+        {onDismiss && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-destructive hover:text-destructive"
+            onClick={() => onDismiss(announcement.id)}
+          >
+            <X className="h-3 w-3 mr-1" />
+            Dismiss
           </Button>
         )}
       </CardFooter>
