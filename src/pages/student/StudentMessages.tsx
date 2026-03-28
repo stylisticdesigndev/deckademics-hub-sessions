@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, PlusCircle, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, PlusCircle, Eye, EyeOff, Mail, Megaphone } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface DirectMessage {
+  id: string;
+  subject: string | null;
+  content: string;
+  sent_at: string;
+  read_at: string | null;
+  sender_id: string;
+  senderName: string;
+  senderInitials: string;
+}
 
 interface AuthorProfile {
   first_name?: string;
@@ -19,7 +35,7 @@ const demoAnnouncements = [
   {
     id: 'demo-1',
     title: 'Spring Showcase Performance — Sign Up Now!',
-    content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set. Sign up with your instructor by April 5th. This is a great opportunity to show off what you\'ve learned this semester.',
+    content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set.',
     date: new Date().toLocaleDateString(),
     instructor: { name: 'Admin', initials: 'DA' },
     isNew: true,
@@ -28,99 +44,86 @@ const demoAnnouncements = [
   {
     id: 'demo-2',
     title: 'New Equipment in Classroom B',
-    content: 'We\'ve upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors. Please handle all equipment with care and report any issues to your instructor immediately.',
+    content: 'We\'ve upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.',
     date: new Date(Date.now() - 2 * 86400000).toLocaleDateString(),
     instructor: { name: 'DJ Marcus', initials: 'DM' },
     isNew: true,
     type: 'announcement' as const,
   },
+];
+
+const demoMessages: DirectMessage[] = [
   {
-    id: 'demo-3',
-    title: 'Schedule Change — No Classes March 28',
-    content: 'There will be no classes on Friday, March 28th due to building maintenance. All missed classes will be made up the following week. Please check with your instructor for your makeup time.',
-    date: new Date(Date.now() - 5 * 86400000).toLocaleDateString(),
-    instructor: { name: 'Admin', initials: 'DA' },
-    isNew: false,
-    type: 'update' as const,
+    id: 'demo-msg-1',
+    subject: 'Great progress on beat matching!',
+    content: 'Hey, just wanted to say your beat matching has improved a lot this week. Keep it up!',
+    sent_at: new Date().toISOString(),
+    read_at: null,
+    sender_id: 'demo',
+    senderName: 'DJ Marcus',
+    senderInitials: 'DM',
   },
   {
-    id: 'demo-4',
-    title: 'Great Progress This Month!',
-    content: 'Just wanted to give a shoutout to all students — the progress I\'ve seen this month has been incredible. Keep practicing your transitions and beat matching. Remember, consistency is key!',
-    date: new Date(Date.now() - 8 * 86400000).toLocaleDateString(),
-    instructor: { name: 'DJ Marcus', initials: 'DM' },
-    isNew: false,
-    type: 'announcement' as const,
-  },
-  {
-    id: 'demo-5',
-    title: 'Curriculum Update for Intermediate Students',
-    content: 'We\'ve added new modules on harmonic mixing and live looping to the intermediate curriculum. These will be covered over the next 4 weeks. Make sure to review the updated lesson plan in your Curriculum tab.',
-    date: new Date(Date.now() - 12 * 86400000).toLocaleDateString(),
-    instructor: { name: 'Admin', initials: 'DA' },
-    isNew: false,
-    type: 'update' as const,
+    id: 'demo-msg-2',
+    subject: 'Homework for next class',
+    content: 'Please practice the transition techniques we covered today. Try at least 3 different songs.',
+    sent_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    read_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    sender_id: 'demo',
+    senderName: 'DJ Marcus',
+    senderInitials: 'DM',
   },
 ];
 
 const StudentMessages = () => {
   const { userData, session } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [demoMode, setDemoMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
-  
+  const [announcementFilter, setAnnouncementFilter] = useState('all');
+
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const isDemoMode = !session || demoMode;
-  
+
   useEffect(() => {
     if (isDemoMode) {
       setAnnouncements(demoAnnouncements);
+      setMessages(demoMessages);
       setLoading(false);
       return;
     }
 
-    async function fetchAnnouncements() {
+    async function fetchData() {
       try {
         setLoading(true);
-        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setAnnouncements(demoAnnouncements);
+          setMessages(demoMessages);
           setLoading(false);
           return;
         }
 
-        const { data, error } = await supabase
+        // Fetch announcements
+        const { data: annData } = await supabase
           .from('announcements')
           .select(`
-            id,
-            title,
-            content,
-            published_at,
-            author_id,
-            type,
+            id, title, content, published_at, author_id, type,
             profiles:author_id (first_name, last_name),
             announcement_reads!left (id, read_at, user_id)
           `)
           .contains('target_role', ['student'])
           .order('published_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching announcements:', error);
-          setAnnouncements(demoAnnouncements);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const formattedAnnouncements = data.map((ann: any) => {
+        if (annData && annData.length > 0) {
+          const formatted = annData.map((ann: any) => {
             const authorProfile = ann.profiles as AuthorProfile;
-            const readRecords = Array.isArray(ann.announcement_reads) 
-              ? ann.announcement_reads.filter((r: any) => r.user_id === user.id) 
+            const readRecords = Array.isArray(ann.announcement_reads)
+              ? ann.announcement_reads.filter((r: any) => r.user_id === user.id)
               : [];
-            const isRead = readRecords.length > 0;
-            
             return {
               id: ann.id,
               title: ann.title || 'Announcement',
@@ -128,150 +131,227 @@ const StudentMessages = () => {
               date: new Date(ann.published_at).toLocaleDateString(),
               instructor: {
                 name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
-                initials: authorProfile ? 
-                  `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
+                initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
               },
-              isNew: !isRead,
+              isNew: readRecords.length === 0,
               type: ann.type || 'announcement',
             };
           });
-          setAnnouncements(formattedAnnouncements);
+          setAnnouncements(formatted);
         } else {
-          setAnnouncements(demoAnnouncements);
+          setAnnouncements([]);
+        }
+
+        // Fetch direct messages
+        const { data: msgData } = await supabase
+          .from('messages')
+          .select(`
+            id, subject, content, sent_at, read_at, sender_id,
+            profiles:sender_id (first_name, last_name)
+          `)
+          .eq('receiver_id', user.id)
+          .order('sent_at', { ascending: false });
+
+        if (msgData && msgData.length > 0) {
+          const formattedMsgs: DirectMessage[] = msgData.map((msg: any) => {
+            const senderProfile = msg.profiles as AuthorProfile;
+            const firstName = senderProfile?.first_name || '';
+            const lastName = senderProfile?.last_name || '';
+            return {
+              id: msg.id,
+              subject: msg.subject,
+              content: msg.content,
+              sent_at: msg.sent_at,
+              read_at: msg.read_at,
+              sender_id: msg.sender_id,
+              senderName: `${firstName} ${lastName}`.trim() || 'Instructor',
+              senderInitials: `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'I',
+            };
+          });
+          setMessages(formattedMsgs);
+        } else {
+          setMessages([]);
         }
       } catch (err) {
-        console.error('Error in fetchAnnouncements:', err);
-        setAnnouncements(demoAnnouncements);
+        console.error('Error fetching messages:', err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchAnnouncements();
+    fetchData();
   }, [isDemoMode]);
 
-  const filteredAnnouncements = activeTab === 'all' 
-    ? announcements 
-    : announcements.filter(a => a.type === activeTab);
-
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAnnouncementAsRead = async (id: string) => {
     if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => 
-        prev.map(a => a.id === id ? { ...a, isNew: false } : a)
-      );
-      toast({ title: 'Marked as read', description: 'The announcement has been marked as read.' });
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
+      toast({ title: 'Marked as read' });
       return;
     }
-
-    try {
-      const { error } = await supabase
-        .from('announcement_reads')
-        .insert({
-          announcement_id: id,
-          user_id: session?.user?.id
-        });
-
-      if (error) {
-        console.error('Error marking announcement as read:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
-        return;
-      }
-
-      setAnnouncements(prev => 
-        prev.map(a => a.id === id ? { ...a, isNew: false } : a)
-      );
-      
-      toast({ title: 'Marked as read', description: 'The announcement has been marked as read.' });
-    } catch (err) {
-      console.error('Error in handleMarkAsRead:', err);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
+    const { error } = await supabase
+      .from('announcement_reads')
+      .insert({ announcement_id: id, user_id: session?.user?.id });
+    if (!error) {
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
+      toast({ title: 'Marked as read' });
     }
   };
-  
+
+  const handleMarkMessageAsRead = async (id: string) => {
+    if (isDemoMode || id.startsWith('demo-')) {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
+      return;
+    }
+    const { error } = await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', id);
+    if (!error) {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
+      queryClient.invalidateQueries({ queryKey: ['unread-messages-count'] });
+    }
+  };
+
+  const filteredAnnouncements = announcementFilter === 'all'
+    ? announcements
+    : announcements.filter(a => a.type === announcementFilter);
+
+  const unreadMsgCount = messages.filter(m => !m.read_at).length;
+
   return (
-    <>
-      <div className="space-y-6">
-        <section className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Messages & Updates</h1>
-            <p className="text-muted-foreground mt-1">
-              View messages and updates from your instructors and administrators
-            </p>
-          </div>
-          {session && (
-            <Button
-              variant={demoMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDemoMode(!demoMode)}
-              className="flex items-center gap-2"
-            >
-              {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {demoMode ? 'Live Data' : 'Demo'}
-            </Button>
-          )}
-        </section>
-
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>
-              Showing sample messages. Click "Live Data" to switch back.
-            </AlertDescription>
-          </Alert>
+    <div className="space-y-6">
+      <section className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Messages & Updates</h1>
+          <p className="text-muted-foreground mt-1">
+            View messages from your instructors and school announcements
+          </p>
+        </div>
+        {session && (
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         )}
+      </section>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {demoMode && (
+        <Alert className="bg-warning/10 border-warning/30">
+          <Eye className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+          <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
+        </Alert>
+      )}
+
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading messages...</p>
+        </div>
+      ) : (
+        <Tabs defaultValue="messages">
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="event">Events</TabsTrigger>
-            <TabsTrigger value="announcement">Announcements</TabsTrigger>
-            <TabsTrigger value="update">Updates</TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Messages
+              {unreadMsgCount > 0 && (
+                <Badge variant="default" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1.5 text-xs">
+                  {unreadMsgCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Announcements
+            </TabsTrigger>
           </TabsList>
-        </Tabs>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading messages...</p>
-          </div>
-        ) : filteredAnnouncements.length > 0 ? (
-          <div className="space-y-4">
-            {filteredAnnouncements.map(announcement => (
-              <AnnouncementCard
-                key={announcement.id}
-                announcement={announcement}
-                onAcknowledge={handleMarkAsRead}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium">
-              {activeTab === 'all' ? 'No messages yet' : `No ${activeTab}s yet`}
-            </h3>
-            <p className="text-muted-foreground mt-2 mb-6">
-              {isNewUser 
-                ? "Complete your profile to start receiving messages from instructors."
-                : activeTab === 'all' 
-                  ? "You don't have any messages at the moment."
-                  : `No ${activeTab}s to display right now.`}
-            </p>
-            
-            {isNewUser && activeTab === 'all' && (
-              <div className="flex gap-4 mt-2">
-                <Button asChild>
-                  <Link to="/student/profile">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Complete Your Profile
-                  </Link>
-                </Button>
+          <TabsContent value="messages">
+            {messages.length > 0 ? (
+              <div className="space-y-3 mt-4">
+                {messages.map(msg => (
+                  <Card
+                    key={msg.id}
+                    className={`cursor-pointer transition-colors ${!msg.read_at ? 'border-primary/50 bg-primary/5' : ''}`}
+                    onClick={() => !msg.read_at && handleMarkMessageAsRead(msg.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                            {msg.senderInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm">{msg.senderName}</span>
+                            {!msg.read_at && (
+                              <Badge variant="default" className="text-xs px-1.5 py-0">New</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {format(new Date(msg.sent_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                          {msg.subject && (
+                            <p className="font-medium text-sm mt-1">{msg.subject}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{msg.content}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-medium">No messages yet</h3>
+                <p className="text-muted-foreground mt-2">
+                  Messages from your instructor will appear here.
+                </p>
               </div>
             )}
-          </div>
-        )}
-      </div>
-    </>
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <div className="mt-4 space-y-4">
+              <Tabs value={announcementFilter} onValueChange={setAnnouncementFilter}>
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="event">Events</TabsTrigger>
+                  <TabsTrigger value="announcement">Announcements</TabsTrigger>
+                  <TabsTrigger value="update">Updates</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {filteredAnnouncements.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredAnnouncements.map(announcement => (
+                    <AnnouncementCard
+                      key={announcement.id}
+                      announcement={announcement}
+                      onAcknowledge={handleMarkAnnouncementAsRead}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-medium">No announcements yet</h3>
+                  <p className="text-muted-foreground mt-2">
+                    School announcements will appear here.
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
   );
 };
 
