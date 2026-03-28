@@ -1316,6 +1316,56 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+        {/* Edit Note Dialog */}
+        <Dialog open={showEditNoteDialog} onOpenChange={setShowEditNoteDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Note</DialogTitle>
+              {editingNote?.title && (
+                <DialogDescription>{editingNote.title}</DialogDescription>
+              )}
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea
+                value={editNoteText}
+                onChange={(e) => setEditNoteText(e.target.value)}
+                placeholder="Edit note content..."
+                className="min-h-[150px]"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditNoteDialog(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                if (!editingNote || !editNoteText.trim()) return;
+                try {
+                  const { error } = await supabase
+                    .from('student_notes')
+                    .update({ content: editNoteText.trim() })
+                    .eq('id', editingNote.id);
+                  if (error) {
+                    toast({ title: "Error updating note", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "Note updated", description: "Note has been updated successfully." });
+                  setShowEditNoteDialog(false);
+                  setEditingNote(null);
+                  await refetch();
+                  // Also update detailedStudent locally
+                  if (detailedStudent) {
+                    setDetailedStudent(prev => prev ? {
+                      ...prev,
+                      notes: prev.notes?.map(n => n.id === editingNote.id ? { ...n, content: editNoteText.trim() } : n)
+                    } : prev);
+                  }
+                } catch (err) {
+                  console.error('Error updating note:', err);
+                  toast({ title: "Error", description: "Failed to update note.", variant: "destructive" });
+                }
+              }}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </>
   );
 };
