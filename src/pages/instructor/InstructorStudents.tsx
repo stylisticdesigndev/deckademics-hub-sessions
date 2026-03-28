@@ -259,6 +259,7 @@ const InstructorStudents = () => {
     if (student) {
       setDetailedStudent(student);
       setShowStudentDetails(true);
+      fetchStudentTasks(studentId);
     }
   };
   
