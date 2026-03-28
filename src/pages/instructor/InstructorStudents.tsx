@@ -220,57 +220,32 @@ const InstructorStudents = () => {
   };
   
   const handleAddNote = async () => {
-    if (!selectedStudent || !noteText.trim()) return;
+    if (!selectedStudent || !noteText.trim() || !instructorId) return;
     
     setIsAddingNote(true);
     console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
     
     try {
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getDate()}`;
-      const newNote = `${formattedDate}: ${noteText}`;
-      
-      // Get current notes from database first
-      const { data: currentStudentData, error: fetchError } = await supabase
-        .from('students')
-        .select('notes')
-        .eq('id', selectedStudent)
-        .single();
-        
-      if (fetchError) {
-        console.error('Error fetching current notes:', fetchError);
-        toast({
-          title: "Error fetching notes",
-          description: `Failed to fetch current notes: ${fetchError.message}. Check database connection.`,
-          variant: "destructive",
+      const { error } = await supabase
+        .from('student_notes')
+        .insert({
+          student_id: selectedStudent,
+          instructor_id: instructorId,
+          content: noteText.trim(),
+          title: null,
         });
-        return;
-      }
-      
-      console.log('Current student data:', currentStudentData);
-      const currentNotes = currentStudentData?.notes ? currentStudentData.notes.split('\n').filter(note => note.trim()) : [];
-      const updatedNotes = [newNote, ...currentNotes];
-      
-      console.log('Updating notes from:', currentNotes, 'to:', updatedNotes);
-      
-      // Update in database
-      const { data: updateResult, error } = await supabase
-        .from('students')
-        .update({ notes: updatedNotes.join('\n') })
-        .eq('id', selectedStudent)
-        .select('notes');
 
       if (error) {
-        console.error('Error updating student notes:', error);
+        console.error('Error saving note to student_notes:', error);
         toast({
           title: "Error saving note",
-          description: `Failed to save note: ${error.message}. RLS Policy: ${error.hint || 'Check instructor permissions'}`,
+          description: `Failed to save note: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Note saved successfully, update result:', updateResult);
+      console.log('Note saved successfully to student_notes table');
       
       setShowNoteDialog(false);
       setSelectedStudent(null);
@@ -278,11 +253,9 @@ const InstructorStudents = () => {
       
       toast({
         title: "Note added",
-        description: `Your note has been saved successfully: "${newNote}"`,
+        description: "Your note has been saved and will appear on the student's Notes page.",
       });
 
-      // Refresh data from database immediately
-      console.log('Refreshing student data after note update...');
       await refetch();
 
     } catch (error) {
@@ -298,35 +271,28 @@ const InstructorStudents = () => {
   };
   
   const handleAddLessonNote = async () => {
-    if (!selectedStudent || !lessonNoteText.trim() || !selectedLessonTitle) return;
+    if (!selectedStudent || !lessonNoteText.trim() || !selectedLessonTitle || !instructorId) return;
     
     try {
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getDate()}`;
-      const newNote = `${formattedDate} - ${selectedLessonTitle}: ${lessonNoteText}`;
-      
-      // Get current notes from the student
-      const currentStudent = students.find(s => s.id === selectedStudent);
-      const currentNotes = currentStudent?.notes || [];
-      const updatedNotes = [newNote, ...currentNotes];
-      
-      // Update in database
       const { error } = await supabase
-        .from('students')
-        .update({ notes: updatedNotes.join('\n') })
-        .eq('id', selectedStudent);
+        .from('student_notes')
+        .insert({
+          student_id: selectedStudent,
+          instructor_id: instructorId,
+          content: lessonNoteText.trim(),
+          title: selectedLessonTitle,
+        });
 
       if (error) {
-        console.error('Error updating lesson notes:', error);
+        console.error('Error saving lesson note:', error);
         toast({
           title: "Error saving lesson note",
-          description: "Failed to save lesson note. Please try again.",
+          description: `Failed to save lesson note: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      // Refresh data from database immediately
       await refetch();
       
       setShowLessonNoteDialog(false);
@@ -334,7 +300,7 @@ const InstructorStudents = () => {
       
       toast({
         title: "Lesson note added",
-        description: `Note for "${selectedLessonTitle}" has been saved.`,
+        description: `Note for "${selectedLessonTitle}" has been saved and will appear on the student's Notes page.`,
       });
     } catch (error) {
       console.error('Unexpected error saving lesson note:', error);
