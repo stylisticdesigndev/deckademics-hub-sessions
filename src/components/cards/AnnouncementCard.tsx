@@ -31,6 +31,7 @@ interface AnnouncementCardProps {
 export const AnnouncementCard = ({ 
   announcement, 
   onAcknowledge,
+  onDismiss,
   className 
 }: AnnouncementCardProps) => {
   const typeBadgeColor = {
