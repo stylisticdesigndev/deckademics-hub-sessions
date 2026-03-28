@@ -1340,7 +1340,7 @@ const InstructorStudents = () => {
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
-                              {format(new Date(note.created_at), 'MM/dd/yyyy h:mm a')}
+                              {(() => { try { return format(new Date(note.created_at), 'MM/dd/yyyy h:mm a'); } catch { return note.created_at || 'Unknown date'; } })()}
                             </p>
                           </div>
                         ))}
@@ -1417,7 +1417,9 @@ const InstructorStudents = () => {
                         {[...studentTasks]
                           .sort((a, b) => {
                             if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                            const dateA = new Date(a.created_at).getTime() || 0;
+                            const dateB = new Date(b.created_at).getTime() || 0;
+                            return dateB - dateA;
                           })
                           .map((task) => (
                           <div key={task.id} className="flex items-start gap-3 border rounded-md p-3 group">
