@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
+import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
 
 interface Message {
   id: string;
