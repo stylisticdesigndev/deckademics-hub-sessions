@@ -78,6 +78,7 @@ const StudentMessages = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState('all');
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
   const isDemoMode = !session || demoMode;
 
