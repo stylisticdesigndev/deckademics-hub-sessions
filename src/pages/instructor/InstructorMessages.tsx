@@ -372,7 +372,7 @@ const InstructorMessages = () => {
                       <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{msg.content}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {msg.read_at && <Check className="h-3.5 w-3.5 text-green-500" />}
+                      {msg.read_at && <Check className="h-3.5 w-3.5 text-primary" />}
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {format(new Date(msg.sent_at), 'MMM d')}
                       </span>
