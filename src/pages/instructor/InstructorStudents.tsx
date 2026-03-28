@@ -94,6 +94,13 @@ const InstructorStudents = () => {
   const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
   const [editNoteText, setEditNoteText] = useState('');
   
+  // Tasks state
+  const [studentTasks, setStudentTasks] = useState<{id: string; title: string; description: string | null; completed: boolean; created_at: string}[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [showAddTask, setShowAddTask] = useState(false);
+  
   const curriculumModules = [
     {
       moduleId: '1',
