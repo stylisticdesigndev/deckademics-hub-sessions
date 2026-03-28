@@ -386,18 +386,6 @@ const StudentMessages = () => {
                       <AnnouncementCard key={item.data.id} announcement={item.data} onAcknowledge={handleMarkAnnouncementAsRead} />
                     )
                   )}
-                  <div className="flex items-center justify-between pt-2">
-                    {conversations.length > 0 && (
-                      <button onClick={() => setActiveTab('messages')} className="text-sm text-primary hover:underline">
-                        View all messages →
-                      </button>
-                    )}
-                    {announcements.length > 0 && (
-                      <button onClick={() => setActiveTab('announcements')} className="text-sm text-primary hover:underline">
-                        View all announcements →
-                      </button>
-                    )}
-                  </div>
                 </div>
               );
             })()}
