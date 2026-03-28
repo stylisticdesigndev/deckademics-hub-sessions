@@ -93,6 +93,41 @@ const InstructorAnnouncements = () => {
     }
   };
 
+  const handleDismiss = async (id: string) => {
+    if (demoMode) {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Announcement removed' });
+      return;
+    }
+    try {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const { data: existing } = await supabase
+        .from('announcement_reads')
+        .select('id')
+        .eq('announcement_id', id)
+        .eq('user_id', userId)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        await supabase
+          .from('announcement_reads')
+          .update({ dismissed: true, read_at: new Date().toISOString() })
+          .eq('id', existing[0].id);
+      } else {
+        await supabase
+          .from('announcement_reads')
+          .insert({ announcement_id: id, user_id: userId, dismissed: true, read_at: new Date().toISOString() });
+      }
+
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Announcement removed' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to dismiss announcement.' });
+    }
+  };
+
   const activeAnnouncements = demoMode ? mockInstructorAnnouncements : announcements;
   const isLoading = !demoMode && loading;
   const filtered = activeTab === 'all' ? activeAnnouncements : activeAnnouncements.filter(a => a.type === activeTab);
@@ -141,6 +176,7 @@ const InstructorAnnouncements = () => {
               key={announcement.id}
               announcement={announcement}
               onAcknowledge={handleMarkAsRead}
+              onDismiss={handleDismiss}
             />
           ))}
         </div>
