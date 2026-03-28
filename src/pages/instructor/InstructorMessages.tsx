@@ -75,7 +75,7 @@ const InstructorMessages = () => {
         const studentIds = studentData.map(s => s.id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar_url')
           .in('id', studentIds);
 
         if (profiles) {
@@ -83,6 +83,7 @@ const InstructorMessages = () => {
             id: p.id,
             name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
             initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
+            avatarUrl: p.avatar_url,
           })));
         }
       }
