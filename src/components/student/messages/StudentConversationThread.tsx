@@ -39,6 +39,8 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   onSendReply,
   onBack,
   sending = false,
+  onSaveToNotes,
+  savedMessageIds = new Set(),
 }) => {
   const [replyText, setReplyText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
