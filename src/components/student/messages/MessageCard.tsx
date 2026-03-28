@@ -16,6 +16,7 @@ interface DirectMessage {
   sender_id: string;
   senderName: string;
   senderInitials: string;
+  image_url?: string | null;
 }
 
 interface MessageCardProps {
@@ -60,6 +61,11 @@ export const MessageCard = ({ message, onMarkAsRead, onReply, isDemoMode }: Mess
             </div>
             {message.subject && (
               <p className="font-medium text-sm mt-1">{message.subject}</p>
+            )}
+            {message.image_url && (
+              <a href={message.image_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                <img src={message.image_url} alt="Attachment" className="rounded-lg max-w-full max-h-48 object-cover" />
+              </a>
             )}
             <p className={`text-sm text-muted-foreground mt-1 ${expanded ? '' : 'line-clamp-2'}`}>
               {message.content}
