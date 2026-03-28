@@ -4,85 +4,46 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useStudentNotes, StudentNote } from '@/hooks/student/useStudentNotes';
+import { useStudentPersonalNotes, PersonalNote } from '@/hooks/student/useStudentPersonalNotes';
 import { useNotesNotifications } from '@/hooks/student/useNotesNotifications';
+import { PersonalNoteDialog } from '@/components/student/notes/PersonalNoteDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-import { StickyNote, Calendar, User, Eye, EyeOff } from 'lucide-react';
+import { StickyNote, Calendar, User, Eye, EyeOff, Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/hooks/use-toast';
 
-function getMockNotes(): StudentNote[] {
-  const now = new Date();
-  const yesterday = new Date(now);
+type CombinedNote = 
+  | { type: 'instructor'; data: StudentNote; created_at: string }
+  | { type: 'personal'; data: PersonalNote; created_at: string };
+
+function groupByDate<T extends { created_at: string }>(items: T[]) {
+  const today = new Date();
+  const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const threeDaysAgo = new Date(now);
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  const twoWeeksAgo = new Date(now);
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const threeWeeksAgo = new Date(now);
-  threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
 
-  return [
-    {
-      id: 'demo-1',
-      student_id: 'demo',
-      instructor_id: 'demo-instructor',
-      title: 'Great progress on beat matching!',
-      content: 'You nailed the tempo sync today. Keep practicing with different BPM ranges (120-130) to build consistency. Try mixing two tracks with a 5 BPM difference and work your way up.',
-      is_read: false,
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
-      instructor: { first_name: 'DJ', last_name: 'Marcus' },
-    },
-    {
-      id: 'demo-2',
-      student_id: 'demo',
-      instructor_id: 'demo-instructor',
-      title: 'EQ transition technique',
-      content: 'Remember the bass swap method we practiced: bring the incoming track\'s bass down, then swap bass frequencies at the phrase break. This creates a clean, seamless transition without frequency clashing.',
-      is_read: true,
-      created_at: yesterday.toISOString(),
-      updated_at: yesterday.toISOString(),
-      instructor: { first_name: 'DJ', last_name: 'Marcus' },
-    },
-    {
-      id: 'demo-3',
-      student_id: 'demo',
-      instructor_id: 'demo-instructor',
-      title: 'Homework: Build a 30-min set',
-      content: 'For next week, put together a 30-minute mix using at least 6 tracks. Focus on smooth transitions and maintaining energy flow. Record it and we\'ll review together in class.',
-      is_read: true,
-      created_at: threeDaysAgo.toISOString(),
-      updated_at: threeDaysAgo.toISOString(),
-      instructor: { first_name: 'DJ', last_name: 'Marcus' },
-    },
-    {
-      id: 'demo-4',
-      student_id: 'demo',
-      instructor_id: 'demo-instructor',
-      title: 'Scratching fundamentals review',
-      content: 'We covered baby scratches and forward scratches today. Your crossfader technique is improving. Practice the chirp scratch pattern we went over — start slow at 90 BPM before speeding up.',
-      is_read: true,
-      created_at: twoWeeksAgo.toISOString(),
-      updated_at: twoWeeksAgo.toISOString(),
-      instructor: { first_name: 'DJ', last_name: 'Marcus' },
-    },
-    {
-      id: 'demo-5',
-      student_id: 'demo',
-      instructor_id: 'demo-instructor',
-      title: 'Welcome to the program!',
-      content: 'Welcome to Deckademics! I\'m excited to be your instructor. We\'ll start with the fundamentals — understanding your equipment, basic mixing concepts, and ear training. See you next week!',
-      is_read: true,
-      created_at: threeWeeksAgo.toISOString(),
-      updated_at: threeWeeksAgo.toISOString(),
-      instructor: { first_name: 'DJ', last_name: 'Marcus' },
-    },
-  ];
+  const groups = { today: [] as T[], yesterday: [] as T[], thisWeek: [] as T[], earlier: [] as T[] };
+
+  items.forEach(item => {
+    const d = new Date(item.created_at);
+    if (d.toDateString() === today.toDateString()) groups.today.push(item);
+    else if (d.toDateString() === yesterday.toDateString()) groups.yesterday.push(item);
+    else if (d > weekAgo) groups.thisWeek.push(item);
+    else groups.earlier.push(item);
+  });
+
+  return groups;
 }
 
 export default function StudentNotes() {
   const [studentId, setStudentId] = useState<string | undefined>();
   const [demoMode, setDemoMode] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<PersonalNote | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -90,58 +51,55 @@ export default function StudentNotes() {
     });
   }, []);
 
-  const { notes, isLoading, markAsRead } = useStudentNotes(studentId);
+  const { notes: instructorNotes, isLoading: instructorLoading, markAsRead } = useStudentNotes(studentId);
+  const { notes: personalNotes, isLoading: personalLoading, createNote, updateNote, deleteNote } = useStudentPersonalNotes(studentId);
   useNotesNotifications(studentId);
 
   useEffect(() => {
     if (demoMode) return;
-    const unreadNotes = notes.filter(note => !note.is_read);
-    unreadNotes.forEach(note => {
-      markAsRead(note.id);
+    instructorNotes.filter(n => !n.is_read).forEach(n => markAsRead(n.id));
+  }, [instructorNotes, demoMode]);
+
+  const isLoading = instructorLoading || personalLoading;
+
+  // Combined notes sorted by date
+  const combinedNotes: CombinedNote[] = [
+    ...instructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
+    ...personalNotes.map(n => ({ type: 'personal' as const, data: n, created_at: n.created_at })),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const handleCreateNote = (data: { title?: string; content: string }) => {
+    createNote.mutate(data, {
+      onSuccess: () => toast({ title: 'Note created', description: 'Your note has been saved.' }),
     });
-  }, [notes, demoMode]);
-
-  const activeNotes = demoMode ? getMockNotes() : notes;
-
-  const groupNotesByDate = (notesList: StudentNote[]) => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const groups = {
-      today: [] as StudentNote[],
-      yesterday: [] as StudentNote[],
-      thisWeek: [] as StudentNote[],
-      earlier: [] as StudentNote[],
-    };
-
-    notesList.forEach(note => {
-      const noteDate = new Date(note.created_at);
-      const isToday = noteDate.toDateString() === today.toDateString();
-      const isYesterday = noteDate.toDateString() === yesterday.toDateString();
-      const isThisWeek = noteDate > weekAgo;
-
-      if (isToday) groups.today.push(note);
-      else if (isYesterday) groups.yesterday.push(note);
-      else if (isThisWeek) groups.thisWeek.push(note);
-      else groups.earlier.push(note);
-    });
-
-    return groups;
   };
 
-  const groupedNotes = groupNotesByDate(activeNotes);
+  const handleUpdateNote = (data: { title?: string; content: string }) => {
+    if (!editingNote) return;
+    updateNote.mutate({ id: editingNote.id, ...data }, {
+      onSuccess: () => {
+        toast({ title: 'Note updated' });
+        setEditingNote(null);
+      },
+    });
+  };
 
-  const renderNoteCard = (note: StudentNote) => (
+  const handleDeleteNote = (id: string) => {
+    deleteNote.mutate(id, {
+      onSuccess: () => toast({ title: 'Note deleted' }),
+    });
+  };
+
+  const renderInstructorNoteCard = (note: StudentNote) => (
     <Card key={note.id} className={!note.is_read ? 'border-primary' : ''}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            {note.title && (
-              <CardTitle className="text-lg">{note.title}</CardTitle>
-            )}
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium text-primary">Instructor Note</span>
+            </div>
+            {note.title && <CardTitle className="text-lg">{note.title}</CardTitle>}
             <CardDescription className="flex items-center gap-2 mt-1">
               <User className="h-3 w-3" />
               {note.instructor?.first_name} {note.instructor?.last_name}
@@ -149,9 +107,7 @@ export default function StudentNotes() {
               {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
             </CardDescription>
           </div>
-          {!note.is_read && (
-            <Badge variant="default">New</Badge>
-          )}
+          {!note.is_read && <Badge variant="default">New</Badge>}
         </div>
       </CardHeader>
       <CardContent>
@@ -160,22 +116,74 @@ export default function StudentNotes() {
     </Card>
   );
 
-  const renderGroup = (title: string, groupNotes: StudentNote[]) => {
-    if (groupNotes.length === 0) return null;
-    
-    return (
-      <div key={title} className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          {title}
-        </h3>
-        <div className="space-y-3">
-          {groupNotes.map(renderNoteCard)}
+  const renderPersonalNoteCard = (note: PersonalNote) => (
+    <Card key={note.id}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <StickyNote className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">My Note</span>
+            </div>
+            {note.title && <CardTitle className="text-lg">{note.title}</CardTitle>}
+            <CardDescription className="flex items-center gap-2 mt-1">
+              <Calendar className="h-3 w-3" />
+              {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+            </CardDescription>
+          </div>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingNote(note); setDialogOpen(true); }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteNote(note.id)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+      </CardContent>
+    </Card>
+  );
+
+  const renderCombinedCard = (item: CombinedNote) =>
+    item.type === 'instructor'
+      ? renderInstructorNoteCard(item.data as StudentNote)
+      : renderPersonalNoteCard(item.data as PersonalNote);
+
+  const renderGrouped = <T extends { created_at: string }>(items: T[], renderFn: (item: T) => React.ReactNode) => {
+    const groups = groupByDate(items);
+    const sections = [
+      { title: 'Today', items: groups.today },
+      { title: 'Yesterday', items: groups.yesterday },
+      { title: 'This Week', items: groups.thisWeek },
+      { title: 'Earlier', items: groups.earlier },
+    ];
+
+    const hasAny = sections.some(s => s.items.length > 0);
+    if (!hasAny) {
+      return (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <StickyNote className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium">No notes yet</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {sections.map(s => s.items.length === 0 ? null : (
+          <div key={s.title} className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{s.title}</h3>
+            <div className="space-y-3">{s.items.map(renderFn)}</div>
+          </div>
+        ))}
       </div>
     );
   };
-
-  const showContent = demoMode || (!isLoading && activeNotes.length > 0);
 
   return (
     <>
@@ -183,28 +191,30 @@ export default function StudentNotes() {
         <section className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">My Notes</h1>
-            <p className="text-muted-foreground mt-1">
-              View notes from your instructors organized by date
-            </p>
+            <p className="text-muted-foreground mt-1">Your notes and notes from your instructors</p>
           </div>
-          <Button
-            variant={demoMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => { setEditingNote(null); setDialogOpen(true); }} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Note
+            </Button>
+            <Button
+              variant={demoMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDemoMode(!demoMode)}
+              className="flex items-center gap-2"
+            >
+              {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {demoMode ? 'Live Data' : 'Demo'}
+            </Button>
+          </div>
         </section>
 
         {demoMode && (
           <Alert className="bg-warning/10 border-warning/30">
             <Eye className="h-4 w-4 text-warning" />
             <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>
-              Showing sample instructor notes. Click "Live Data" to switch back.
-            </AlertDescription>
+            <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
           </Alert>
         )}
 
@@ -212,35 +222,42 @@ export default function StudentNotes() {
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="h-4 w-1/4 mt-2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
+                <CardHeader><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-1/4 mt-2" /></CardHeader>
+                <CardContent><Skeleton className="h-20 w-full" /></CardContent>
               </Card>
             ))}
           </div>
-        ) : !showContent ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <StickyNote className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">No notes yet</p>
-              <p className="text-sm text-muted-foreground">
-                Your instructor will add notes about your lessons here
-              </p>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="space-y-6">
-            {renderGroup('Today', groupedNotes.today)}
-            {renderGroup('Yesterday', groupedNotes.yesterday)}
-            {renderGroup('This Week', groupedNotes.thisWeek)}
-            {renderGroup('Earlier', groupedNotes.earlier)}
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="my-notes">My Notes</TabsTrigger>
+              <TabsTrigger value="instructor">Instructor Notes</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all" className="mt-4">
+              {renderGrouped(combinedNotes, renderCombinedCard)}
+            </TabsContent>
+
+            <TabsContent value="my-notes" className="mt-4">
+              {renderGrouped(personalNotes, renderPersonalNoteCard)}
+            </TabsContent>
+
+            <TabsContent value="instructor" className="mt-4">
+              {renderGrouped(instructorNotes, renderInstructorNoteCard)}
+            </TabsContent>
+          </Tabs>
         )}
       </div>
+
+      <PersonalNoteDialog
+        open={dialogOpen}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingNote(null); }}
+        onSave={editingNote ? handleUpdateNote : handleCreateNote}
+        initialTitle={editingNote?.title || ''}
+        initialContent={editingNote?.content || ''}
+        isEdit={!!editingNote}
+      />
     </>
   );
 }
