@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 
 interface ThreadMessage {
@@ -17,6 +17,7 @@ interface ConversationThreadProps {
   currentUserId: string;
   studentName: string;
   studentInitials: string;
+  studentAvatarUrl?: string | null;
   messages: ThreadMessage[];
   onSendReply: (content: string) => Promise<void>;
   onBack: () => void;
@@ -27,6 +28,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   currentUserId,
   studentName,
   studentInitials,
+  studentAvatarUrl,
   messages,
   onSendReply,
   onBack,
@@ -60,6 +62,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <Avatar className="h-9 w-9">
+          {studentAvatarUrl && <AvatarImage src={studentAvatarUrl} alt={studentName} />}
           <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
             {studentInitials}
           </AvatarFallback>
@@ -76,6 +79,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
               <div className={`flex items-end gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                 {!isMe && (
                   <Avatar className="h-7 w-7 shrink-0">
+                    {studentAvatarUrl && <AvatarImage src={studentAvatarUrl} alt={studentName} />}
                     <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                       {studentInitials}
                     </AvatarFallback>

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 
 export interface Conversation {
   studentId: string;
   studentName: string;
   initials: string;
+  avatarUrl?: string | null;
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -35,6 +36,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations, onSe
           className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left"
         >
           <Avatar className="h-10 w-10 shrink-0">
+            {convo.avatarUrl && <AvatarImage src={convo.avatarUrl} alt={convo.studentName} />}
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
               {convo.initials}
             </AvatarFallback>

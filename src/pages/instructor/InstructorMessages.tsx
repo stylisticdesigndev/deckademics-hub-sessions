@@ -30,6 +30,7 @@ interface StudentOption {
   id: string;
   name: string;
   initials: string;
+  avatarUrl?: string | null;
 }
 
 const InstructorMessages = () => {
@@ -74,7 +75,7 @@ const InstructorMessages = () => {
         const studentIds = studentData.map(s => s.id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar_url')
           .in('id', studentIds);
 
         if (profiles) {
@@ -82,6 +83,7 @@ const InstructorMessages = () => {
             id: p.id,
             name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
             initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
+            avatarUrl: p.avatar_url,
           })));
         }
       }
@@ -135,6 +137,7 @@ const InstructorMessages = () => {
         studentId,
         studentName: student?.name || 'Unknown',
         initials: student?.initials || '??',
+        avatarUrl: (student as StudentOption)?.avatarUrl,
         lastMessage: last.content,
         lastMessageAt: last.sent_at,
         unreadCount,
@@ -259,6 +262,7 @@ const InstructorMessages = () => {
           currentUserId={demoMode ? 'demo-instructor' : session?.user?.id || ''}
           studentName={activeConvo.studentName}
           studentInitials={activeConvo.initials}
+          studentAvatarUrl={activeConvo.avatarUrl}
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveStudentId(null)}
