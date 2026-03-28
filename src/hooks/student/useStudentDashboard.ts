@@ -19,6 +19,7 @@ export const useStudentDashboard = () => {
     announcements,
     announcementsLoading,
     handleAcknowledgeAnnouncement,
+    handleDismissAnnouncement,
     handleAddToCalendar,
     refreshData
   } = useStudentDashboardActions(fetchStudentInfo);
@@ -38,6 +39,7 @@ export const useStudentDashboard = () => {
     upcomingClasses,
     progressData,
     handleAcknowledgeAnnouncement,
+    handleDismissAnnouncement,
     handleAddToCalendar,
     isEmpty,
     isFirstTimeUser,
