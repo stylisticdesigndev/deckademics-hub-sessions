@@ -1,60 +1,50 @@
 
 
-# Make Instructor Messages Conversational
+# Add Image Sharing to Instructor Messages
 
-## Problem
-The current instructor messages page looks like an email client — separate Inbox/Sent tabs, clicking a message shows a single card with no reply option. When a student replies, there's no way to see the conversation thread or respond back.
+## Summary
+Add the ability for instructors to attach and send images in conversation threads. This requires a new storage bucket, a new `image_url` column on the `messages` table, and UI changes to the conversation thread component.
 
-## Solution
-Replace the Inbox/Sent split with a **conversation list + chat thread view**. Group all messages between the instructor and each student into conversations. Clicking a conversation opens a chat-like thread with bubbles (instructor messages right-aligned, student messages left-aligned) and a reply input at the bottom.
+## Database Changes
 
-## Changes
+### 1. Add `image_url` column to `messages` table
+```sql
+ALTER TABLE public.messages ADD COLUMN image_url text;
+```
 
-### 1. Restructure `src/pages/instructor/InstructorMessages.tsx`
+### 2. Create `message-attachments` storage bucket with RLS
+```sql
+INSERT INTO storage.buckets (id, name, public) VALUES ('message-attachments', 'message-attachments', true);
 
-**Tabs become**: Conversations | Compose
+CREATE POLICY "Authenticated users can upload message attachments"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'message-attachments');
 
-**Conversations tab** (default):
-- Fetch ALL messages where `sender_id = user.id OR receiver_id = user.id`
-- Group by the "other person" (the student) into conversation threads
-- Show a list of student names with last message preview, timestamp, and unread badge
-- Clicking a conversation opens the thread view
+CREATE POLICY "Anyone can view message attachments"
+ON storage.objects FOR SELECT TO public
+USING (bucket_id = 'message-attachments');
+```
 
-**Thread view** (replaces the current single-message card):
-- Show student name and avatar at the top with a back button
-- Render all messages between instructor and that student in chronological order
-- Instructor messages: right-aligned bubbles with a different background color
-- Student messages: left-aligned bubbles
-- Each bubble shows content + timestamp
-- Reply input at the bottom (Textarea + Send button) — always available since instructor initiates conversations
-- Auto-mark unread messages as read when opening the thread
+## Code Changes
 
-**Compose tab**: Keep as-is for starting new conversations with students.
+### `src/components/instructor/messages/ConversationThread.tsx`
+- Add a hidden file input (`<input type="file" accept="image/*">`) and an image button (Paperclip or ImagePlus icon) next to the Send button
+- When an image is selected, show a small preview thumbnail above the input area with a remove button
+- On send: upload the image to `message-attachments/{sender_id}/{timestamp}-{filename}` via Supabase Storage, get the public URL, then pass both `content` and `imageUrl` to `onSendReply`
+- Update the message bubble rendering: if `msg.image_url` exists, render an `<img>` tag inside the bubble (clickable to open full-size in a new tab)
+- Update `onSendReply` prop signature to accept `(content: string, imageUrl?: string)`
 
-### 2. Create `src/components/instructor/messages/ConversationThread.tsx`
+### `src/pages/instructor/InstructorMessages.tsx`
+- Update `handleSendReply` to accept an optional `imageUrl` parameter and include `image_url` in the Supabase insert
+- Update the `Message` interface to include `image_url?: string | null`
+- Update `ThreadMessage` interface in ConversationThread to include `image_url`
 
-New component for the chat thread view:
-- Props: `studentId`, `studentName`, `messages[]`, `onSendReply`, `onBack`
-- Renders messages as chat bubbles using `flex` + `justify-end` / `justify-start`
-- Instructor bubbles: `bg-primary text-primary-foreground rounded-2xl` (right side)
-- Student bubbles: `bg-muted rounded-2xl` (left side)
-- Timestamps shown as small text below each bubble
-- Sticky reply input at the bottom with textarea and send button
-- Auto-scroll to bottom on load
+### `src/pages/student/StudentMessages.tsx`
+- Update the student message display to render images when `image_url` is present on a message, so students can see images sent by instructors
 
-### 3. Create `src/components/instructor/messages/ConversationList.tsx`
-
-New component for the conversation list:
-- Groups messages by student ID
-- Shows avatar, student name, last message preview (truncated), timestamp
-- Unread count badge per conversation
-- Sorted by most recent message
-
-### No database changes needed
-The `messages` table already supports two-way messaging with proper RLS policies (users can send where `sender_id = auth.uid()`, view where sender or receiver is them).
-
-### Files Changed
-- `src/pages/instructor/InstructorMessages.tsx` — restructure to conversations + thread model
-- `src/components/instructor/messages/ConversationThread.tsx` — new chat thread component
-- `src/components/instructor/messages/ConversationList.tsx` — new conversation list component
+## Files Changed
+- SQL migration (add `image_url` column + storage bucket + policies)
+- `src/components/instructor/messages/ConversationThread.tsx` — image picker, preview, upload, and display in bubbles
+- `src/pages/instructor/InstructorMessages.tsx` — pass image_url through to Supabase insert
+- `src/pages/student/StudentMessages.tsx` — render image attachments in student view
 
