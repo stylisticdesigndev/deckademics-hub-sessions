@@ -1,6 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+
+interface StudentNote {
+  id: string;
+  content: string;
+  title?: string | null;
+  created_at: string;
+}
 
 interface Student {
   id: string;
@@ -13,7 +21,7 @@ interface Student {
   nextClass?: string;
   email: string;
   enrollmentDate: string;
-  notes?: string[];
+  notes?: StudentNote[];
   moduleProgress?: ModuleProgress[];
 }
 
@@ -82,24 +90,47 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
 
         const studentIds = assignedStudents.map(s => s.id);
 
-        // Get progress data for these students
-        const { data: progressData, error: progressError } = await supabase
-          .from('student_progress')
-          .select('student_id, proficiency')
-          .in('student_id', studentIds);
+        // Get progress data and notes in parallel
+        const [progressResult, notesResult] = await Promise.all([
+          supabase
+            .from('student_progress')
+            .select('student_id, proficiency')
+            .in('student_id', studentIds),
+          supabase
+            .from('student_notes')
+            .select('id, student_id, content, title, created_at')
+            .eq('instructor_id', instructorId)
+            .in('student_id', studentIds)
+            .order('created_at', { ascending: false }),
+        ]);
 
-        if (progressError) {
-          console.error('Error fetching progress:', progressError);
+        if (progressResult.error) {
+          console.error('Error fetching progress:', progressResult.error);
+        }
+        if (notesResult.error) {
+          console.error('Error fetching notes:', notesResult.error);
         }
 
-        // Calculate average progress for each student - proficiency stores raw percentage (0-100)
+        // Calculate average progress for each student
         const progressById: { [id: string]: number } = {};
         studentIds.forEach((id) => {
-          const records = (progressData || []).filter((row) => row.student_id === id);
+          const records = (progressResult.data || []).filter((row) => row.student_id === id);
           const profs = records.map((r) => r.proficiency || 0);
           progressById[id] = profs.length
             ? Math.round(profs.reduce((a, b) => a + b, 0) / profs.length)
             : 0;
+        });
+
+        // Group notes by student
+        const notesById: { [id: string]: StudentNote[] } = {};
+        (notesResult.data || []).forEach((note) => {
+          if (!notesById[note.student_id]) notesById[note.student_id] = [];
+          notesById[note.student_id].push({
+            id: note.id,
+            content: note.content,
+            title: note.title,
+            created_at: note.created_at,
+          });
         });
 
         // Format students data
@@ -107,11 +138,15 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           const profile = student.profiles;
           const firstName = profile?.first_name || '';
           const lastName = profile?.last_name || '';
-          
-          // Convert notes from string to array format
-          const notesArray = student.notes 
-            ? student.notes.split('\n').filter(note => note.trim().length > 0)
-            : [];
+
+          let enrollmentDate = '';
+          if (student.start_date) {
+            try {
+              enrollmentDate = format(new Date(student.start_date), 'MM/dd/yyyy');
+            } catch {
+              enrollmentDate = student.start_date;
+            }
+          }
           
           return {
             id: student.id,
@@ -121,10 +156,10 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             progress: progressById[student.id] || 0,
             level: student.level || 'beginner',
             initials: (firstName[0] || '') + (lastName[0] || ''),
-            enrollmentDate: student.start_date?.slice(0, 10) || '',
+            enrollmentDate,
             lastActive: '',
             nextClass: '',
-            notes: notesArray,
+            notes: notesById[student.id] || [],
           };
         });
 
