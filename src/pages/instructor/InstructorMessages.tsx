@@ -1,12 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, Inbox, ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MessageSquare, Send, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,7 +13,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mockInstructorDirectMessages, mockInstructorStudentList } from '@/data/mockInstructorData';
-import { format } from 'date-fns';
+import ConversationList, { Conversation } from '@/components/instructor/messages/ConversationList';
+import ConversationThread from '@/components/instructor/messages/ConversationThread';
 
 interface Message {
   id: string;
@@ -25,8 +24,6 @@ interface Message {
   content: string;
   sent_at: string;
   read_at: string | null;
-  sender_name?: string;
-  receiver_name?: string;
 }
 
 interface StudentOption {
@@ -41,7 +38,7 @@ const InstructorMessages = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [activeTab, setActiveTab] = useState('inbox');
+  const [activeTab, setActiveTab] = useState('conversations');
 
   // Compose state
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -50,11 +47,10 @@ const InstructorMessages = () => {
 
   // Data state
   const [students, setStudents] = useState<StudentOption[]>([]);
-  const [inboxMessages, setInboxMessages] = useState<Message[]>([]);
-  const [sentMessages, setSentMessages] = useState<Message[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
 
   // Thread view
-  const [selectedThread, setSelectedThread] = useState<Message | null>(null);
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (demoMode) {
@@ -90,40 +86,15 @@ const InstructorMessages = () => {
         }
       }
 
-      // Fetch inbox (messages received by instructor)
-      const { data: inbox } = await supabase
+      // Fetch ALL messages involving this instructor
+      const { data: messages } = await supabase
         .from('messages')
         .select('*')
-        .eq('receiver_id', session.user.id)
-        .order('sent_at', { ascending: false });
+        .or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
+        .order('sent_at', { ascending: true });
 
-      if (inbox) {
-        const senderIds = [...new Set(inbox.map(m => m.sender_id))];
-        const { data: senderProfiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', senderIds);
-
-        const profileMap = new Map((senderProfiles || []).map(p => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim()]));
-        setInboxMessages(inbox.map(m => ({ ...m, sender_name: profileMap.get(m.sender_id) || 'Unknown' })));
-      }
-
-      // Fetch sent messages
-      const { data: sent } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('sender_id', session.user.id)
-        .order('sent_at', { ascending: false });
-
-      if (sent) {
-        const receiverIds = [...new Set(sent.map(m => m.receiver_id))];
-        const { data: receiverProfiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', receiverIds);
-
-        const profileMap = new Map((receiverProfiles || []).map(p => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim()]));
-        setSentMessages(sent.map(m => ({ ...m, receiver_name: profileMap.get(m.receiver_id) || 'Unknown' })));
+      if (messages) {
+        setAllMessages(messages);
       }
     } catch (err) {
       console.error('Error fetching messages:', err);
@@ -132,7 +103,99 @@ const InstructorMessages = () => {
     }
   };
 
-  const handleSend = async () => {
+  // Build conversations from all messages
+  const conversations = useMemo((): Conversation[] => {
+    const userId = demoMode ? 'demo-instructor' : session?.user?.id;
+    if (!userId) return [];
+
+    const msgs = demoMode
+      ? [...mockInstructorDirectMessages.inbox, ...mockInstructorDirectMessages.sent]
+      : allMessages;
+
+    const studentMap = demoMode
+      ? new Map(mockInstructorStudentList.map(s => [s.id, s]))
+      : new Map(students.map(s => [s.id, s]));
+
+    // Group by student
+    const grouped = new Map<string, Message[]>();
+    for (const msg of msgs) {
+      const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+      if (!grouped.has(otherId)) grouped.set(otherId, []);
+      grouped.get(otherId)!.push(msg as Message);
+    }
+
+    const result: Conversation[] = [];
+    for (const [studentId, studentMsgs] of grouped) {
+      const student = studentMap.get(studentId);
+      const sorted = studentMsgs.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+      const last = sorted[sorted.length - 1];
+      const unreadCount = sorted.filter(m => m.receiver_id === userId && !m.read_at).length;
+
+      result.push({
+        studentId,
+        studentName: student?.name || 'Unknown',
+        initials: student?.initials || '??',
+        lastMessage: last.content,
+        lastMessageAt: last.sent_at,
+        unreadCount,
+      });
+    }
+
+    return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  }, [allMessages, students, demoMode, session]);
+
+  // Get messages for the active thread
+  const threadMessages = useMemo(() => {
+    if (!activeStudentId) return [];
+    const userId = demoMode ? 'demo-instructor' : session?.user?.id;
+    if (!userId) return [];
+
+    const msgs = demoMode
+      ? [...mockInstructorDirectMessages.inbox, ...mockInstructorDirectMessages.sent]
+      : allMessages;
+
+    return (msgs as Message[])
+      .filter(m =>
+        (m.sender_id === userId && m.receiver_id === activeStudentId) ||
+        (m.sender_id === activeStudentId && m.receiver_id === userId)
+      )
+      .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+  }, [activeStudentId, allMessages, demoMode, session]);
+
+  // Mark unread messages as read when opening a thread
+  useEffect(() => {
+    if (!activeStudentId || demoMode || !session?.user?.id) return;
+    const unread = threadMessages.filter(m => m.receiver_id === session.user.id && !m.read_at);
+    if (unread.length === 0) return;
+
+    const markRead = async () => {
+      const ids = unread.map(m => m.id);
+      await supabase.from('messages').update({ read_at: new Date().toISOString() }).in('id', ids);
+      setAllMessages(prev => prev.map(m => ids.includes(m.id) ? { ...m, read_at: new Date().toISOString() } : m));
+    };
+    markRead();
+  }, [activeStudentId, threadMessages]);
+
+  const handleSendReply = async (content: string) => {
+    if (demoMode || !session?.user?.id || !activeStudentId) return;
+    setSending(true);
+    try {
+      const { error } = await supabase.from('messages').insert({
+        sender_id: session.user.id,
+        receiver_id: activeStudentId,
+        content,
+        subject: null,
+      });
+      if (error) throw error;
+      await fetchData();
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleComposeSend = async () => {
     if (demoMode) {
       toast({ title: 'Demo Mode', description: 'Cannot send messages in demo mode.' });
       return;
@@ -158,21 +221,12 @@ const InstructorMessages = () => {
       setSelectedStudents([]);
       setSubject('');
       setMessageBody('');
+      setActiveTab('conversations');
       fetchData();
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred. Please try again.' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
     } finally {
       setSending(false);
-    }
-  };
-
-  const handleMarkAsRead = async (msg: Message) => {
-    if (demoMode || msg.read_at) return;
-    try {
-      await supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', msg.id);
-      setInboxMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read_at: new Date().toISOString() } : m));
-    } catch (err) {
-      console.error('Error marking as read:', err);
     }
   };
 
@@ -181,41 +235,35 @@ const InstructorMessages = () => {
   };
 
   const selectAllStudents = () => {
-    const activeStudents = demoMode ? mockInstructorStudentList : students;
-    if (selectedStudents.length === activeStudents.length) {
-      setSelectedStudents([]);
-    } else {
-      setSelectedStudents(activeStudents.map(s => s.id));
-    }
+    const active = demoMode ? mockInstructorStudentList : students;
+    setSelectedStudents(prev => prev.length === active.length ? [] : active.map(s => s.id));
   };
 
   const activeStudents = demoMode ? mockInstructorStudentList : students;
-  const activeInbox = demoMode ? mockInstructorDirectMessages.inbox : inboxMessages;
-  const activeSent = demoMode ? mockInstructorDirectMessages.sent : sentMessages;
   const isLoading = !demoMode && loading;
 
-  if (selectedThread) {
+  const activeConvo = activeStudentId ? conversations.find(c => c.studentId === activeStudentId) : null;
+
+  // Thread view
+  if (activeStudentId && activeConvo) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => { setSelectedThread(null); }} className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" /> Back to Messages
-        </Button>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{selectedThread.subject || '(No subject)'}</CardTitle>
-              <span className="text-sm text-muted-foreground">
-                {format(new Date(selectedThread.sent_at), 'MMM d, yyyy h:mm a')}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              From: {selectedThread.sender_name || 'You'} → To: {selectedThread.receiver_name || 'You'}
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap">{selectedThread.content}</p>
-          </CardContent>
-        </Card>
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>Showing sample messages.</AlertDescription>
+          </Alert>
+        )}
+        <ConversationThread
+          currentUserId={demoMode ? 'demo-instructor' : session?.user?.id || ''}
+          studentName={activeConvo.studentName}
+          studentInitials={activeConvo.initials}
+          messages={threadMessages}
+          onSendReply={handleSendReply}
+          onBack={() => setActiveStudentId(null)}
+          sending={sending}
+        />
       </div>
     );
   }
@@ -233,7 +281,7 @@ const InstructorMessages = () => {
       <section className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Messages</h1>
-          <p className="text-muted-foreground mt-1">Send direct messages to your students</p>
+          <p className="text-muted-foreground mt-1">Conversations with your students</p>
         </div>
         <Button
           variant={demoMode ? "default" : "outline"} size="sm"
@@ -246,30 +294,33 @@ const InstructorMessages = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value="conversations" className="flex items-center gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" /> Conversations
+          </TabsTrigger>
           <TabsTrigger value="compose" className="flex items-center gap-1.5">
             <Send className="h-3.5 w-3.5" /> Compose
           </TabsTrigger>
-          <TabsTrigger value="inbox" className="flex items-center gap-1.5">
-            <Inbox className="h-3.5 w-3.5" /> Inbox
-            {activeInbox.filter(m => !m.read_at).length > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
-                {activeInbox.filter(m => !m.read_at).length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="flex items-center gap-1.5">
-            <MessageSquare className="h-3.5 w-3.5" /> Sent
-          </TabsTrigger>
         </TabsList>
 
-        {/* Compose */}
+        <TabsContent value="conversations">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+            </div>
+          ) : (
+            <ConversationList
+              conversations={conversations}
+              onSelect={(id) => setActiveStudentId(id)}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="compose">
           <Card className={demoMode ? 'opacity-60 pointer-events-none' : ''}>
             <CardHeader>
               <CardTitle className="text-lg">New Message</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Student picker */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>To (select students)</Label>
@@ -305,89 +356,11 @@ const InstructorMessages = () => {
                 <Label htmlFor="body">Message</Label>
                 <Textarea id="body" placeholder="Write your message..." value={messageBody} onChange={e => setMessageBody(e.target.value)} rows={5} />
               </div>
-              <Button onClick={handleSend} disabled={sending || selectedStudents.length === 0 || !messageBody.trim()} className="flex items-center gap-2">
+              <Button onClick={handleComposeSend} disabled={sending || selectedStudents.length === 0 || !messageBody.trim()} className="flex items-center gap-2">
                 <Send className="h-4 w-4" /> {sending ? 'Sending...' : `Send to ${selectedStudents.length} student(s)`}
               </Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Inbox */}
-        <TabsContent value="inbox">
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
-            </div>
-          ) : activeInbox.length > 0 ? (
-            <div className="space-y-2">
-              {activeInbox.map(msg => (
-                <Card
-                  key={msg.id}
-                  className={`cursor-pointer transition-colors hover:bg-accent/30 ${!msg.read_at ? 'border-primary/40 bg-primary/5' : ''}`}
-                  onClick={() => { handleMarkAsRead(msg); setSelectedThread(msg); }}
-                >
-                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        {!msg.read_at && <Badge variant="default" className="text-xs">New</Badge>}
-                        <span className="font-semibold text-sm truncate">{msg.subject || '(No subject)'}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">From: {msg.sender_name || 'Unknown'}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{msg.content}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {format(new Date(msg.sent_at), 'MMM d')}
-                    </span>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium">No messages</h3>
-              <p className="text-muted-foreground mt-2">Your inbox is empty.</p>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Sent */}
-        <TabsContent value="sent">
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
-            </div>
-          ) : activeSent.length > 0 ? (
-            <div className="space-y-2">
-              {activeSent.map(msg => (
-                <Card
-                  key={msg.id}
-                  className="cursor-pointer transition-colors hover:bg-accent/30"
-                  onClick={() => setSelectedThread(msg)}
-                >
-                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-sm truncate">{msg.subject || '(No subject)'}</span>
-                      <p className="text-sm text-muted-foreground mt-0.5">To: {msg.receiver_name || 'Unknown'}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{msg.content}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {msg.read_at && <Check className="h-3.5 w-3.5 text-primary" />}
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(msg.sent_at), 'MMM d')}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Send className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium">No sent messages</h3>
-              <p className="text-muted-foreground mt-2">You haven't sent any messages yet.</p>
-            </div>
-          )}
         </TabsContent>
       </Tabs>
     </div>
