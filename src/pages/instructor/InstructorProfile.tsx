@@ -184,7 +184,7 @@ const InstructorProfile = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col sm:flex-row gap-4 items-center pb-4">
-                    {isEditing && !demoMode ? (
+                    {!demoMode ? (
                       <AvatarUpload
                         currentUrl={userData?.profile?.avatar_url}
                         onUpload={async (url) => { try { await updateProfile({ avatar_url: url }); } catch (e) { console.error('Error updating avatar:', e); } }}
@@ -192,7 +192,6 @@ const InstructorProfile = () => {
                       />
                     ) : (
                       <Avatar className="h-24 w-24">
-                        {!demoMode && userData?.profile?.avatar_url ? <AvatarImage src={userData.profile.avatar_url} alt="Profile photo" /> : null}
                         <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">{getInitials(profile.name)}</AvatarFallback>
                       </Avatar>
                     )}

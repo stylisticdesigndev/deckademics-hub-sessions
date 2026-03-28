@@ -781,8 +781,9 @@ const InstructorStudents = () => {
               </TabsList>
               
               <TabsContent value="list">
-                <div className="rounded-md border">
-                  <div className="grid grid-cols-8 p-4 font-medium border-b text-xs sm:text-sm">
+                {/* Desktop table view */}
+                <div className="rounded-md border hidden md:block">
+                  <div className="grid grid-cols-8 p-4 font-medium border-b text-sm">
                     <div className="col-span-3">STUDENT</div>
                     <div className="col-span-2 pl-0 pr-4">PROGRESS</div>
                     <div className="col-span-1 text-center">LEVEL</div>
@@ -798,7 +799,7 @@ const InstructorStudents = () => {
                       {filteredStudents.map((student) => (
                         <div 
                           key={student.id}
-                          className="grid grid-cols-8 p-4 border-b last:border-b-0 items-center text-xs sm:text-sm hover:bg-muted/30"
+                          className="grid grid-cols-8 p-4 border-b last:border-b-0 items-center text-sm hover:bg-muted/30"
                         >
                           <div 
                             className="col-span-3 flex items-center gap-3 cursor-pointer"
@@ -882,6 +883,74 @@ const InstructorStudents = () => {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground">
+                      No students found matching your filters.
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile card view */}
+                <div className="md:hidden space-y-3">
+                  {!demoMode && loading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
+                    </div>
+                  ) : filteredStudents.length > 0 ? (
+                    filteredStudents.map((student) => (
+                      <Card key={student.id} className="overflow-hidden">
+                        <CardContent className="p-4 space-y-3">
+                          <div 
+                            className="flex items-center gap-3 cursor-pointer"
+                            onClick={() => openStudentDetails(student.id)}
+                          >
+                            <Avatar className="h-10 w-10">
+                              {student.avatar ? (
+                                <img src={student.avatar} alt={student.name} />
+                              ) : (
+                                <AvatarFallback className="text-sm">
+                                  {student.initials}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{student.name}</div>
+                              <div className="text-muted-foreground text-xs truncate">{student.email}</div>
+                            </div>
+                            <Badge variant="outline" className={cn(
+                              "shrink-0",
+                              student.level.toLowerCase() === 'beginner' && "border-green-500/50 text-green-500",
+                              student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                              student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
+                            )}>
+                              {student.level.charAt(0).toUpperCase() + student.level.slice(1)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Progress value={student.progress} className="h-2 flex-grow" />
+                            <span className="text-xs font-medium w-8 text-right">{student.progress}%</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openNoteDialog(student.id)}
+                              className="text-xs flex-1"
+                            >
+                              Add Note
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setIsEditingLevel(student.id)}
+                              className="text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" /> Level
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
                   ) : (
                     <div className="p-8 text-center text-muted-foreground">
                       No students found matching your filters.
@@ -1051,7 +1120,7 @@ const InstructorStudents = () => {
                 value={[progressValue]}
                 min={0}
                 max={100}
-                step={5}
+                step={10}
                 onValueChange={([value]) => setProgressValue(value)}
               />
             </div>
