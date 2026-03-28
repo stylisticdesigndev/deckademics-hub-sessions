@@ -186,7 +186,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             const lessons = modLessons.map((l) => ({
               id: l.id,
               title: l.title,
-              completed: studentSkills.has(l.title),
+              completed: studentSkills.has(`${mod.title} - ${l.title}`),
             }));
             const completedCount = lessons.filter((l) => l.completed).length;
             return {
