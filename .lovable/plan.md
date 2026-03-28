@@ -1,39 +1,64 @@
 
 
-# Fix Progress Tab Checkbox Toggle + Confirm Curriculum Linkage
+# Fix Live Progress Updates + Add Student To-Do Feature
 
-## Your Understanding is Correct
+## Problem 1: Progress Checkboxes Don't Update Live
 
-Yes — the Progress section directly reflects the admin's curriculum. When an admin adds or removes modules/lessons in the Curriculum page, the Progress tab automatically shows the updated list because it reads from `curriculum_modules` and `curriculum_lessons` in real time.
+**Root cause**: The `toggleLessonCompletion` function updates the `students` array state, but the modal reads from a separate `detailedStudent` state variable. Since `setDetailedStudent` is never called after toggling, the UI stays stale until the modal is closed and reopened.
 
-## Why Checkboxes Don't Work
+**Fix**: After updating `setStudents`, also update `setDetailedStudent` with the same modified student data. This is a ~5-line addition inside `toggleLessonCompletion`.
 
-There is a **skill_name format mismatch** between saving and reading:
+### File: `src/pages/instructor/InstructorStudents.tsx`
 
-- **When toggling** (in `InstructorStudents.tsx`), the skill is saved as: `"Module Name - Lesson Title"`
-- **When loading** (in `useInstructorStudentsSimple.ts`), it checks: `studentSkills.has(lesson.title)` — just the bare lesson title
+After the `setStudents(...)` call (line 647-679), add a matching `setDetailedStudent` update that applies the same lesson toggle logic to the detailed student if it matches the toggled student ID.
 
-These will never match, so checkboxes always appear unchecked, and clicking them saves data that is never recognized on reload.
+## Problem 2: Student To-Do Feature
 
-## Fix
+Yes — a to-do list makes sense. The Progress tab tracks curriculum completion (what the admin defines). But instructors often need to assign ad-hoc tasks: "practice crossfader transitions," "watch this tutorial," "bring headphones next week." These don't belong in the curriculum.
 
-### File: `src/hooks/instructor/useInstructorStudentsSimple.ts`
+**Proposal**: Add a "Tasks" tab to the student detail modal, alongside Info/Notes/Progress. Instructors can:
+- Add a task with a title and optional description
+- Mark tasks as complete/incomplete
+- Delete tasks
+- See tasks sorted by status (incomplete first) then date
 
-Change line 189 from:
-```typescript
-completed: studentSkills.has(l.title),
+### Database: New `student_tasks` table
+
+```text
+student_tasks
+├── id (uuid, PK)
+├── student_id (uuid, NOT NULL)
+├── instructor_id (uuid, NOT NULL)
+├── title (text, NOT NULL)
+├── description (text, nullable)
+├── completed (boolean, default false)
+├── created_at (timestamptz)
+├── updated_at (timestamptz)
 ```
-to:
-```typescript
-completed: studentSkills.has(`${mod.title} - ${l.title}`),
-```
 
-This matches the `"${moduleName} - ${lessonTitle}"` format used by `toggleLessonCompletion` when saving to `student_progress.skill_name`.
+RLS policies:
+- Instructors can CRUD tasks where `instructor_id = auth.uid()`
+- Students can SELECT tasks where `student_id = auth.uid()`
+- Students can UPDATE tasks where `student_id = auth.uid()` (to mark complete)
+- Admins can manage all
 
-### One file changed, one line fix.
+### UI: New "Tasks" tab in student detail modal
+
+- Simple list with checkbox, title, and description
+- "Add Task" button with inline form (title + optional description)
+- Completed tasks show strikethrough and move to bottom
+- Delete button (trash icon) on each task
+
+## Files Changed
+
+1. `src/pages/instructor/InstructorStudents.tsx` — fix `setDetailedStudent` sync + add Tasks tab UI
+2. **New migration** — create `student_tasks` table with RLS
+3. `src/hooks/instructor/useInstructorStudentsSimple.ts` — optionally fetch tasks per student (or fetch on-demand in the tab)
 
 ## Technical Details
-- The `student_progress` table stores `skill_name` as `"Module Name - Lesson Title"` (set on line 592 of InstructorStudents.tsx)
-- The hook's `progressSkillsByStudent` Set contains these full compound names
-- The check just needs to use the same compound format when looking up completion status
+
+- The `setDetailedStudent` fix ensures the checkbox visually toggles immediately after the DB write succeeds
+- The Tasks tab fetches tasks on-demand when the tab is selected, keeping the initial student load fast
+- Tasks are independent from curriculum — they won't affect the Progress percentage
+- Students will be able to see their tasks on their own dashboard (future enhancement)
 
