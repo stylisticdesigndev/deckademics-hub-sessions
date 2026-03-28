@@ -196,13 +196,17 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
               lessons,
             };
           });
+          // Auto-calculate overall progress from module completion
+          const overallProgress = moduleProgress.length
+            ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
+            : 0;
 
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
             email: profile?.email || '',
             avatar: profile?.avatar_url,
-            progress: progressById[student.id] || 0,
+            progress: overallProgress,
             level: student.level || 'beginner',
             initials: (firstName[0] || '') + (lastName[0] || ''),
             enrollmentDate,
