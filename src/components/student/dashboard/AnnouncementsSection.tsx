@@ -37,6 +37,7 @@ export const AnnouncementsSection = ({ announcements, onAcknowledge, onDismiss }
                 key={announcement.id}
                 announcement={announcement}
                 onAcknowledge={onAcknowledge}
+                onDismiss={onDismiss}
               />
             ))}
           </div>
