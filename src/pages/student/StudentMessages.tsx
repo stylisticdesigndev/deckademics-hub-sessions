@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
+import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
 
 interface Message {
   id: string;
@@ -96,9 +97,12 @@ const StudentMessages = () => {
   const [announcementFilter, setAnnouncementFilter] = useState('all');
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
 
   const isDemoMode = !session || demoMode;
   const userId = session?.user?.id;
+
+  const { createNote } = useStudentPersonalNotes(userId);
 
   useEffect(() => {
     if (isDemoMode) {
@@ -322,6 +326,25 @@ const StudentMessages = () => {
     if (insertError) throw insertError;
   };
 
+  const handleSaveToNotes = (msg: { id: string; content: string; sent_at: string; image_url?: string | null }) => {
+    if (!userId) return;
+    const activeInstructor = instructors.find(i => i.id === activeInstructorId);
+    const title = `From ${activeInstructor?.name || 'Instructor'} — ${format(new Date(msg.sent_at), 'MMM d, yyyy')}`;
+    const content = msg.image_url
+      ? `${msg.content}\n\n📎 Image: ${msg.image_url}`
+      : msg.content;
+
+    createNote.mutate({ title, content }, {
+      onSuccess: () => {
+        setSavedMessageIds(prev => new Set(prev).add(msg.id));
+        toast({ title: 'Saved to notes', description: 'Message saved to your personal notes.' });
+      },
+      onError: () => {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to save note.' });
+      },
+    });
+  };
+
   const handleSendReply = async (content: string) => {
     if (isDemoMode || !userId || !activeInstructorId) return;
 
@@ -400,6 +423,8 @@ const StudentMessages = () => {
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveInstructorId(null)}
+          onSaveToNotes={handleSaveToNotes}
+          savedMessageIds={savedMessageIds}
         />
       </div>
     );
