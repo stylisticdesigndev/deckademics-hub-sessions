@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { mockInstructorStudents } from '@/data/mockInstructorData';
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -61,6 +64,7 @@ const InstructorStudents = () => {
   const { students: fetchedStudents, loading, refetch, setStudents: updateStudents } = useInstructorStudentsSimple(instructorId);
   
   const [students, setStudents] = useState<Student[]>([]);
+  const [demoMode, setDemoMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -134,9 +138,12 @@ const InstructorStudents = () => {
   
   // Update students when fetched data changes
   useEffect(() => {
-    console.log('useEffect triggered - fetchedStudents:', fetchedStudents);
-    setStudents(fetchedStudents);
-  }, [fetchedStudents]);
+    if (demoMode) {
+      setStudents(mockInstructorStudents as Student[]);
+    } else {
+      setStudents(fetchedStudents);
+    }
+  }, [fetchedStudents, demoMode]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
@@ -699,11 +706,26 @@ const InstructorStudents = () => {
   return (
     <>
       <div className="space-y-6">
-        <section>
-          <h1 className="text-2xl font-bold">Student Management</h1>
-          <p className="text-muted-foreground mt-2">
-            View and manage all your students
-          </p>
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>Showing sample student data. Click "Live Data" to switch back.</AlertDescription>
+          </Alert>
+        )}
+
+        <section className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Student Management</h1>
+            <p className="text-muted-foreground mt-2">View and manage all your students</p>
+          </div>
+          <Button
+            variant={demoMode ? "default" : "outline"} size="sm"
+            onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
         </section>
 
         <Card>
@@ -767,9 +789,9 @@ const InstructorStudents = () => {
                     <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
-                  {loading ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                      Loading students...
+                  {!demoMode && loading ? (
+                    <div className="space-y-3 p-4">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
                     </div>
                   ) : filteredStudents.length > 0 ? (
                     <div>
