@@ -1,86 +1,115 @@
 
-# Fix Persistent Logo Flicker and Size Regression
 
-## Root Cause
-The logo is still reloading because `DashboardLayout` is mounted inside every individual page component (`StudentProgress`, `StudentClasses`, `StudentProfile`, admin/instructor pages, etc.). When you navigate between sections, the whole layout unmounts and mounts again, so the sidebar header/logo is recreated each time.
+# Upgrade Instructor Side: Demo Modes, Polish, and Dashboard Fix
 
-The logo also got smaller because the current `Logo` header sizing was changed to:
-```ts
-header: 'h-10 w-auto md:h-12'
-```
-which is likely smaller than the original visual size.
+## Overview
+Mirror the student-side demo mode pattern across all instructor pages, fix the glitchy/slow dashboard loading, and add rich mock data for each instructor page.
 
-## Fix Approach
+## Changes
 
-### 1. Make the dashboard layout persistent per role
-Create shared route-layout wrappers so the sidebar/header stays mounted while only the page content changes.
+### 1. Create instructor mock data file
+**New file: `src/data/mockInstructorData.ts`**
 
-**Add role layout components:**
-- `StudentLayoutRoute`
-- `InstructorLayoutRoute`
-- `AdminLayoutRoute`
+Contains demo data for all instructor pages:
+- **Dashboard**: 4 mock students with progress/levels/notes, 3 today's classes, average progress
+- **Classes**: 6-8 mock class sessions with students, dates, rooms, weeks
+- **Students**: 4-5 mock students with full detail (progress, modules, notes, levels)
+- **Messages**: 5 demo announcements (matching student-side pattern with events/updates/announcements)
+- **Profile**: Mock instructor profile with name, email, bio, specialties, schedule
+- **Announcements**: 3-4 mock announcements the instructor has created
+- **Curriculum**: No demo needed (already pulls from shared curriculum tables)
 
-Each one should render:
+### 2. Fix Instructor Dashboard loading issues
+**File: `src/pages/instructor/InstructorDashboard.tsx`**
+**File: `src/hooks/instructor/useInstructorDashboard.ts`**
+
+- Add demo mode toggle (Eye/EyeOff button) like student dashboard
+- Add demo mode banner alert
+- Fix loading state: show stats and student table skeleton immediately instead of hiding everything behind a loading spinner
+- When in demo mode, bypass all Supabase calls and show mock data instantly
+- Remove the conditional rendering that hides DashboardStats and StudentTable during loading (show them always, with skeleton/placeholder values while loading)
+
+### 3. Add demo mode to InstructorClasses
+**File: `src/pages/instructor/InstructorClasses.tsx`**
+
+- Add `demoMode` state + toggle button in header
+- Add demo banner when active
+- When demo, show mock class sessions instead of fetching from Supabase
+- Show empty state improvements for new instructors
+
+### 4. Add demo mode to InstructorMessages
+**File: `src/pages/instructor/InstructorMessages.tsx`**
+
+- Add `demoMode` state + toggle button in header
+- Add demo banner, tab filtering (All/Events/Announcements/Updates) like student messages
+- When demo, show mock announcements targeted at instructors
+
+### 5. Add demo mode to InstructorProfile
+**File: `src/pages/instructor/InstructorProfile.tsx`**
+
+- Add `demoMode` state + toggle button in header
+- Add demo banner
+- When demo, show mock profile data (name, email, bio, specialties, schedule)
+- Disable editing in demo mode
+
+### 6. Add demo mode to InstructorStudents
+**File: `src/pages/instructor/InstructorStudents.tsx`**
+
+- Add `demoMode` state + toggle button in header
+- Add demo banner
+- When demo, show mock student roster with progress, levels, notes, module progress
+
+### 7. Add demo mode to InstructorAnnouncements
+**File: `src/pages/instructor/InstructorAnnouncements.tsx`**
+
+- Add `demoMode` state + toggle button in header
+- Add demo banner
+- When demo, show mock announcements list (disable create form)
+
+### 8. InstructorCurriculum — no changes needed
+Already pulls from shared curriculum tables and works the same as student side.
+
+## Technical Pattern (consistent across all pages)
+
+Each page gets:
 ```tsx
-<DashboardLayout sidebarContent={<...Navigation />} userType="...">
-  <Outlet />
-</DashboardLayout>
+const [demoMode, setDemoMode] = useState(false);
+
+// In header section:
+<Button variant={demoMode ? "default" : "outline"} size="sm"
+  onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2">
+  {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+  {demoMode ? 'Live Data' : 'Demo'}
+</Button>
+
+// Demo banner:
+{demoMode && (
+  <Alert className="bg-warning/10 border-warning/30">
+    <Eye className="h-4 w-4 text-warning" />
+    <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+    <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
+  </Alert>
+)}
+
+// Data resolution:
+const activeData = demoMode ? mockData : realData;
+const isLoading = !demoMode && loading;
 ```
 
-### 2. Restructure routes in `src/App.tsx`
-Instead of every page rendering its own `DashboardLayout`, nest role pages under the shared layout route:
+## Dashboard Loading Fix Details
 
-```text
-ProtectedRoute
-└── StudentLayoutRoute
-    ├── /student/dashboard
-    ├── /student/progress
-    ├── /student/classes
-    └── ...
-```
+The current dashboard hook (`useInstructorDashboard`) makes multiple sequential Supabase calls which causes slow/glitchy loading. Fix:
+- Always render DashboardStats and StudentTable (not hidden behind loading conditional)
+- Show skeleton cards for stats during load instead of a generic spinner
+- In demo mode, skip all fetches and return mock data immediately
 
-Do the same for instructor and admin routes.
+## Files Changed (8 files)
+- `src/data/mockInstructorData.ts` (new)
+- `src/pages/instructor/InstructorDashboard.tsx`
+- `src/hooks/instructor/useInstructorDashboard.ts`
+- `src/pages/instructor/InstructorClasses.tsx`
+- `src/pages/instructor/InstructorMessages.tsx`
+- `src/pages/instructor/InstructorProfile.tsx`
+- `src/pages/instructor/InstructorStudents.tsx`
+- `src/pages/instructor/InstructorAnnouncements.tsx`
 
-This keeps the top-left logo, sidebar, and header mounted across section changes.
-
-### 3. Remove per-page layout wrappers
-Update all student/instructor/admin pages so they return only their page content, not:
-```tsx
-<DashboardLayout ...>...</DashboardLayout>
-```
-
-This affects all pages currently importing:
-- `DashboardLayout`
-- role navigation components
-
-Those imports will be removed from the individual page files.
-
-### 4. Restore stable logo sizing
-Adjust `src/components/logo/Logo.tsx` so the `header` size matches the intended larger appearance with fixed dimensions that do not visually collapse during render.
-
-Example direction:
-- use a fixed header-height class
-- keep `object-contain`
-- avoid sizing that is smaller than before
-
-### 5. Keep the existing auth fixes
-Retain the earlier `ProtectedRoute` and `AuthProvider` fixes. They address auth redirect/loading issues, but the remaining flicker is now a layout architecture issue.
-
-## Files to Update
-- `src/App.tsx`
-- `src/components/logo/Logo.tsx`
-- `src/components/layout/DashboardLayout.tsx` (only if minor sizing cleanup is needed)
-- New shared layout route file(s), e.g.:
-  - `src/routes/StudentLayoutRoute.tsx`
-  - `src/routes/InstructorLayoutRoute.tsx`
-  - `src/routes/AdminLayoutRoute.tsx`
-- All dashboard-section pages that currently wrap themselves in `DashboardLayout`
-
-## Expected Result
-- The top-left Deckademics logo no longer disappears when switching sections
-- The sidebar/navbar no longer shifts during navigation
-- The logo returns to the intended size
-- Only the main page content updates when moving between sections, not the entire shell
-
-## Technical Notes
-This is the correct long-term fix because the app currently duplicates the dashboard shell in each page. A shared nested layout is the React Router pattern that prevents remounting and keeps navigation/UI chrome stable.
