@@ -1,13 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
 import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats';
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
 import { useInstructorDashboard } from '@/hooks/instructor/useInstructorDashboard';
+import { mockInstructorDashboard } from '@/data/mockInstructorData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const InstructorDashboard = () => {
+  const [demoMode, setDemoMode] = useState(false);
   const {
     students,
     todayClasses,
@@ -16,48 +20,78 @@ const InstructorDashboard = () => {
     loading,
     fetchError
   } = useInstructorDashboard();
+
+  const activeStudents = demoMode ? mockInstructorDashboard.students : students;
+  const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : todayClasses;
+  const activeAverageProgress = demoMode ? mockInstructorDashboard.averageProgress : averageProgress;
+  const activeTotalStudents = demoMode ? mockInstructorDashboard.totalStudents : totalStudents;
+  const isLoading = !demoMode && loading;
   
   return (
-    <>
-      <div className="space-y-6">
+    <div className="space-y-6">
+      {/* Demo Mode Banner */}
+      {demoMode && (
+        <Alert className="bg-warning/10 border-warning/30">
+          <Eye className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+          <AlertDescription>
+            Showing sample dashboard data. Click "Live Data" to switch back.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex items-start justify-between">
         <WelcomeSection />
-
-        {fetchError && (
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{fetchError}</AlertDescription>
-          </Alert>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse space-y-2 flex flex-col items-center">
-              <div className="h-4 w-32 bg-gray-200 rounded"></div>
-              <div className="h-4 w-24 bg-gray-200 rounded"></div>
-              <p className="text-sm text-muted-foreground mt-2">Loading dashboard data...</p>
-            </div>
-          </div>
-        ) : students.length === 0 ? (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertTitle>Getting Started</AlertTitle>
-            <AlertDescription>
-              As a new instructor, you don't have any students or classes assigned yet. The admin will assign students to you soon.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <DashboardStats 
-          todayClasses={todayClasses}
-          averageProgress={averageProgress}
-          totalStudents={totalStudents}
-        />
-
-        <section>
-          <StudentTable students={students} />
-        </section>
+        <Button
+          variant={demoMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setDemoMode(!demoMode)}
+          className="flex items-center gap-2"
+        >
+          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {demoMode ? 'Live Data' : 'Demo'}
+        </Button>
       </div>
-    </>
+
+      {fetchError && !demoMode && (
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{fetchError}</AlertDescription>
+        </Alert>
+      )}
+
+      {!demoMode && !loading && students.length === 0 && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertTitle>Getting Started</AlertTitle>
+          <AlertDescription>
+            As a new instructor, you don't have any students or classes assigned yet. The admin will assign students to you soon. Try Demo mode to see how the dashboard looks!
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isLoading ? (
+        <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-[120px] rounded-lg" />
+          ))}
+        </section>
+      ) : (
+        <DashboardStats
+          todayClasses={activeTodayClasses}
+          averageProgress={activeAverageProgress}
+          totalStudents={activeTotalStudents}
+        />
+      )}
+
+      {isLoading ? (
+        <Skeleton className="h-[300px] rounded-lg" />
+      ) : (
+        <section>
+          <StudentTable students={activeStudents} />
+        </section>
+      )}
+    </div>
   );
 };
 
