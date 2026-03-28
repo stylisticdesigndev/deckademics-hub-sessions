@@ -1,38 +1,57 @@
 
 
-# Fix Blank Progress Tab — Populate moduleProgress Data
-
-## Problem
-The `useInstructorStudentsSimple` hook never fetches curriculum data. The `moduleProgress` field on each student is always `undefined`, so the Progress tab always shows "No progress data available."
+# Fix Progress Tab Showing Empty + Auto-Calculate Overall Progress
 
 ## Root Cause
-The hook fetches `student_progress` (skill proficiency scores) but never queries `curriculum_modules` or `curriculum_lessons`. The Progress tab UI expects structured module/lesson data with completion status — data that is never loaded.
 
-## Solution
+Two issues causing "No progress data available":
 
-### File: `src/hooks/instructor/useInstructorStudentsSimple.ts`
+1. **Case mismatch**: Students have levels like `"Intermediate"`, `"Novice"` (capitalized), but `curriculum_modules.level` stores `"intermediate"`, `"novice"`, `"advanced"` (lowercase). The filter `allModules.filter(m => m.level === studentLevel)` returns zero matches.
 
-Add two more queries to the existing `Promise.all` block:
-1. `curriculum_modules` — fetch all modules, ordered by `order_index`
-2. `curriculum_lessons` — fetch all lessons, ordered by `order_index`
+2. **Level name mismatch**: The `students` table defaults to `'beginner'`, but curriculum modules use `'novice'` — there is no `'beginner'` level in the curriculum system.
 
-Then, for each student, cross-reference their `student_progress` records against the curriculum to determine lesson completion. A lesson is considered "completed" if a `student_progress` row exists for that student with a matching `skill_name` equal to the lesson title (this is the pattern used by `toggleLessonCompletion` in InstructorStudents.tsx which inserts/deletes progress records keyed on lesson title).
+## Overall Progress: Should It Be Auto-Calculated?
 
-Build the `moduleProgress` array per student:
-- Filter modules by the student's `level`
-- For each module, map its lessons and check completion
-- Calculate module progress as `(completed lessons / total lessons) * 100`
+Yes — overall progress should be derived from module completion rather than set independently. The code already does this when toggling lessons or updating module progress (lines 551-553), but the initial calculation from the hook uses `student_progress.proficiency` averages, which is a different metric. Tying overall progress to module completion percentage makes it consistent and removes confusion.
 
-### File: `src/pages/instructor/InstructorStudents.tsx`
+## Changes
 
-Verify `toggleLessonCompletion` uses the same skill_name matching pattern. The existing code at ~line 584 already does this, so no changes needed here — just needs the data to flow in.
+### 1. `src/hooks/instructor/useInstructorStudentsSimple.ts`
 
-## What This Enables
-- The Progress tab will show all curriculum modules matching the student's level
-- Each module displays its lessons with checkboxes
-- Instructors can toggle lesson completion and update module progress
-- The "Update" button for manual percentage override will work
+**Fix case-insensitive level matching** (line 179):
+- Change `allModules.filter((m) => m.level === studentLevel)` to use `.toLowerCase()` on both sides
+
+**Map 'beginner' to 'novice'**:
+- Add a level normalization step: if student level is `'beginner'`, treat it as `'novice'` for curriculum matching
+
+**Auto-calculate overall progress from modules**:
+- Instead of using `progressById` (average proficiency from `student_progress`), calculate overall progress as the average of all module progress percentages
+- This makes the overall progress ring consistent with the Progress tab data
+
+### 2. `src/pages/instructor/InstructorStudents.tsx`
+
+No changes needed — the UI already recalculates overall progress from modules when lessons are toggled. The fix is purely in the data-fetching layer.
+
+## Technical Details
+
+```typescript
+// Level normalization mapping
+const normalizeLevel = (level: string) => {
+  const l = level.toLowerCase();
+  return l === 'beginner' ? 'novice' : l;
+};
+
+// Filter modules with normalized comparison
+const studentModules = allModules.filter(
+  (m) => m.level === normalizeLevel(studentLevel)
+);
+
+// Overall progress = average of module percentages
+const overallProgress = moduleProgress.length
+  ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
+  : 0;
+```
 
 ## Files Changed
-1. `src/hooks/instructor/useInstructorStudentsSimple.ts` — add curriculum fetch + moduleProgress building logic
+1. `src/hooks/instructor/useInstructorStudentsSimple.ts` — fix level matching + auto-calculate overall progress
 
