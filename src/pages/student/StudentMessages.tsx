@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, EyeOff, Mail, Megaphone, Inbox } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -10,18 +9,36 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageCard } from '@/components/student/messages/MessageCard';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { format } from 'date-fns';
+import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
 
-interface DirectMessage {
+interface Message {
   id: string;
+  sender_id: string;
+  receiver_id: string;
   subject: string | null;
   content: string;
   sent_at: string;
   read_at: string | null;
-  sender_id: string;
-  senderName: string;
-  senderInitials: string;
   image_url?: string | null;
+}
+
+interface InstructorInfo {
+  id: string;
+  name: string;
+  initials: string;
+  avatarUrl?: string | null;
+}
+
+interface Conversation {
+  instructorId: string;
+  instructorName: string;
+  initials: string;
+  avatarUrl?: string | null;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
 }
 
 interface AuthorProfile {
@@ -50,135 +67,191 @@ const demoAnnouncements = [
   },
 ];
 
-const demoMessages: DirectMessage[] = [
-  {
-    id: 'demo-msg-1',
-    subject: 'Great progress on beat matching!',
-    content: 'Hey, just wanted to say your beat matching has improved a lot this week. Keep it up!',
-    sent_at: new Date().toISOString(),
-    read_at: null,
-    sender_id: 'demo',
-    senderName: 'DJ Marcus',
-    senderInitials: 'DM',
-  },
-  {
-    id: 'demo-msg-2',
-    subject: 'Homework for next class',
-    content: 'Please practice the transition techniques we covered today. Try at least 3 different songs.',
-    sent_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    read_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    sender_id: 'demo',
-    senderName: 'DJ Marcus',
-    senderInitials: 'DM',
-  },
-];
-
 const StudentMessages = () => {
-  const { userData, session } = useAuth();
+  const { session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
   const [demoMode, setDemoMode] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState('all');
+  const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
 
   const isDemoMode = !session || demoMode;
 
   useEffect(() => {
     if (isDemoMode) {
       setAnnouncements(demoAnnouncements);
-      setMessages(demoMessages);
+      setAllMessages([]);
+      setInstructors([]);
       setLoading(false);
       return;
     }
-
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setAnnouncements(demoAnnouncements);
-          setMessages(demoMessages);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch announcements
-        const { data: annData } = await supabase
-          .from('announcements')
-          .select(`
-            id, title, content, published_at, author_id, type,
-            profiles:author_id (first_name, last_name),
-            announcement_reads!left (id, read_at, user_id)
-          `)
-          .contains('target_role', ['student'])
-          .order('published_at', { ascending: false });
-
-        if (annData && annData.length > 0) {
-          const formatted = annData.map((ann: any) => {
-            const authorProfile = ann.profiles as AuthorProfile;
-            const readRecords = Array.isArray(ann.announcement_reads)
-              ? ann.announcement_reads.filter((r: any) => r.user_id === user.id)
-              : [];
-            return {
-              id: ann.id,
-              title: ann.title || 'Announcement',
-              content: ann.content || '',
-              date: new Date(ann.published_at).toLocaleDateString(),
-              instructor: {
-                name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
-                initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
-              },
-              isNew: readRecords.length === 0,
-              type: ann.type || 'announcement',
-            };
-          });
-          setAnnouncements(formatted);
-        } else {
-          setAnnouncements([]);
-        }
-
-        // Fetch direct messages (received by student)
-        const { data: msgData } = await supabase
-          .from('messages')
-          .select(`
-            id, subject, content, sent_at, read_at, sender_id, image_url,
-            profiles:sender_id (first_name, last_name)
-          `)
-          .eq('receiver_id', user.id)
-          .order('sent_at', { ascending: false });
-
-        if (msgData && msgData.length > 0) {
-          const formattedMsgs: DirectMessage[] = msgData.map((msg: any) => {
-            const senderProfile = msg.profiles as AuthorProfile;
-            const firstName = senderProfile?.first_name || '';
-            const lastName = senderProfile?.last_name || '';
-            return {
-              id: msg.id,
-              subject: msg.subject,
-              content: msg.content,
-              sent_at: msg.sent_at,
-              read_at: msg.read_at,
-              sender_id: msg.sender_id,
-              senderName: `${firstName} ${lastName}`.trim() || 'Instructor',
-              senderInitials: `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'I',
-              image_url: msg.image_url,
-            };
-          });
-          setMessages(formattedMsgs);
-        } else {
-          setMessages([]);
-        }
-      } catch (err) {
-        console.error('Error fetching messages:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchData();
   }, [isDemoMode]);
+
+  const fetchData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    try {
+      setLoading(true);
+
+      // Fetch announcements
+      const { data: annData } = await supabase
+        .from('announcements')
+        .select(`
+          id, title, content, published_at, author_id, type,
+          profiles:author_id (first_name, last_name),
+          announcement_reads!left (id, read_at, user_id)
+        `)
+        .contains('target_role', ['student'])
+        .order('published_at', { ascending: false });
+
+      if (annData && annData.length > 0) {
+        setAnnouncements(annData.map((ann: any) => {
+          const authorProfile = ann.profiles as AuthorProfile;
+          const readRecords = Array.isArray(ann.announcement_reads)
+            ? ann.announcement_reads.filter((r: any) => r.user_id === user.id)
+            : [];
+          return {
+            id: ann.id,
+            title: ann.title || 'Announcement',
+            content: ann.content || '',
+            date: new Date(ann.published_at).toLocaleDateString(),
+            instructor: {
+              name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
+              initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
+            },
+            isNew: readRecords.length === 0,
+            type: ann.type || 'announcement',
+          };
+        }));
+      } else {
+        setAnnouncements([]);
+      }
+
+      // Fetch ALL messages (sent and received) for this student
+      const { data: msgData } = await supabase
+        .from('messages')
+        .select('id, sender_id, receiver_id, subject, content, sent_at, read_at, image_url')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('sent_at', { ascending: true });
+
+      if (msgData) {
+        setAllMessages(msgData as Message[]);
+
+        // Collect unique instructor IDs (the "other" person)
+        const otherIds = new Set<string>();
+        for (const m of msgData) {
+          const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+          otherIds.add(otherId);
+        }
+
+        if (otherIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', Array.from(otherIds));
+
+          if (profiles) {
+            setInstructors(profiles.map(p => ({
+              id: p.id,
+              name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Instructor',
+              initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
+              avatarUrl: p.avatar_url,
+            })));
+          }
+        }
+      } else {
+        setAllMessages([]);
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const userId = session?.user?.id;
+
+  // Build conversations grouped by instructor
+  const conversations = useMemo((): Conversation[] => {
+    if (!userId || isDemoMode) return [];
+
+    const instructorMap = new Map(instructors.map(i => [i.id, i]));
+    const grouped = new Map<string, Message[]>();
+
+    for (const msg of allMessages) {
+      const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+      if (!grouped.has(otherId)) grouped.set(otherId, []);
+      grouped.get(otherId)!.push(msg);
+    }
+
+    const result: Conversation[] = [];
+    for (const [instructorId, msgs] of grouped) {
+      const instructor = instructorMap.get(instructorId);
+      const sorted = msgs.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+      const last = sorted[sorted.length - 1];
+      const unreadCount = sorted.filter(m => m.receiver_id === userId && !m.read_at).length;
+
+      result.push({
+        instructorId,
+        instructorName: instructor?.name || 'Instructor',
+        initials: instructor?.initials || 'I',
+        avatarUrl: instructor?.avatarUrl,
+        lastMessage: last.content,
+        lastMessageAt: last.sent_at,
+        unreadCount,
+      });
+    }
+
+    return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  }, [allMessages, instructors, userId, isDemoMode]);
+
+  // Thread messages for active conversation
+  const threadMessages = useMemo(() => {
+    if (!activeInstructorId || !userId) return [];
+    return allMessages
+      .filter(m =>
+        (m.sender_id === userId && m.receiver_id === activeInstructorId) ||
+        (m.sender_id === activeInstructorId && m.receiver_id === userId)
+      )
+      .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+  }, [activeInstructorId, allMessages, userId]);
+
+  // Mark unread messages as read when opening a thread
+  useEffect(() => {
+    if (!activeInstructorId || isDemoMode || !userId) return;
+    const unread = threadMessages.filter(m => m.receiver_id === userId && !m.read_at);
+    if (unread.length === 0) return;
+
+    const markRead = async () => {
+      const ids = unread.map(m => m.id);
+      await supabase.from('messages').update({ read_at: new Date().toISOString() }).in('id', ids);
+      setAllMessages(prev => prev.map(m => ids.includes(m.id) ? { ...m, read_at: new Date().toISOString() } : m));
+      queryClient.invalidateQueries({ queryKey: ['unread-messages-count'] });
+    };
+    markRead();
+  }, [activeInstructorId, threadMessages]);
+
+  const handleSendReply = async (content: string) => {
+    if (isDemoMode || !userId || !activeInstructorId) return;
+    try {
+      const { error } = await supabase.from('messages').insert({
+        sender_id: userId,
+        receiver_id: activeInstructorId,
+        content,
+        subject: null,
+      });
+      if (error) throw error;
+      await fetchData();
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to send reply.' });
+    }
+  };
 
   const handleMarkAnnouncementAsRead = async (id: string) => {
     if (isDemoMode || id.startsWith('demo-')) {
@@ -195,57 +268,37 @@ const StudentMessages = () => {
     }
   };
 
-  const handleMarkMessageAsRead = async (id: string) => {
-    if (isDemoMode || id.startsWith('demo-')) {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
-      return;
-    }
-    const { error } = await supabase
-      .from('messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', id);
-    if (!error) {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
-      queryClient.invalidateQueries({ queryKey: ['unread-messages-count'] });
-    }
-  };
-
-  const handleReply = async (messageId: string, content: string) => {
-    if (isDemoMode) {
-      toast({ title: 'Reply sent (demo)' });
-      return;
-    }
-    // Find the original message to get the sender (instructor) as receiver
-    const originalMsg = messages.find(m => m.id === messageId);
-    if (!originalMsg || !session?.user?.id) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        sender_id: session.user.id,
-        receiver_id: originalMsg.sender_id,
-        subject: originalMsg.subject ? `Re: ${originalMsg.subject}` : null,
-        content,
-      });
-
-    if (error) {
-      toast({ title: 'Failed to send reply', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Reply sent!' });
-    }
-  };
-
   const filteredAnnouncements = announcementFilter === 'all'
     ? announcements
     : announcements.filter(a => a.type === announcementFilter);
 
-  const unreadMsgCount = messages.filter(m => !m.read_at).length;
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
-  // Build "All" feed: merge messages and announcements sorted by date
-  const allItems = [
-    ...messages.map(m => ({ kind: 'message' as const, date: new Date(m.sent_at), data: m })),
-    ...announcements.map(a => ({ kind: 'announcement' as const, date: new Date(a.date), data: a })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  const activeConvo = activeInstructorId ? conversations.find(c => c.instructorId === activeInstructorId) : null;
+
+  // Thread view
+  if (activeInstructorId && activeConvo) {
+    return (
+      <div className="space-y-6">
+        {demoMode && (
+          <Alert className="bg-warning/10 border-warning/30">
+            <Eye className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
+            <AlertDescription>Showing sample data.</AlertDescription>
+          </Alert>
+        )}
+        <StudentConversationThread
+          currentUserId={userId || ''}
+          instructorName={activeConvo.instructorName}
+          instructorInitials={activeConvo.initials}
+          instructorAvatarUrl={activeConvo.avatarUrl}
+          messages={threadMessages}
+          onSendReply={handleSendReply}
+          onBack={() => setActiveInstructorId(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -291,9 +344,9 @@ const StudentMessages = () => {
             <TabsTrigger value="messages" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Messages
-              {unreadMsgCount > 0 && (
+              {totalUnread > 0 && (
                 <Badge variant="default" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1.5 text-xs">
-                  {unreadMsgCount}
+                  {totalUnread}
                 </Badge>
               )}
             </TabsTrigger>
@@ -305,63 +358,38 @@ const StudentMessages = () => {
 
           {/* ALL TAB */}
           <TabsContent value="all">
-            {allItems.length > 0 ? (
+            {(conversations.length > 0 || announcements.length > 0) ? (
               <div className="space-y-3 mt-4">
-                {allItems.map(item => {
-                  if (item.kind === 'message') {
-                    const msg = item.data as DirectMessage;
-                    return (
-                      <MessageCard
-                        key={msg.id}
-                        message={msg}
-                        onMarkAsRead={handleMarkMessageAsRead}
-                        onReply={handleReply}
-                        isDemoMode={isDemoMode}
-                      />
-                    );
-                  }
-                  const ann = item.data as any;
-                  return (
-                    <AnnouncementCard
-                      key={ann.id}
-                      announcement={ann}
-                      onAcknowledge={handleMarkAnnouncementAsRead}
-                    />
-                  );
-                })}
+                {/* Show conversations first, then announcements */}
+                {conversations.map(convo => (
+                  <ConversationItem key={convo.instructorId} conversation={convo} onClick={() => setActiveInstructorId(convo.instructorId)} />
+                ))}
+                {announcements.map(ann => (
+                  <AnnouncementCard key={ann.id} announcement={ann} onAcknowledge={handleMarkAnnouncementAsRead} />
+                ))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-xl font-medium">No messages or announcements yet</h3>
-                <p className="text-muted-foreground mt-2">
-                  Updates from your instructors and school will appear here.
-                </p>
+                <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
               </div>
             )}
           </TabsContent>
 
           {/* MESSAGES TAB */}
           <TabsContent value="messages">
-            {messages.length > 0 ? (
+            {conversations.length > 0 ? (
               <div className="space-y-3 mt-4">
-                {messages.map(msg => (
-                  <MessageCard
-                    key={msg.id}
-                    message={msg}
-                    onMarkAsRead={handleMarkMessageAsRead}
-                    onReply={handleReply}
-                    isDemoMode={isDemoMode}
-                  />
+                {conversations.map(convo => (
+                  <ConversationItem key={convo.instructorId} conversation={convo} onClick={() => setActiveInstructorId(convo.instructorId)} />
                 ))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Mail className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium">No messages yet</h3>
-                <p className="text-muted-foreground mt-2">
-                  Messages from your instructor will appear here.
-                </p>
+                <h3 className="text-xl font-medium">No conversations yet</h3>
+                <p className="text-muted-foreground mt-2">Messages from your instructor will appear here.</p>
               </div>
             )}
           </TabsContent>
@@ -381,25 +409,50 @@ const StudentMessages = () => {
               {filteredAnnouncements.length > 0 ? (
                 <div className="space-y-4">
                   {filteredAnnouncements.map(announcement => (
-                    <AnnouncementCard
-                      key={announcement.id}
-                      announcement={announcement}
-                      onAcknowledge={handleMarkAnnouncementAsRead}
-                    />
+                    <AnnouncementCard key={announcement.id} announcement={announcement} onAcknowledge={handleMarkAnnouncementAsRead} />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-xl font-medium">No announcements yet</h3>
-                  <p className="text-muted-foreground mt-2">
-                    School announcements will appear here.
-                  </p>
+                  <p className="text-muted-foreground mt-2">School announcements will appear here.</p>
                 </div>
               )}
             </div>
           </TabsContent>
         </Tabs>
+      )}
+    </div>
+  );
+};
+
+// Conversation list item component
+const ConversationItem = ({ conversation, onClick }: { conversation: Conversation; onClick: () => void }) => {
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
+    >
+      <Avatar className="h-10 w-10 shrink-0">
+        {conversation.avatarUrl && <AvatarImage src={conversation.avatarUrl} alt={conversation.instructorName} />}
+        <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+          {conversation.initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-sm">{conversation.instructorName}</span>
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(conversation.lastMessageAt), 'MMM d')}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{conversation.lastMessage}</p>
+      </div>
+      {conversation.unreadCount > 0 && (
+        <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center px-1.5 text-xs shrink-0">
+          {conversation.unreadCount}
+        </Badge>
       )}
     </div>
   );
