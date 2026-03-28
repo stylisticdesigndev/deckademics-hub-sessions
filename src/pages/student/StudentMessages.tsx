@@ -423,6 +423,8 @@ const StudentMessages = () => {
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveInstructorId(null)}
+          onSaveToNotes={handleSaveToNotes}
+          savedMessageIds={savedMessageIds}
         />
       </div>
     );
