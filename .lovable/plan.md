@@ -1,45 +1,38 @@
 
 
-# Fix Instructor Notes Display, Editing, and Date Format
+# Fix Blank Progress Tab — Populate moduleProgress Data
 
-## Problem Analysis
+## Problem
+The `useInstructorStudentsSimple` hook never fetches curriculum data. The `moduleProgress` field on each student is always `undefined`, so the Progress tab always shows "No progress data available."
 
-1. **Notes not reflecting**: The `handleAddNote` correctly INSERTs into the `student_notes` table, but `useInstructorStudentsSimple` reads from the legacy `students.notes` text column. These are completely different data sources -- notes are saved to one place but read from another.
+## Root Cause
+The hook fetches `student_progress` (skill proficiency scores) but never queries `curriculum_modules` or `curriculum_lessons`. The Progress tab UI expects structured module/lesson data with completion status — data that is never loaded.
 
-2. **Notes not editable**: The Notes tab in the student detail dialog renders notes as plain text divs with no click/edit capability.
+## Solution
 
-3. **Date format**: Enrollment date displays as `YYYY-MM-DD` (from `start_date.slice(0,10)`), not American `MM/DD/YYYY`.
+### File: `src/hooks/instructor/useInstructorStudentsSimple.ts`
 
-## Changes
+Add two more queries to the existing `Promise.all` block:
+1. `curriculum_modules` — fetch all modules, ordered by `order_index`
+2. `curriculum_lessons` — fetch all lessons, ordered by `order_index`
 
-### 1. `src/hooks/instructor/useInstructorStudentsSimple.ts`
-- After fetching students, also query the `student_notes` table for all student IDs where `instructor_id` matches
-- Replace the legacy `students.notes` string splitting with actual `student_notes` records
-- Store notes as objects (id, content, title, created_at) instead of plain strings so they can be edited
+Then, for each student, cross-reference their `student_progress` records against the curriculum to determine lesson completion. A lesson is considered "completed" if a `student_progress` row exists for that student with a matching `skill_name` equal to the lesson title (this is the pattern used by `toggleLessonCompletion` in InstructorStudents.tsx which inserts/deletes progress records keyed on lesson title).
 
-### 2. `src/pages/instructor/InstructorStudents.tsx`
+Build the `moduleProgress` array per student:
+- Filter modules by the student's `level`
+- For each module, map its lessons and check completion
+- Calculate module progress as `(completed lessons / total lessons) * 100`
 
-**Update the Student interface**:
-- Change `notes?: string[]` to `notes?: { id: string; content: string; title?: string; created_at: string }[]`
+### File: `src/pages/instructor/InstructorStudents.tsx`
 
-**Notes tab in student detail dialog** (lines 1262-1280):
-- Make each note clickable to open an edit dialog
-- Show note date and title
-- Add an edit dialog that UPDATEs the `student_notes` record by ID
+Verify `toggleLessonCompletion` uses the same skill_name matching pattern. The existing code at ~line 584 already does this, so no changes needed here — just needs the data to flow in.
 
-**Add edit note handler**:
-- New state: `editingNoteId`, `editNoteText`, `showEditNoteDialog`
-- `handleEditNote` function that calls `supabase.from('student_notes').update({ content }).eq('id', noteId)`
+## What This Enables
+- The Progress tab will show all curriculum modules matching the student's level
+- Each module displays its lessons with checkboxes
+- Instructors can toggle lesson completion and update module progress
+- The "Update" button for manual percentage override will work
 
-**Fix enrollment date format** (line 1154):
-- Format `detailedStudent.enrollmentDate` using `format(new Date(...), 'MM/dd/yyyy')` from date-fns
-
-### 3. `src/hooks/instructor/useInstructorStudentsSimple.ts` — date format
-- Format `enrollmentDate` as `MM/DD/YYYY` when building student objects
-
-## Technical Details
-- The `student_notes` table has RLS allowing instructors to SELECT their own notes (`instructor_id = auth.uid()`)
-- The `student_notes` table has no UPDATE policy for instructors currently — a new RLS policy is needed: "Instructors can update their own notes" for UPDATE where `instructor_id = auth.uid()`
-- Uses `date-fns` `format` function already imported elsewhere in the project
-- The note objects carry their `id` so the edit dialog can target the correct row
+## Files Changed
+1. `src/hooks/instructor/useInstructorStudentsSimple.ts` — add curriculum fetch + moduleProgress building logic
 
