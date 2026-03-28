@@ -29,6 +29,13 @@ import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStu
 import { supabase } from "@/integrations/supabase/client";
 
 // --------- TYPES ---------
+interface StudentNote {
+  id: string;
+  content: string;
+  title?: string | null;
+  created_at: string;
+}
+
 interface Student {
   id: string;
   name: string;
@@ -40,7 +47,7 @@ interface Student {
   nextClass?: string;
   email: string;
   enrollmentDate: string;
-  notes?: string[];
+  notes?: StudentNote[];
   moduleProgress?: ModuleProgress[];
 }
 
