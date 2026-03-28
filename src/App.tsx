@@ -15,6 +15,11 @@ import StudentProfileSetup from "./pages/student/StudentProfileSetup";
 import InstructorProfileSetup from "./pages/instructor/InstructorProfileSetup";
 import AdminProfileSetup from "./pages/admin/AdminProfileSetup";
 
+// Layout routes
+import StudentLayoutRoute from "./routes/StudentLayoutRoute";
+import InstructorLayoutRoute from "./routes/InstructorLayoutRoute";
+import AdminLayoutRoute from "./routes/AdminLayoutRoute";
+
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentProgress from "./pages/student/StudentProgress";
@@ -71,39 +76,45 @@ const App = () => (
           <Route path="/admin/profile-setup" element={<AdminProfileSetup />} />
         </Route>
         
-        {/* Student routes */}
+        {/* Student routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/progress" element={<StudentProgress />} />
-          <Route path="/student/curriculum" element={<StudentCurriculum />} />
-          <Route path="/student/notes" element={<StudentNotes />} />
-          <Route path="/student/classes" element={<StudentClasses />} />
-          <Route path="/student/messages" element={<StudentMessages />} />
-          <Route path="/student/profile" element={<StudentProfile />} />
+          <Route element={<StudentLayoutRoute />}>
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/progress" element={<StudentProgress />} />
+            <Route path="/student/curriculum" element={<StudentCurriculum />} />
+            <Route path="/student/notes" element={<StudentNotes />} />
+            <Route path="/student/classes" element={<StudentClasses />} />
+            <Route path="/student/messages" element={<StudentMessages />} />
+            <Route path="/student/profile" element={<StudentProfile />} />
+          </Route>
         </Route>
         
-        {/* Instructor routes */}
+        {/* Instructor routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
-          <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
-          <Route path="/instructor/students" element={<InstructorStudents />} />
-          <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
-          <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
-          <Route path="/instructor/classes" element={<InstructorClasses />} />
-          <Route path="/instructor/profile" element={<InstructorProfile />} />
-          <Route path="/instructor/messages" element={<InstructorMessages />} />
+          <Route element={<InstructorLayoutRoute />}>
+            <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
+            <Route path="/instructor/students" element={<InstructorStudents />} />
+            <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
+            <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
+            <Route path="/instructor/classes" element={<InstructorClasses />} />
+            <Route path="/instructor/profile" element={<InstructorProfile />} />
+            <Route path="/instructor/messages" element={<InstructorMessages />} />
+          </Route>
         </Route>
         
-        {/* Admin routes */}
+        {/* Admin routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/instructors" element={<AdminInstructors />} />
-          <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/curriculum" element={<AdminCurriculum />} />
-          <Route path="/admin/attendance" element={<AdminAttendance />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
-          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route element={<AdminLayoutRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/instructors" element={<AdminInstructors />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
+            <Route path="/admin/curriculum" element={<AdminCurriculum />} />
+            <Route path="/admin/attendance" element={<AdminAttendance />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
+            <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+          </Route>
         </Route>
 
         {/* Default route for unknown paths */}

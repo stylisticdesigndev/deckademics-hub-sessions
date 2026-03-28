@@ -16,7 +16,7 @@ export const Logo: React.FC<LogoProps> = ({
     sm: 'h-10 w-auto',
     md: 'h-12 w-auto',
     lg: 'h-16 w-auto',
-    header: 'h-10 w-auto md:h-12'
+    header: 'h-12 w-auto md:h-14'
   };
   
   return (
