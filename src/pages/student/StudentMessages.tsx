@@ -21,6 +21,7 @@ interface DirectMessage {
   sender_id: string;
   senderName: string;
   senderInitials: string;
+  image_url?: string | null;
 }
 
 interface AuthorProfile {
@@ -142,7 +143,7 @@ const StudentMessages = () => {
         const { data: msgData } = await supabase
           .from('messages')
           .select(`
-            id, subject, content, sent_at, read_at, sender_id,
+            id, subject, content, sent_at, read_at, sender_id, image_url,
             profiles:sender_id (first_name, last_name)
           `)
           .eq('receiver_id', user.id)
@@ -162,6 +163,7 @@ const StudentMessages = () => {
               sender_id: msg.sender_id,
               senderName: `${firstName} ${lastName}`.trim() || 'Instructor',
               senderInitials: `${(firstName || ' ')[0]}${(lastName || ' ')[0]}`.trim().toUpperCase() || 'I',
+              image_url: msg.image_url,
             };
           });
           setMessages(formattedMsgs);
