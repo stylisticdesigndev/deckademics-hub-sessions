@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Send, Clock } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Bookmark, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, differenceInDays } from 'date-fns';
 
 const REPLY_WINDOW_DAYS = 7;
@@ -25,6 +26,8 @@ interface StudentConversationThreadProps {
   onSendReply: (content: string) => Promise<void>;
   onBack: () => void;
   sending?: boolean;
+  onSaveToNotes?: (message: ThreadMessage) => void;
+  savedMessageIds?: Set<string>;
 }
 
 const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
