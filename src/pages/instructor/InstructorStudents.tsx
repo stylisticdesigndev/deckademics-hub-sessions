@@ -618,11 +618,11 @@ const InstructorStudents = () => {
         .single();
 
       if (existingProgress) {
-        // Update existing record - use proficiency scale (10 for completed, 1 for incomplete)
+        // Update existing record - use 100 for completed, 0 for incomplete
         const { error } = await supabase
           .from('student_progress')
           .update({
-            proficiency: newCompletionState ? 10 : 1,
+            proficiency: newCompletionState ? 100 : 0,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           })
@@ -638,14 +638,14 @@ const InstructorStudents = () => {
           return;
         }
       } else {
-        // Insert new record - use proficiency scale (10 for completed, 1 for incomplete)
+        // Insert new record - use 100 for completed, 0 for incomplete
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: studentId,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
+            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b',
             skill_name: skillName,
-            proficiency: newCompletionState ? 10 : 1,
+            proficiency: newCompletionState ? 100 : 0,
             assessment_date: new Date().toISOString(),
             assessor_id: instructorId
           });
