@@ -137,7 +137,7 @@ const InstructorMessages = () => {
         studentId,
         studentName: student?.name || 'Unknown',
         initials: student?.initials || '??',
-        avatarUrl: student?.avatarUrl,
+        avatarUrl: (student as StudentOption)?.avatarUrl,
         lastMessage: last.content,
         lastMessageAt: last.sent_at,
         unreadCount,
