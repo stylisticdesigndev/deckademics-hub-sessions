@@ -1,33 +1,86 @@
 
-
-# Fix Logo Flicker on Section Navigation
-
-## Problem
-When navigating between sections (e.g., Classes → Progress → Profile), the `ProtectedRoute` component re-mounts and its `isWaitingForProfile` state starts as `true`. This briefly shows the full-screen skeleton loader instead of the `DashboardLayout`, causing the logo to disappear and the navbar to shift until the profile check resolves (typically within one render cycle).
+# Fix Persistent Logo Flicker and Size Regression
 
 ## Root Cause
-In `src/routes/ProtectedRoute.tsx` (line 14), `isWaitingForProfile` is initialized to `true` every time the component mounts. Combined with the loading check on line 97, this causes a brief flash of the skeleton screen even when auth data is already available in context.
+The logo is still reloading because `DashboardLayout` is mounted inside every individual page component (`StudentProgress`, `StudentClasses`, `StudentProfile`, admin/instructor pages, etc.). When you navigate between sections, the whole layout unmounts and mounts again, so the sidebar header/logo is recreated each time.
 
-## Fix
-
-**File: `src/routes/ProtectedRoute.tsx`**
-
-Initialize `isWaitingForProfile` based on whether we already have the data we need. If `isLoading` is already `false` and `userData.role` is already set, there's no reason to wait.
-
-Change line 14 from:
+The logo also got smaller because the current `Logo` header sizing was changed to:
 ```ts
-const [isWaitingForProfile, setIsWaitingForProfile] = useState(true);
+header: 'h-10 w-auto md:h-12'
 ```
-To:
-```ts
-const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
-  // If auth is already loaded and we have a role, no need to wait
-  return isLoading || (!userData.role && !!session);
-});
+which is likely smaller than the original visual size.
+
+## Fix Approach
+
+### 1. Make the dashboard layout persistent per role
+Create shared route-layout wrappers so the sidebar/header stays mounted while only the page content changes.
+
+**Add role layout components:**
+- `StudentLayoutRoute`
+- `InstructorLayoutRoute`
+- `AdminLayoutRoute`
+
+Each one should render:
+```tsx
+<DashboardLayout sidebarContent={<...Navigation />} userType="...">
+  <Outlet />
+</DashboardLayout>
 ```
 
-This ensures that on subsequent navigations (when auth data is already cached in the AuthProvider context), the skeleton loader is skipped entirely and the `DashboardLayout` with the logo renders immediately.
+### 2. Restructure routes in `src/App.tsx`
+Instead of every page rendering its own `DashboardLayout`, nest role pages under the shared layout route:
 
-### Files Changed
-- `src/routes/ProtectedRoute.tsx` — 1 line change
+```text
+ProtectedRoute
+└── StudentLayoutRoute
+    ├── /student/dashboard
+    ├── /student/progress
+    ├── /student/classes
+    └── ...
+```
 
+Do the same for instructor and admin routes.
+
+This keeps the top-left logo, sidebar, and header mounted across section changes.
+
+### 3. Remove per-page layout wrappers
+Update all student/instructor/admin pages so they return only their page content, not:
+```tsx
+<DashboardLayout ...>...</DashboardLayout>
+```
+
+This affects all pages currently importing:
+- `DashboardLayout`
+- role navigation components
+
+Those imports will be removed from the individual page files.
+
+### 4. Restore stable logo sizing
+Adjust `src/components/logo/Logo.tsx` so the `header` size matches the intended larger appearance with fixed dimensions that do not visually collapse during render.
+
+Example direction:
+- use a fixed header-height class
+- keep `object-contain`
+- avoid sizing that is smaller than before
+
+### 5. Keep the existing auth fixes
+Retain the earlier `ProtectedRoute` and `AuthProvider` fixes. They address auth redirect/loading issues, but the remaining flicker is now a layout architecture issue.
+
+## Files to Update
+- `src/App.tsx`
+- `src/components/logo/Logo.tsx`
+- `src/components/layout/DashboardLayout.tsx` (only if minor sizing cleanup is needed)
+- New shared layout route file(s), e.g.:
+  - `src/routes/StudentLayoutRoute.tsx`
+  - `src/routes/InstructorLayoutRoute.tsx`
+  - `src/routes/AdminLayoutRoute.tsx`
+- All dashboard-section pages that currently wrap themselves in `DashboardLayout`
+
+## Expected Result
+- The top-left Deckademics logo no longer disappears when switching sections
+- The sidebar/navbar no longer shifts during navigation
+- The logo returns to the intended size
+- Only the main page content updates when moving between sections, not the entire shell
+
+## Technical Notes
+This is the correct long-term fix because the app currently duplicates the dashboard shell in each page. A shared nested layout is the React Router pattern that prevents remounting and keeps navigation/UI chrome stable.
