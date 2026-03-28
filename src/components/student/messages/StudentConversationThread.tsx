@@ -95,7 +95,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
         {messages.map((msg) => {
           const isMe = msg.sender_id === currentUserId;
           return (
-            <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+            <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
               <div className={`flex items-end gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                 {!isMe && (
                   <Avatar className="h-7 w-7 shrink-0">
@@ -124,9 +124,42 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                     )}
                     {msg.content && msg.content}
                   </div>
-                  <p className={`text-[11px] text-muted-foreground mt-1 ${isMe ? 'text-right' : ''}`}>
-                    {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
-                  </p>
+                  <div className={`flex items-center gap-1.5 mt-1 ${isMe ? 'justify-end' : ''}`}>
+                    <p className="text-[11px] text-muted-foreground">
+                      {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
+                    </p>
+                    {!isMe && onSaveToNotes && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                savedMessageIds.has(msg.id) ? 'opacity-100 text-primary' : ''
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!savedMessageIds.has(msg.id)) {
+                                  onSaveToNotes(msg);
+                                }
+                              }}
+                              disabled={savedMessageIds.has(msg.id)}
+                            >
+                              {savedMessageIds.has(msg.id) ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Bookmark className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p>{savedMessageIds.has(msg.id) ? 'Saved to notes' : 'Save to notes'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
