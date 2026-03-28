@@ -471,14 +471,18 @@ const InstructorStudents = () => {
 
       setShowProgressDialog(false);
       
+      // Immediately update local state so the UI reflects the new progress
+      setStudents(prev => prev.map(s => 
+        s.id === selectedStudent ? { ...s, progress: progressValue } : s
+      ));
+      
       toast({
         title: "Progress updated",
         description: `Student progress has been successfully saved (${progressValue}%).`,
       });
 
-      // Refresh data from database immediately
-      console.log('Refreshing student data after progress update...');
-      await refetch();
+      // Also refresh from database in background
+      refetch();
 
     } catch (error) {
       console.error('Unexpected error updating progress:', error);
