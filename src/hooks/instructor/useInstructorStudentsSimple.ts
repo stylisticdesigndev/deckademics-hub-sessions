@@ -175,8 +175,12 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           
           // Build moduleProgress for this student
           const studentLevel = student.level || 'beginner';
+          const normalizedLevel = (() => {
+            const l = studentLevel.toLowerCase();
+            return l === 'beginner' ? 'novice' : l;
+          })();
           const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
-          const studentModules = allModules.filter((m) => m.level === studentLevel);
+          const studentModules = allModules.filter((m) => m.level.toLowerCase() === normalizedLevel);
           const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {
             const modLessons = lessonsByModule[mod.id] || [];
             const lessons = modLessons.map((l) => ({
@@ -192,13 +196,17 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
               lessons,
             };
           });
+          // Auto-calculate overall progress from module completion
+          const overallProgress = moduleProgress.length
+            ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
+            : 0;
 
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
             email: profile?.email || '',
             avatar: profile?.avatar_url,
-            progress: progressById[student.id] || 0,
+            progress: overallProgress,
             level: student.level || 'beginner',
             initials: (firstName[0] || '') + (lastName[0] || ''),
             enrollmentDate,
