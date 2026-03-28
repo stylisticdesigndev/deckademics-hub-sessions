@@ -99,8 +99,10 @@ const StudentMessages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
 
-  const { createNote } = useStudentPersonalNotes(userId);
+  const isDemoMode = !session || demoMode;
   const userId = session?.user?.id;
+
+  const { createNote } = useStudentPersonalNotes(userId);
 
   useEffect(() => {
     if (isDemoMode) {
