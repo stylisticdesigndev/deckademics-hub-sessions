@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
 
 export interface Announcement {
   id: string;
@@ -23,6 +24,7 @@ export interface Announcement {
 interface AnnouncementCardProps {
   announcement: Announcement;
   onAcknowledge?: (id: string) => void;
+  onDismiss?: (id: string) => void;
   className?: string;
 }
 
