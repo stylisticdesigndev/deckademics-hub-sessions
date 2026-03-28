@@ -13,6 +13,7 @@ import { StickyNote, Calendar, User, Eye, EyeOff, Plus, Pencil, Trash2, BookOpen
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { mockNotes, mockPersonalNotes } from '@/data/mockDashboardData';
 
 type CombinedNote = 
   | { type: 'instructor'; data: StudentNote; created_at: string }
@@ -62,13 +63,29 @@ export default function StudentNotes() {
 
   const isLoading = instructorLoading || personalLoading;
 
+  // Use mock data in demo mode
+  const activeInstructorNotes: StudentNote[] = demoMode
+    ? mockNotes.map(n => ({
+        ...n,
+        instructor: n.instructor,
+      })) as StudentNote[]
+    : instructorNotes;
+
+  const activePersonalNotes: PersonalNote[] = demoMode
+    ? mockPersonalNotes as PersonalNote[]
+    : personalNotes;
+
   // Combined notes sorted by date
   const combinedNotes: CombinedNote[] = [
-    ...instructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
-    ...personalNotes.map(n => ({ type: 'personal' as const, data: n, created_at: n.created_at })),
+    ...activeInstructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
+    ...activePersonalNotes.map(n => ({ type: 'personal' as const, data: n, created_at: n.created_at })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const handleCreateNote = (data: { title?: string; content: string }) => {
+    if (demoMode) {
+      toast({ title: 'Demo mode', description: 'Creating notes is disabled in demo mode.' });
+      return;
+    }
     createNote.mutate(data, {
       onSuccess: () => toast({ title: 'Note created', description: 'Your note has been saved.' }),
     });
@@ -76,6 +93,10 @@ export default function StudentNotes() {
 
   const handleUpdateNote = (data: { title?: string; content: string }) => {
     if (!editingNote) return;
+    if (demoMode) {
+      toast({ title: 'Demo mode', description: 'Editing notes is disabled in demo mode.' });
+      return;
+    }
     updateNote.mutate({ id: editingNote.id, ...data }, {
       onSuccess: () => {
         toast({ title: 'Note updated' });
@@ -85,6 +106,10 @@ export default function StudentNotes() {
   };
 
   const handleDeleteNote = (id: string) => {
+    if (demoMode) {
+      toast({ title: 'Demo mode', description: 'Deleting notes is disabled in demo mode.' });
+      return;
+    }
     deleteNote.mutate(id, {
       onSuccess: () => toast({ title: 'Note deleted' }),
     });
@@ -240,11 +265,11 @@ export default function StudentNotes() {
             </TabsContent>
 
             <TabsContent value="my-notes" className="mt-4">
-              {renderGrouped(personalNotes, renderPersonalNoteCard)}
+              {renderGrouped(activePersonalNotes, renderPersonalNoteCard)}
             </TabsContent>
 
             <TabsContent value="instructor" className="mt-4">
-              {renderGrouped(instructorNotes, renderInstructorNoteCard)}
+              {renderGrouped(activeInstructorNotes, renderInstructorNoteCard)}
             </TabsContent>
           </Tabs>
         )}

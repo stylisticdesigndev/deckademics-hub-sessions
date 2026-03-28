@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
 import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
+import { mockStudentConversations, mockStudentMessages } from '@/data/mockDashboardData';
 
 interface Message {
   id: string;
@@ -107,8 +108,17 @@ const StudentMessages = () => {
   useEffect(() => {
     if (isDemoMode) {
       setAnnouncements(demoAnnouncements);
-      setAllMessages([]);
-      setInstructors([]);
+      setAllMessages(
+        Object.values(mockStudentMessages).flat() as Message[]
+      );
+      setInstructors(
+        mockStudentConversations.map(c => ({
+          id: c.instructorId,
+          name: c.instructorName,
+          initials: c.initials,
+          avatarUrl: c.avatarUrl,
+        }))
+      );
       setLoading(false);
       return;
     }
@@ -209,13 +219,14 @@ const StudentMessages = () => {
   };
 
   const conversations = useMemo((): Conversation[] => {
-    if (!userId || isDemoMode) return [];
+    if (!userId && !isDemoMode) return [];
+    const effectiveUserId = userId || 'mock-student';
 
     const instructorMap = new Map(instructors.map(instructor => [instructor.id, instructor]));
     const grouped = new Map<string, Message[]>();
 
     for (const message of allMessages) {
-      const otherId = message.sender_id === userId ? message.receiver_id : message.sender_id;
+      const otherId = message.sender_id === effectiveUserId ? message.receiver_id : message.sender_id;
       if (!grouped.has(otherId)) grouped.set(otherId, []);
       grouped.get(otherId)!.push(message);
     }
@@ -225,7 +236,7 @@ const StudentMessages = () => {
       const instructor = instructorMap.get(instructorId);
       const sorted = messages.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
       const last = sorted[sorted.length - 1];
-      const unreadCount = sorted.filter(message => message.receiver_id === userId && !message.read_at).length;
+      const unreadCount = sorted.filter(message => message.receiver_id === effectiveUserId && !message.read_at).length;
 
       result.push({
         instructorId,
@@ -327,6 +338,11 @@ const StudentMessages = () => {
   };
 
   const handleSaveToNotes = (msg: { id: string; content: string; sent_at: string; image_url?: string | null }) => {
+    if (isDemoMode) {
+      setSavedMessageIds(prev => new Set(prev).add(msg.id));
+      toast({ title: 'Saved to notes', description: 'Message saved to your personal notes. (Demo)' });
+      return;
+    }
     if (!userId) return;
     const activeInstructor = instructors.find(i => i.id === activeInstructorId);
     const title = `From ${activeInstructor?.name || 'Instructor'} — ${format(new Date(msg.sent_at), 'MMM d, yyyy')}`;

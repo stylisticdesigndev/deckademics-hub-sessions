@@ -111,6 +111,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(newSession);
         
         if (newSession?.user) {
+          // On TOKEN_REFRESHED, don't clear userData — profile is still valid
+          if (event === 'TOKEN_REFRESHED') {
+            if (import.meta.env.DEV) console.log("Token refreshed, keeping existing userData");
+            return;
+          }
+          
           // Use setTimeout to avoid auth deadlocks
           setTimeout(() => {
             fetchUserProfile(newSession.user.id)

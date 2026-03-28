@@ -59,14 +59,17 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }, [isLoading, session, userData.role, isMockAdmin]);
   
+  // Reset wait time when role becomes available
+  useEffect(() => {
+    if (userData.role) {
+      setWaitTime(0);
+    }
+  }, [userData.role]);
+
   // Handle profile timeout - separate from waiting logic
   useEffect(() => {
-    // Skip for mock admin
-    if (isMockAdmin) {
-      return;
-    }
+    if (isMockAdmin) return;
     
-    // Only run this if we have session but no role data
     const needsRole = session && !userData.profile && !userData.role;
     
     if (!isLoading && needsRole) {
@@ -74,8 +77,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         setWaitTime(prev => {
           const newTime = prev + 500;
           
-          // After 3 seconds of waiting with no profile, show error
-          if (newTime >= 3000) {
+          // After 8 seconds of waiting with no profile, show error
+          if (newTime >= 8000) {
             clearInterval(interval);
             
             toast({
@@ -84,7 +87,6 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
               variant: 'destructive',
             });
             
-            // Safely sign out after showing toast
             setTimeout(() => signOut(), 2000);
           }
           
@@ -97,7 +99,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }, [isLoading, session, userData, signOut, isMockAdmin]);
   
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 3000 && !isMockAdmin) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000 && !isMockAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-deckademics-dark">
         <div className="w-full max-w-md space-y-4">

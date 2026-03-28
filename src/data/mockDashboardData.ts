@@ -99,6 +99,121 @@ export const mockAnnouncements = [
   },
 ];
 
+export const mockPersonalNotes = [
+  {
+    id: 'mock-personal-1',
+    student_id: 'mock-student',
+    title: 'Scratching practice routine',
+    content: 'Work on baby scratch → tear scratch → chirp scratch progression. 15 min each technique, then freestyle for 10 min. Record and compare weekly.',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'mock-personal-2',
+    student_id: 'mock-student',
+    title: 'From DJ Master K — Mar 25',
+    content: 'Great job on the beat matching exercise today. Your timing is getting much more consistent. Next session we\'ll work on harmonic mixing.',
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: 'mock-personal-3',
+    student_id: 'mock-student',
+    title: 'Set list ideas for showcase',
+    content: '1. Intro — ambient pad into deep house\n2. Build energy with progressive house\n3. Peak — tech house banger\n4. Cool down with melodic techno\n5. Closer — classic house anthem',
+    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+  },
+];
+
+export const mockStudentConversations = [
+  {
+    instructorId: 'mock-instructor-1',
+    instructorName: 'DJ Master K',
+    initials: 'MK',
+    avatarUrl: null,
+    lastMessage: 'Great work today! Don\'t forget to practice those transitions before next class.',
+    lastMessageAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+    unreadCount: 1,
+  },
+  {
+    instructorId: 'mock-instructor-2',
+    instructorName: 'DJ Sarah B',
+    initials: 'SB',
+    avatarUrl: null,
+    lastMessage: 'Your mix submission has been reviewed — check your notes for feedback.',
+    lastMessageAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    unreadCount: 0,
+  },
+];
+
+export const mockStudentMessages = {
+  'mock-instructor-1': [
+    {
+      id: 'mock-msg-1',
+      sender_id: 'mock-instructor-1',
+      receiver_id: 'mock-student',
+      subject: null,
+      content: 'Hey! How\'s the practice going for the 16-bar blend technique?',
+      sent_at: new Date(Date.now() - 4 * 3600000).toISOString(),
+      read_at: new Date(Date.now() - 3 * 3600000).toISOString(),
+      image_url: null,
+    },
+    {
+      id: 'mock-msg-2',
+      sender_id: 'mock-student',
+      receiver_id: 'mock-instructor-1',
+      subject: null,
+      content: 'It\'s going well! I recorded a 20-minute mix using the technique. Want me to send it over?',
+      sent_at: new Date(Date.now() - 3 * 3600000).toISOString(),
+      read_at: new Date(Date.now() - 2.5 * 3600000).toISOString(),
+      image_url: null,
+    },
+    {
+      id: 'mock-msg-3',
+      sender_id: 'mock-instructor-1',
+      receiver_id: 'mock-student',
+      subject: null,
+      content: 'Great work today! Don\'t forget to practice those transitions before next class.',
+      sent_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+      read_at: null,
+      image_url: null,
+    },
+  ],
+  'mock-instructor-2': [
+    {
+      id: 'mock-msg-4',
+      sender_id: 'mock-instructor-2',
+      receiver_id: 'mock-student',
+      subject: null,
+      content: 'I listened to your mix submission. The EQ work is solid but let\'s work on your transitions in the buildup section.',
+      sent_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+      read_at: new Date(Date.now() - 2.5 * 86400000).toISOString(),
+      image_url: null,
+    },
+    {
+      id: 'mock-msg-5',
+      sender_id: 'mock-student',
+      receiver_id: 'mock-instructor-2',
+      subject: null,
+      content: 'Thanks for the feedback! I\'ll focus on that section.',
+      sent_at: new Date(Date.now() - 2.5 * 86400000).toISOString(),
+      read_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      image_url: null,
+    },
+    {
+      id: 'mock-msg-6',
+      sender_id: 'mock-instructor-2',
+      receiver_id: 'mock-student',
+      subject: null,
+      content: 'Your mix submission has been reviewed — check your notes for feedback.',
+      sent_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      read_at: new Date(Date.now() - 1.5 * 86400000).toISOString(),
+      image_url: null,
+    },
+  ],
+};
+
 export const mockProfileData = {
   name: 'Alex Johnson',
   email: 'alex.johnson@example.com',
