@@ -1,6 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { AttendanceCalendar } from '@/components/student/classes/AttendanceCalendar';
 import { ClassAttendanceCard } from '@/components/student/classes/ClassAttendanceCard';
 import { Button } from '@/components/ui/button';
@@ -163,7 +161,7 @@ const StudentClasses = () => {
   const hasData = demoMode || (!isFirstTimeUser && !loading && activeClassInfo);
 
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         {/* Header */}
         <section className="flex justify-between items-start">
@@ -316,7 +314,7 @@ const StudentClasses = () => {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

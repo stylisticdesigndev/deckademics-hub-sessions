@@ -1,7 +1,5 @@
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
 import { PaymentStatsCards } from '@/components/admin/payments/PaymentStatsCards';
 import { PaymentSearch } from '@/components/admin/payments/PaymentSearch';
@@ -51,16 +49,16 @@ const AdminPayments = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">Loading payments...</div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
@@ -112,7 +110,7 @@ const AdminPayments = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

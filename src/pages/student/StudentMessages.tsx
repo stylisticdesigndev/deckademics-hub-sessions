@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { MessageSquare, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
@@ -191,7 +189,7 @@ const StudentMessages = () => {
   };
   
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         <section className="flex items-start justify-between">
           <div>
@@ -273,7 +271,7 @@ const StudentMessages = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

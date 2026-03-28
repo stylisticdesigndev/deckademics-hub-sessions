@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { MessageSquare, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
@@ -140,7 +138,7 @@ const InstructorMessages = () => {
   };
   
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-bold">Messages & Updates</h1>
@@ -186,7 +184,7 @@ const InstructorMessages = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

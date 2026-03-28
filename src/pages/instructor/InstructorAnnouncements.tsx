@@ -2,8 +2,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,16 +130,16 @@ const InstructorAnnouncements = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+      <>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">Loading announcements...</div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Announcements</h1>
@@ -281,7 +279,7 @@ const InstructorAnnouncements = () => {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

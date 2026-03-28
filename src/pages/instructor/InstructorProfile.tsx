@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -197,7 +195,7 @@ const InstructorProfile = () => {
   };
 
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-bold">Instructor Profile</h1>
@@ -398,7 +396,7 @@ const InstructorProfile = () => {
           onScheduleUpdated={handleScheduleUpdated}
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Button } from '@/components/ui/button';
@@ -71,7 +69,7 @@ const StudentProgress = () => {
     : 0;
   
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         <section className="flex items-start justify-between">
           <div>
@@ -168,7 +166,7 @@ const StudentProgress = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

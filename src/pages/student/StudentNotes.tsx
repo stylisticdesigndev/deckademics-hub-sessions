@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -180,7 +178,7 @@ export default function StudentNotes() {
   const showContent = demoMode || (!isLoading && activeNotes.length > 0);
 
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         <section className="flex items-start justify-between">
           <div>
@@ -243,6 +241,6 @@ export default function StudentNotes() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

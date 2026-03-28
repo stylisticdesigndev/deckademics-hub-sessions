@@ -699,7 +699,7 @@ const InstructorStudents = () => {
   };
   
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-bold">Student Management</h1>
@@ -1224,7 +1224,7 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
