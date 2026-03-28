@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
+import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,
@@ -31,7 +32,8 @@ export const StudentNavigation = () => {
     });
   }, []);
 
-  const { data: unreadCount = 0 } = useUnreadNotesCount(studentId);
+  const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
+  const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
 
   const navItems = [
     {
@@ -68,14 +70,15 @@ export const StudentNavigation = () => {
       href: "/student/notes",
       active: pathname === "/student/notes",
       tooltip: "View instructor notes",
-      badge: unreadCount
+      badge: unreadNotesCount
     },
     {
       title: "Messages",
       icon: MessageSquare,
       href: "/student/messages",
       active: pathname === "/student/messages",
-      tooltip: "Access your messages"
+      tooltip: "Access your messages",
+      badge: unreadMsgCount
     },
     {
       title: "Profile",
