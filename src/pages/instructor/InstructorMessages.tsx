@@ -24,6 +24,7 @@ interface Message {
   content: string;
   sent_at: string;
   read_at: string | null;
+  image_url?: string | null;
 }
 
 interface StudentOption {
@@ -91,7 +92,7 @@ const InstructorMessages = () => {
       // Fetch ALL messages involving this instructor
       const { data: messages } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, subject, content, sent_at, read_at, is_archived, image_url')
         .or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
         .order('sent_at', { ascending: true });
 
@@ -179,15 +180,16 @@ const InstructorMessages = () => {
     markRead();
   }, [activeStudentId, threadMessages]);
 
-  const handleSendReply = async (content: string) => {
+  const handleSendReply = async (content: string, imageUrl?: string) => {
     if (demoMode || !session?.user?.id || !activeStudentId) return;
     setSending(true);
     try {
       const { error } = await supabase.from('messages').insert({
         sender_id: session.user.id,
         receiver_id: activeStudentId,
-        content,
+        content: content || '',
         subject: null,
+        image_url: imageUrl || null,
       });
       if (error) throw error;
       await fetchData();
