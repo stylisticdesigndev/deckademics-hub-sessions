@@ -1,19 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, PlusCircle, Eye, EyeOff, Mail, Megaphone } from 'lucide-react';
+import { Eye, EyeOff, Mail, Megaphone, Inbox } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
+import { MessageCard } from '@/components/student/messages/MessageCard';
 
 interface DirectMessage {
   id: string;
@@ -44,7 +41,7 @@ const demoAnnouncements = [
   {
     id: 'demo-2',
     title: 'New Equipment in Classroom B',
-    content: 'We\'ve upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.',
+    content: "We've upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.",
     date: new Date(Date.now() - 2 * 86400000).toLocaleDateString(),
     instructor: { name: 'DJ Marcus', initials: 'DM' },
     isNew: true,
@@ -85,7 +82,6 @@ const StudentMessages = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState('all');
 
-  const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const isDemoMode = !session || demoMode;
 
   useEffect(() => {
@@ -142,7 +138,7 @@ const StudentMessages = () => {
           setAnnouncements([]);
         }
 
-        // Fetch direct messages
+        // Fetch direct messages (received by student)
         const { data: msgData } = await supabase
           .from('messages')
           .select(`
@@ -212,11 +208,42 @@ const StudentMessages = () => {
     }
   };
 
+  const handleReply = async (messageId: string, content: string) => {
+    if (isDemoMode) {
+      toast({ title: 'Reply sent (demo)' });
+      return;
+    }
+    // Find the original message to get the sender (instructor) as receiver
+    const originalMsg = messages.find(m => m.id === messageId);
+    if (!originalMsg || !session?.user?.id) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        sender_id: session.user.id,
+        receiver_id: originalMsg.sender_id,
+        subject: originalMsg.subject ? `Re: ${originalMsg.subject}` : null,
+        content,
+      });
+
+    if (error) {
+      toast({ title: 'Failed to send reply', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Reply sent!' });
+    }
+  };
+
   const filteredAnnouncements = announcementFilter === 'all'
     ? announcements
     : announcements.filter(a => a.type === announcementFilter);
 
   const unreadMsgCount = messages.filter(m => !m.read_at).length;
+
+  // Build "All" feed: merge messages and announcements sorted by date
+  const allItems = [
+    ...messages.map(m => ({ kind: 'message' as const, date: new Date(m.sent_at), data: m })),
+    ...announcements.map(a => ({ kind: 'announcement' as const, date: new Date(a.date), data: a })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return (
     <div className="space-y-6">
@@ -253,8 +280,12 @@ const StudentMessages = () => {
           <p className="text-muted-foreground">Loading messages...</p>
         </div>
       ) : (
-        <Tabs defaultValue="messages">
+        <Tabs defaultValue="all">
           <TabsList>
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <Inbox className="h-4 w-4" />
+              All
+            </TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Messages
@@ -270,40 +301,56 @@ const StudentMessages = () => {
             </TabsTrigger>
           </TabsList>
 
+          {/* ALL TAB */}
+          <TabsContent value="all">
+            {allItems.length > 0 ? (
+              <div className="space-y-3 mt-4">
+                {allItems.map(item => {
+                  if (item.kind === 'message') {
+                    const msg = item.data as DirectMessage;
+                    return (
+                      <MessageCard
+                        key={msg.id}
+                        message={msg}
+                        onMarkAsRead={handleMarkMessageAsRead}
+                        onReply={handleReply}
+                        isDemoMode={isDemoMode}
+                      />
+                    );
+                  }
+                  const ann = item.data as any;
+                  return (
+                    <AnnouncementCard
+                      key={ann.id}
+                      announcement={ann}
+                      onAcknowledge={handleMarkAnnouncementAsRead}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-medium">No messages or announcements yet</h3>
+                <p className="text-muted-foreground mt-2">
+                  Updates from your instructors and school will appear here.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* MESSAGES TAB */}
           <TabsContent value="messages">
             {messages.length > 0 ? (
               <div className="space-y-3 mt-4">
                 {messages.map(msg => (
-                  <Card
+                  <MessageCard
                     key={msg.id}
-                    className={`cursor-pointer transition-colors ${!msg.read_at ? 'border-primary/50 bg-primary/5' : ''}`}
-                    onClick={() => !msg.read_at && handleMarkMessageAsRead(msg.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10 shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {msg.senderInitials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm">{msg.senderName}</span>
-                            {!msg.read_at && (
-                              <Badge variant="default" className="text-xs px-1.5 py-0">New</Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              {format(new Date(msg.sent_at), 'MMM d, yyyy h:mm a')}
-                            </span>
-                          </div>
-                          {msg.subject && (
-                            <p className="font-medium text-sm mt-1">{msg.subject}</p>
-                          )}
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{msg.content}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    message={msg}
+                    onMarkAsRead={handleMarkMessageAsRead}
+                    onReply={handleReply}
+                    isDemoMode={isDemoMode}
+                  />
                 ))}
               </div>
             ) : (
@@ -317,6 +364,7 @@ const StudentMessages = () => {
             )}
           </TabsContent>
 
+          {/* ANNOUNCEMENTS TAB */}
           <TabsContent value="announcements">
             <div className="mt-4 space-y-4">
               <Tabs value={announcementFilter} onValueChange={setAnnouncementFilter}>
