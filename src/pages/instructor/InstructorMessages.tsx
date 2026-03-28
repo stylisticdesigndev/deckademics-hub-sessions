@@ -30,6 +30,7 @@ interface StudentOption {
   id: string;
   name: string;
   initials: string;
+  avatarUrl?: string | null;
 }
 
 const InstructorMessages = () => {
