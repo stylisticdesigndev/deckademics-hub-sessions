@@ -1330,6 +1330,137 @@ const InstructorStudents = () => {
                       </div>
                     )}
                   </TabsContent>
+                  
+                  <TabsContent value="tasks" className="space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Student Tasks</h3>
+                      <Button size="sm" onClick={() => setShowAddTask(true)} className="gap-1">
+                        <Plus className="h-3 w-3" /> Add Task
+                      </Button>
+                    </div>
+                    
+                    {showAddTask && (
+                      <div className="border rounded-md p-3 space-y-3">
+                        <Input
+                          placeholder="Task title..."
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                        />
+                        <Textarea
+                          placeholder="Description (optional)..."
+                          value={newTaskDescription}
+                          onChange={(e) => setNewTaskDescription(e.target.value)}
+                          className="min-h-[60px]"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { setShowAddTask(false); setNewTaskTitle(''); setNewTaskDescription(''); }}>
+                            Cancel
+                          </Button>
+                          <Button size="sm" disabled={!newTaskTitle.trim()} onClick={async () => {
+                            if (!detailedStudent || !instructorId || !newTaskTitle.trim()) return;
+                            try {
+                              const { error } = await supabase
+                                .from('student_tasks' as any)
+                                .insert({
+                                  student_id: detailedStudent.id,
+                                  instructor_id: instructorId,
+                                  title: newTaskTitle.trim(),
+                                  description: newTaskDescription.trim() || null,
+                                } as any);
+                              if (error) {
+                                toast({ title: "Error adding task", description: error.message, variant: "destructive" });
+                                return;
+                              }
+                              toast({ title: "Task added", description: "Task has been assigned to the student." });
+                              setNewTaskTitle('');
+                              setNewTaskDescription('');
+                              setShowAddTask(false);
+                              // Refresh tasks
+                              fetchStudentTasks(detailedStudent.id);
+                            } catch (err) {
+                              console.error('Error adding task:', err);
+                            }
+                          }}>
+                            Add Task
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loadingTasks ? (
+                      <div className="space-y-2">
+                        {[1, 2].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                      </div>
+                    ) : studentTasks.length > 0 ? (
+                      <div className="space-y-2">
+                        {[...studentTasks]
+                          .sort((a, b) => {
+                            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                          })
+                          .map((task) => (
+                          <div key={task.id} className="flex items-start gap-3 border rounded-md p-3 group">
+                            <Checkbox
+                              checked={task.completed}
+                              onCheckedChange={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('student_tasks' as any)
+                                    .update({ completed: !task.completed } as any)
+                                    .eq('id', task.id);
+                                  if (error) {
+                                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                                    return;
+                                  }
+                                  setStudentTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+                                } catch (err) {
+                                  console.error('Error toggling task:', err);
+                                }
+                              }}
+                              className="mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className={cn("text-sm font-medium", task.completed && "line-through text-muted-foreground")}>
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className={cn("text-xs text-muted-foreground mt-1", task.completed && "line-through")}>
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              onClick={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('student_tasks' as any)
+                                    .delete()
+                                    .eq('id', task.id);
+                                  if (error) {
+                                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                                    return;
+                                  }
+                                  setStudentTasks(prev => prev.filter(t => t.id !== task.id));
+                                  toast({ title: "Task deleted" });
+                                } catch (err) {
+                                  console.error('Error deleting task:', err);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No tasks assigned to this student yet.
+                      </div>
+                    )}
+                  </TabsContent>
                 </Tabs>
               </div>
             )}
