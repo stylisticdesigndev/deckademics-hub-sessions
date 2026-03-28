@@ -15,8 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 
 type CombinedNote = 
-  | { type: 'instructor'; data: StudentNote }
-  | { type: 'personal'; data: PersonalNote };
+  | { type: 'instructor'; data: StudentNote; created_at: string }
+  | { type: 'personal'; data: PersonalNote; created_at: string };
 
 function groupByDate<T extends { created_at: string }>(items: T[]) {
   const today = new Date();
