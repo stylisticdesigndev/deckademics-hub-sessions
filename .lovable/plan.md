@@ -1,68 +1,45 @@
 
 
-# Update Demo Modes + Fix Timeout/Refresh Issue
+# Fix Instructor Notes Display, Editing, and Date Format
 
-## Summary
-Two issues: (1) Demo modes on student Notes and student Messages pages don't show full mock data for recently added features, and instructor Announcements demo lacks dismiss. (2) The `ProtectedRoute` signs users out after 3 seconds if profile is slow to load, causing the "timeout refresh" issue.
+## Problem Analysis
 
-## 1. Fix Timeout Refresh Issue
+1. **Notes not reflecting**: The `handleAddNote` correctly INSERTs into the `student_notes` table, but `useInstructorStudentsSimple` reads from the legacy `students.notes` text column. These are completely different data sources -- notes are saved to one place but read from another.
 
-**File: `src/routes/ProtectedRoute.tsx`**
+2. **Notes not editable**: The Notes tab in the student detail dialog renders notes as plain text divs with no click/edit capability.
 
-The current logic starts a 500ms interval and after 3 seconds of no profile, shows an error toast and signs the user out. This fires during normal token refreshes when the profile fetch is momentarily slow.
+3. **Date format**: Enrollment date displays as `YYYY-MM-DD` (from `start_date.slice(0,10)`), not American `MM/DD/YYYY`.
 
-**Fix**: Increase the timeout from 3s to 8s, and only trigger the sign-out if there's genuinely no session user (not during a TOKEN_REFRESHED event). Also, reset the `waitTime` counter when `userData.role` becomes available, preventing stale timers from firing.
+## Changes
 
-**File: `src/providers/AuthProvider.tsx`**
+### 1. `src/hooks/instructor/useInstructorStudentsSimple.ts`
+- After fetching students, also query the `student_notes` table for all student IDs where `instructor_id` matches
+- Replace the legacy `students.notes` string splitting with actual `student_notes` records
+- Store notes as objects (id, content, title, created_at) instead of plain strings so they can be edited
 
-On `TOKEN_REFRESHED` events, the auth provider re-fetches the profile which can briefly leave `userData.role` as null. Add a guard so that `TOKEN_REFRESHED` events update the session without clearing userData, preventing the ProtectedRoute from thinking the profile is missing.
+### 2. `src/pages/instructor/InstructorStudents.tsx`
 
-## 2. Student Notes Demo Mode
+**Update the Student interface**:
+- Change `notes?: string[]` to `notes?: { id: string; content: string; title?: string; created_at: string }[]`
 
-**File: `src/pages/student/StudentNotes.tsx`**
+**Notes tab in student detail dialog** (lines 1262-1280):
+- Make each note clickable to open an edit dialog
+- Show note date and title
+- Add an edit dialog that UPDATEs the `student_notes` record by ID
 
-Currently, demo mode toggle exists but doesn't swap in mock data. When `demoMode` is true:
-- Override `instructorNotes` with `mockNotes` from `mockDashboardData.ts`
-- Add mock personal notes to `mockDashboardData.ts` (2-3 sample "My Note" entries)
-- Override `personalNotes` with those mock personal notes
-- Disable create/edit/delete actions with a demo mode toast
+**Add edit note handler**:
+- New state: `editingNoteId`, `editNoteText`, `showEditNoteDialog`
+- `handleEditNote` function that calls `supabase.from('student_notes').update({ content }).eq('id', noteId)`
 
-**File: `src/data/mockDashboardData.ts`**
+**Fix enrollment date format** (line 1154):
+- Format `detailedStudent.enrollmentDate` using `format(new Date(...), 'MM/dd/yyyy')` from date-fns
 
-Add `mockPersonalNotes` array with 2-3 entries matching the `PersonalNote` shape:
-- "Scratching practice routine" — personal practice plan
-- "Saved from Instructor — Mar 25" — simulating a "Save to Notes" action
-
-## 3. Student Messages Demo Mode
-
-**File: `src/pages/student/StudentMessages.tsx`**
-
-Currently, demo mode shows only 2 demo announcements and empty conversations. Add:
-- Demo conversations (2 instructor threads with mock messages) so the Messages tab and All tab show conversation items
-- Demo thread messages so clicking a demo conversation shows a mock thread with the "Save to Notes" bookmark button visible
-- The "Save to Notes" action should show a demo toast instead of actually saving
-
-**File: `src/data/mockDashboardData.ts`**
-
-Add `mockStudentConversations` and `mockStudentMessages` arrays with realistic DJ school instructor-student exchanges.
-
-## 4. Instructor Announcements Dismiss
-
-**File: `src/pages/instructor/InstructorAnnouncements.tsx`**
-
-Add `onDismiss` handler to `AnnouncementCard` matching the student pattern — uses `announcement_reads` table with `dismissed: true`. In demo mode, just filter the announcement out locally.
-
-## Files Changed
-1. `src/routes/ProtectedRoute.tsx` — increase timeout, guard against token refresh
-2. `src/providers/AuthProvider.tsx` — preserve userData during TOKEN_REFRESHED
-3. `src/data/mockDashboardData.ts` — add mock personal notes, mock student conversations/messages
-4. `src/pages/student/StudentNotes.tsx` — wire demo mode to mock data
-5. `src/pages/student/StudentMessages.tsx` — wire demo mode to show mock conversations + threads
-6. `src/pages/instructor/InstructorAnnouncements.tsx` — add dismiss functionality
+### 3. `src/hooks/instructor/useInstructorStudentsSimple.ts` — date format
+- Format `enrollmentDate` as `MM/DD/YYYY` when building student objects
 
 ## Technical Details
-- Mock personal notes use the same `PersonalNote` interface shape: `{ id, student_id, title, content, created_at, updated_at }`
-- Mock student messages use the existing `Message` interface and feed into the existing `conversations` useMemo
-- The ProtectedRoute timeout change from 3s to 8s accounts for slow networks without false sign-outs
-- AuthProvider change: on `TOKEN_REFRESHED`, skip the `setUserData` clear and only update session
+- The `student_notes` table has RLS allowing instructors to SELECT their own notes (`instructor_id = auth.uid()`)
+- The `student_notes` table has no UPDATE policy for instructors currently — a new RLS policy is needed: "Instructors can update their own notes" for UPDATE where `instructor_id = auth.uid()`
+- Uses `date-fns` `format` function already imported elsewhere in the project
+- The note objects carry their `id` so the edit dialog can target the correct row
 
