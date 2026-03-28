@@ -90,11 +90,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
 
         const studentIds = assignedStudents.map(s => s.id);
 
-        // Get progress data and notes in parallel
-        const [progressResult, notesResult] = await Promise.all([
+        // Get progress data, notes, and curriculum in parallel
+        const [progressResult, notesResult, modulesResult, lessonsResult] = await Promise.all([
           supabase
             .from('student_progress')
-            .select('student_id, proficiency')
+            .select('student_id, skill_name, proficiency')
             .in('student_id', studentIds),
           supabase
             .from('student_notes')
@@ -102,6 +102,14 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .eq('instructor_id', instructorId)
             .in('student_id', studentIds)
             .order('created_at', { ascending: false }),
+          supabase
+            .from('curriculum_modules')
+            .select('id, title, level, order_index')
+            .order('order_index', { ascending: true }),
+          supabase
+            .from('curriculum_lessons')
+            .select('id, module_id, title, order_index')
+            .order('order_index', { ascending: true }),
         ]);
 
         if (progressResult.error) {
@@ -110,6 +118,23 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
         if (notesResult.error) {
           console.error('Error fetching notes:', notesResult.error);
         }
+
+        const allModules = modulesResult.data || [];
+        const allLessons = lessonsResult.data || [];
+
+        // Group lessons by module
+        const lessonsByModule: { [moduleId: string]: typeof allLessons } = {};
+        allLessons.forEach((lesson) => {
+          if (!lessonsByModule[lesson.module_id]) lessonsByModule[lesson.module_id] = [];
+          lessonsByModule[lesson.module_id].push(lesson);
+        });
+
+        // Group student_progress skill_names by student
+        const progressSkillsByStudent: { [studentId: string]: Set<string> } = {};
+        (progressResult.data || []).forEach((row) => {
+          if (!progressSkillsByStudent[row.student_id]) progressSkillsByStudent[row.student_id] = new Set();
+          if (row.skill_name) progressSkillsByStudent[row.student_id].add(row.skill_name);
+        });
 
         // Calculate average progress for each student
         const progressById: { [id: string]: number } = {};
@@ -148,6 +173,26 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             }
           }
           
+          // Build moduleProgress for this student
+          const studentLevel = student.level || 'beginner';
+          const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
+          const studentModules = allModules.filter((m) => m.level === studentLevel);
+          const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {
+            const modLessons = lessonsByModule[mod.id] || [];
+            const lessons = modLessons.map((l) => ({
+              id: l.id,
+              title: l.title,
+              completed: studentSkills.has(l.title),
+            }));
+            const completedCount = lessons.filter((l) => l.completed).length;
+            return {
+              moduleId: mod.id,
+              moduleName: mod.title,
+              progress: modLessons.length ? Math.round((completedCount / modLessons.length) * 100) : 0,
+              lessons,
+            };
+          });
+
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
@@ -160,6 +205,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             lastActive: '',
             nextClass: '',
             notes: notesById[student.id] || [],
+            moduleProgress,
           };
         });
 
