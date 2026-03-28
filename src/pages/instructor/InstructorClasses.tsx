@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, X, Eye, EyeOff } from 'lucide-react';
+import { Search, X, Eye, EyeOff, Calendar, CalendarDays, CalendarRange } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
@@ -14,10 +13,12 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorClasses } from '@/data/mockInstructorData';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, parse } from 'date-fns';
 
 interface Student {
   id: string;
@@ -34,11 +35,38 @@ interface ClassSession {
   duration: string;
   room: string;
   student: Student;
+  _rawDate?: Date;
 }
+
+type ViewMode = 'day' | 'week' | 'month';
+
+const parseClassDate = (dateStr: string): Date => {
+  // Try parsing as a locale date string or ISO
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) return parsed;
+  // Fallback: try common US format
+  try {
+    return parse(dateStr, 'M/d/yyyy', new Date());
+  } catch {
+    return new Date();
+  }
+};
+
+const getDateRange = (mode: ViewMode): { start: Date; end: Date } => {
+  const now = new Date();
+  switch (mode) {
+    case 'day':
+      return { start: startOfDay(now), end: endOfDay(now) };
+    case 'week':
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    case 'month':
+      return { start: startOfMonth(now), end: endOfMonth(now) };
+  }
+};
 
 const InstructorClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [classes, setClasses] = useState<ClassSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
@@ -126,7 +154,8 @@ const InstructorClasses = () => {
               date: startTime.toLocaleDateString(),
               time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               duration: `${durationMinutes} min`, room: cls.location || 'Main Studio',
-              student: { id: 'none', name: 'No students enrolled', initials: 'NS' }
+              student: { id: 'none', name: 'No students enrolled', initials: 'NS' },
+              _rawDate: startTime
             });
           } else {
             students.forEach((student: Student) => {
@@ -134,7 +163,8 @@ const InstructorClasses = () => {
                 id: `${cls.id}-${student.id}`, week: `Week ${weekNumber}`, title: cls.title,
                 date: startTime.toLocaleDateString(),
                 time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                duration: `${durationMinutes} min`, room: cls.location || 'Main Studio', student
+                duration: `${durationMinutes} min`, room: cls.location || 'Main Studio', student,
+                _rawDate: startTime
               });
             });
           }
@@ -154,17 +184,19 @@ const InstructorClasses = () => {
   const activeClasses = demoMode ? mockInstructorClasses : classes;
   const isLoading = !demoMode && loading;
 
-  const filteredClasses = activeClasses.filter(cls => 
+  const { start, end } = getDateRange(viewMode);
+
+  const filteredClasses = activeClasses.filter(cls => {
+    const classDate = (cls as ClassSession)._rawDate || parseClassDate(cls.date);
+    return isWithinInterval(classDate, { start, end });
+  }).filter(cls =>
     cls.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.week.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.student.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(cls => {
-    if (filter === 'all') return true;
-    return cls.week === filter;
-  });
-  
-  const weekOptions = [...new Set(activeClasses.map(cls => cls.week))];
+  );
+
+  const viewLabel = viewMode === 'day' ? "Today's" : viewMode === 'week' ? "This Week's" : "This Month's";
 
   return (
     <TooltipProvider>
@@ -177,7 +209,7 @@ const InstructorClasses = () => {
           </Alert>
         )}
 
-        <section className="flex items-start justify-between">
+        <section className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Class Schedule</h1>
             <p className="text-muted-foreground mt-2">Manage your upcoming DJ classes</p>
@@ -206,62 +238,74 @@ const InstructorClasses = () => {
               </Tooltip>
             )}
           </div>
-          <div className="w-full sm:w-auto min-w-[200px]">
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger><SelectValue placeholder="Filter by Week" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Weeks</SelectItem>
-                {weekOptions.map((week) => (<SelectItem key={week} value={week}>{week}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
+            className="border rounded-md"
+          >
+            <ToggleGroupItem value="day" aria-label="Day view" className="px-3 gap-1.5">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Day</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="week" aria-label="Week view" className="px-3 gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              <span className="hidden sm:inline">Week</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="month" aria-label="Month view" className="px-3 gap-1.5">
+              <CalendarRange className="h-4 w-4" />
+              <span className="hidden sm:inline">Month</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         
         <Card>
-          <CardHeader><CardTitle>Upcoming Classes</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{viewLabel} Classes</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Class Room</TableHead>
-                    <TableHead>Class Week</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClasses.length > 0 ? (
-                    filteredClasses.map((cls) => (
-                      <TableRow key={cls.id} className="py-4">
-                        <TableCell className="py-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs bg-muted">{cls.student.initials}</AvatarFallback>
-                            </Avatar>
-                            <span>{cls.student.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4">{cls.date}</TableCell>
-                        <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
-                        <TableCell className="py-4">{cls.room}</TableCell>
-                        <TableCell className="py-4">{cls.week}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        {activeClasses.length === 0 ? "No classes found. Schedule a class to get started." : "No scheduled classes match your search criteria."}
-                      </TableCell>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead className="hidden sm:table-cell">Class Room</TableHead>
+                      <TableHead className="hidden md:table-cell">Class Week</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredClasses.length > 0 ? (
+                      filteredClasses.map((cls) => (
+                        <TableRow key={cls.id} className="py-4">
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs bg-muted">{cls.student.initials}</AvatarFallback>
+                              </Avatar>
+                              <span className="truncate max-w-[120px] sm:max-w-none">{cls.student.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">{cls.date}</TableCell>
+                          <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
+                          <TableCell className="py-4 hidden sm:table-cell">{cls.room}</TableCell>
+                          <TableCell className="py-4 hidden md:table-cell">{cls.week}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          {activeClasses.length === 0 ? "No classes found. Schedule a class to get started." : `No classes found for this ${viewMode}.`}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

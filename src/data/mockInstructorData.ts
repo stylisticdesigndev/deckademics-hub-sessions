@@ -12,12 +12,19 @@ export const mockInstructorDashboard = {
   totalStudents: 4,
 };
 
+const today = new Date();
+const formatMockDate = (offset: number) => {
+  const d = new Date(today);
+  d.setDate(d.getDate() + offset);
+  return d.toLocaleDateString();
+};
+
 export const mockInstructorClasses = [
   {
     id: 'demo-c1',
     week: 'Week 4',
     title: 'Beginner Class',
-    date: 'Today',
+    date: formatMockDate(0),
     time: '2:00 PM',
     duration: '90 min',
     room: 'Classroom 1',
@@ -27,7 +34,7 @@ export const mockInstructorClasses = [
     id: 'demo-c2',
     week: 'Week 7',
     title: 'Intermediate Class',
-    date: 'Today',
+    date: formatMockDate(0),
     time: '4:00 PM',
     duration: '90 min',
     room: 'Classroom 2',
@@ -37,7 +44,7 @@ export const mockInstructorClasses = [
     id: 'demo-c3',
     week: 'Week 7',
     title: 'Intermediate Class',
-    date: 'Today',
+    date: formatMockDate(0),
     time: '4:00 PM',
     duration: '90 min',
     room: 'Classroom 2',
@@ -47,7 +54,7 @@ export const mockInstructorClasses = [
     id: 'demo-c4',
     week: 'Week 10',
     title: 'Advanced Class',
-    date: 'Tomorrow',
+    date: formatMockDate(1),
     time: '6:00 PM',
     duration: '120 min',
     room: 'Classroom 3',
@@ -57,7 +64,7 @@ export const mockInstructorClasses = [
     id: 'demo-c5',
     week: 'Week 4',
     title: 'Beginner Class',
-    date: 'Next Monday',
+    date: formatMockDate(5),
     time: '2:00 PM',
     duration: '90 min',
     room: 'Classroom 1',
@@ -67,11 +74,31 @@ export const mockInstructorClasses = [
     id: 'demo-c6',
     week: 'Week 8',
     title: 'Intermediate Class',
-    date: 'Next Wednesday',
+    date: formatMockDate(7),
     time: '4:00 PM',
     duration: '90 min',
     room: 'Classroom 2',
     student: { id: 'demo-s1', name: 'Marcus Chen', initials: 'MC' },
+  },
+  {
+    id: 'demo-c7',
+    week: 'Week 5',
+    title: 'Beginner Class',
+    date: formatMockDate(-2),
+    time: '10:00 AM',
+    duration: '90 min',
+    room: 'Classroom 1',
+    student: { id: 'demo-s2', name: 'Sarah Williams', initials: 'SW' },
+  },
+  {
+    id: 'demo-c8',
+    week: 'Week 11',
+    title: 'Advanced Class',
+    date: formatMockDate(20),
+    time: '6:00 PM',
+    duration: '120 min',
+    room: 'Classroom 3',
+    student: { id: 'demo-s3', name: 'Jordan Davis', initials: 'JD' },
   },
 ];
 
