@@ -644,9 +644,9 @@ const InstructorStudents = () => {
       }
 
       // Update local state only after successful database update
-      setStudents(prevStudents => prevStudents.map(student => {
-        if (student.id === studentId && student.moduleProgress) {
-          const updatedModules = student.moduleProgress.map(module => {
+      const updateStudentProgress = (s: Student) => {
+        if (s.id === studentId && s.moduleProgress) {
+          const updatedModules = s.moduleProgress.map(module => {
             if (module.moduleId === moduleId) {
               const updatedLessons = module.lessons.map(lesson => 
                 lesson.id === lessonId ? { ...lesson, completed: newCompletionState } : lesson
@@ -670,13 +670,20 @@ const InstructorStudents = () => {
           );
           
           return { 
-            ...student, 
+            ...s, 
             moduleProgress: updatedModules,
             progress: overallProgress
           };
         }
-        return student;
-      }));
+        return s;
+      };
+
+      setStudents(prevStudents => prevStudents.map(updateStudentProgress));
+      
+      // Also sync detailedStudent so the modal updates live
+      if (detailedStudent && detailedStudent.id === studentId) {
+        setDetailedStudent(prev => prev ? updateStudentProgress(prev) : prev);
+      }
       
       toast({
         title: "Lesson status updated",
@@ -1157,10 +1164,11 @@ const InstructorStudents = () => {
                 </DialogHeader>
                 
                 <Tabs defaultValue="info">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="info">Info</TabsTrigger>
                     <TabsTrigger value="progress">Progress</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
+                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="info" className="space-y-4">
