@@ -55,14 +55,14 @@ export const InstructorNavigation = () => {
       icon: MessageSquare,
       href: "/instructor/messages",
       active: pathname === "/instructor/messages",
-      tooltip: "View messages and notifications"
+      tooltip: "Message your students"
     },
     {
       title: "Announcements",
       icon: Bell,
       href: "/instructor/announcements",
       active: pathname === "/instructor/announcements",
-      tooltip: "Post and view announcements"
+      tooltip: "View admin announcements"
     },
     {
       title: "Profile",
