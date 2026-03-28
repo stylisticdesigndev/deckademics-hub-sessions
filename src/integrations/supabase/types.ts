@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           announcement_id: string
           created_at: string | null
+          dismissed: boolean
           id: string
           read_at: string | null
           user_id: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           announcement_id: string
           created_at?: string | null
+          dismissed?: boolean
           id?: string
           read_at?: string | null
           user_id: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           announcement_id?: string
           created_at?: string | null
+          dismissed?: boolean
           id?: string
           read_at?: string | null
           user_id?: string
