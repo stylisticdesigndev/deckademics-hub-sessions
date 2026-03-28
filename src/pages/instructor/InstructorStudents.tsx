@@ -412,9 +412,9 @@ const InstructorStudents = () => {
         console.error('Error checking existing progress:', selectError);
       }
 
-      // Convert percentage (0-100) to proficiency scale (1-10) - ensure proper conversion
-      const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10) || 1));
-      console.log('Converting progress:', progressValue, '% to proficiency:', proficiencyValue);
+      // Store the raw percentage value (0-100) directly as proficiency
+      const proficiencyValue = Math.max(0, Math.min(100, progressValue));
+      console.log('Storing progress as proficiency:', proficiencyValue);
 
       if (existingProgress) {
         console.log('Updating existing progress record:', existingProgress.id);
@@ -471,14 +471,21 @@ const InstructorStudents = () => {
 
       setShowProgressDialog(false);
       
+      // Immediately update local state so the UI reflects the new progress
+      setStudents(prev => prev.map(s => 
+        s.id === selectedStudent ? { ...s, progress: progressValue } : s
+      ));
+      if (detailedStudent && detailedStudent.id === selectedStudent) {
+        setDetailedStudent(prev => prev ? { ...prev, progress: progressValue } : prev);
+      }
+      
       toast({
         title: "Progress updated",
         description: `Student progress has been successfully saved (${progressValue}%).`,
       });
 
-      // Refresh data from database immediately
-      console.log('Refreshing student data after progress update...');
-      await refetch();
+      // Also refresh from database in background
+      refetch();
 
     } catch (error) {
       console.error('Unexpected error updating progress:', error);
@@ -1120,7 +1127,7 @@ const InstructorStudents = () => {
                 value={[progressValue]}
                 min={0}
                 max={100}
-                step={10}
+                step={5}
                 onValueChange={([value]) => setProgressValue(value)}
               />
             </div>
