@@ -78,6 +78,7 @@ const StudentMessages = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState('all');
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
   const isDemoMode = !session || demoMode;
 
@@ -335,7 +336,7 @@ const StudentMessages = () => {
           <p className="text-muted-foreground">Loading messages...</p>
         </div>
       ) : (
-        <Tabs defaultValue="all">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all" className="flex items-center gap-2">
               <Inbox className="h-4 w-4" />
@@ -356,25 +357,50 @@ const StudentMessages = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* ALL TAB */}
+          {/* ALL TAB — limited to 5 most recent */}
           <TabsContent value="all">
-            {(conversations.length > 0 || announcements.length > 0) ? (
-              <div className="space-y-3 mt-4">
-                {/* Show conversations first, then announcements */}
-                {conversations.map(convo => (
-                  <ConversationItem key={convo.instructorId} conversation={convo} onClick={() => setActiveInstructorId(convo.instructorId)} />
-                ))}
-                {announcements.map(ann => (
-                  <AnnouncementCard key={ann.id} announcement={ann} onAcknowledge={handleMarkAnnouncementAsRead} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium">No messages or announcements yet</h3>
-                <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
-              </div>
-            )}
+            {(() => {
+              const combined: { type: 'conversation' | 'announcement'; date: Date; data: any }[] = [
+                ...conversations.map(c => ({ type: 'conversation' as const, date: new Date(c.lastMessageAt), data: c })),
+                ...announcements.map(a => ({ type: 'announcement' as const, date: new Date(a.date), data: a })),
+              ];
+              combined.sort((a, b) => b.date.getTime() - a.date.getTime());
+              const recent = combined.slice(0, 5);
+
+              if (recent.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-medium">No messages or announcements yet</h3>
+                    <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3 mt-4">
+                  {recent.map(item =>
+                    item.type === 'conversation' ? (
+                      <ConversationItem key={item.data.instructorId} conversation={item.data} onClick={() => setActiveInstructorId(item.data.instructorId)} />
+                    ) : (
+                      <AnnouncementCard key={item.data.id} announcement={item.data} onAcknowledge={handleMarkAnnouncementAsRead} />
+                    )
+                  )}
+                  <div className="flex items-center justify-between pt-2">
+                    {conversations.length > 0 && (
+                      <button onClick={() => setActiveTab('messages')} className="text-sm text-primary hover:underline">
+                        View all messages →
+                      </button>
+                    )}
+                    {announcements.length > 0 && (
+                      <button onClick={() => setActiveTab('announcements')} className="text-sm text-primary hover:underline">
+                        View all announcements →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* MESSAGES TAB */}
