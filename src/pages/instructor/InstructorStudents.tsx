@@ -100,6 +100,26 @@ const InstructorStudents = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
+
+  const fetchStudentTasks = async (studentId: string) => {
+    setLoadingTasks(true);
+    try {
+      const { data, error } = await supabase
+        .from('student_tasks' as any)
+        .select('id, title, description, completed, created_at')
+        .eq('instructor_id', instructorId)
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching tasks:', error);
+      } else {
+        setStudentTasks((data || []) as any);
+      }
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+    }
+    setLoadingTasks(false);
+  };
   
   const curriculumModules = [
     {
