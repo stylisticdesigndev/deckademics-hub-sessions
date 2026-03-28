@@ -1279,9 +1279,28 @@ const InstructorStudents = () => {
                     
                     {detailedStudent.notes?.length ? (
                       <div className="space-y-3">
-                        {detailedStudent.notes.map((note, index) => (
-                          <div key={index} className="border rounded-md p-3 text-sm">
-                            {note}
+                        {detailedStudent.notes.map((note) => (
+                          <div 
+                            key={note.id} 
+                            className="border rounded-md p-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors group"
+                            onClick={() => {
+                              setEditingNote(note);
+                              setEditNoteText(note.content);
+                              setShowEditNoteDialog(true);
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                {note.title && (
+                                  <p className="font-medium text-foreground mb-1">{note.title}</p>
+                                )}
+                                <p className="text-muted-foreground">{note.content}</p>
+                              </div>
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {format(new Date(note.created_at), 'MM/dd/yyyy h:mm a')}
+                            </p>
                           </div>
                         ))}
                       </div>
