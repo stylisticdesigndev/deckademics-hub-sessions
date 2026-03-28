@@ -97,6 +97,17 @@ export const AnnouncementCard = ({
             Mark as read
           </Button>
         )}
+        {onDismiss && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-destructive hover:text-destructive"
+            onClick={() => onDismiss(announcement.id)}
+          >
+            <X className="h-3 w-3 mr-1" />
+            Dismiss
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
