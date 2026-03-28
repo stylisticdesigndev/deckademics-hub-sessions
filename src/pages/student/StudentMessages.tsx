@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Megaphone, Inbox } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
+import { AnnouncementCard, type Announcement } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -46,24 +46,41 @@ interface AuthorProfile {
   last_name?: string;
 }
 
-const demoAnnouncements = [
+interface AnnouncementReadRecord {
+  id: string;
+  read_at: string | null;
+  user_id: string;
+  dismissed?: boolean;
+}
+
+type StudentAnnouncement = Announcement & {
+  publishedAt: string;
+};
+
+type RecentFeedItem =
+  | { type: 'conversation'; data: Conversation; sortDate: Date }
+  | { type: 'announcement'; data: StudentAnnouncement; sortDate: Date };
+
+const demoAnnouncements: StudentAnnouncement[] = [
   {
     id: 'demo-1',
     title: 'Spring Showcase Performance — Sign Up Now!',
     content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set.',
     date: new Date().toLocaleDateString(),
+    publishedAt: new Date().toISOString(),
     instructor: { name: 'Admin', initials: 'DA' },
     isNew: true,
-    type: 'event' as const,
+    type: 'event',
   },
   {
     id: 'demo-2',
     title: 'New Equipment in Classroom B',
     content: "We've upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.",
     date: new Date(Date.now() - 2 * 86400000).toLocaleDateString(),
+    publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
     instructor: { name: 'DJ Marcus', initials: 'DM' },
     isNew: true,
-    type: 'announcement' as const,
+    type: 'announcement',
   },
 ];
 
@@ -72,7 +89,7 @@ const StudentMessages = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
   const [demoMode, setDemoMode] = useState(false);
@@ -81,6 +98,7 @@ const StudentMessages = () => {
   const [activeTab, setActiveTab] = useState('all');
 
   const isDemoMode = !session || demoMode;
+  const userId = session?.user?.id;
 
   useEffect(() => {
     if (isDemoMode) {
@@ -95,46 +113,57 @@ const StudentMessages = () => {
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Fetch announcements
       const { data: annData } = await supabase
         .from('announcements')
         .select(`
           id, title, content, published_at, author_id, type,
           profiles:author_id (first_name, last_name),
-          announcement_reads!left (id, read_at, user_id)
+          announcement_reads!left (id, read_at, user_id, dismissed)
         `)
         .contains('target_role', ['student'])
         .order('published_at', { ascending: false });
 
       if (annData && annData.length > 0) {
-        setAnnouncements(annData.map((ann: any) => {
+        const visibleAnnouncements = annData.reduce((items: StudentAnnouncement[], ann: any) => {
           const authorProfile = ann.profiles as AuthorProfile;
-          const readRecords = Array.isArray(ann.announcement_reads)
-            ? ann.announcement_reads.filter((r: any) => r.user_id === user.id)
+          const readRecords: AnnouncementReadRecord[] = Array.isArray(ann.announcement_reads)
+            ? ann.announcement_reads.filter((record: AnnouncementReadRecord) => record.user_id === user.id)
             : [];
-          return {
+
+          if (readRecords.some(record => record.dismissed)) {
+            return items;
+          }
+
+          items.push({
             id: ann.id,
             title: ann.title || 'Announcement',
             content: ann.content || '',
             date: new Date(ann.published_at).toLocaleDateString(),
+            publishedAt: ann.published_at,
             instructor: {
               name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
-              initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
+              initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A',
             },
             isNew: readRecords.length === 0,
             type: ann.type || 'announcement',
-          };
-        }));
+          });
+
+          return items;
+        }, []);
+
+        setAnnouncements(visibleAnnouncements);
       } else {
         setAnnouncements([]);
       }
 
-      // Fetch ALL messages (sent and received) for this student
       const { data: msgData } = await supabase
         .from('messages')
         .select('id, sender_id, receiver_id, subject, content, sent_at, read_at, image_url')
@@ -144,10 +173,9 @@ const StudentMessages = () => {
       if (msgData) {
         setAllMessages(msgData as Message[]);
 
-        // Collect unique instructor IDs (the "other" person)
         const otherIds = new Set<string>();
-        for (const m of msgData) {
-          const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        for (const message of msgData) {
+          const otherId = message.sender_id === user.id ? message.receiver_id : message.sender_id;
           otherIds.add(otherId);
         }
 
@@ -158,11 +186,11 @@ const StudentMessages = () => {
             .in('id', Array.from(otherIds));
 
           if (profiles) {
-            setInstructors(profiles.map(p => ({
-              id: p.id,
-              name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Instructor',
-              initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
-              avatarUrl: p.avatar_url,
+            setInstructors(profiles.map(profile => ({
+              id: profile.id,
+              name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor',
+              initials: `${(profile.first_name || ' ')[0]}${(profile.last_name || ' ')[0]}`.toUpperCase(),
+              avatarUrl: profile.avatar_url,
             })));
           }
         }
@@ -176,27 +204,24 @@ const StudentMessages = () => {
     }
   };
 
-  const userId = session?.user?.id;
-
-  // Build conversations grouped by instructor
   const conversations = useMemo((): Conversation[] => {
     if (!userId || isDemoMode) return [];
 
-    const instructorMap = new Map(instructors.map(i => [i.id, i]));
+    const instructorMap = new Map(instructors.map(instructor => [instructor.id, instructor]));
     const grouped = new Map<string, Message[]>();
 
-    for (const msg of allMessages) {
-      const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+    for (const message of allMessages) {
+      const otherId = message.sender_id === userId ? message.receiver_id : message.sender_id;
       if (!grouped.has(otherId)) grouped.set(otherId, []);
-      grouped.get(otherId)!.push(msg);
+      grouped.get(otherId)!.push(message);
     }
 
     const result: Conversation[] = [];
-    for (const [instructorId, msgs] of grouped) {
+    for (const [instructorId, messages] of grouped) {
       const instructor = instructorMap.get(instructorId);
-      const sorted = msgs.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+      const sorted = messages.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
       const last = sorted[sorted.length - 1];
-      const unreadCount = sorted.filter(m => m.receiver_id === userId && !m.read_at).length;
+      const unreadCount = sorted.filter(message => message.receiver_id === userId && !message.read_at).length;
 
       result.push({
         instructorId,
@@ -212,34 +237,94 @@ const StudentMessages = () => {
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
   }, [allMessages, instructors, userId, isDemoMode]);
 
-  // Thread messages for active conversation
+  const recentItems = useMemo((): RecentFeedItem[] => {
+    return [
+      ...conversations.map(conversation => ({
+        type: 'conversation' as const,
+        data: conversation,
+        sortDate: new Date(conversation.lastMessageAt),
+      })),
+      ...announcements.map(announcement => ({
+        type: 'announcement' as const,
+        data: announcement,
+        sortDate: new Date(announcement.publishedAt),
+      })),
+    ]
+      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+      .slice(0, 5);
+  }, [announcements, conversations]);
+
   const threadMessages = useMemo(() => {
     if (!activeInstructorId || !userId) return [];
+
     return allMessages
-      .filter(m =>
-        (m.sender_id === userId && m.receiver_id === activeInstructorId) ||
-        (m.sender_id === activeInstructorId && m.receiver_id === userId)
+      .filter(message =>
+        (message.sender_id === userId && message.receiver_id === activeInstructorId) ||
+        (message.sender_id === activeInstructorId && message.receiver_id === userId)
       )
       .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
   }, [activeInstructorId, allMessages, userId]);
 
-  // Mark unread messages as read when opening a thread
   useEffect(() => {
     if (!activeInstructorId || isDemoMode || !userId) return;
-    const unread = threadMessages.filter(m => m.receiver_id === userId && !m.read_at);
+
+    const unread = threadMessages.filter(message => message.receiver_id === userId && !message.read_at);
     if (unread.length === 0) return;
 
     const markRead = async () => {
-      const ids = unread.map(m => m.id);
-      await supabase.from('messages').update({ read_at: new Date().toISOString() }).in('id', ids);
-      setAllMessages(prev => prev.map(m => ids.includes(m.id) ? { ...m, read_at: new Date().toISOString() } : m));
+      const ids = unread.map(message => message.id);
+      const now = new Date().toISOString();
+
+      await supabase.from('messages').update({ read_at: now }).in('id', ids);
+      setAllMessages(prev => prev.map(message => ids.includes(message.id) ? { ...message, read_at: now } : message));
       queryClient.invalidateQueries({ queryKey: ['unread-messages-count'] });
     };
+
     markRead();
-  }, [activeInstructorId, threadMessages]);
+  }, [activeInstructorId, isDemoMode, queryClient, threadMessages, userId]);
+
+  const saveAnnouncementReadState = async (
+    announcementId: string,
+    values: { read_at?: string; dismissed?: boolean },
+  ) => {
+    if (!userId) return;
+
+    const { data: existingRecords, error: existingError } = await supabase
+      .from('announcement_reads')
+      .select('id')
+      .eq('announcement_id', announcementId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (existingError) throw existingError;
+
+    const existingRecord = existingRecords?.[0];
+
+    if (existingRecord) {
+      const { error: updateError } = await supabase
+        .from('announcement_reads')
+        .update(values)
+        .eq('id', existingRecord.id);
+
+      if (updateError) throw updateError;
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from('announcement_reads')
+      .insert({
+        announcement_id: announcementId,
+        user_id: userId,
+        ...values,
+      });
+
+    if (insertError) throw insertError;
+  };
 
   const handleSendReply = async (content: string) => {
     if (isDemoMode || !userId || !activeInstructorId) return;
+
     try {
       const { error } = await supabase.from('messages').insert({
         sender_id: userId,
@@ -247,6 +332,7 @@ const StudentMessages = () => {
         content,
         subject: null,
       });
+
       if (error) throw error;
       await fetchData();
     } catch {
@@ -256,28 +342,46 @@ const StudentMessages = () => {
 
   const handleMarkAnnouncementAsRead = async (id: string) => {
     if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
+      setAnnouncements(prev => prev.map(announcement => announcement.id === id ? { ...announcement, isNew: false } : announcement));
       toast({ title: 'Marked as read' });
       return;
     }
-    const { error } = await supabase
-      .from('announcement_reads')
-      .insert({ announcement_id: id, user_id: session?.user?.id });
-    if (!error) {
-      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
+
+    try {
+      await saveAnnouncementReadState(id, { read_at: new Date().toISOString(), dismissed: false });
+      setAnnouncements(prev => prev.map(announcement => announcement.id === id ? { ...announcement, isNew: false } : announcement));
       toast({ title: 'Marked as read' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
+    }
+  };
+
+  const handleDismissAnnouncement = async (id: string) => {
+    if (isDemoMode || id.startsWith('demo-')) {
+      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
+      toast({ title: 'Announcement removed' });
+      return;
+    }
+
+    try {
+      await saveAnnouncementReadState(id, {
+        read_at: new Date().toISOString(),
+        dismissed: true,
+      });
+      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
+      toast({ title: 'Announcement removed' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove announcement.' });
     }
   };
 
   const filteredAnnouncements = announcementFilter === 'all'
     ? announcements
-    : announcements.filter(a => a.type === announcementFilter);
+    : announcements.filter(announcement => announcement.type === announcementFilter);
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const totalUnread = conversations.reduce((sum, conversation) => sum + conversation.unreadCount, 0);
+  const activeConvo = activeInstructorId ? conversations.find(conversation => conversation.instructorId === activeInstructorId) : null;
 
-  const activeConvo = activeInstructorId ? conversations.find(c => c.instructorId === activeInstructorId) : null;
-
-  // Thread view
   if (activeInstructorId && activeConvo) {
     return (
       <div className="space-y-6">
@@ -312,7 +416,7 @@ const StudentMessages = () => {
         </div>
         {session && (
           <Button
-            variant={demoMode ? "default" : "outline"}
+            variant={demoMode ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDemoMode(!demoMode)}
             className="flex items-center gap-2"
@@ -357,46 +461,44 @@ const StudentMessages = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* ALL TAB — limited to 5 most recent */}
           <TabsContent value="all">
-            {(() => {
-              const combined: { type: 'conversation' | 'announcement'; date: Date; data: any }[] = [
-                ...conversations.map(c => ({ type: 'conversation' as const, date: new Date(c.lastMessageAt), data: c })),
-                ...announcements.map(a => ({ type: 'announcement' as const, date: new Date(a.date), data: a })),
-              ];
-              combined.sort((a, b) => b.date.getTime() - a.date.getTime());
-              const recent = combined.slice(0, 5);
-
-              if (recent.length === 0) {
-                return (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-medium">No messages or announcements yet</h3>
-                    <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="space-y-3 mt-4">
-                  {recent.map(item =>
-                    item.type === 'conversation' ? (
-                      <ConversationItem key={item.data.instructorId} conversation={item.data} onClick={() => setActiveInstructorId(item.data.instructorId)} />
-                    ) : (
-                      <AnnouncementCard key={item.data.id} announcement={item.data} onAcknowledge={handleMarkAnnouncementAsRead} />
-                    )
-                  )}
-                </div>
-              );
-            })()}
+            {recentItems.length > 0 ? (
+              <div className="space-y-3 mt-4">
+                {recentItems.map(item =>
+                  item.type === 'conversation' ? (
+                    <ConversationItem
+                      key={item.data.instructorId}
+                      conversation={item.data}
+                      onClick={() => setActiveInstructorId(item.data.instructorId)}
+                    />
+                  ) : (
+                    <AnnouncementCard
+                      key={item.data.id}
+                      announcement={item.data}
+                      onAcknowledge={handleMarkAnnouncementAsRead}
+                      onDismiss={handleDismissAnnouncement}
+                    />
+                  )
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-medium">No messages or announcements yet</h3>
+                <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
+              </div>
+            )}
           </TabsContent>
 
-          {/* MESSAGES TAB */}
           <TabsContent value="messages">
             {conversations.length > 0 ? (
               <div className="space-y-3 mt-4">
-                {conversations.map(convo => (
-                  <ConversationItem key={convo.instructorId} conversation={convo} onClick={() => setActiveInstructorId(convo.instructorId)} />
+                {conversations.map(conversation => (
+                  <ConversationItem
+                    key={conversation.instructorId}
+                    conversation={conversation}
+                    onClick={() => setActiveInstructorId(conversation.instructorId)}
+                  />
                 ))}
               </div>
             ) : (
@@ -408,7 +510,6 @@ const StudentMessages = () => {
             )}
           </TabsContent>
 
-          {/* ANNOUNCEMENTS TAB */}
           <TabsContent value="announcements">
             <div className="mt-4 space-y-4">
               <Tabs value={announcementFilter} onValueChange={setAnnouncementFilter}>
@@ -423,7 +524,12 @@ const StudentMessages = () => {
               {filteredAnnouncements.length > 0 ? (
                 <div className="space-y-4">
                   {filteredAnnouncements.map(announcement => (
-                    <AnnouncementCard key={announcement.id} announcement={announcement} onAcknowledge={handleMarkAnnouncementAsRead} />
+                    <AnnouncementCard
+                      key={announcement.id}
+                      announcement={announcement}
+                      onAcknowledge={handleMarkAnnouncementAsRead}
+                      onDismiss={handleDismissAnnouncement}
+                    />
                   ))}
                 </div>
               ) : (
@@ -441,7 +547,6 @@ const StudentMessages = () => {
   );
 };
 
-// Conversation list item component
 const ConversationItem = ({ conversation, onClick }: { conversation: Conversation; onClick: () => void }) => {
   return (
     <div
