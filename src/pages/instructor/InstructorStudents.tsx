@@ -138,9 +138,12 @@ const InstructorStudents = () => {
   
   // Update students when fetched data changes
   useEffect(() => {
-    console.log('useEffect triggered - fetchedStudents:', fetchedStudents);
-    setStudents(fetchedStudents);
-  }, [fetchedStudents]);
+    if (demoMode) {
+      setStudents(mockInstructorStudents as Student[]);
+    } else {
+      setStudents(fetchedStudents);
+    }
+  }, [fetchedStudents, demoMode]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
