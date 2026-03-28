@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
@@ -20,7 +18,7 @@ const InstructorDashboard = () => {
   } = useInstructorDashboard();
   
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <WelcomeSection />
 
@@ -59,7 +57,7 @@ const InstructorDashboard = () => {
           <StudentTable students={students} />
         </section>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

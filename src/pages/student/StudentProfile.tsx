@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -192,7 +190,7 @@ const StudentProfile = () => {
     : '?';
 
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         <section className="flex items-start justify-between">
           <div>
@@ -383,7 +381,7 @@ const StudentProfile = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

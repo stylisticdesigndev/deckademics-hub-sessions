@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { InstructorNavigation } from "@/components/navigation/InstructorNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -699,7 +697,7 @@ const InstructorStudents = () => {
   };
   
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-bold">Student Management</h1>
@@ -1224,7 +1222,7 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

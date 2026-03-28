@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { useStudentDashboard } from '@/hooks/student/useStudentDashboard';
 import { StudentStatsSection } from '@/components/student/dashboard/StudentStatsSection';
 import { OverallProgressRing } from '@/components/student/dashboard/OverallProgressRing';
@@ -79,21 +77,21 @@ const StudentDashboard = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+      <>
         <DashboardSkeleton />
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!session) {
     return (
-      <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+      <>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Authentication Required</AlertTitle>
           <AlertDescription>Please sign in to access your student dashboard.</AlertDescription>
         </Alert>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -114,7 +112,7 @@ const StudentDashboard = () => {
   const activeAnnouncements = demoMode ? mockAnnouncements : announcements;
 
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         {/* Demo Mode Banner */}
         {demoMode && (
@@ -194,7 +192,7 @@ const StudentDashboard = () => {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

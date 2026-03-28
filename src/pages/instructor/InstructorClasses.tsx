@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -240,7 +238,7 @@ const InstructorClasses = () => {
   const weekOptions = [...new Set(classes.map(cls => cls.week))];
 
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <TooltipProvider>
         <div className="space-y-6">
           <section>
@@ -347,7 +345,7 @@ const InstructorClasses = () => {
           </Card>
         </div>
       </TooltipProvider>
-    </DashboardLayout>
+    </>
   );
 };
 

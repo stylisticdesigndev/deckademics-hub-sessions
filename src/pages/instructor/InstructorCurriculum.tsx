@@ -1,6 +1,4 @@
 import React from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,16 +18,16 @@ const InstructorCurriculum = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+      <>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading curriculum...</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Teaching Curriculum</h1>
@@ -110,7 +108,7 @@ const InstructorCurriculum = () => {
           ))}
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

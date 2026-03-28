@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,16 +117,16 @@ const AdminCurriculum = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading curriculum...</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -413,7 +411,7 @@ const AdminCurriculum = () => {
           ))}
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

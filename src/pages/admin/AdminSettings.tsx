@@ -1,7 +1,5 @@
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -194,16 +192,16 @@ const AdminSettings = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -460,7 +458,7 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

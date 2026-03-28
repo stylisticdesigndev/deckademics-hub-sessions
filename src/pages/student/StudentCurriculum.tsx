@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,16 +44,16 @@ const StudentCurriculum = () => {
 
   if (isLoading || levelLoading) {
     return (
-      <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+      <>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading curriculum...</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+    <>
       <div className="space-y-6">
         <section className="flex items-start justify-between">
           <div>
@@ -138,7 +136,7 @@ const StudentCurriculum = () => {
           ))}
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

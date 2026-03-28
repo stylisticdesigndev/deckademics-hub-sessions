@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useStudentAssignment, StudentForAssignment } from '@/hooks/useStudentAssignment';
 import {
@@ -310,19 +308,16 @@ const AdminInstructors = () => {
   
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout
-      sidebarContent={<AdminNavigation />}
-      userType="admin"
-    >
+    <>
       <TooltipProvider>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -915,7 +910,7 @@ const AdminInstructors = () => {
           </Tabs>
         </div>
       </TooltipProvider>
-    </DashboardLayout>
+    </>
   );
 };
 

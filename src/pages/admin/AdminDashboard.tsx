@@ -1,7 +1,5 @@
 
 import React, { useEffect } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -50,16 +48,16 @@ const AdminDashboard = () => {
 
   if (isLoading || isLoadingInstructors) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
@@ -200,7 +198,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

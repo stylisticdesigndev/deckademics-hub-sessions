@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import {
@@ -306,21 +304,18 @@ const AdminStudents = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
+      <>
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   const selectedStudentData = selectedStudent ? getStudentById(selectedStudent) : null;
 
   return (
-    <DashboardLayout
-      sidebarContent={<AdminNavigation />}
-      userType="admin"
-    >
+    <>
       <TooltipProvider>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -821,7 +816,7 @@ const AdminStudents = () => {
           </Dialog>
         </div>
       </TooltipProvider>
-    </DashboardLayout>
+    </>
   );
 };
 
