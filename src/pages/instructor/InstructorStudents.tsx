@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil } from 'lucide-react';
+import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mockInstructorStudents } from '@/data/mockInstructorData';
@@ -29,6 +30,13 @@ import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStu
 import { supabase } from "@/integrations/supabase/client";
 
 // --------- TYPES ---------
+interface StudentNote {
+  id: string;
+  content: string;
+  title?: string | null;
+  created_at: string;
+}
+
 interface Student {
   id: string;
   name: string;
@@ -40,7 +48,7 @@ interface Student {
   nextClass?: string;
   email: string;
   enrollmentDate: string;
-  notes?: string[];
+  notes?: StudentNote[];
   moduleProgress?: ModuleProgress[];
 }
 
@@ -82,6 +90,9 @@ const InstructorStudents = () => {
   const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [editingNote, setEditingNote] = useState<StudentNote | null>(null);
+  const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
+  const [editNoteText, setEditNoteText] = useState('');
   
   const curriculumModules = [
     {
@@ -139,9 +150,14 @@ const InstructorStudents = () => {
   // Update students when fetched data changes
   useEffect(() => {
     if (demoMode) {
-      setStudents(mockInstructorStudents as Student[]);
+      setStudents(mockInstructorStudents as unknown as Student[]);
     } else {
       setStudents(fetchedStudents);
+      // Keep detailedStudent in sync
+      if (detailedStudent) {
+        const updated = fetchedStudents.find(s => s.id === detailedStudent.id);
+        if (updated) setDetailedStudent(updated);
+      }
     }
   }, [fetchedStudents, demoMode]);
 
@@ -1268,9 +1284,28 @@ const InstructorStudents = () => {
                     
                     {detailedStudent.notes?.length ? (
                       <div className="space-y-3">
-                        {detailedStudent.notes.map((note, index) => (
-                          <div key={index} className="border rounded-md p-3 text-sm">
-                            {note}
+                        {detailedStudent.notes.map((note) => (
+                          <div 
+                            key={note.id} 
+                            className="border rounded-md p-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors group"
+                            onClick={() => {
+                              setEditingNote(note);
+                              setEditNoteText(note.content);
+                              setShowEditNoteDialog(true);
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                {note.title && (
+                                  <p className="font-medium text-foreground mb-1">{note.title}</p>
+                                )}
+                                <p className="text-muted-foreground">{note.content}</p>
+                              </div>
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {format(new Date(note.created_at), 'MM/dd/yyyy h:mm a')}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -1286,6 +1321,56 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+        {/* Edit Note Dialog */}
+        <Dialog open={showEditNoteDialog} onOpenChange={setShowEditNoteDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Note</DialogTitle>
+              {editingNote?.title && (
+                <DialogDescription>{editingNote.title}</DialogDescription>
+              )}
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea
+                value={editNoteText}
+                onChange={(e) => setEditNoteText(e.target.value)}
+                placeholder="Edit note content..."
+                className="min-h-[150px]"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditNoteDialog(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                if (!editingNote || !editNoteText.trim()) return;
+                try {
+                  const { error } = await supabase
+                    .from('student_notes')
+                    .update({ content: editNoteText.trim() })
+                    .eq('id', editingNote.id);
+                  if (error) {
+                    toast({ title: "Error updating note", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "Note updated", description: "Note has been updated successfully." });
+                  setShowEditNoteDialog(false);
+                  setEditingNote(null);
+                  await refetch();
+                  // Also update detailedStudent locally
+                  if (detailedStudent) {
+                    setDetailedStudent(prev => prev ? {
+                      ...prev,
+                      notes: prev.notes?.map(n => n.id === editingNote.id ? { ...n, content: editNoteText.trim() } : n)
+                    } : prev);
+                  }
+                } catch (err) {
+                  console.error('Error updating note:', err);
+                  toast({ title: "Error", description: "Failed to update note.", variant: "destructive" });
+                }
+              }}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </>
   );
 };
