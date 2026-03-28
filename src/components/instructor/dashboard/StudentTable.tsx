@@ -86,7 +86,8 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                       <div className="flex items-center gap-2">
                         <ProgressBar 
                           value={student.progress} 
-                          max={100} 
+                          max={100}
+                          showPercentage={false}
                         />
                         <span className="text-xs">{student.progress}%</span>
                       </div>
