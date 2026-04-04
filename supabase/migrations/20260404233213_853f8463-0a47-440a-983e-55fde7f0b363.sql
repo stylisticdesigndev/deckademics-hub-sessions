@@ -1,0 +1,1 @@
+DELETE FROM public.student_progress WHERE id IN ('41cba8ee-242f-4dcb-9988-1b30d7ea07af', 'b08a5810-98ed-489f-bce6-560512a8064a');
