@@ -8,13 +8,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+const URL_PART_REGEX = /^https?:\/\/[^\s<]+$/i;
+
+function openExternalLink(url: string) {
+  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!openedWindow) {
+    if (window.top) {
+      window.top.location.href = url;
+      return;
+    }
+    window.location.href = url;
+  }
+}
 
 function renderTextWithLinks(text: string) {
   const parts = text.split(URL_REGEX);
   return parts.map((part, i) =>
-    URL_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 break-all cursor-pointer"
-        onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
+    URL_PART_REGEX.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all cursor-pointer"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExternalLink(part); }}>
         {part}
       </a>
     ) : (

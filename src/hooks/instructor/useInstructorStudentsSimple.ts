@@ -129,17 +129,21 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           lessonsByModule[lesson.module_id].push(lesson);
         });
 
-        // Group student_progress skill_names by student
+        // Group non-aggregate student_progress skill_names by student
+        const filteredProgressRows = (progressResult.data || []).filter(
+          (row) => row.skill_name?.toLowerCase() !== 'overall progress'
+        );
+
         const progressSkillsByStudent: { [studentId: string]: Set<string> } = {};
-        (progressResult.data || []).forEach((row) => {
+        filteredProgressRows.forEach((row) => {
           if (!progressSkillsByStudent[row.student_id]) progressSkillsByStudent[row.student_id] = new Set();
           if (row.skill_name) progressSkillsByStudent[row.student_id].add(row.skill_name);
         });
 
-        // Calculate average progress for each student
+        // Match student-side overall progress calculation
         const progressById: { [id: string]: number } = {};
         studentIds.forEach((id) => {
-          const records = (progressResult.data || []).filter((row) => row.student_id === id);
+          const records = filteredProgressRows.filter((row) => row.student_id === id);
           const profs = records.map((r) => r.proficiency || 0);
           progressById[id] = profs.length
             ? Math.round(profs.reduce((a, b) => a + b, 0) / profs.length)
@@ -193,10 +197,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
               lessons,
             };
           });
-          // Auto-calculate overall progress from module completion
-          const overallProgress = moduleProgress.length
+          // Keep module progress for lesson tracking, but match the student-side overall percentage
+          const moduleBasedProgress = moduleProgress.length
             ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
             : 0;
+          const overallProgress = progressById[student.id] ?? moduleBasedProgress;
 
           return {
             id: student.id,
