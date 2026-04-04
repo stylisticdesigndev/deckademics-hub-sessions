@@ -367,14 +367,6 @@ const InstructorStudents = () => {
     setShowLessonNoteDialog(true);
   };
 
-  const openProgressDialog = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    if (student) {
-      setSelectedStudent(studentId);
-      setProgressValue(student.progress);
-      setShowProgressDialog(true);
-    }
-  };
 
   const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
     const student = students.find(s => s.id === studentId);
@@ -386,125 +378,6 @@ const InstructorStudents = () => {
     }
   };
 
-  const handleProgressUpdate = async () => {
-    if (!selectedStudent) return;
-
-    setIsUpdatingProgress(true);
-    console.log('Updating progress for student:', selectedStudent, 'Progress value:', progressValue, 'Instructor:', instructorId);
-
-    try {
-      // First get a valid course_id from the courses table
-      const { data: courseData, error: courseError } = await supabase
-        .from('courses')
-        .select('id')
-        .limit(1)
-        .single();
-
-      if (courseError) {
-        console.error('Error fetching course:', courseError);
-        // Use a fallback - try to create without course_id if needed
-      }
-
-      const courseId = courseData?.id || '04e2bb7f-e11c-44e0-8153-399b93923e3b';
-
-      // Check if a progress record already exists for this student and skill
-      const { data: existingProgress, error: selectError } = await supabase
-        .from('student_progress')
-        .select('id, proficiency')
-        .eq('student_id', selectedStudent)
-        .eq('skill_name', 'Overall Progress')
-        .maybeSingle();
-
-      if (selectError) {
-        console.error('Error checking existing progress:', selectError);
-      }
-
-      // Store the raw percentage value (0-100) directly as proficiency
-      const proficiencyValue = Math.max(0, Math.min(100, progressValue));
-      console.log('Storing progress as proficiency:', proficiencyValue);
-
-      if (existingProgress) {
-        console.log('Updating existing progress record:', existingProgress.id);
-        // Update existing record
-        const { error } = await supabase
-          .from('student_progress')
-          .update({
-            proficiency: proficiencyValue,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          })
-          .eq('id', existingProgress.id);
-
-        if (error) {
-          console.error('Error updating progress:', error);
-          toast({
-            title: "Error updating progress",
-            description: `Failed to update progress: ${error.message}. Check database permissions.`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log('Progress updated successfully');
-      } else {
-        console.log('Creating new progress record');
-        // Insert new record
-        const insertData = {
-          student_id: selectedStudent,
-          course_id: courseId,
-          skill_name: 'Overall Progress',
-          proficiency: proficiencyValue,
-          assessment_date: new Date().toISOString(),
-          assessor_id: instructorId
-        };
-        console.log('Inserting progress data:', insertData);
-
-        const { error } = await supabase
-          .from('student_progress')
-          .insert(insertData);
-
-        if (error) {
-          console.error('Error inserting progress:', error);
-          toast({
-            title: "Error saving progress", 
-            description: `Failed to create progress record: ${error.message}. Check database permissions.`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log('Progress inserted successfully');
-      }
-
-      setShowProgressDialog(false);
-      
-      // Immediately update local state so the UI reflects the new progress
-      setStudents(prev => prev.map(s => 
-        s.id === selectedStudent ? { ...s, progress: progressValue } : s
-      ));
-      if (detailedStudent && detailedStudent.id === selectedStudent) {
-        setDetailedStudent(prev => prev ? { ...prev, progress: progressValue } : prev);
-      }
-      
-      toast({
-        title: "Progress updated",
-        description: `Student progress has been successfully saved (${progressValue}%).`,
-      });
-
-      // Also refresh from database in background
-      refetch();
-
-    } catch (error) {
-      console.error('Unexpected error updating progress:', error);
-      toast({
-        title: "Error updating progress",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingProgress(false);
-    }
-  };
 
   const handleModuleProgressUpdate = async () => {
     if (!selectedStudent || !selectedModule) return;
@@ -1041,14 +914,6 @@ const InstructorStudents = () => {
                                   >
                                     Add Note
                                   </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => openProgressDialog(student.id)}
-                                    className="text-xs px-2"
-                                  >
-                                    Update Progress
-                                  </Button>
                                 </div>
                               </div>
                             ))}
@@ -1128,13 +993,11 @@ const InstructorStudents = () => {
         <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {selectedModule ? `Update Module Progress` : `Update Overall Progress`}
-              </DialogTitle>
+              <DialogTitle>Update Module Progress</DialogTitle>
               <DialogDescription>
                 {selectedModule 
                   ? `Adjust the progress for ${selectedModule.moduleName}.`
-                  : 'Adjust the overall progress for this student.'}
+                  : 'Select a module to update.'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -1161,8 +1024,8 @@ const InstructorStudents = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={selectedModule ? handleModuleProgressUpdate : handleProgressUpdate}
-                disabled={isUpdatingProgress}
+                onClick={handleModuleProgressUpdate}
+                disabled={isUpdatingProgress || !selectedModule}
               >
                 {isUpdatingProgress ? "Updating..." : "Update Progress"}
               </Button>
@@ -1236,14 +1099,6 @@ const InstructorStudents = () => {
                         <span className="text-sm font-medium w-10 text-right">
                           {detailedStudent.progress}%
                         </span>
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <Button 
-                          size="sm" 
-                          onClick={() => openProgressDialog(detailedStudent.id)}
-                        >
-                          Update Progress
-                        </Button>
                       </div>
                     </div>
                   </TabsContent>
