@@ -102,40 +102,37 @@ const StudentProfile = () => {
         setFormData(prev => ({ ...prev, bio: bioText }));
         
         if (student) {
-          const { data: enrollments, error: enrollmentsError } = await supabase
+          // Fetch instructor directly from students.instructor_id
+          if (student.instructor_id) {
+            const { data: instructor, error: instructorError } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', student.instructor_id)
+              .single();
+            if (!instructorError && instructor) setInstructorData(instructor);
+          }
+
+          // Fetch course data from enrollments if available
+          const { data: enrollments } = await supabase
             .from('enrollments')
             .select('class_id')
             .eq('student_id', studentId)
             .limit(1);
-            
-          if (enrollmentsError) {
-            console.error('Error fetching enrollments:', enrollmentsError);
-          } else if (enrollments && enrollments.length > 0) {
-            const { data: classData, error: classError } = await supabase
+
+          if (enrollments && enrollments.length > 0) {
+            const { data: classData } = await supabase
               .from('classes')
-              .select('id, title, course_id, instructor_id')
+              .select('course_id')
               .eq('id', enrollments[0].class_id)
               .single();
-              
-            if (classError) {
-              console.error('Error fetching class data:', classError);
-            } else if (classData) {
-              if (classData.course_id) {
-                const { data: course, error: courseError } = await supabase
-                  .from('courses')
-                  .select('*')
-                  .eq('id', classData.course_id)
-                  .single();
-                if (!courseError) setCourseData(course);
-              }
-              if (classData.instructor_id) {
-                const { data: instructor, error: instructorError } = await supabase
-                  .from('profiles')
-                  .select('first_name, last_name')
-                  .eq('id', classData.instructor_id)
-                  .single();
-                if (!instructorError) setInstructorData(instructor);
-              }
+
+            if (classData?.course_id) {
+              const { data: course } = await supabase
+                .from('courses')
+                .select('*')
+                .eq('id', classData.course_id)
+                .single();
+              if (course) setCourseData(course);
             }
           }
         }
