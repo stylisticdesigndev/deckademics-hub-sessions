@@ -35,8 +35,11 @@ const StudentProgress = () => {
         if (progressError) {
           console.error('Error fetching student progress:', progressError);
         } else {
-          setProgressData(progress || []);
-          
+          const filtered = (progress || []).filter(
+            (item: any) => item.skill_name?.toLowerCase() !== 'overall progress'
+          );
+          setProgressData(filtered);
+
           if (progress && progress.length > 0 && progress[0].course_id) {
             const { data: course, error: courseError } = await supabase
               .from('courses')

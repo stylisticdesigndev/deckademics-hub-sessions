@@ -36,7 +36,7 @@ export function useStudentProgress(userId?: string) {
             proficiency: item.proficiency
           }));
           
-          setProgress(validProgressItems);
+          setProgress(validProgressItems.filter(item => item.skill_name?.toLowerCase() !== 'overall progress'));
         } else {
           setProgress([]);
         }
