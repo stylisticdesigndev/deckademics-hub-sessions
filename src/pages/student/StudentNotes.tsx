@@ -120,8 +120,7 @@ export default function StudentNotes() {
   };
 
   const getPlainText = (content: string) => {
-    // Strip image patterns for preview
-    return content.replace(IMAGE_NOTE_PATTERN, '[Image]').trim();
+    return content.replace(/📎\s*Image:\s*(https?:\/\/[^\s<]+)/g, '[Image]').trim();
   };
 
   const renderInstructorNoteCard = (note: StudentNote) => (
