@@ -5,36 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, differenceInDays } from 'date-fns';
+import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
 
 const REPLY_WINDOW_DAYS = 7;
-
-const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
-const URL_PART_REGEX = /^https?:\/\/[^\s<]+$/i;
-
-function openExternalLink(url: string) {
-  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!openedWindow) {
-    if (window.top) {
-      window.top.location.href = url;
-      return;
-    }
-    window.location.href = url;
-  }
-}
-
-function renderTextWithLinks(text: string) {
-  const parts = text.split(URL_REGEX);
-  return parts.map((part, i) =>
-    URL_PART_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all cursor-pointer"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExternalLink(part); }}>
-        {part}
-      </a>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
-}
 
 interface ThreadMessage {
   id: string;
@@ -150,7 +123,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                         />
                       </a>
                     )}
-                    {msg.content && renderTextWithLinks(msg.content)}
+                    {msg.content && renderTextWithLinks(msg.content, { isSentByMe: isMe })}
                   </div>
                   <div className={`flex items-center gap-1.5 mt-1 ${isMe ? 'justify-end' : ''}`}>
                     <p className="text-[11px] text-muted-foreground">
