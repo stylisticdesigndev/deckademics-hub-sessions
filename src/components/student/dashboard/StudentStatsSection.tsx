@@ -39,7 +39,7 @@ export const StudentStatsSection = ({
   ];
 
   return (
-    <section className="grid gap-4 grid-cols-2 md:grid-cols-4">
+    <section className="grid gap-4 grid-cols-1 md:grid-cols-3">
       {stats.map((stat) => (
         <div
           key={stat.label}

@@ -20,6 +20,7 @@ export function useStudentDashboardCore() {
   const [studentLevel, setStudentLevel] = useState('Beginner');
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [assignedInstructor, setAssignedInstructor] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
   const dataFetchedRef = useRef(false);

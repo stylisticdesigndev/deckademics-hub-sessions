@@ -304,6 +304,35 @@ export default function StudentNotes() {
           <div className="text-sm whitespace-pre-wrap mt-2">
             {renderNoteContent(note.content)}
           </div>
+          {!isInstructor && (
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => {
+                  setEditingNote(note as PersonalNote);
+                  setDialogOpen(true);
+                  setViewingNote(null);
+                }}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1"
+                onClick={() => {
+                  handleDeleteNote(note.id);
+                  setViewingNote(null);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     );
