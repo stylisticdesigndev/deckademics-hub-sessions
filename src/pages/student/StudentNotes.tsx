@@ -17,8 +17,20 @@ import { toast } from '@/hooks/use-toast';
 import { mockNotes, mockPersonalNotes } from '@/data/mockDashboardData';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+const URL_PART_REGEX = /^https?:\/\/[^\s<]+$/i;
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?[^\s]*)?$/i;
 const IMAGE_NOTE_PATTERN = /📎\s*Image:\s*(https?:\/\/[^\s<]+)/g;
+
+function openExternalLink(url: string) {
+  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!openedWindow) {
+    if (window.top) {
+      window.top.location.href = url;
+      return;
+    }
+    window.location.href = url;
+  }
+}
 
 function renderNoteContent(content: string) {
   // First, extract image patterns like "📎 Image: <url>"
@@ -30,9 +42,19 @@ function renderNoteContent(content: string) {
     imageMatches.forEach((match, i) => {
       const before = content.slice(lastIndex, match.index);
       if (before) parts.push(...renderTextWithLinks(before, `before-${i}`));
-    parts.push(
-        <a key={`img-${i}`} href={match[1]} target="_blank" rel="noopener noreferrer" className="block my-2 cursor-pointer"
-          onClick={(e) => { e.preventDefault(); window.open(match[1], '_blank', 'noopener,noreferrer'); }}>
+      parts.push(
+        <a
+          key={`img-${i}`}
+          href={match[1]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block my-2 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openExternalLink(match[1]);
+          }}
+        >
           <img src={match[1]} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
         </a>
       );
@@ -50,18 +72,38 @@ function renderNoteContent(content: string) {
 function renderTextWithLinks(text: string, keyPrefix: string): React.ReactNode[] {
   const parts = text.split(URL_REGEX);
   return parts.map((part, i) => {
-    if (URL_REGEX.test(part)) {
+    if (URL_PART_REGEX.test(part)) {
       if (IMAGE_EXTENSIONS.test(part)) {
         return (
-          <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="block my-2 cursor-pointer"
-            onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
+          <a
+            key={`${keyPrefix}-${i}`}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block my-2 cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openExternalLink(part);
+            }}
+          >
             <img src={part} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
           </a>
         );
       }
       return (
-        <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all cursor-pointer"
-          onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
+        <a
+          key={`${keyPrefix}-${i}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline text-primary hover:text-primary/80 break-all cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openExternalLink(part);
+          }}
+        >
           {part}
         </a>
       );

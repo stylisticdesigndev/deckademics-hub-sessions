@@ -520,7 +520,7 @@ const InstructorStudents = () => {
 
       if (existingProgress) {
         // Update existing record - convert percentage to proficiency scale (1-10)
-        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
+        const proficiencyValue = Math.max(0, Math.min(100, progressValue));
         const { error } = await supabase
           .from('student_progress')
           .update({
@@ -540,8 +540,7 @@ const InstructorStudents = () => {
           return;
         }
       } else {
-        // Insert new record - convert percentage to proficiency scale (1-10)
-        const proficiencyValue = Math.max(1, Math.min(10, Math.round(progressValue / 10)));
+        const proficiencyValue = Math.max(0, Math.min(100, progressValue));
         const { error } = await supabase
           .from('student_progress')
           .insert({
