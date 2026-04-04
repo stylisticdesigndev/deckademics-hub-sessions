@@ -24,12 +24,6 @@ export const StudentStatsSection = ({
       accent: 'border-primary/30',
     },
     {
-      label: 'Overall Progress',
-      value: `${totalProgress}%`,
-      icon: <TrendingUp className="h-5 w-5 text-secondary" />,
-      accent: 'border-secondary/30',
-    },
-    {
       label: 'Classes Attended',
       value: String(classesAttended),
       icon: <Users className="h-5 w-5 text-primary" />,

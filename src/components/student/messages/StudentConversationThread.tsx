@@ -122,7 +122,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                         />
                       </a>
                     )}
-                    {msg.content && msg.content}
+                    {msg.content && renderTextWithLinks(msg.content)}
                   </div>
                   <div className={`flex items-center gap-1.5 mt-1 ${isMe ? 'justify-end' : ''}`}>
                     <p className="text-[11px] text-muted-foreground">
