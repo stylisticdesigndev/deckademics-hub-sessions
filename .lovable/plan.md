@@ -1,31 +1,26 @@
 
 
-# Fix Duplicate "Overall Progress" on Student Progress Page
+# Mirror Student-Side Fixes to Instructor Side
 
-## Root Cause
+## What needs changing
 
-The `student_progress` table contains rows with `skill_name = "Overall Progress"` (values: 75%, 55%). These were inserted as standalone entries rather than being auto-calculated. On the Progress page:
+After reviewing both sides, there is **one key gap**: the instructor's message conversation thread renders message content as plain text, while the student side now has clickable hyperlinks via `renderTextWithLinks`.
 
-- The **top card** ("Overall Progress") averages ALL rows including these — producing 28%
-- The **bottom of the skills list** shows these "Overall Progress" rows as individual skills — showing 75%
+Line 160 of `src/components/instructor/messages/ConversationThread.tsx` currently renders:
+```
+{msg.content && msg.content}
+```
 
-This creates confusion: two different "Overall Progress" numbers, and the average is wrong because it includes rows that aren't actual skills.
+The student side (`StudentConversationThread.tsx`) already uses a `renderTextWithLinks` helper that detects URLs and wraps them in clickable `<a>` tags.
 
-## Fix
+All other student-side fixes either use shared components (ProgressBar `h-full` fix already applies everywhere) or are student-specific features (notes modal, dashboard stats layout, instructor display on profile).
 
-### 1. `src/pages/student/StudentProgress.tsx`
-- Filter out any `student_progress` rows where `skill_name` is `"Overall Progress"` before rendering
-- The top "Overall Progress" card already auto-calculates the correct average from real skills — no need for stored "Overall Progress" rows
+## Changes
 
-### 2. `src/hooks/student/dashboard/useStudentProgress.ts`
-- Same filter: exclude `skill_name = "Overall Progress"` rows so the dashboard ring also shows the correct auto-calculated value
+### 1. `src/components/instructor/messages/ConversationThread.tsx`
+- Add the same `URL_REGEX` and `renderTextWithLinks` helper function used in the student conversation thread
+- Replace `{msg.content && msg.content}` (line 160) with `{msg.content && renderTextWithLinks(msg.content)}`
+- This ensures instructors can also click on links shared in messages
 
-### 3. `src/hooks/student/useStudentDashboardCore.ts`
-- No changes needed — it already averages whatever `useStudentProgress` returns, so fixing the source fixes the dashboard too
-
-This ensures "Overall Progress" is always **auto-calculated** from real skill proficiencies, never stored or displayed as a separate skill row.
-
-## Files Changed
-1. `src/pages/student/StudentProgress.tsx` — filter out "Overall Progress" rows from `progressData`
-2. `src/hooks/student/dashboard/useStudentProgress.ts` — filter out "Overall Progress" rows from fetched data
+### One file, ~15 lines added.
 
