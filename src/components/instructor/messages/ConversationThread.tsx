@@ -172,7 +172,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
                         />
                       </a>
                     )}
-                    {msg.content && msg.content}
+                    {msg.content && renderTextWithLinks(msg.content)}
                   </div>
                   <p className={`text-[11px] text-muted-foreground mt-1 ${isMe ? 'text-right' : ''}`}>
                     {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
