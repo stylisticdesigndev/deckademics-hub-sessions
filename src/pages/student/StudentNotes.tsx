@@ -30,8 +30,9 @@ function renderNoteContent(content: string) {
     imageMatches.forEach((match, i) => {
       const before = content.slice(lastIndex, match.index);
       if (before) parts.push(...renderTextWithLinks(before, `before-${i}`));
-      parts.push(
-        <a key={`img-${i}`} href={match[1]} target="_blank" rel="noopener noreferrer" className="block my-2">
+    parts.push(
+        <a key={`img-${i}`} href={match[1]} target="_blank" rel="noopener noreferrer" className="block my-2 cursor-pointer"
+          onClick={(e) => { e.preventDefault(); window.open(match[1], '_blank', 'noopener,noreferrer'); }}>
           <img src={match[1]} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
         </a>
       );
@@ -52,13 +53,15 @@ function renderTextWithLinks(text: string, keyPrefix: string): React.ReactNode[]
     if (URL_REGEX.test(part)) {
       if (IMAGE_EXTENSIONS.test(part)) {
         return (
-          <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="block my-2">
+          <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="block my-2 cursor-pointer"
+            onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
             <img src={part} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
           </a>
         );
       }
       return (
-        <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all">
+        <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all cursor-pointer"
+          onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
           {part}
         </a>
       );

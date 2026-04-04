@@ -13,7 +13,8 @@ function renderTextWithLinks(text: string) {
   const parts = text.split(URL_REGEX);
   return parts.map((part, i) =>
     URL_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 break-all">
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 break-all cursor-pointer"
+        onClick={(e) => { e.preventDefault(); window.open(part, '_blank', 'noopener,noreferrer'); }}>
         {part}
       </a>
     ) : (
