@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStudentNotes, StudentNote } from '@/hooks/student/useStudentNotes';
 import { useStudentPersonalNotes, PersonalNote } from '@/hooks/student/useStudentPersonalNotes';
 import { useNotesNotifications } from '@/hooks/student/useNotesNotifications';
@@ -15,7 +16,63 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { mockNotes, mockPersonalNotes } from '@/data/mockDashboardData';
 
-type CombinedNote = 
+const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?[^\s]*)?$/i;
+const IMAGE_NOTE_PATTERN = /📎\s*Image:\s*(https?:\/\/[^\s<]+)/g;
+
+function renderNoteContent(content: string) {
+  // First, extract image patterns like "📎 Image: <url>"
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const imageMatches = [...content.matchAll(IMAGE_NOTE_PATTERN)];
+
+  if (imageMatches.length > 0) {
+    imageMatches.forEach((match, i) => {
+      const before = content.slice(lastIndex, match.index);
+      if (before) parts.push(...renderTextWithLinks(before, `before-${i}`));
+      parts.push(
+        <a key={`img-${i}`} href={match[1]} target="_blank" rel="noopener noreferrer" className="block my-2">
+          <img src={match[1]} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
+        </a>
+      );
+      lastIndex = match.index! + match[0].length;
+    });
+    const remaining = content.slice(lastIndex);
+    if (remaining) parts.push(...renderTextWithLinks(remaining, 'remaining'));
+    return <>{parts}</>;
+  }
+
+  // No image patterns — just render text with clickable links + inline images for image URLs
+  return <>{renderTextWithLinks(content, 'content')}</>;
+}
+
+function renderTextWithLinks(text: string, keyPrefix: string): React.ReactNode[] {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) => {
+    if (URL_REGEX.test(part)) {
+      if (IMAGE_EXTENSIONS.test(part)) {
+        return (
+          <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="block my-2">
+            <img src={part} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
+          </a>
+        );
+      }
+      return (
+        <a key={`${keyPrefix}-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 break-all">
+          {part}
+        </a>
+      );
+    }
+    return <span key={`${keyPrefix}-${i}`}>{part}</span>;
+  });
+}
+
+function truncateText(text: string, maxLength: number = 120): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trimEnd() + '…';
+}
+
+type CombinedNote =
   | { type: 'instructor'; data: StudentNote; created_at: string }
   | { type: 'personal'; data: PersonalNote; created_at: string };
 
@@ -45,6 +102,7 @@ export default function StudentNotes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<PersonalNote | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [viewingNote, setViewingNote] = useState<CombinedNote | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -63,19 +121,14 @@ export default function StudentNotes() {
 
   const isLoading = instructorLoading || personalLoading;
 
-  // Use mock data in demo mode
   const activeInstructorNotes: StudentNote[] = demoMode
-    ? mockNotes.map(n => ({
-        ...n,
-        instructor: n.instructor,
-      })) as StudentNote[]
+    ? mockNotes.map(n => ({ ...n, instructor: n.instructor })) as StudentNote[]
     : instructorNotes;
 
   const activePersonalNotes: PersonalNote[] = demoMode
     ? mockPersonalNotes as PersonalNote[]
     : personalNotes;
 
-  // Combined notes sorted by date
   const combinedNotes: CombinedNote[] = [
     ...activeInstructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
     ...activePersonalNotes.map(n => ({ type: 'personal' as const, data: n, created_at: n.created_at })),
@@ -115,8 +168,17 @@ export default function StudentNotes() {
     });
   };
 
+  const getPlainText = (content: string) => {
+    // Strip image patterns for preview
+    return content.replace(IMAGE_NOTE_PATTERN, '[Image]').trim();
+  };
+
   const renderInstructorNoteCard = (note: StudentNote) => (
-    <Card key={note.id} className={!note.is_read ? 'border-primary' : ''}>
+    <Card
+      key={note.id}
+      className={`cursor-pointer transition-colors hover:bg-muted/50 ${!note.is_read ? 'border-primary' : ''}`}
+      onClick={() => setViewingNote({ type: 'instructor', data: note, created_at: note.created_at })}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -136,13 +198,17 @@ export default function StudentNotes() {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+        <p className="text-sm text-muted-foreground">{truncateText(getPlainText(note.content))}</p>
       </CardContent>
     </Card>
   );
 
   const renderPersonalNoteCard = (note: PersonalNote) => (
-    <Card key={note.id}>
+    <Card
+      key={note.id}
+      className="cursor-pointer transition-colors hover:bg-muted/50"
+      onClick={() => setViewingNote({ type: 'personal', data: note, created_at: note.created_at })}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -156,7 +222,7 @@ export default function StudentNotes() {
               {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
             </CardDescription>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingNote(note); setDialogOpen(true); }}>
               <Pencil className="h-4 w-4" />
             </Button>
@@ -167,7 +233,7 @@ export default function StudentNotes() {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+        <p className="text-sm text-muted-foreground">{truncateText(getPlainText(note.content))}</p>
       </CardContent>
     </Card>
   );
@@ -207,6 +273,39 @@ export default function StudentNotes() {
           </div>
         ))}
       </div>
+    );
+  };
+
+  const renderViewDialog = () => {
+    if (!viewingNote) return null;
+    const isInstructor = viewingNote.type === 'instructor';
+    const note = viewingNote.data;
+
+    return (
+      <Dialog open={!!viewingNote} onOpenChange={(open) => { if (!open) setViewingNote(null); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              {isInstructor ? <BookOpen className="h-4 w-4 text-primary" /> : <StickyNote className="h-4 w-4 text-muted-foreground" />}
+              <span className="text-xs font-medium">{isInstructor ? 'Instructor Note' : 'My Note'}</span>
+            </div>
+            <DialogTitle>{note.title || 'Untitled Note'}</DialogTitle>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {isInstructor && (
+                <>
+                  <User className="h-3 w-3" />
+                  {(note as StudentNote).instructor?.first_name} {(note as StudentNote).instructor?.last_name}
+                </>
+              )}
+              <Calendar className="h-3 w-3" />
+              {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+            </div>
+          </DialogHeader>
+          <div className="text-sm whitespace-pre-wrap mt-2">
+            {renderNoteContent(note.content)}
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   };
 
@@ -274,6 +373,8 @@ export default function StudentNotes() {
           </Tabs>
         )}
       </div>
+
+      {renderViewDialog()}
 
       <PersonalNoteDialog
         open={dialogOpen}
