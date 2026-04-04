@@ -97,7 +97,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           // Get student progress
           const { data: progress, error: progressError } = await supabase
             .from('student_progress')
-            .select('student_id, proficiency')
+            .select('student_id, skill_name, proficiency')
             .in('student_id', studentIds);
             
           if (progressError) {
@@ -126,7 +126,8 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 isDataObject(p) && 
                 hasProperty(p, 'student_id') && 
                 hasProperty(p, 'proficiency') && 
-                p.student_id === student.id
+                p.student_id === student.id &&
+                !(hasProperty(p, 'skill_name') && typeof p.skill_name === 'string' && p.skill_name.toLowerCase() === 'overall progress')
               );
               
             // Proficiency is stored as raw percentage (0-100)
