@@ -120,11 +120,11 @@ export function useStudentDashboardCore() {
     if (upcomingClasses.length > 0) {
       return {
         nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
-        instructor: upcomingClasses[0].instructor
+        instructor: assignedInstructor || upcomingClasses[0].instructor
       };
     }
-    return { nextClass: 'Not scheduled', instructor: 'Not assigned' };
-  }, [upcomingClasses]);
+    return { nextClass: 'Not scheduled', instructor: assignedInstructor || 'Not assigned' };
+  }, [upcomingClasses, assignedInstructor]);
 
   // Derive first-time user status
   useEffect(() => {
