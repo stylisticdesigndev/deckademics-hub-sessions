@@ -49,7 +49,7 @@ export function useStudentDashboardCore() {
 
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
-        .select('level, enrollment_status, notes')
+        .select('level, enrollment_status, notes, instructor_id')
         .eq('id', userId as any)
         .maybeSingle();
 
@@ -57,7 +57,6 @@ export function useStudentDashboardCore() {
 
       if (studentError) {
         if (studentError.code === 'PGRST116') {
-          // Student record doesn't exist, create one
           const { error: insertError } = await supabase
             .from('students')
             .insert({ id: userId } as any);
@@ -70,6 +69,21 @@ export function useStudentDashboardCore() {
         }
       } else if (studentInfo && typeof studentInfo === 'object') {
         setStudentLevel(studentInfo.level || 'Beginner');
+        
+        // Fetch assigned instructor name
+        if (studentInfo.instructor_id) {
+          const { data: instructorProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', studentInfo.instructor_id)
+            .single();
+          
+          if (isMountedRef.current && instructorProfile) {
+            setAssignedInstructor(
+              `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim() || null
+            );
+          }
+        }
       }
 
       dataFetchedRef.current = true;
