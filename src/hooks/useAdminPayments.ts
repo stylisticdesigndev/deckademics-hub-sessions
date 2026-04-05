@@ -3,13 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { isDataObject, safelyAccessProperty } from '@/utils/supabaseHelpers';
-
-interface ProfileData {
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-}
 
 export interface PaymentStats {
   missedPaymentsCount: number;
@@ -34,7 +27,6 @@ export interface Payment {
 }
 
 export const useAdminPayments = () => {
-  // Fetch all payments
   const { data: payments, isLoading } = useQuery({
     queryKey: ['adminPayments'],
     queryFn: async () => {
@@ -48,13 +40,10 @@ export const useAdminPayments = () => {
           status,
           description,
           student_id,
-          students:student_id (
-            id,
-            profiles:id (
-              first_name,
-              last_name,
-              email
-            )
+          profiles:student_id (
+            first_name,
+            last_name,
+            email
           )
         `);
 
@@ -66,48 +55,33 @@ export const useAdminPayments = () => {
 
       const today = new Date();
 
-      return paymentsData
-        .filter(payment => isDataObject(payment))
-        .map(payment => {
-          const paymentDate = safelyAccessProperty<string, 'payment_date'>(payment, 'payment_date');
-          
-          if (!paymentDate) {
+      return (paymentsData || [])
+        .map((payment: any) => {
+          if (!payment || !payment.payment_date || !payment.id || !payment.student_id) {
             return null;
           }
-          
-          const dueDate = new Date(paymentDate);
-          const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          const students = safelyAccessProperty<any, 'students'>(payment, 'students');
-          const profile = students?.profiles as ProfileData | undefined;
+
+          const profile = payment.profiles as { first_name?: string; last_name?: string; email?: string } | null;
           const firstName = profile?.first_name || '';
           const lastName = profile?.last_name || '';
           const email = profile?.email || '';
-          
-          const paymentId = safelyAccessProperty<string, 'id'>(payment, 'id');
-          if (!paymentId) return null;
-          
-          const studentId = safelyAccessProperty<string, 'student_id'>(payment, 'student_id');
-          if (!studentId) return null;
-          
-          const paymentAmount = safelyAccessProperty<number, 'amount'>(payment, 'amount') || 0;
-          const paymentType = safelyAccessProperty<string, 'payment_type'>(payment, 'payment_type') || 'other';
-          const paymentStatus = safelyAccessProperty<string, 'status'>(payment, 'status') || 'pending';
-          const description = safelyAccessProperty<string, 'description'>(payment, 'description');
+
+          const dueDate = new Date(payment.payment_date);
+          const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
           return {
-            id: paymentId,
-            studentId: studentId,
+            id: payment.id,
+            studentId: payment.student_id,
             studentName: `${firstName} ${lastName}`.trim(),
             email: email,
-            amount: paymentAmount,
+            amount: payment.amount || 0,
             dueDate: format(dueDate, 'yyyy-MM-dd'),
-            paymentType: paymentType,
-            status: paymentStatus,
-            daysPastDue: daysDifference > 0 && paymentStatus === 'pending' ? daysDifference : undefined,
+            paymentType: payment.payment_type || 'other',
+            status: payment.status || 'pending',
+            daysPastDue: daysDifference > 0 && payment.status === 'pending' ? daysDifference : undefined,
             daysTillDue: daysTillDue > 0 ? daysTillDue : undefined,
-            description: description || undefined,
+            description: payment.description || undefined,
           };
         })
         .filter(Boolean) as Payment[];

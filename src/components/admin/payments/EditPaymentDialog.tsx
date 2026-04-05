@@ -47,7 +47,7 @@ const formSchema = z.object({
   payment_type: z.enum(["tuition", "materials", "other"], {
     required_error: "Please select a payment type",
   }),
-  status: z.enum(["pending", "completed", "failed", "refunded"], {
+  status: z.enum(["pending", "completed", "partial", "failed", "refunded"], {
     required_error: "Please select a status",
   }),
   description: z.string().optional(),
