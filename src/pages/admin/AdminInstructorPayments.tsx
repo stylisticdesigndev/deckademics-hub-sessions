@@ -745,39 +745,28 @@ const AdminInstructorPayments = () => {
 
           {generateStep === 'dates' && (
             <>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label>Pay Period Start</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("justify-start text-left font-normal", !generateStartDate && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {generateStartDate ? format(generateStartDate, 'MM/dd/yyyy') : 'Pick date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={generateStartDate} onSelect={setGenerateStartDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
+              <div className="py-4 space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Start: </span>
+                    <span className="font-medium">{dateRange?.from ? format(dateRange.from, 'MM/dd/yyyy') : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">End: </span>
+                    <span className="font-medium">{dateRange?.to ? format(dateRange.to, 'MM/dd/yyyy') : '—'}</span>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Pay Period End</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("justify-start text-left font-normal", !generateEndDate && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {generateEndDate ? format(generateEndDate, 'MM/dd/yyyy') : 'Pick date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={generateEndDate} onSelect={setGenerateEndDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                  className="p-3 pointer-events-auto rounded-md border"
+                />
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => { setShowGenerateDialog(false); resetGenerateForm(); }}>Cancel</Button>
-                <Button onClick={handleGeneratePreview} disabled={isGenerating || !generateStartDate || !generateEndDate}>
+                <Button onClick={handleGeneratePreview} disabled={isGenerating || !dateRange?.from || !dateRange?.to}>
                   {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calculating...</> : 'Preview Payments'}
                 </Button>
               </DialogFooter>
@@ -788,7 +777,7 @@ const AdminInstructorPayments = () => {
             <>
               <div className="py-4">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Period: {generateStartDate && format(generateStartDate, 'MM/dd/yyyy')} – {generateEndDate && format(generateEndDate, 'MM/dd/yyyy')}
+                  Period: {dateRange?.from && format(dateRange.from, 'MM/dd/yyyy')} – {dateRange?.to && format(dateRange.to, 'MM/dd/yyyy')}
                 </p>
                 <Table>
                   <TableHeader>
