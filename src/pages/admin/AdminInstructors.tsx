@@ -958,6 +958,24 @@ const AdminInstructors = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Bulk Deactivate Instructors Dialog */}
+          <Dialog open={showBulkDeactivateInstructors} onOpenChange={setShowBulkDeactivateInstructors}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Deactivate {selectedInstructorIds.length} Instructors</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to deactivate all selected instructors?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkDeactivateInstructors(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleBulkDeactivateInstructors} disabled={deactivateInstructor.isPending}>
+                  Deactivate All
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </TooltipProvider>
     </>
