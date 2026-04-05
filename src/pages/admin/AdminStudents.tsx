@@ -52,6 +52,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 
 const AdminStudents = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
@@ -61,6 +62,10 @@ const AdminStudents = () => {
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkLevelDialog, setShowBulkLevelDialog] = useState(false);
+  const [bulkLevel, setBulkLevel] = useState('novice');
+  const [showBulkDeactivateDialog, setShowBulkDeactivateDialog] = useState(false);
   
   const {
     activeStudents,
