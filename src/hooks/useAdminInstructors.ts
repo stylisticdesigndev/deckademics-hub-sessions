@@ -288,7 +288,15 @@ export const useAdminInstructors = () => {
 
       if (error) {
         console.error('Error calling create-instructor function:', error);
-        throw new Error(error.message);
+        // Try to extract the actual error message from the response
+        let message = error.message;
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) message = body.error;
+          }
+        } catch { /* use default message */ }
+        throw new Error(message);
       }
 
       if (data?.error) {
