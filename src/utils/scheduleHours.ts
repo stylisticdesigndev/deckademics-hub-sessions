@@ -30,17 +30,27 @@ function parseTime(timeStr: string): number {
 }
 
 /**
- * Parse an hours string like "2:00 PM - 5:00 PM" into duration in hours.
+ * Parse an hours string like "2:00 PM - 5:00 PM" or comma-separated
+ * "3:30 PM - 5:00 PM, 5:30 PM - 7:00 PM" into total duration in hours.
  */
 export function parseHoursDuration(hoursStr: string): number {
-  const parts = hoursStr.split(/\s*[-–]\s*/);
-  if (parts.length !== 2) return 0;
+  // Split by comma first for multi-slot support
+  const slots = hoursStr.split(',').map(s => s.trim()).filter(Boolean);
+  let total = 0;
 
-  const start = parseTime(parts[0]);
-  const end = parseTime(parts[1]);
+  for (const slot of slots) {
+    const parts = slot.split(/\s*[-–]\s*/);
+    if (parts.length !== 2) continue;
 
-  if (end <= start) return 0;
-  return end - start;
+    const start = parseTime(parts[0]);
+    const end = parseTime(parts[1]);
+
+    if (end > start) {
+      total += end - start;
+    }
+  }
+
+  return total;
 }
 
 /**

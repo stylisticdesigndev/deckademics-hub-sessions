@@ -400,6 +400,8 @@ export type Database = {
       instructor_payments: {
         Row: {
           amount: number
+          bonus_amount: number
+          bonus_description: string | null
           created_at: string | null
           description: string | null
           hours_worked: number | null
@@ -413,6 +415,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bonus_amount?: number
+          bonus_description?: string | null
           created_at?: string | null
           description?: string | null
           hours_worked?: number | null
@@ -426,6 +430,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bonus_amount?: number
+          bonus_description?: string | null
           created_at?: string | null
           description?: string | null
           hours_worked?: number | null

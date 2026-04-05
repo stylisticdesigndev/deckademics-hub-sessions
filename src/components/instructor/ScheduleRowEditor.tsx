@@ -1,12 +1,18 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
 
-const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+const CLASS_SLOTS = [
+  { label: '3:30 PM - 5:00 PM', value: '3:30 PM - 5:00 PM' },
+  { label: '5:30 PM - 7:00 PM', value: '5:30 PM - 7:00 PM' },
+  { label: '7:30 PM - 9:00 PM', value: '7:30 PM - 9:00 PM' },
+];
 
 type TeachingScheduleItem = {
   id?: string;
@@ -28,42 +34,75 @@ export const ScheduleRowEditor = ({
   onChangeDay,
   onChangeHours,
   onRemove
-}: Props) => (
-  <div className="flex items-end gap-2">
-    <div className="flex-1">
-      <Label htmlFor={`day-${index}`}>Day</Label>
-      <Select
-        value={item.day}
-        onValueChange={(value) => onChangeDay(index, value)}
-      >
-        <SelectTrigger id={`day-${index}`}>
-          <SelectValue placeholder="Select day" />
-        </SelectTrigger>
-        <SelectContent>
-          {weekdays.map((day) => (
-            <SelectItem key={day} value={day}>
-              {day}
-            </SelectItem>
+}: Props) => {
+  const selectedSlots = item.hours ? item.hours.split(', ').filter(Boolean) : [];
+
+  const toggleSlot = (slot: string) => {
+    let updated: string[];
+    if (selectedSlots.includes(slot)) {
+      updated = selectedSlots.filter(s => s !== slot);
+    } else {
+      updated = [...selectedSlots, slot];
+      // Sort by the order in CLASS_SLOTS
+      updated.sort((a, b) => {
+        const ai = CLASS_SLOTS.findIndex(c => c.value === a);
+        const bi = CLASS_SLOTS.findIndex(c => c.value === b);
+        return ai - bi;
+      });
+    }
+    onChangeHours(index, updated.join(', '));
+  };
+
+  return (
+    <div className="space-y-2 border rounded-lg p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <Label htmlFor={`day-${index}`}>Day</Label>
+          <Select
+            value={item.day}
+            onValueChange={(value) => onChangeDay(index, value)}
+          >
+            <SelectTrigger id={`day-${index}`}>
+              <SelectValue placeholder="Select day" />
+            </SelectTrigger>
+            <SelectContent>
+              {weekdays.map((day) => (
+                <SelectItem key={day} value={day}>
+                  {day}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => onRemove(index)}
+          className="mt-5"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div>
+        <Label>Class Slots</Label>
+        <div className="space-y-2 mt-1">
+          {CLASS_SLOTS.map((slot) => (
+            <div key={slot.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={`slot-${index}-${slot.value}`}
+                checked={selectedSlots.includes(slot.value)}
+                onCheckedChange={() => toggleSlot(slot.value)}
+              />
+              <label
+                htmlFor={`slot-${index}-${slot.value}`}
+                className="text-sm cursor-pointer"
+              >
+                {slot.label}
+              </label>
+            </div>
           ))}
-        </SelectContent>
-      </Select>
+        </div>
+      </div>
     </div>
-    <div className="flex-1">
-      <Label htmlFor={`hours-${index}`}>Hours</Label>
-      <Input 
-        id={`hours-${index}`} 
-        value={item.hours} 
-        onChange={(e) => onChangeHours(index, e.target.value)} 
-        placeholder="e.g., 2:00 PM - 8:00 PM" 
-      />
-    </div>
-    <Button 
-      variant="ghost" 
-      size="icon" 
-      onClick={() => onRemove(index)}
-      className="mb-0.5"
-    >
-      <X className="h-4 w-4" />
-    </Button>
-  </div>
-);
+  );
+};

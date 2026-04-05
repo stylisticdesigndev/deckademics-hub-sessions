@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock } from 'lucide-react';
+import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -86,6 +86,16 @@ const AdminInstructorPayments = () => {
   const [scheduleInstructor, setScheduleInstructor] = useState<Instructor | null>(null);
   const [scheduleItems, setScheduleItems] = useState<{ day: string; hours: string }[]>([]);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Add bonus to existing payment state
+  const [showAddBonusToRowDialog, setShowAddBonusToRowDialog] = useState(false);
+  const [bonusRowPaymentId, setBonusRowPaymentId] = useState<string | null>(null);
+  const [bonusRowAmount, setBonusRowAmount] = useState('');
+  const [bonusRowDescription, setBonusRowDescription] = useState('');
+
+  // Delete payment state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   
   React.useEffect(() => {
     const fetchInstructors = async () => {
@@ -283,6 +293,54 @@ const AdminInstructorPayments = () => {
     setClassPeriodEnd(undefined);
     setClassHours('');
     setClassAmountOverride('');
+  };
+
+  const openAddBonusToRow = (paymentId: string) => {
+    setBonusRowPaymentId(paymentId);
+    const payment = payments?.find(p => p.id === paymentId);
+    setBonusRowAmount(payment?.bonusAmount ? payment.bonusAmount.toString() : '');
+    setBonusRowDescription(payment?.bonusDescription || '');
+    setShowAddBonusToRowDialog(true);
+  };
+
+  const handleSaveBonusToRow = async () => {
+    if (!bonusRowPaymentId) return;
+    const amount = parseFloat(bonusRowAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid bonus amount');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ bonus_amount: amount, bonus_description: bonusRowDescription || null } as any)
+        .eq('id', bonusRowPaymentId as any);
+      if (error) throw error;
+      toast.success('Bonus added to payment');
+      setShowAddBonusToRowDialog(false);
+      invalidate();
+    } catch (error) {
+      console.error('Error adding bonus:', error);
+      toast.error('Failed to add bonus');
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletePaymentId) return;
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .delete()
+        .eq('id', deletePaymentId as any);
+      if (error) throw error;
+      toast.success('Payment deleted');
+      setShowDeleteDialog(false);
+      setDeletePaymentId(null);
+      invalidate();
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast.error('Failed to delete payment');
+    }
   };
 
   const resetBonusForm = () => {
@@ -596,14 +654,37 @@ const AdminInstructorPayments = () => {
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
-                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div>
+                          <span>${payment.totalAmount}</span>
+                          {payment.bonusAmount > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              + ${payment.bonusAmount} bonus
+                              {payment.bonusDescription && (
+                                <span className="italic"> ({payment.bonusDescription})</span>
+                              )}
+                            </div>
+                          )}
+                          {payment.bonusAmount > 0 && (
+                            <div className="text-xs font-semibold">
+                              Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
                           {payment.paymentType === 'class' && (
-                            <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
-                              <Edit className="mr-1 h-3 w-3" />
-                              Edit Hours
-                            </Button>
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
+                                <Edit className="mr-1 h-3 w-3" />
+                                Edit Hours
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
+                                <DollarSign className="mr-1 h-3 w-3" />
+                                Bonus
+                              </Button>
+                            </>
                           )}
                           <Button 
                             variant="outline" 
@@ -613,6 +694,14 @@ const AdminInstructorPayments = () => {
                           >
                             <Save className="mr-1 h-3 w-3" />
                             Mark Paid
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => { setDeletePaymentId(payment.id); setShowDeleteDialog(true); }}
+                          >
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -669,7 +758,19 @@ const AdminInstructorPayments = () => {
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
-                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
+                      <TableCell className="text-right">
+                        <span>${payment.totalAmount}</span>
+                        {payment.bonusAmount > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            + ${payment.bonusAmount} bonus
+                          </div>
+                        )}
+                        {payment.bonusAmount > 0 && (
+                          <div className="text-xs font-semibold">
+                            Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
                       </TableCell>
@@ -979,7 +1080,7 @@ const AdminInstructorPayments = () => {
             {scheduleItems.length === 0 && (
               <p className="text-center py-4 text-muted-foreground">No teaching days added yet.</p>
             )}
-            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }])}>
+            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '3:30 PM - 5:00 PM' }])}>
               Add Teaching Day
             </Button>
           </div>
@@ -988,6 +1089,44 @@ const AdminInstructorPayments = () => {
             <Button onClick={handleSaveSchedule} disabled={isSavingSchedule}>
               {isSavingSchedule ? 'Saving...' : 'Save Schedule'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Bonus to Row Dialog */}
+      <Dialog open={showAddBonusToRowDialog} onOpenChange={setShowAddBonusToRowDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add Bonus to Payment</DialogTitle>
+            <DialogDescription>Attach a bonus amount to this class payment</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Bonus Amount ($)</Label>
+              <Input type="number" step="0.01" min="1" placeholder="Enter bonus amount" value={bonusRowAmount} onChange={(e) => setBonusRowAmount(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Description</Label>
+              <Textarea placeholder="e.g., Event DJ, Extra class..." value={bonusRowDescription} onChange={(e) => setBonusRowDescription(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddBonusToRowDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveBonusToRow}>Save Bonus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Payment Confirmation */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Payment</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this payment? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setDeletePaymentId(null); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeletePayment}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

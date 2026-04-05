@@ -3,17 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface InstructorProfile {
-  first_name?: string;
-  last_name?: string;
-}
-
-interface InstructorData {
-  id?: string;
-  hourly_rate?: number;
-  profiles?: InstructorProfile[];
-}
-
 export interface InstructorPayment {
   id: string;
   instructorId?: string;
@@ -21,6 +10,8 @@ export interface InstructorPayment {
   hourlyRate: number;
   hoursLogged: number;
   totalAmount: number;
+  bonusAmount: number;
+  bonusDescription: string | null;
   payPeriodStart: string;
   payPeriodEnd: string;
   paymentType: 'class' | 'bonus';
@@ -55,6 +46,8 @@ export const useInstructorPayments = () => {
           pay_period_start,
           pay_period_end,
           payment_type,
+          bonus_amount,
+          bonus_description,
           instructors:instructor_id (
             id,
             hourly_rate,
@@ -76,43 +69,46 @@ export const useInstructorPayments = () => {
 
       if (paymentsData && Array.isArray(paymentsData)) {
         for (const payment of paymentsData) {
-          if (payment && typeof payment === 'object') {
-            const paymentObj = payment as any;
-            const instructors = paymentObj.instructors as InstructorData;
-            const instructorProfile = instructors?.profiles?.[0] as InstructorProfile;
-            
-            const firstName = instructorProfile?.first_name || '';
-            const lastName = instructorProfile?.last_name || '';
-            const hourlyRate = instructors?.hourly_rate || 0;
+          if (!payment || typeof payment !== 'object') continue;
+          const paymentObj = payment as any;
+          const instructors = paymentObj.instructors;
+          
+          // Handle profiles as either object or array
+          let firstName = '';
+          let lastName = '';
+          let hourlyRate = 0;
 
-            const id = paymentObj.id;
-            const instructor_id = paymentObj.instructor_id;
-            const hours_worked = paymentObj.hours_worked || 0;
-            const amount = paymentObj.amount;
-            const status = paymentObj.status as 'pending' | 'paid';
-            const description = paymentObj.description || null;
-            const pay_period_start = paymentObj.pay_period_start;
-            const pay_period_end = paymentObj.pay_period_end;
-            const payment_type = (paymentObj.payment_type || 'class') as 'class' | 'bonus';
-            const payment_date = paymentObj.payment_date;
-
-            if (id) {
-              processedPayments.push({
-                id,
-                instructorId: instructor_id,
-                instructorName: `${firstName} ${lastName}`.trim(),
-                hourlyRate: hourlyRate,
-                hoursLogged: hours_worked,
-                totalAmount: amount,
-                payPeriodStart: pay_period_start || payment_date,
-                payPeriodEnd: pay_period_end || payment_date,
-                paymentType: payment_type,
-                description,
-                status,
-                lastUpdated: payment_date
-              });
+          if (instructors) {
+            hourlyRate = instructors.hourly_rate || 0;
+            const profiles = instructors.profiles;
+            if (Array.isArray(profiles) && profiles.length > 0) {
+              firstName = profiles[0]?.first_name || '';
+              lastName = profiles[0]?.last_name || '';
+            } else if (profiles && typeof profiles === 'object') {
+              firstName = profiles.first_name || '';
+              lastName = profiles.last_name || '';
             }
           }
+
+          const id = paymentObj.id;
+          if (!id) continue;
+
+          processedPayments.push({
+            id,
+            instructorId: paymentObj.instructor_id,
+            instructorName: `${firstName} ${lastName}`.trim() || 'Unknown',
+            hourlyRate,
+            hoursLogged: paymentObj.hours_worked || 0,
+            totalAmount: paymentObj.amount,
+            bonusAmount: paymentObj.bonus_amount || 0,
+            bonusDescription: paymentObj.bonus_description || null,
+            payPeriodStart: paymentObj.pay_period_start || paymentObj.payment_date,
+            payPeriodEnd: paymentObj.pay_period_end || paymentObj.payment_date,
+            paymentType: (paymentObj.payment_type || 'class') as 'class' | 'bonus',
+            description: paymentObj.description || null,
+            status: paymentObj.status as 'pending' | 'paid',
+            lastUpdated: paymentObj.payment_date
+          });
         }
       }
 
@@ -140,8 +136,8 @@ export const useInstructorPayments = () => {
 
     return {
       pendingPaymentsCount: pendingPayments.length,
-      totalPendingAmount: pendingPayments.reduce((sum, payment) => sum + payment.totalAmount, 0),
-      totalPaidThisMonth: paidThisMonth.reduce((sum, p) => sum + p.totalAmount, 0),
+      totalPendingAmount: pendingPayments.reduce((sum, payment) => sum + payment.totalAmount + payment.bonusAmount, 0),
+      totalPaidThisMonth: paidThisMonth.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0),
       instructorRatesCount: new Set(payments.map(p => p.hourlyRate)).size
     };
   };
