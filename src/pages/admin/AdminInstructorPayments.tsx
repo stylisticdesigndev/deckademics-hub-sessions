@@ -86,6 +86,16 @@ const AdminInstructorPayments = () => {
   const [scheduleInstructor, setScheduleInstructor] = useState<Instructor | null>(null);
   const [scheduleItems, setScheduleItems] = useState<{ day: string; hours: string }[]>([]);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Add bonus to existing payment state
+  const [showAddBonusToRowDialog, setShowAddBonusToRowDialog] = useState(false);
+  const [bonusRowPaymentId, setBonusRowPaymentId] = useState<string | null>(null);
+  const [bonusRowAmount, setBonusRowAmount] = useState('');
+  const [bonusRowDescription, setBonusRowDescription] = useState('');
+
+  // Delete payment state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   
   React.useEffect(() => {
     const fetchInstructors = async () => {
