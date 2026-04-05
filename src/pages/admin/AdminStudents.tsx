@@ -673,7 +673,7 @@ const AdminStudents = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Start Date</p>
-                      <p className="font-medium">{selectedStudentData.start_date || 'Not set'}</p>
+                      <p className="font-medium">{(selectedStudentData as any).start_date || 'Not set'}</p>
                     </div>
                   </div>
                 </div>
