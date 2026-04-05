@@ -245,17 +245,25 @@ const AdminMessages = () => {
               <CardTitle className="text-lg">New Message</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label>To (select recipients)</Label>
                 {users.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No users found.</p>
                 ) : (
-                  <>
-                    {/* Students */}
-                    {users.filter(u => u.role === 'student').length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Students</p>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+                  <Tabs defaultValue="students">
+                    <TabsList className="mb-2">
+                      <TabsTrigger value="students">
+                        Students {users.filter(u => u.role === 'student').length > 0 && `(${users.filter(u => u.role === 'student').length})`}
+                      </TabsTrigger>
+                      <TabsTrigger value="instructors">
+                        Instructors {users.filter(u => u.role === 'instructor').length > 0 && `(${users.filter(u => u.role === 'instructor').length})`}
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="students">
+                      {users.filter(u => u.role === 'student').length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">No students found.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                           {users.filter(u => u.role === 'student').map(user => (
                             <label
                               key={user.id}
@@ -269,13 +277,13 @@ const AdminMessages = () => {
                             </label>
                           ))}
                         </div>
-                      </div>
-                    )}
-                    {/* Instructors */}
-                    {users.filter(u => u.role === 'instructor').length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Instructors</p>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+                      )}
+                    </TabsContent>
+                    <TabsContent value="instructors">
+                      {users.filter(u => u.role === 'instructor').length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">No instructors found.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                           {users.filter(u => u.role === 'instructor').map(user => (
                             <label
                               key={user.id}
@@ -289,9 +297,9 @@ const AdminMessages = () => {
                             </label>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 )}
               </div>
               <div className="space-y-2">
