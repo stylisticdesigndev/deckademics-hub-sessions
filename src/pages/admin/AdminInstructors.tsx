@@ -84,7 +84,8 @@ const AdminInstructors = () => {
   const [showStudentAssignment, setShowStudentAssignment] = useState(false);
   const [instructorToAssign, setInstructorToAssign] = useState<string | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
+  const [showBulkDeactivateInstructors, setShowBulkDeactivateInstructors] = useState(false);
   const {
     activeInstructors,
     pendingInstructors,
