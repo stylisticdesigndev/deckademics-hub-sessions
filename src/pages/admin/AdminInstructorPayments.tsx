@@ -462,7 +462,6 @@ const AdminInstructorPayments = () => {
         <InstructorPaymentStatsCards
           stats={stats}
         />
-        />
 
         <InstructorPaymentSearch
           searchQuery={searchQuery}
