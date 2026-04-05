@@ -50,20 +50,10 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: StudentNote[];
-  moduleProgress?: ModuleProgress[];
+  
   skillProgress?: SkillProgress[];
 }
 
-interface ModuleProgress {
-  moduleId: string;
-  moduleName: string; 
-  progress: number;
-  lessons: {
-    id: string;
-    title: string;
-    completed: boolean;
-  }[];
-}
 
 const InstructorStudents = () => {
   const { toast } = useToast();
@@ -82,15 +72,7 @@ const InstructorStudents = () => {
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [lessonNoteText, setLessonNoteText] = useState('');
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
-  const [selectedLessonTitle, setSelectedLessonTitle] = useState<string | null>(null);
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(null);
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [showLessonNoteDialog, setShowLessonNoteDialog] = useState(false);
-  const [progressValue, setProgressValue] = useState(0);
-  const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
-  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<StudentNote | null>(null);
   const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
@@ -1052,7 +1034,7 @@ const InstructorStudents = () => {
                 <Tabs defaultValue="info">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="info">Info</TabsTrigger>
-                    <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="progress">Skills</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                   </TabsList>
@@ -1153,74 +1135,11 @@ const InstructorStudents = () => {
                       </div>
                     )}
 
-                    {/* Curriculum-based Module Progress */}
-                    {detailedStudent.moduleProgress?.length ? (
-                      <>
-                        {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
-                          <h3 className="font-medium text-base">Curriculum</h3>
-                        )}
-                        {detailedStudent.moduleProgress.map((module) => (
-                          <div key={module.moduleId} className="border rounded-md p-4 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-medium">{module.moduleName}</h3>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{module.progress}%</span>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => openModuleProgressDialog(detailedStudent.id, module)}
-                                >
-                                  Update
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            <Progress value={module.progress} className="h-2" />
-                            
-                            <div className="space-y-2 mt-4">
-                              {module.lessons.map((lesson) => (
-                                <div key={lesson.id} className="flex items-center gap-2">
-                                  <Checkbox 
-                                    checked={lesson.completed} 
-                                    onCheckedChange={() => toggleLessonCompletion(
-                                      detailedStudent.id, 
-                                      module.moduleId, 
-                                      lesson.id
-                                    )}
-                                    id={`lesson-${lesson.id}`}
-                                  />
-                                  <label 
-                                    htmlFor={`lesson-${lesson.id}`}
-                                    className={cn(
-                                      "text-sm cursor-pointer flex-grow",
-                                      lesson.completed && "line-through text-muted-foreground"
-                                    )}
-                                  >
-                                    {lesson.title}
-                                  </label>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => openLessonNoteDialog(
-                                      detailedStudent.id,
-                                      lesson.id,
-                                      lesson.title
-                                    )}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    ) : !detailedStudent.skillProgress?.length ? (
+                    {!detailedStudent.skillProgress?.length && (
                       <div className="text-center py-8 text-muted-foreground">
-                        No progress data available for this student.
+                        No skills have been defined for this student's level yet.
                       </div>
-                    ) : null}
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="notes" className="space-y-4">
