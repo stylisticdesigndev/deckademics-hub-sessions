@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { DollarSign, Save, Edit, Plus, Gift, CalendarIcon } from 'lucide-react';
+import { DollarSign, Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -34,6 +34,7 @@ import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
+import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 
 interface Instructor {
   id: string;
