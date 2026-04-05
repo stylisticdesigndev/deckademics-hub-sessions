@@ -252,6 +252,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
                     <SelectContent className="bg-background">
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="partial">Partial</SelectItem>
                       <SelectItem value="failed">Failed</SelectItem>
                       <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>
