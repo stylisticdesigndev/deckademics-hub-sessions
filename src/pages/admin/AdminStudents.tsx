@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
+import { Search, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -65,7 +65,7 @@ const AdminStudents = () => {
   const [viewStudentId, setViewStudentId] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
-  const [isCreatingDemo, setIsCreatingDemo] = useState(false);
+  
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('active');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
@@ -83,7 +83,6 @@ const AdminStudents = () => {
     declineStudent,
     deactivateStudent,
     updateStudentLevel,
-    createDemoStudent,
     refetchData
   } = useAdminStudents();
 
@@ -170,23 +169,8 @@ const AdminStudents = () => {
            pendingStudents?.find(s => s.id === id);
   };
 
-  const handleCreateDemoStudent = async () => {
-    setIsCreatingDemo(true);
-    try {
-      const result = await createDemoStudent();
-      if (result) {
-        toast.success("Demo student created successfully");
-        setTimeout(async () => { await refetchData(); }, 1000);
-      } else {
-        toast.error("Failed to create demo student");
-      }
-    } catch (error: any) {
-      toast.error("Failed to create demo student");
-    } finally {
-      setIsCreatingDemo(false);
-    }
-  };
-  
+
+
   const handleForceRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -281,21 +265,8 @@ const AdminStudents = () => {
           >
             {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           </Button>
-          <Button 
-            onClick={handleCreateDemoStudent} 
-            variant="outline"
-            disabled={isCreatingDemo || isRefreshing}
-          >
-            {isCreatingDemo ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
-            ) : (
-              'Create Demo Student'
-            )}
-          </Button>
-          <Button disabled={isRefreshing}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Student
-          </Button>
+
+
         </div>
       </div>
 

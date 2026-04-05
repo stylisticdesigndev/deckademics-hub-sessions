@@ -184,35 +184,8 @@ const level = studentObj.level || 'novice';
     }
   };
 
-  // Debug function to fetch all data
-  const debugFetchStudents = async () => {
-    try {
-      console.log('Fetching debug data...');
-      
-      const [profilesResult, studentsResult] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('students').select(`
-          *,
-          profiles (*),
-          instructors (
-            *,
-            profiles (*)
-          )
-        `)
-      ]);
 
-      return {
-        allProfiles: profilesResult.data || [],
-        allStudents: studentsResult.data || []
-      };
-    } catch (error) {
-      console.error('Error in debugFetchStudents:', error);
-      return {
-        allProfiles: [],
-        allStudents: []
-      };
-    }
-  };
+
 
   const { data: activeStudents = [], isLoading: isLoadingActive, refetch: refetchActive } = useQuery({
     queryKey: ['admin', 'students', 'active'],
@@ -284,33 +257,8 @@ const level = studentObj.level || 'novice';
     }
   });
 
-  // Create demo student function
-  const createDemoStudent = async () => {
-    try {
-      const demoId = crypto.randomUUID();
-      const demoEmail = `demo.student.${Date.now()}@example.com`;
-      
-      const { data, error } = await supabase.rpc('create_demo_student', {
-        student_id: demoId,
-        email_address: demoEmail,
-        first_name: 'Demo',
-        last_name: `Student ${Date.now().toString().slice(-4)}`
-      });
 
-      if (error) {
-        console.error('Error creating demo student:', error);
-        return null;
-      }
 
-      // Refresh the data
-      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-      
-      return data;
-    } catch (error) {
-      console.error('Error in createDemoStudent:', error);
-      return null;
-    }
-  };
 
   const refetchData = async () => {
     await Promise.all([refetchActive(), refetchPending()]);
@@ -344,8 +292,6 @@ const level = studentObj.level || 'novice';
     declineStudent,
     deactivateStudent,
     updateStudentLevel,
-    createDemoStudent,
-    debugFetchStudents,
     refetchData
   };
 };
