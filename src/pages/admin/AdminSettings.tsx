@@ -39,6 +39,9 @@ const AdminSettings = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string | null>(null);
   const { clearLocalStorage, session } = useAuth();
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [adminForm, setAdminForm] = useState({ email: '', firstName: '', lastName: '' });
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   
   // Reduce max allowable video size to 50MB due to Supabase limits
   const MAX_VIDEO_MB = 50;
@@ -417,6 +420,67 @@ const AdminSettings = () => {
 
                 <Separator />
                 <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Admin Management</h3>
+                  <p className="text-sm text-muted-foreground">Create additional admin accounts for trusted staff.</p>
+                  <Dialog open={showAddAdmin} onOpenChange={setShowAddAdmin}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Add Admin
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Admin</DialogTitle>
+                        <DialogDescription>The new admin will receive a password reset email to set their password.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-email">Email</Label>
+                          <Input id="admin-email" type="email" value={adminForm.email} onChange={e => setAdminForm(p => ({ ...p, email: e.target.value }))} placeholder="admin@example.com" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-first">First Name</Label>
+                            <Input id="admin-first" value={adminForm.firstName} onChange={e => setAdminForm(p => ({ ...p, firstName: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-last">Last Name</Label>
+                            <Input id="admin-last" value={adminForm.lastName} onChange={e => setAdminForm(p => ({ ...p, lastName: e.target.value }))} />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowAddAdmin(false)}>Cancel</Button>
+                        <Button
+                          disabled={isCreatingAdmin || !adminForm.email || !adminForm.firstName || !adminForm.lastName}
+                          onClick={async () => {
+                            setIsCreatingAdmin(true);
+                            try {
+                              const { data, error } = await supabase.functions.invoke('create-admin', {
+                                body: adminForm,
+                              });
+                              if (error) throw error;
+                              toast({ title: 'Admin Created', description: data.message || 'New admin account created successfully.' });
+                              setShowAddAdmin(false);
+                              setAdminForm({ email: '', firstName: '', lastName: '' });
+                            } catch (err: any) {
+                              console.error('Error creating admin:', err);
+                              toast({ title: 'Error', description: err.message || 'Failed to create admin account.', variant: 'destructive' });
+                            } finally {
+                              setIsCreatingAdmin(false);
+                            }
+                          }}
+                        >
+                          {isCreatingAdmin ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : 'Create Admin'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <Separator />
+                <div className="space-y-4">
                   <h3 className="text-lg font-medium">System Maintenance</h3>
                   <div className="flex flex-wrap items-center gap-4">
                     <Button 
@@ -439,14 +503,6 @@ const AdminSettings = () => {
                   <FormDescription>
                     Use with caution! Clearing local storage will remove all cached data and log you out.
                   </FormDescription>
-                  
-                  {/* Debug information for troubleshooting */}
-                  <div className="mt-6 p-4 bg-slate-50 rounded-md border">
-                    <h4 className="text-sm font-medium mb-2">Authentication Status:</h4>
-                    <pre className="text-xs whitespace-pre-wrap bg-slate-100 p-2 rounded overflow-auto">
-                      {session?.user ? `Logged in as: ${session.user.email || session.user.id}` : 'Not logged in'}
-                    </pre>
-                  </div>
                 </div>
                 
                 <Button 
