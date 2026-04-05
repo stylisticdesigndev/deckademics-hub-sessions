@@ -1,79 +1,91 @@
 
 
-# Separate Student Progress Skills from Curriculum
+# Rebuild Instructor Payments: Pay Period Workflow
 
-## Problem
+## Current State
 
-The current system conflates two different concepts:
-- **Curriculum**: A reference overview of what's taught at each level (modules + lessons). Already correct on all sides.
-- **Student Progress Skills**: Trackable skills per level that the admin creates, the instructor sees and updates proficiency on, and the student sees as their progress.
-
-Currently, the instructor side uses **hardcoded** module/lesson arrays (lines 124-175 of `InstructorStudents.tsx`) rather than pulling from the database. The admin has no dedicated interface to manage progress skills separately from curriculum.
+The `instructor_payments` table has: `id`, `instructor_id`, `amount`, `status` (pending/paid), `hours_worked`, `payment_date`, `description`. But there's no way to create payments from the UI, no real pay period dates, and no concept of "bonus/extra" payments.
 
 ## Plan
 
-### 1. Create a new `progress_skills` database table
+### 1. Database Migration
 
-A new table to store admin-defined skills per level:
+Add columns to `instructor_payments`:
+- `pay_period_start` (date, NOT NULL)
+- `pay_period_end` (date, NOT NULL)
+- `payment_type` (text, NOT NULL, default `'class'`) -- values: `'class'` or `'bonus'`
 
+Backfill existing rows with `payment_date` for both start/end and `'class'` for type.
+
+### 2. Rework the Page Layout
+
+The page will have these sections:
+
+**Stats Cards** -- keep existing, add "Total Paid This Month" card.
+
+**Instructor Rates** -- keep as-is (set hourly rates).
+
+**Create Pay Period Payment** -- new section with a "Create Payment" button that opens a dialog:
+- Select instructor (dropdown)
+- Pay period start date and end date (date pickers)
+- Hours worked (number input)
+- Amount auto-calculates from hours x hourly rate (editable override)
+- Type defaults to "class"
+
+**Create Bonus Payment** -- a separate "Add Bonus Payment" button (or a toggle in the same dialog):
+- Select instructor
+- Amount (manual entry)
+- Description (text field for "Extra class", "Event DJ", etc.)
+- Date
+- Type = "bonus"
+
+**Current Pay Period** -- shows all `pending` payments, grouped by instructor. Each row shows:
+- Instructor name
+- Type (Class / Bonus with description)
+- Hours (for class type) or Description (for bonus type)
+- Rate, Amount
+- Actions: Edit Hours, Mark Paid
+
+**Payment History** -- shows all `paid` payments with proper pay period start/end dates, type badge, and description.
+
+### 3. Hook Updates
+
+Update `useInstructorPayments.ts`:
+- Fetch `pay_period_start`, `pay_period_end`, `payment_type`, `description` from query
+- Add these to the `InstructorPayment` interface
+- Remove the hack of using `payment_date` for both start/end
+
+Create a new `useCreateInstructorPayment.ts` hook for inserting payments.
+
+### 4. UI Component Changes
+
+**`AdminInstructorPayments.tsx`**:
+- Add "Create Payment" and "Add Bonus Payment" buttons in the header area
+- New dialog for creating class payments (instructor select, date range, hours, auto-calc amount)
+- New dialog for creating bonus payments (instructor select, amount, description, date)
+- Update pending table to show payment type badge and description column
+- Update history table to show real pay period dates and type
+
+**`InstructorPaymentStatsCards.tsx`**:
+- Add a third card showing total paid amount for the current month
+
+### 5. Flow Summary
+
+```text
+Admin creates payment record (class or bonus)
+  -> Appears in "Current Pay Period" as pending
+  -> Admin can edit hours / amount
+  -> Admin clicks "Mark Paid"
+  -> Moves to "Payment History" with full details
 ```
-progress_skills
-  - id (uuid, PK)
-  - name (text, NOT NULL) -- e.g. "Beat Juggling", "Double Click Flare"
-  - level (text, NOT NULL) -- novice, amateur, intermediate, advanced
-  - description (text, nullable)
-  - order_index (integer, default 0)
-  - created_at, updated_at (timestamps)
-```
 
-Add RLS policies for admin full access, instructor/student read access. The existing `student_progress` table continues to store per-student proficiency, but `skill_name` will reference these admin-defined skills.
+### Files Changed
 
-### 2. Add "Skills Management" section to Admin
-
-Add a new admin page or a new tab/section within the existing admin area. Given the nav already has "Curriculum" and "Progress Overview", the cleanest approach is a new nav item **"Skills"** between Curriculum and Progress Overview.
-
-**New page: `AdminSkills.tsx`**
-- Tabbed by level (Novice / Amateur / Intermediate / Advanced)
-- Each tab shows a list of skills for that level
-- Admin can add, edit, reorder, and delete skills
-- Simple card/list UI similar to curriculum but focused on skill names
-
-**Files**: New `src/pages/admin/AdminSkills.tsx`, new route in `App.tsx`, new nav item in `AdminNavigation.tsx`
-
-### 3. Create hooks for skill management
-
-- `useProgressSkills.ts` -- fetch skills, optionally filtered by level
-- `useCreateProgressSkill.ts` -- insert new skill
-- `useUpdateProgressSkill.ts` -- update skill
-- `useDeleteProgressSkill.ts` -- delete skill
-
-### 4. Update Instructor Students page to use database skills
-
-Replace the hardcoded `curriculumModules` array (lines 124-175) with a query to `progress_skills` filtered by the student's level. The instructor sees skills relevant to each student's current level and can update proficiency via the existing `student_progress` table, using the skill name from `progress_skills`.
-
-**File**: `src/pages/instructor/InstructorStudents.tsx`
-
-### 5. Update Student Progress page to display skills by level
-
-The student progress page already reads from `student_progress` table. No major change needed -- it will continue showing whatever skills have proficiency entries. The skill names will now match the admin-defined skills.
-
-**File**: `src/pages/student/StudentProgress.tsx` (minor, if any changes)
-
-### 6. Update the Curriculum page banner
-
-Change the existing info banner on `AdminCurriculum.tsx` to clarify that curriculum is a reference guide only, and that trackable skills are managed separately in the Skills section.
-
-**File**: `src/pages/admin/AdminCurriculum.tsx`
-
-## Summary of changes
-
-| Area | What changes |
-|------|-------------|
-| Database | New `progress_skills` table with RLS |
-| Admin nav | New "Skills" nav item |
-| New page | `AdminSkills.tsx` -- CRUD for skills per level |
-| New hooks | 4 hooks for progress skill management |
-| Instructor | Replace hardcoded modules with DB skills query |
-| Admin Curriculum | Update info banner text |
-| Routing | Add `/admin/skills` route |
+| File | Change |
+|------|--------|
+| Migration SQL | Add `pay_period_start`, `pay_period_end`, `payment_type` columns |
+| `src/hooks/useInstructorPayments.ts` | Fetch new columns, update interface |
+| New: `src/hooks/useCreateInstructorPayment.ts` | Insert mutation hook |
+| `src/pages/admin/AdminInstructorPayments.tsx` | Add create dialogs, update tables |
+| `src/components/admin/instructor-payments/InstructorPaymentStatsCards.tsx` | Add third stat card |
 
