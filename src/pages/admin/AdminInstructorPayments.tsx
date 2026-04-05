@@ -1068,7 +1068,7 @@ const AdminInstructorPayments = () => {
             {scheduleItems.length === 0 && (
               <p className="text-center py-4 text-muted-foreground">No teaching days added yet.</p>
             )}
-            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }])}>
+            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '3:30 PM - 5:00 PM' }])}>
               Add Teaching Day
             </Button>
           </div>
