@@ -28,7 +28,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -52,8 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
+import { Search, Check, X, Eye, Users, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
 import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -70,18 +68,6 @@ const AdminInstructors = () => {
   const [viewInstructorId, setViewInstructorId] = useState<string | null>(null);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
-  const [addInstructorOpen, setAddInstructorOpen] = useState(false);
-  const [newInstructor, setNewInstructor] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    specialties: '',
-    hourlyRate: '25',
-  });
-  
-  // New state for manual instructor creation
-  const [showCreateInstructorDialog, setShowCreateInstructorDialog] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
   
   // State for student assignment
   const [showStudentAssignment, setShowStudentAssignment] = useState(false);
@@ -93,14 +79,11 @@ const AdminInstructors = () => {
     activeInstructors,
     pendingInstructors,
     inactiveInstructors,
-    allUsers,
     isLoading,
     approveInstructor,
     declineInstructor,
     deactivateInstructor,
     activateInstructor,
-    createInstructor,
-    addNewInstructor
   } = useAdminInstructors();
   
   const {
@@ -143,16 +126,6 @@ const AdminInstructors = () => {
     )
   ) || [];
 
-  // Get eligible users who don't have instructor records yet
-  const eligibleUsers = (allUsers || []).filter(user => {
-    // Check if this user doesn't already have an instructor record
-    const isAlreadyInstructor = 
-      (activeInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id) ||
-      (pendingInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id) ||
-      (inactiveInstructors as InstructorWithProfile[] || []).some(instructor => instructor.id === user.id);
-    
-    return !isAlreadyInstructor;
-  });
 
   // Bulk action helpers for instructors
   const toggleInstructorSelectAll = () => {
@@ -233,54 +206,6 @@ const AdminInstructors = () => {
     setInstructorToDeactivate(null);
   };
 
-  const handleCreateInstructor = () => {
-    if (!selectedUserId) {
-      toast.error("Please select a user to convert to instructor.");
-      return;
-    }
-    
-    createInstructor.mutate(selectedUserId);
-    setShowCreateInstructorDialog(false);
-    setSelectedUserId('');
-  };
-
-  const handleAddInstructor = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate input
-    if (!newInstructor.firstName || !newInstructor.lastName || !newInstructor.email) {
-      toast.error("Please fill in all required fields (first name, last name, and email).");
-      return;
-    }
-    
-    // Parse specialties
-    const specialtiesArray = newInstructor.specialties
-      ? newInstructor.specialties.split(',').map(s => s.trim()).filter(s => s.length > 0)
-      : [];
-
-    // Parse hourly rate
-    const hourlyRate = parseFloat(newInstructor.hourlyRate) || 25;
-
-    addNewInstructor.mutate({
-      email: newInstructor.email,
-      firstName: newInstructor.firstName,
-      lastName: newInstructor.lastName,
-      specialties: specialtiesArray,
-      hourlyRate
-    }, {
-      onSuccess: () => {
-        // Reset form and close dialog
-        setNewInstructor({ 
-          firstName: '', 
-          lastName: '', 
-          email: '', 
-          specialties: '', 
-          hourlyRate: '25' 
-        });
-        setAddInstructorOpen(false);
-      }
-    });
-  };
 
   const viewInstructor = (id: string) => {
     setViewInstructorId(id);
@@ -333,8 +258,7 @@ const AdminInstructors = () => {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>No instructor records found</AlertTitle>
         <AlertDescription>
-          There are no instructor records. 
-          Use the "Convert User to Instructor" feature to create instructor records for existing users.
+          There are no instructor records. Instructors can self-register at the instructor sign-up page.
         </AlertDescription>
       </Alert>
     );
@@ -428,156 +352,6 @@ const AdminInstructors = () => {
               </p>
             </div>
             
-            <div className="flex gap-2">
-              <Dialog open={showCreateInstructorDialog} onOpenChange={setShowCreateInstructorDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <UserRound className="mr-2 h-4 w-4" />
-                    Convert User to Instructor
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Convert User to Instructor</DialogTitle>
-                    <DialogDescription>
-                      Create an instructor record for an existing user account.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  {eligibleUsers && eligibleUsers.length > 0 ? (
-                    <div className="py-4">
-                      <div className="grid gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="userId">Select User</Label>
-                          <Select 
-                            value={selectedUserId} 
-                            onValueChange={setSelectedUserId}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a user" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {eligibleUsers.map((user) => (
-                                <SelectItem key={user.id} value={user.id}>
-                                  {user.first_name} {user.last_name} ({user.email})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="py-4 text-center text-muted-foreground">
-                      No eligible users found. All users already have instructor records.
-                    </div>
-                  )}
-                  
-                  <DialogFooter>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowCreateInstructorDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleCreateInstructor} 
-                      disabled={!selectedUserId || !eligibleUsers || eligibleUsers.length === 0}
-                    >
-                      Create Instructor
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={addInstructorOpen} onOpenChange={setAddInstructorOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Add Instructor
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleAddInstructor}>
-                    <DialogHeader>
-                      <DialogTitle>Add New Instructor</DialogTitle>
-                      <DialogDescription>
-                        Create a new instructor account with user authentication. A password reset email will be sent automatically to the instructor's email address.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="firstName" className="text-left">First Name *</Label>
-                        <Input
-                          id="firstName"
-                          value={newInstructor.firstName}
-                          onChange={(e) => setNewInstructor({...newInstructor, firstName: e.target.value})}
-                          placeholder="Enter first name"
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="lastName" className="text-left">Last Name *</Label>
-                        <Input
-                          id="lastName"
-                          value={newInstructor.lastName}
-                          onChange={(e) => setNewInstructor({...newInstructor, lastName: e.target.value})}
-                          placeholder="Enter last name"
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-left">Email *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={newInstructor.email}
-                          onChange={(e) => setNewInstructor({...newInstructor, email: e.target.value})}
-                          placeholder="Enter email address"
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="specialties" className="text-left">Specialties</Label>
-                        <Input
-                          id="specialties"
-                          value={newInstructor.specialties}
-                          onChange={(e) => setNewInstructor({...newInstructor, specialties: e.target.value})}
-                          placeholder="E.g., Turntablism, Scratching (comma-separated)"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="hourlyRate" className="text-left">Hourly Rate ($)</Label>
-                        <Input
-                          id="hourlyRate"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={newInstructor.hourlyRate}
-                          onChange={(e) => setNewInstructor({...newInstructor, hourlyRate: e.target.value})}
-                          placeholder="25.00"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setAddInstructorOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={addNewInstructor.isPending}>
-                        {addNewInstructor.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          'Add Instructor'
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
             
             {/* Individual Student Reassignment Dialog - Updated to handle empty student lists */}
             <Dialog open={false} onOpenChange={() => {}}>
@@ -823,7 +597,7 @@ const AdminInstructors = () => {
                     {viewedInstructor.status === 'active' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); handleOpenAssignStudents(viewInstructorId!); }}>
-                          <UserRound className="h-4 w-4 mr-2" /> Assign Students
+                          <Users className="h-4 w-4 mr-2" /> Assign Students
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); navigate(`/admin/messages?recipient=${viewInstructorId}`); }}>
                           <MessageSquare className="h-4 w-4 mr-2" /> Send Message
@@ -940,7 +714,7 @@ const AdminInstructors = () => {
                                         onClick={() => handleOpenAssignStudents(instructor.id)}
                                         className="h-8 w-8"
                                       >
-                                        <UserRound className="h-4 w-4" />
+                                        <Users className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
