@@ -94,7 +94,6 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         
         let progressData: any[] = [];
         if (studentIds.length > 0) {
-          // Get student progress
           const { data: progress, error: progressError } = await supabase
             .from('student_progress')
             .select('student_id, skill_name, proficiency')
@@ -102,11 +101,22 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             
           if (progressError) {
             console.error("Error fetching student progress:", progressError);
-            // Don't throw here, just log and continue without progress data
           } else {
             progressData = progress || [];
           }
         }
+        
+        // Fetch admin-defined progress skills
+        const { data: allProgressSkills } = await supabase
+          .from('progress_skills' as any)
+          .select('name, level');
+        
+        const skillsByLevel = new Map<string, string[]>();
+        (allProgressSkills || []).forEach((s: any) => {
+          const existing = skillsByLevel.get(s.level) || [];
+          existing.push(s.name);
+          skillsByLevel.set(s.level, existing);
+        });
         
         console.log("Progress data:", progressData);
         
@@ -119,26 +129,29 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           )
           .map(student => {
             const studentData = student as unknown as StudentData;
+            const studentLevel = (studentData?.level || 'novice').toLowerCase();
+            const adminSkills = skillsByLevel.get(studentLevel) || [];
+            const adminSkillSet = new Set(adminSkills);
             
-            // Filter progress data for this student and get average
-            const studentProgress = progressData
+            // Build a map of proficiency for admin-defined skills only
+            const proficiencyMap = new Map<string, number>();
+            progressData
               .filter(p => 
                 isDataObject(p) && 
                 hasProperty(p, 'student_id') && 
-                hasProperty(p, 'proficiency') && 
                 p.student_id === student.id &&
-                !(hasProperty(p, 'skill_name') && typeof p.skill_name === 'string' && p.skill_name.toLowerCase() === 'overall progress')
-              );
-              
-            // Proficiency is stored as raw percentage (0-100)
-            const averageStudentProgress = studentProgress.length > 0 
-              ? Math.round(studentProgress.reduce((sum, p) => {
-                  return sum + (isDataObject(p) && hasProperty(p, 'proficiency') ? 
-                    (Number(p.proficiency) || 0) : 0);
-                }, 0) / studentProgress.length)
+                hasProperty(p, 'skill_name') &&
+                adminSkillSet.has(p.skill_name as string)
+              )
+              .forEach(p => {
+                proficiencyMap.set(p.skill_name as string, Number(p.proficiency) || 0);
+              });
+            
+            // Average across ALL admin skills (missing = 0%)
+            const averageStudentProgress = adminSkills.length > 0
+              ? Math.round(adminSkills.reduce((sum, skillName) => sum + (proficiencyMap.get(skillName) || 0), 0) / adminSkills.length)
               : 0;
               
-            // Get profile data
             const studentProfile = studentData?.profiles;
             const firstName = studentProfile?.first_name || '';
             const lastName = studentProfile?.last_name || '';
@@ -158,7 +171,6 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         setStudents(formattedStudents);
         setTotalStudents(formattedStudents.length);
         
-        // Calculate average progress
         if (formattedStudents.length > 0) {
           const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
           setAverageProgress(Math.round(totalProgress / formattedStudents.length));
