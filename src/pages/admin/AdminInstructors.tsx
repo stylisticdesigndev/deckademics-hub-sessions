@@ -149,13 +149,31 @@ const AdminInstructors = () => {
     return !isAlreadyInstructor;
   });
 
-  // Log debugging information when data changes
-  useEffect(() => {
-    console.log("Debug - All users:", allUsers);
-    console.log("Debug - Active instructors:", activeInstructors);
-    console.log("Debug - Pending instructors:", pendingInstructors);
-    console.log("Debug - Inactive instructors:", inactiveInstructors);
-  }, [allUsers, activeInstructors, pendingInstructors, inactiveInstructors]);
+  // Bulk action helpers for instructors
+  const toggleInstructorSelectAll = () => {
+    if (selectedInstructorIds.length === filteredActiveInstructors.length) {
+      setSelectedInstructorIds([]);
+    } else {
+      setSelectedInstructorIds(filteredActiveInstructors.map(i => i.id));
+    }
+  };
+
+  const toggleInstructorSelect = (id: string) => {
+    setSelectedInstructorIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkDeactivateInstructors = async () => {
+    for (const id of selectedInstructorIds) {
+      await deactivateInstructor.mutateAsync(id);
+    }
+    setSelectedInstructorIds([]);
+    setShowBulkDeactivateInstructors(false);
+  };
+
+  const handleBulkMessageInstructors = () => {
+    const recipientIds = selectedInstructorIds.join(',');
+    navigate(`/admin/messages?recipients=${recipientIds}`);
+  };
 
   const handleApprove = (id: string) => {
     approveInstructor.mutate(id);
