@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
@@ -50,20 +50,10 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: StudentNote[];
-  moduleProgress?: ModuleProgress[];
+  
   skillProgress?: SkillProgress[];
 }
-
-interface ModuleProgress {
-  moduleId: string;
-  moduleName: string; 
-  progress: number;
-  lessons: {
-    id: string;
-    title: string;
-    completed: boolean;
-  }[];
-}
+import { Checkbox } from "@/components/ui/checkbox";
 
 const InstructorStudents = () => {
   const { toast } = useToast();
@@ -82,15 +72,7 @@ const InstructorStudents = () => {
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [lessonNoteText, setLessonNoteText] = useState('');
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
-  const [selectedLessonTitle, setSelectedLessonTitle] = useState<string | null>(null);
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(null);
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [showLessonNoteDialog, setShowLessonNoteDialog] = useState(false);
-  const [progressValue, setProgressValue] = useState(0);
-  const [selectedModule, setSelectedModule] = useState<ModuleProgress | null>(null);
-  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<StudentNote | null>(null);
   const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
@@ -263,171 +245,12 @@ const InstructorStudents = () => {
       setIsAddingNote(false);
     }
   };
-  
-  const handleAddLessonNote = async () => {
-    if (!selectedStudent || !lessonNoteText.trim() || !selectedLessonTitle || !instructorId) return;
-    
-    try {
-      const { error } = await supabase
-        .from('student_notes')
-        .insert({
-          student_id: selectedStudent,
-          instructor_id: instructorId,
-          content: lessonNoteText.trim(),
-          title: selectedLessonTitle,
-        });
-
-      if (error) {
-        console.error('Error saving lesson note:', error);
-        toast({
-          title: "Error saving lesson note",
-          description: `Failed to save lesson note: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      await refetch();
-      
-      setShowLessonNoteDialog(false);
-      setLessonNoteText('');
-      
-      toast({
-        title: "Lesson note added",
-        description: `Note for "${selectedLessonTitle}" has been saved and will appear on the student's Notes page.`,
-      });
-    } catch (error) {
-      console.error('Unexpected error saving lesson note:', error);
-      toast({
-        title: "Error saving lesson note",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
   const openNoteDialog = (studentId: string) => {
     setSelectedStudent(studentId);
     setNoteText('');
     setShowNoteDialog(true);
   };
-  
-  const openLessonNoteDialog = (studentId: string, lessonId: string, lessonTitle: string) => {
-    setSelectedStudent(studentId);
-    setSelectedLessonId(lessonId);
-    setSelectedLessonTitle(lessonTitle);
-    setLessonNoteText('');
-    setShowLessonNoteDialog(true);
-  };
 
-
-  const openModuleProgressDialog = (studentId: string, module: ModuleProgress) => {
-    const student = students.find(s => s.id === studentId);
-    if (student) {
-      setSelectedStudent(studentId);
-      setSelectedModule(module);
-      setProgressValue(module.progress);
-      setShowProgressDialog(true);
-    }
-  };
-
-
-  const handleModuleProgressUpdate = async () => {
-    if (!selectedStudent || !selectedModule) return;
-
-    try {
-      // Check if a progress record already exists for this student and module
-      const { data: existingProgress } = await supabase
-        .from('student_progress')
-        .select('id')
-        .eq('student_id', selectedStudent)
-        .eq('skill_name', selectedModule.moduleName)
-        .single();
-
-      if (existingProgress) {
-        // Update existing record - convert percentage to proficiency scale (1-10)
-        const proficiencyValue = Math.max(0, Math.min(100, progressValue));
-        const { error } = await supabase
-          .from('student_progress')
-          .update({
-            proficiency: proficiencyValue,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          })
-          .eq('id', existingProgress.id);
-
-        if (error) {
-          console.error('Error updating module progress:', error);
-          toast({
-            title: "Error updating module progress",
-            description: "Failed to save module progress to database. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else {
-        const proficiencyValue = Math.max(0, Math.min(100, progressValue));
-        const { error } = await supabase
-          .from('student_progress')
-          .insert({
-            student_id: selectedStudent,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b', // Valid course ID for DJ Fundamentals
-            skill_name: selectedModule.moduleName,
-            proficiency: proficiencyValue,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          });
-
-        if (error) {
-          console.error('Error inserting module progress:', error);
-          toast({
-            title: "Error updating module progress",
-            description: "Failed to save module progress to database. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // Update local state only after successful database update
-      setStudents(prevStudents => prevStudents.map(student => {
-        if (student.id === selectedStudent && student.moduleProgress) {
-          const updatedModules = student.moduleProgress.map(module => 
-            module.moduleId === selectedModule.moduleId 
-              ? { ...module, progress: progressValue } 
-              : module
-          );
-          
-          const totalModules = updatedModules.length;
-          const overallProgress = Math.round(
-            updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
-          );
-          
-          return { 
-            ...student, 
-            moduleProgress: updatedModules,
-            progress: overallProgress
-          };
-        }
-        return student;
-      }));
-      
-      setShowProgressDialog(false);
-      setSelectedModule(null);
-      
-      toast({
-        title: "Module progress updated",
-        description: "Student module progress has been successfully saved.",
-      });
-    } catch (error) {
-      console.error('Unexpected error updating module progress:', error);
-      toast({
-        title: "Error updating module progress",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleSkillProficiencyUpdate = async (studentId: string, skillName: string, proficiency: number, existingRecordId?: string) => {
     try {
@@ -470,125 +293,6 @@ const InstructorStudents = () => {
     }
   };
 
-  const toggleLessonCompletion = async (studentId: string, moduleId: string, lessonId: string) => {
-    try {
-      // Get current lesson state to toggle it
-      const student = students.find(s => s.id === studentId);
-      const module = student?.moduleProgress?.find(m => m.moduleId === moduleId);
-      const lesson = module?.lessons.find(l => l.id === lessonId);
-      
-      if (!lesson) return;
-
-      const newCompletionState = !lesson.completed;
-      const skillName = `${module?.moduleName} - ${lesson.title}`;
-
-      // Check if a progress record already exists for this lesson
-      const { data: existingProgress } = await supabase
-        .from('student_progress')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('skill_name', skillName)
-        .single();
-
-      if (existingProgress) {
-        // Update existing record - use 100 for completed, 0 for incomplete
-        const { error } = await supabase
-          .from('student_progress')
-          .update({
-            proficiency: newCompletionState ? 100 : 0,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          })
-          .eq('id', existingProgress.id);
-
-        if (error) {
-          console.error('Error updating lesson completion:', error);
-          toast({
-            title: "Error updating lesson",
-            description: "Failed to save lesson completion to database. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else {
-        // Insert new record - use 100 for completed, 0 for incomplete
-        const { error } = await supabase
-          .from('student_progress')
-          .insert({
-            student_id: studentId,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b',
-            skill_name: skillName,
-            proficiency: newCompletionState ? 100 : 0,
-            assessment_date: new Date().toISOString(),
-            assessor_id: instructorId
-          });
-
-        if (error) {
-          console.error('Error inserting lesson completion:', error);
-          toast({
-            title: "Error updating lesson",
-            description: "Failed to save lesson completion to database. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // Update local state only after successful database update
-      const updateStudentProgress = (s: Student) => {
-        if (s.id === studentId && s.moduleProgress) {
-          const updatedModules = s.moduleProgress.map(module => {
-            if (module.moduleId === moduleId) {
-              const updatedLessons = module.lessons.map(lesson => 
-                lesson.id === lessonId ? { ...lesson, completed: newCompletionState } : lesson
-              );
-              
-              const completedLessons = updatedLessons.filter(lesson => lesson.completed).length;
-              const moduleProgress = Math.round((completedLessons / updatedLessons.length) * 100);
-              
-              return { 
-                ...module, 
-                lessons: updatedLessons,
-                progress: moduleProgress
-              };
-            }
-            return module;
-          });
-          
-          const totalModules = updatedModules.length;
-          const overallProgress = Math.round(
-            updatedModules.reduce((sum, module) => sum + module.progress, 0) / totalModules
-          );
-          
-          return { 
-            ...s, 
-            moduleProgress: updatedModules,
-            progress: overallProgress
-          };
-        }
-        return s;
-      };
-
-      setStudents(prevStudents => prevStudents.map(updateStudentProgress));
-      
-      // Also sync detailedStudent so the modal updates live
-      if (detailedStudent && detailedStudent.id === studentId) {
-        setDetailedStudent(prev => prev ? updateStudentProgress(prev) : prev);
-      }
-      
-      toast({
-        title: "Lesson status updated",
-        description: "Student lesson status has been successfully saved.",
-      });
-    } catch (error) {
-      console.error('Unexpected error updating lesson completion:', error);
-      toast({
-        title: "Error updating lesson",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
   
   return (
     <>
@@ -958,74 +662,6 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showLessonNoteDialog} onOpenChange={setShowLessonNoteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Lesson Note</DialogTitle>
-              <DialogDescription>
-                {selectedLessonTitle && `Add a note for the lesson: ${selectedLessonTitle}`}
-              </DialogDescription>
-            </DialogHeader>
-            <Textarea 
-              value={lessonNoteText}
-              onChange={(e) => setLessonNoteText(e.target.value)}
-              placeholder="Enter your note about this lesson..."
-              className="min-h-[120px]"
-            />
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowLessonNoteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleAddLessonNote}>Save Note</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Update Module Progress</DialogTitle>
-              <DialogDescription>
-                {selectedModule 
-                  ? `Adjust the progress for ${selectedModule.moduleName}.`
-                  : 'Select a module to update.'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between">
-                <span>Progress: {progressValue}%</span>
-              </div>
-              <Slider
-                value={[progressValue]}
-                min={0}
-                max={100}
-                step={5}
-                onValueChange={([value]) => setProgressValue(value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowProgressDialog(false);
-                  setSelectedModule(null);
-                }}
-                disabled={isUpdatingProgress}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleModuleProgressUpdate}
-                disabled={isUpdatingProgress || !selectedModule}
-              >
-                {isUpdatingProgress ? "Updating..." : "Update Progress"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -1052,7 +688,7 @@ const InstructorStudents = () => {
                 <Tabs defaultValue="info">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="info">Info</TabsTrigger>
-                    <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="progress">Skills</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                   </TabsList>
@@ -1153,74 +789,11 @@ const InstructorStudents = () => {
                       </div>
                     )}
 
-                    {/* Curriculum-based Module Progress */}
-                    {detailedStudent.moduleProgress?.length ? (
-                      <>
-                        {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
-                          <h3 className="font-medium text-base">Curriculum</h3>
-                        )}
-                        {detailedStudent.moduleProgress.map((module) => (
-                          <div key={module.moduleId} className="border rounded-md p-4 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-medium">{module.moduleName}</h3>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{module.progress}%</span>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => openModuleProgressDialog(detailedStudent.id, module)}
-                                >
-                                  Update
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            <Progress value={module.progress} className="h-2" />
-                            
-                            <div className="space-y-2 mt-4">
-                              {module.lessons.map((lesson) => (
-                                <div key={lesson.id} className="flex items-center gap-2">
-                                  <Checkbox 
-                                    checked={lesson.completed} 
-                                    onCheckedChange={() => toggleLessonCompletion(
-                                      detailedStudent.id, 
-                                      module.moduleId, 
-                                      lesson.id
-                                    )}
-                                    id={`lesson-${lesson.id}`}
-                                  />
-                                  <label 
-                                    htmlFor={`lesson-${lesson.id}`}
-                                    className={cn(
-                                      "text-sm cursor-pointer flex-grow",
-                                      lesson.completed && "line-through text-muted-foreground"
-                                    )}
-                                  >
-                                    {lesson.title}
-                                  </label>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => openLessonNoteDialog(
-                                      detailedStudent.id,
-                                      lesson.id,
-                                      lesson.title
-                                    )}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    ) : !detailedStudent.skillProgress?.length ? (
+                    {!detailedStudent.skillProgress?.length && (
                       <div className="text-center py-8 text-muted-foreground">
-                        No progress data available for this student.
+                        No skills have been defined for this student's level yet.
                       </div>
-                    ) : null}
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="notes" className="space-y-4">

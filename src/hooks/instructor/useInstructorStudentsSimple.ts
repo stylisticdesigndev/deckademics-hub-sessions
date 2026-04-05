@@ -29,20 +29,9 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: StudentNote[];
-  moduleProgress?: ModuleProgress[];
   skillProgress?: SkillProgress[];
 }
 
-interface ModuleProgress {
-  moduleId: string;
-  moduleName: string; 
-  progress: number;
-  lessons: {
-    id: string;
-    title: string;
-    completed: boolean;
-  }[];
-}
 
 interface StudentWithProfile {
   id: string;
@@ -99,7 +88,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
         const studentIds = assignedStudents.map(s => s.id);
 
         // Get progress data, notes, curriculum, and progress_skills in parallel
-        const [progressResult, notesResult, modulesResult, lessonsResult, skillsResult] = await Promise.all([
+        const [progressResult, notesResult, skillsResult] = await Promise.all([
           supabase
             .from('student_progress')
             .select('id, student_id, skill_name, proficiency')
@@ -110,14 +99,6 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .eq('instructor_id', instructorId)
             .in('student_id', studentIds)
             .order('created_at', { ascending: false }),
-          supabase
-            .from('curriculum_modules')
-            .select('id, title, level, order_index')
-            .order('order_index', { ascending: true }),
-          supabase
-            .from('curriculum_lessons')
-            .select('id, module_id, title, order_index')
-            .order('order_index', { ascending: true }),
           supabase
             .from('progress_skills' as any)
             .select('id, name, level, order_index')
@@ -131,27 +112,13 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           console.error('Error fetching notes:', notesResult.error);
         }
 
-        const allModules = modulesResult.data || [];
-        const allLessons = lessonsResult.data || [];
         const allProgressSkills = (skillsResult.data || []) as any[];
-
-        // Group lessons by module
-        const lessonsByModule: { [moduleId: string]: typeof allLessons } = {};
-        allLessons.forEach((lesson) => {
-          if (!lessonsByModule[lesson.module_id]) lessonsByModule[lesson.module_id] = [];
-          lessonsByModule[lesson.module_id].push(lesson);
-        });
 
         // Group non-aggregate student_progress skill_names by student
         const filteredProgressRows = (progressResult.data || []).filter(
           (row) => row.skill_name?.toLowerCase() !== 'overall progress'
         );
 
-        const progressSkillsByStudent: { [studentId: string]: Set<string> } = {};
-        filteredProgressRows.forEach((row) => {
-          if (!progressSkillsByStudent[row.student_id]) progressSkillsByStudent[row.student_id] = new Set();
-          if (row.skill_name) progressSkillsByStudent[row.student_id].add(row.skill_name);
-        });
 
         // Build a map of student_id -> skill_name -> { proficiency, id }
         const progressRecordMap: { [studentId: string]: { [skillName: string]: { proficiency: number; id: string } } } = {};
@@ -202,26 +169,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             }
           }
           
-          // Build moduleProgress for this student (from curriculum)
           const studentLevel = student.level || 'novice';
           const normalizedLevel = studentLevel.toLowerCase();
-          const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
-          const studentModules = allModules.filter((m) => m.level.toLowerCase() === normalizedLevel);
-          const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {
-            const modLessons = lessonsByModule[mod.id] || [];
-            const lessons = modLessons.map((l) => ({
-              id: l.id,
-              title: l.title,
-              completed: studentSkills.has(`${mod.title} - ${l.title}`),
-            }));
-            const completedCount = lessons.filter((l) => l.completed).length;
-            return {
-              moduleId: mod.id,
-              moduleName: mod.title,
-              progress: modLessons.length ? Math.round((completedCount / modLessons.length) * 100) : 0,
-              lessons,
-            };
-          });
 
           // Build skillProgress from admin-defined progress_skills
           const levelSkills = allProgressSkills.filter((s: any) => s.level.toLowerCase() === normalizedLevel);
@@ -236,10 +185,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             };
           });
 
-          const moduleBasedProgress = moduleProgress.length
-            ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
-            : 0;
-          const overallProgress = progressById[student.id] ?? moduleBasedProgress;
+          const overallProgress = progressById[student.id] ?? 0;
 
           return {
             id: student.id,
@@ -253,7 +199,6 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             lastActive: '',
             nextClass: '',
             notes: notesById[student.id] || [],
-            moduleProgress,
             skillProgress,
           };
         });
