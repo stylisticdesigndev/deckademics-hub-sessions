@@ -733,7 +733,7 @@ const AdminInstructorPayments = () => {
 
       {/* Generate Pay Period Dialog */}
       <Dialog open={showGenerateDialog} onOpenChange={(open) => { setShowGenerateDialog(open); if (!open) resetGenerateForm(); }}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle>Generate Pay Period</DialogTitle>
             <DialogDescription>
