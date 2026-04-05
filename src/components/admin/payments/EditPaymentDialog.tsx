@@ -82,7 +82,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
       amount: payment.amount.toString(),
       payment_date: new Date(payment.dueDate),
       payment_type: payment.paymentType as "tuition" | "materials" | "other",
-      status: payment.status as "pending" | "completed" | "failed" | "refunded",
+      status: payment.status as "pending" | "completed" | "partial" | "failed" | "refunded",
       description: payment.description || "",
     },
   });
@@ -94,7 +94,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
         amount: payment.amount.toString(),
         payment_date: new Date(payment.dueDate),
         payment_type: payment.paymentType as "tuition" | "materials" | "other",
-        status: payment.status as "pending" | "completed" | "failed" | "refunded",
+        status: payment.status as "pending" | "completed" | "partial" | "failed" | "refunded",
         description: payment.description || "",
       });
     }
