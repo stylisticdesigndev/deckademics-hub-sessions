@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2 } from 'lucide-react';
+import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -35,6 +35,7 @@ import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorP
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
+import { ScheduleRowEditor } from '@/components/instructor/ScheduleRowEditor';
 
 interface Instructor {
   id: string;
@@ -79,6 +80,12 @@ const AdminInstructorPayments = () => {
   const [bonusDate, setBonusDate] = useState<Date>();
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
+  
+  // Schedule editor state
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleInstructor, setScheduleInstructor] = useState<Instructor | null>(null);
+  const [scheduleItems, setScheduleItems] = useState<{ day: string; hours: string }[]>([]);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   
   React.useEffect(() => {
     const fetchInstructors = async () => {
@@ -285,6 +292,48 @@ const AdminInstructorPayments = () => {
     setBonusDate(undefined);
   };
 
+  const openScheduleDialog = async (instructor: Instructor) => {
+    setScheduleInstructor(instructor);
+    // Fetch existing schedule
+    const { data } = await supabase
+      .from('instructor_schedules')
+      .select('day, hours')
+      .eq('instructor_id', instructor.id as any);
+    setScheduleItems((data as any[] || []).map((r: any) => ({ day: r.day, hours: r.hours })));
+    setShowScheduleDialog(true);
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!scheduleInstructor) return;
+    setIsSavingSchedule(true);
+    try {
+      await supabase
+        .from('instructor_schedules')
+        .delete()
+        .eq('instructor_id', scheduleInstructor.id as any);
+
+      if (scheduleItems.length > 0) {
+        const rows = scheduleItems.map(item => ({
+          instructor_id: scheduleInstructor.id,
+          day: item.day,
+          hours: item.hours,
+        }));
+        const { error } = await supabase
+          .from('instructor_schedules')
+          .insert(rows as any);
+        if (error) throw error;
+      }
+
+      toast.success(`Schedule saved for ${scheduleInstructor.name}`);
+      setShowScheduleDialog(false);
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      toast.error('Failed to save schedule');
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
   const resetGenerateForm = () => {
     setGenerateStartDate(undefined);
     setGenerateEndDate(undefined);
@@ -485,7 +534,11 @@ const AdminInstructorPayments = () => {
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
                       <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openScheduleDialog(instructor)}>
+                          <Clock className="mr-1 h-3 w-3" />
+                          Set Schedule
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
                           Update Rate
                         </Button>
