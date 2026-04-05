@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Check, X, Eye, UserRound, Loader2, Edit2, MessageSquare } from 'lucide-react';
+import { Search, Check, X, Eye, UserRound, Loader2, MessageSquare, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -59,14 +59,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 
+const STUDENTS_PER_PAGE = 10;
+
 const AdminStudents = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewStudentId, setViewStudentId] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
-  
-  
   const [selectedTabValue, setSelectedTabValue] = useState('active');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
@@ -74,14 +74,17 @@ const AdminStudents = () => {
   const [showBulkLevelDialog, setShowBulkLevelDialog] = useState(false);
   const [bulkLevel, setBulkLevel] = useState('novice');
   const [showBulkDeactivateDialog, setShowBulkDeactivateDialog] = useState(false);
-  
+  const [activePage, setActivePage] = useState(1);
+
   const {
     activeStudents,
     pendingStudents,
+    inactiveStudents,
     isLoading,
     approveStudent,
     declineStudent,
     deactivateStudent,
+    reactivateStudent,
     updateStudentLevel,
     refetchData
   } = useAdminStudents();
@@ -90,8 +93,10 @@ const AdminStudents = () => {
     setSelectedIds([]);
   }, [selectedTabValue]);
 
-
-
+  // Reset pagination when search changes
+  useEffect(() => {
+    setActivePage(1);
+  }, [searchQuery]);
 
   const handleApprove = useCallback(async (id: string) => {
     try {
@@ -126,7 +131,7 @@ const AdminStudents = () => {
     setStudentToDeactivate(id);
     setShowDeactivateDialog(true);
   };
-  
+
   const confirmDeactivate = async () => {
     if (!studentToDeactivate) return;
     try {
@@ -143,6 +148,19 @@ const AdminStudents = () => {
     }
   };
 
+  const handleReactivate = useCallback(async (id: string) => {
+    try {
+      setProcessingStudentId(id);
+      await reactivateStudent.mutateAsync(id);
+      await refetchData();
+      setTimeout(async () => { await refetchData(); }, 1000);
+    } catch (error: any) {
+      toast.error(`Failed to reactivate student: ${error.message || 'Unknown error'}`);
+    } finally {
+      setProcessingStudentId(null);
+    }
+  }, [reactivateStudent, refetchData]);
+
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
       await updateStudentLevel.mutateAsync({ studentId, level: newLevel });
@@ -154,38 +172,43 @@ const AdminStudents = () => {
   };
 
   const getStudentById = (id: string) => {
-    return activeStudents?.find(s => s.id === id) || 
-           pendingStudents?.find(s => s.id === id);
+    return activeStudents?.find(s => s.id === id) ||
+           pendingStudents?.find(s => s.id === id) ||
+           inactiveStudents?.find(s => s.id === id);
   };
 
+  const filterStudents = (students: typeof activeStudents) => {
+    return students?.filter(
+      student => (
+        student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        !searchQuery
+      )
+    ) || [];
+  };
 
+  const filteredActiveStudents = filterStudents(activeStudents);
+  const filteredPendingStudents = filterStudents(pendingStudents);
+  const filteredInactiveStudents = filterStudents(inactiveStudents);
 
+  // Pagination for active students
+  const totalActivePages = Math.max(1, Math.ceil(filteredActiveStudents.length / STUDENTS_PER_PAGE));
+  const paginatedActiveStudents = useMemo(() => {
+    const start = (activePage - 1) * STUDENTS_PER_PAGE;
+    return filteredActiveStudents.slice(start, start + STUDENTS_PER_PAGE);
+  }, [filteredActiveStudents, activePage]);
 
-
-
-  const filteredActiveStudents = activeStudents?.filter(
-    student => (
-      student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      !searchQuery
-    )
-  ) || [];
-
-  const filteredPendingStudents = pendingStudents?.filter(
-    student => (
-      student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      !searchQuery
-    )
-  ) || [];
+  // Clamp page if data changes
+  useEffect(() => {
+    if (activePage > totalActivePages) setActivePage(totalActivePages);
+  }, [totalActivePages, activePage]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredActiveStudents.length) {
+    if (selectedIds.length === paginatedActiveStudents.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredActiveStudents.map(s => s.id));
+      setSelectedIds(paginatedActiveStudents.map(s => s.id));
     }
   };
 
@@ -226,14 +249,29 @@ const AdminStudents = () => {
 
   const viewedStudent = viewStudentId ? getStudentById(viewStudentId) : null;
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-500">Active</Badge>;
+      case 'pending':
+        return <Badge variant="outline" className="bg-amber-500/10 text-amber-500">Pending</Badge>;
+      case 'inactive':
+        return <Badge variant="outline" className="bg-muted text-muted-foreground">Inactive</Badge>;
+      case 'declined':
+        return <Badge variant="outline" className="bg-destructive/10 text-destructive">Declined</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   return (
     <TooltipProvider>
     <div className="space-y-6">
       <div>
-          <h1 className="text-2xl font-bold">Students Management</h1>
-          <p className="text-muted-foreground">
-            Manage all students, approve new registrations, and track progress.
-          </p>
+        <h1 className="text-2xl font-bold">Students Management</h1>
+        <p className="text-muted-foreground">
+          Manage all students, approve new registrations, and track progress.
+        </p>
       </div>
 
       <div className="relative flex-1">
@@ -250,10 +288,13 @@ const AdminStudents = () => {
       <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
         <TabsList>
           <TabsTrigger value="active">
-            Active Students ({filteredActiveStudents.length})
+            Active ({filteredActiveStudents.length})
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending Approval ({filteredPendingStudents.length})
+            Pending ({filteredPendingStudents.length})
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Inactive ({filteredInactiveStudents.length})
           </TabsTrigger>
         </TabsList>
 
@@ -288,7 +329,7 @@ const AdminStudents = () => {
                     <TableRow>
                       <TableHead className="w-10">
                         <Checkbox
-                          checked={filteredActiveStudents.length > 0 && selectedIds.length === filteredActiveStudents.length}
+                          checked={paginatedActiveStudents.length > 0 && selectedIds.length === paginatedActiveStudents.length}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
@@ -301,8 +342,8 @@ const AdminStudents = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredActiveStudents.length > 0 ? (
-                      filteredActiveStudents.map((student) => (
+                    {paginatedActiveStudents.length > 0 ? (
+                      paginatedActiveStudents.map((student) => (
                         <TableRow key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
                           <TableCell>
                             <Checkbox
@@ -317,15 +358,15 @@ const AdminStudents = () => {
                             {student.profile?.email}
                           </TableCell>
                           <TableCell>
-                            {student.instructor ? 
-                              `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
+                            {student.instructor ?
+                              `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` :
                               <span className="text-muted-foreground">Unassigned</span>}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">{student.level}</Badge>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className="bg-green-500/10 text-green-500">Active</Badge>
+                            {getStatusBadge('active')}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
@@ -347,8 +388,8 @@ const AdminStudents = () => {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => setViewStudentId(student.id)}
                                     className="h-8 w-8"
@@ -361,8 +402,8 @@ const AdminStudents = () => {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => handleDeactivate(student.id)}
                                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -391,6 +432,32 @@ const AdminStudents = () => {
                   </TableBody>
                 </Table>
               </div>
+              {/* Pagination */}
+              {totalActivePages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {activePage} of {totalActivePages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActivePage(p => Math.max(1, p - 1))}
+                      disabled={activePage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActivePage(p => Math.min(totalActivePages, p + 1))}
+                      disabled={activePage === totalActivePages}
+                    >
+                      Next <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -424,14 +491,14 @@ const AdminStudents = () => {
                             {student.profile?.email}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500">Pending</Badge>
+                            {getStatusBadge('pending')}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => setViewStudentId(student.id)}
                                     className="h-8 w-8"
@@ -444,8 +511,8 @@ const AdminStudents = () => {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => handleApprove(student.id)}
                                     className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
@@ -462,8 +529,8 @@ const AdminStudents = () => {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => handleDecline(student.id)}
                                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -495,6 +562,93 @@ const AdminStudents = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Inactive Students Tab */}
+        <TabsContent value="inactive" className="space-y-4 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Inactive Students</CardTitle>
+              <CardDescription>Deactivated and declined students. You can reactivate them.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Level</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredInactiveStudents.length > 0 ? (
+                      filteredInactiveStudents.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">
+                            {student.profile?.first_name} {student.profile?.last_name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {student.profile?.email}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">{student.level}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getStatusBadge(student.enrollment_status)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setViewStudentId(student.id)}
+                                    className="h-8 w-8"
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>View Details</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleReactivate(student.id)}
+                                    className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    {processingStudentId === student.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <RotateCcw className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Reactivate Student</p></TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          No inactive students.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Student Detail Sheet */}
@@ -511,13 +665,7 @@ const AdminStudents = () => {
           {viewedStudent && (
             <div className="space-y-6 mt-6">
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className={
-                  viewedStudent.enrollment_status === 'active' 
-                    ? 'bg-green-500/10 text-green-500' 
-                    : 'bg-amber-500/10 text-amber-500'
-                }>
-                  {viewedStudent.enrollment_status}
-                </Badge>
+                {getStatusBadge(viewedStudent.enrollment_status)}
                 <Badge variant="outline" className="capitalize">{viewedStudent.level}</Badge>
               </div>
 
@@ -590,6 +738,11 @@ const AdminStudents = () => {
                     </Button>
                   </>
                 )}
+                {(viewedStudent.enrollment_status === 'inactive' || viewedStudent.enrollment_status === 'declined') && (
+                  <Button size="sm" className="w-full justify-start bg-green-600 hover:bg-green-700" onClick={() => { setViewStudentId(null); handleReactivate(viewStudentId!); }}>
+                    <RotateCcw className="h-4 w-4 mr-2" /> Reactivate
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -602,13 +755,13 @@ const AdminStudents = () => {
           <DialogHeader>
             <DialogTitle>Deactivate Student</DialogTitle>
             <DialogDescription>
-              Are you sure you want to deactivate this student? This action cannot be undone.
+              Are you sure you want to deactivate this student? You can reactivate them later from the Inactive tab.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>Cancel</Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={confirmDeactivate}
               disabled={processingStudentId !== null}
             >
