@@ -7,8 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { Loader2 } from 'lucide-react';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminPayments } from '@/hooks/useAdminPayments';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -17,24 +16,7 @@ const AdminDashboard = () => {
     pendingInstructors, 
     isLoading: isLoadingInstructors 
   } = useAdminInstructors();
-
-  const { data: paymentStats } = useQuery({
-    queryKey: ['admin-payment-stats'],
-    queryFn: async () => {
-      const { data: payments, error } = await supabase
-        .from('payments')
-        .select('status, payment_date');
-      if (error) throw error;
-      const pending = payments?.filter(p => p.status === 'pending').length || 0;
-      const overdue = payments?.filter(p => {
-        if (p.status !== 'pending') return false;
-        const payDate = p.payment_date ? new Date(p.payment_date) : null;
-        return payDate && payDate < new Date();
-      }).length || 0;
-      return { pending, overdue };
-    },
-    staleTime: 60000,
-  });
+  const { stats: paymentStats, isLoading: isLoadingPayments } = useAdminPayments();
 
   useEffect(() => {
     if (error) {
