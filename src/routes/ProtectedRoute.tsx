@@ -4,6 +4,8 @@ import { useAuth, UserRole } from '@/providers/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import PendingApproval from '@/pages/PendingApproval';
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
