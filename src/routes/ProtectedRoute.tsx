@@ -18,6 +18,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return isLoading || (!userData.role && !!session);
   });
   const [waitTime, setWaitTime] = useState(0);
+  const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
+  const [approvalChecked, setApprovalChecked] = useState(false);
   
   if (import.meta.env.DEV) {
     console.log("Protected route - Session:", !!session);
@@ -160,6 +162,57 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }
   
+  // Check approval status for students and instructors
+  useEffect(() => {
+    const checkApproval = async () => {
+      if (!session?.user?.id || !effectiveRole || effectiveRole === 'admin') {
+        setApprovalChecked(true);
+        return;
+      }
+
+      try {
+        if (effectiveRole === 'student') {
+          const { data } = await supabase
+            .from('students')
+            .select('enrollment_status')
+            .eq('id', session.user.id)
+            .single();
+          setApprovalStatus(data?.enrollment_status ?? null);
+        } else if (effectiveRole === 'instructor') {
+          const { data } = await supabase
+            .from('instructors')
+            .select('status')
+            .eq('id', session.user.id)
+            .single();
+          setApprovalStatus(data?.status ?? null);
+        }
+      } catch {
+        // If fetch fails, allow through
+      }
+      setApprovalChecked(true);
+    };
+
+    checkApproval();
+  }, [session?.user?.id, effectiveRole]);
+
+  // Wait for approval check
+  if (!approvalChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-deckademics-dark">
+        <div className="w-full max-w-md space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // Gate pending users
+  if (approvalStatus === 'pending') {
+    return <PendingApproval />;
+  }
+
   // Render the protected content
   return <Outlet />;
 };
