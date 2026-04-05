@@ -364,12 +364,6 @@ const AdminStudents = () => {
                   <Loader2 className="ml-2 h-3 w-3 animate-spin" />
                 )}
               </TabsTrigger>
-              <TabsTrigger value="debug" disabled={isRefreshing}>
-                Debug Info
-                {isRefreshing && selectedTabValue === 'debug' && (
-                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
-                )}
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 pt-4">
