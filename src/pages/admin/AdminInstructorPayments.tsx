@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock } from 'lucide-react';
+import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
