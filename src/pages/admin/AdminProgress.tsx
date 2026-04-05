@@ -41,8 +41,11 @@ const AdminProgress = () => {
   const levelCounts = useMemo(() => {
     const counts: Record<string, number> = { novice: 0, amateur: 0, intermediate: 0, advanced: 0 };
     students.forEach(s => {
-      const level = s.level === 'beginner' ? 'novice' : s.level;
-      counts[level] = (counts[level] || 0) + 1;
+      const raw = (s.level || 'beginner').toLowerCase();
+      const level = raw === 'beginner' ? 'novice' : raw;
+      if (level in counts) {
+        counts[level] += 1;
+      }
     });
     return counts;
   }, [students]);
