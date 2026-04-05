@@ -54,7 +54,7 @@ const AdminStudents = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
@@ -70,7 +70,6 @@ const AdminStudents = () => {
     deactivateStudent,
     updateStudentLevel,
     createDemoStudent,
-    debugFetchStudents,
     refetchData
   } = useAdminStudents();
 
@@ -80,10 +79,7 @@ const AdminStudents = () => {
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
   }, [activeStudents, pendingStudents]);
 
-  // Auto-fetch debug data on first load
-  useEffect(() => {
-    handleDebugRefresh();
-  }, []);
+  // Refresh data on first load
 
   // Enhanced effect to ensure we have fresh data when changing tabs
   useEffect(() => {
@@ -225,27 +221,8 @@ const AdminStudents = () => {
            pendingStudents?.find(student => student.id === id);
   };
 
-  // Enhanced debug refresh with better error handling
-  const handleDebugRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      console.log("Fetching debug data and refreshing UI...");
-      const debug = await debugFetchStudents();
-      console.log("Debug data received:", debug);
-      setDebugInfo(debug);
-      
-      // Also refresh the UI data
-      await refetchData();
-      console.log("UI data refreshed");
-    } catch (error: any) {
-      console.error("Error fetching debug data:", error);
-      toast.error("Failed to fetch debug data");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleCreateDemoStudent = async () => {
+  // Force data refresh function
+  const handleForceRefresh = async () => {
     setIsCreatingDemo(true);
     try {
       const result = await createDemoStudent();
