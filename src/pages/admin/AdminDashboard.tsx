@@ -144,9 +144,31 @@ const AdminDashboard = () => {
                   <div className="p-4">
                     <h3 className="font-medium">New Student Registrations</h3>
                     <div className="mt-2 divide-y">
-                      <div className="py-4 text-center text-muted-foreground">
-                        No pending student approvals
-                      </div>
+                      {pendingStudents && pendingStudents.length > 0 ? (
+                        pendingStudents.map((student) => (
+                          <div key={student.id} className="py-3 flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">
+                                {student.first_name} {student.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {student.email}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => {
+                                window.location.href = '/admin/students';
+                              }}>
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-4 text-center text-muted-foreground">
+                          No pending student approvals
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
