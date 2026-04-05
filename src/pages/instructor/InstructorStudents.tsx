@@ -1157,7 +1157,7 @@ const InstructorStudents = () => {
                     {detailedStudent.moduleProgress?.length ? (
                       <>
                         {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
-                          <h3 className="font-medium text-base">Curriculum Modules</h3>
+                          <h3 className="font-medium text-base">Curriculum</h3>
                         )}
                         {detailedStudent.moduleProgress.map((module) => (
                           <div key={module.moduleId} className="border rounded-md p-4 space-y-4">

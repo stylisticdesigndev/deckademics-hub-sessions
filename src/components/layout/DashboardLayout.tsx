@@ -86,25 +86,8 @@ export const DashboardLayout = ({
     
     const intervalId = setInterval(fetchNotificationCount, 60000);
     
-    const channel = supabase
-      .channel('announcement-reads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'announcement_reads',
-          filter: `user_id=eq.${userData.user?.id}`
-        },
-        () => {
-          fetchNotificationCount();
-        }
-      )
-      .subscribe();
-    
     return () => {
       clearInterval(intervalId);
-      supabase.removeChannel(channel);
     };
   }, [userData.user?.id, userType]);
 
