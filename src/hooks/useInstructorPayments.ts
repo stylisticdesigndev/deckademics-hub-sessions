@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -23,6 +23,8 @@ export interface InstructorPayment {
   totalAmount: number;
   payPeriodStart: string;
   payPeriodEnd: string;
+  paymentType: 'class' | 'bonus';
+  description: string | null;
   status: 'pending' | 'paid';
   lastUpdated: string;
 }
@@ -30,10 +32,13 @@ export interface InstructorPayment {
 export interface InstructorPaymentStats {
   pendingPaymentsCount: number;
   totalPendingAmount: number;
+  totalPaidThisMonth: number;
   instructorRatesCount: number;
 }
 
 export const useInstructorPayments = () => {
+  const queryClient = useQueryClient();
+
   const { data: payments, isLoading } = useQuery({
     queryKey: ['instructor', 'payments'],
     queryFn: async () => {
@@ -46,6 +51,10 @@ export const useInstructorPayments = () => {
           status,
           hours_worked,
           instructor_id,
+          description,
+          pay_period_start,
+          pay_period_end,
+          payment_type,
           instructors:instructor_id (
             id,
             hourly_rate,
@@ -54,7 +63,8 @@ export const useInstructorPayments = () => {
               last_name
             )
           )
-        `);
+        `)
+        .order('payment_date', { ascending: false });
 
       if (error) {
         console.error('Error fetching instructor payments:', error);
@@ -79,10 +89,12 @@ export const useInstructorPayments = () => {
             const instructor_id = paymentObj.instructor_id;
             const hours_worked = paymentObj.hours_worked || 0;
             const amount = paymentObj.amount;
-            const payment_date = paymentObj.payment_date;
-            const payment_date2 = paymentObj.payment_date;
             const status = paymentObj.status as 'pending' | 'paid';
-            const payment_date3 = paymentObj.payment_date;
+            const description = paymentObj.description || null;
+            const pay_period_start = paymentObj.pay_period_start;
+            const pay_period_end = paymentObj.pay_period_end;
+            const payment_type = (paymentObj.payment_type || 'class') as 'class' | 'bonus';
+            const payment_date = paymentObj.payment_date;
 
             if (id) {
               processedPayments.push({
@@ -92,10 +104,12 @@ export const useInstructorPayments = () => {
                 hourlyRate: hourlyRate,
                 hoursLogged: hours_worked,
                 totalAmount: amount,
-                payPeriodStart: payment_date,
-                payPeriodEnd: payment_date2,
+                payPeriodStart: pay_period_start || payment_date,
+                payPeriodEnd: pay_period_end || payment_date,
+                paymentType: payment_type,
+                description,
                 status,
-                lastUpdated: payment_date3
+                lastUpdated: payment_date
               });
             }
           }
@@ -111,24 +125,37 @@ export const useInstructorPayments = () => {
       return {
         pendingPaymentsCount: 0,
         totalPendingAmount: 0,
+        totalPaidThisMonth: 0,
         instructorRatesCount: 0
       };
     }
 
     const pendingPayments = payments.filter(payment => payment.status === 'pending');
     
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const paidThisMonth = payments.filter(p => 
+      p.status === 'paid' && new Date(p.lastUpdated) >= monthStart
+    );
+
     return {
       pendingPaymentsCount: pendingPayments.length,
       totalPendingAmount: pendingPayments.reduce((sum, payment) => sum + payment.totalAmount, 0),
+      totalPaidThisMonth: paidThisMonth.reduce((sum, p) => sum + p.totalAmount, 0),
       instructorRatesCount: new Set(payments.map(p => p.hourlyRate)).size
     };
   };
 
   const stats = calculateStats();
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['instructor', 'payments'] });
+  };
+
   return {
     payments,
     isLoading,
-    stats
+    stats,
+    invalidate
   };
 };

@@ -1,10 +1,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Clock } from "lucide-react";
+import { DollarSign, Clock, CheckCircle } from "lucide-react";
 
 export interface InstructorPaymentStats {
   pendingPaymentsCount: number;
   totalPendingAmount: number;
+  totalPaidThisMonth: number;
   instructorRatesCount: number;
 }
 
@@ -15,7 +16,7 @@ interface InstructorPaymentStatsCardsProps {
 
 export const InstructorPaymentStatsCards = ({ stats, instructors }: InstructorPaymentStatsCardsProps) => {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
@@ -26,11 +27,26 @@ export const InstructorPaymentStatsCards = ({ stats, instructors }: InstructorPa
         <CardContent>
           <div className="text-2xl font-bold">{stats.pendingPaymentsCount}</div>
           <p className="text-xs text-muted-foreground">
-            ${stats.totalPendingAmount} pending
+            ${stats.totalPendingAmount.toFixed(2)} pending
           </p>
         </CardContent>
       </Card>
       
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Paid This Month
+          </CardTitle>
+          <CheckCircle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">${stats.totalPaidThisMonth.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">
+            Total paid this month
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
@@ -50,6 +66,9 @@ export const InstructorPaymentStatsCards = ({ stats, instructors }: InstructorPa
               <div className="text-xs text-muted-foreground text-right mt-1">
                 +{instructors.length - 3} more instructors
               </div>
+            )}
+            {instructors.length === 0 && (
+              <p className="text-xs text-muted-foreground">No active instructors</p>
             )}
           </div>
         </CardContent>
