@@ -1,31 +1,47 @@
 
 
-# Sync Admin Dashboard with Admin Page Data
+# Sync Instructor & Student Sides with Admin Changes
 
-## Problem
-The admin dashboard has a standalone inline payment query (lines 21-37 in `AdminDashboard.tsx`) that duplicates logic and doesn't align with the richer stats already computed by `useAdminPayments`. The dashboard payment card only shows raw "Pending" and "Overdue" counts, while the payments page calculates dollar amounts, missed vs upcoming breakdowns, etc.
+After reviewing all the changes made on the admin side, here are the issues that need fixing on the instructor and student sides.
 
-The student/instructor cards use RPC functions (`get_student_counts`, `get_instructor_counts`) which should be fine as long as the underlying DB functions are accurate. Those don't need changes.
+## Issues Found
 
-## What changes
+### 1. Inconsistent date formatting (2 files)
+Two files still use non-standard date formats instead of the shared `formatDateUS`/`formatDateTimeUS` utilities:
 
-### 1. Replace inline payment query with `useAdminPayments` hook
-Remove the standalone `useQuery` for `admin-payment-stats` in `AdminDashboard.tsx` and import `useAdminPayments` instead. This ensures the dashboard reflects the exact same data the payments page shows.
+- **`src/components/student/classes/ClassAttendanceCard.tsx`**: Uses `format(date, 'EEEE, MMM d, yyyy')` and `format(date, 'EEEE, MMM d')` instead of `formatDateUS`
+- **`src/pages/admin/AdminAttendance.tsx`**: Defines its own local `formatDateUS` function instead of importing the shared one from `src/lib/utils`
 
-### 2. Enhance the Payment Status card
-Update the Payment Status card to show richer data from `useAdminPayments`:
-- **Pending (overdue)** count + dollar amount
-- **Upcoming** count + dollar amount
-- Consistent with what `PaymentStatsCards` shows on the payments page
+### 2. Student level naming mismatch
+The admin payment system uses school-specific levels: **Novice, Amateur, Intermediate, Advanced**. But several files on the student and instructor side default to `'Beginner'` or `'beginner'` which doesn't match any of the school's actual levels.
 
-### 3. No other modules need updating
-- Students card: uses `get_student_counts` RPC -- correct
-- Instructors card: uses `get_instructor_counts` RPC + `useAdminInstructors` for pending list -- correct
-- Pending Approvals tab: already pulls from `useAdminInstructors` -- correct
+Files affected:
+- `src/hooks/student/useStudentDashboardCore.ts` -- defaults to `'Beginner'`
+- `src/hooks/instructor/useInstructorDashboard.ts` -- defaults to `'Beginner'`
+- `src/hooks/instructor/useInstructorStudentsSimple.ts` -- defaults to `'beginner'`
+- `src/hooks/useAdminStudents.ts` -- defaults to `'beginner'`
+- `src/hooks/useAdminProgress.ts` -- defaults to `'beginner'`
+- `src/hooks/useStudentAssignment.ts` -- defaults to `'beginner'`
 
-## Files to edit
+The DB default for `students.level` is `'novice'`, so all fallback defaults should be `'Novice'` (or `'novice'`) to align with the school's terminology.
+
+### 3. No other architectural gaps
+- Instructor dashboard fetches student data using `students → profiles` join (same two-step pattern isn't needed here because `students.id` references `profiles.id` directly via `!inner` and there's no FK ambiguity like with `payments`)
+- Student progress, attendance, classes pages all query data correctly
+- The `useAdminPayments` two-step fetch pattern is working and doesn't affect student/instructor read paths (students see their own payments via RLS)
+
+## Plan
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/AdminDashboard.tsx` | Remove inline payment query; import and use `useAdminPayments`; update Payment Status card to show missed/upcoming counts and dollar amounts |
+| `src/components/student/classes/ClassAttendanceCard.tsx` | Replace `format(date, 'EEEE, MMM d, yyyy')` with `formatDateUS(date)` and dialog title date similarly |
+| `src/pages/admin/AdminAttendance.tsx` | Remove local `formatDateUS`, import from `@/lib/utils` |
+| `src/hooks/student/useStudentDashboardCore.ts` | Change default `'Beginner'` → `'Novice'` (2 places) |
+| `src/hooks/instructor/useInstructorDashboard.ts` | Change default `'Beginner'` → `'Novice'` |
+| `src/hooks/instructor/useInstructorStudentsSimple.ts` | Change default `'beginner'` → `'novice'` (2 places) |
+| `src/hooks/useAdminStudents.ts` | Change default `'beginner'` → `'novice'` (2 places) |
+| `src/hooks/useAdminProgress.ts` | Change default `'beginner'` → `'novice'` |
+| `src/hooks/useStudentAssignment.ts` | Change default `'beginner'` → `'novice'` |
+
+All changes are small string replacements and import additions. No database changes needed.
 
