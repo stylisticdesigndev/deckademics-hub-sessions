@@ -31,8 +31,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
-import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/InstructorPaymentSearch';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,7 +57,8 @@ const AdminInstructorPayments = () => {
   const { payments, stats, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 10;
   const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
@@ -111,13 +118,10 @@ const AdminInstructorPayments = () => {
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
   const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
-  
-  const filteredPendingPayments = pendingPayments.filter(payment => 
-    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredCompletedPayments = completedPayments.filter(payment => 
-    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
+  const totalHistoryPages = Math.ceil(completedPayments.length / HISTORY_PER_PAGE);
+  const paginatedHistory = completedPayments.slice(
+    (historyPage - 1) * HISTORY_PER_PAGE,
+    historyPage * HISTORY_PER_PAGE
   );
   
   const handleMarkAsPaid = async (paymentId: string) => {
@@ -449,12 +453,23 @@ const AdminInstructorPayments = () => {
           </Button>
         </div>
 
-        <InstructorPaymentStatsCards stats={stats} />
-
-        <InstructorPaymentSearch
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        {/* Total Payroll This Period */}
+        {pendingPayments.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Payroll This Period</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Instructor Rate Management */}
         <Card>
@@ -509,7 +524,7 @@ const AdminInstructorPayments = () => {
             <CardDescription>Pending payments awaiting approval</CardDescription>
           </CardHeader>
           <CardContent>
-            {filteredPendingPayments.length > 0 ? (
+            {pendingPayments.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -523,7 +538,7 @@ const AdminInstructorPayments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPendingPayments.map((payment) => (
+                  {pendingPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.instructorName}</TableCell>
                       <TableCell>
@@ -613,7 +628,7 @@ const AdminInstructorPayments = () => {
             <CardDescription>Click a row to see full payment details</CardDescription>
           </CardHeader>
           <CardContent>
-            {filteredCompletedPayments.length > 0 ? (
+            {completedPayments.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -625,7 +640,7 @@ const AdminInstructorPayments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCompletedPayments.map((payment) => (
+                  {paginatedHistory.map((payment) => (
                     <TableRow 
                       key={payment.id} 
                       className="cursor-pointer hover:bg-muted/50"
