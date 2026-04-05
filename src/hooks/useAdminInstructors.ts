@@ -30,43 +30,6 @@ export const useAdminInstructors = () => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
 
-  // List all users directly from profiles table for debugging
-  const { data: allUsers } = useQuery<Profile[]>({
-    queryKey: ['admin', 'all-users'],
-    queryFn: async () => {
-      console.log('Fetching all profiles for debugging...');
-      
-      try {
-        const { data, error } = await supabase.rpc(
-          'get_all_users',
-          {}
-        );
-        
-        if (error) {
-          console.error('Error fetching profiles:', error);
-          return [];
-        }
-        
-        console.log('All profiles:', data);
-        
-        // Make sure we handle the response as an array
-        if (data && Array.isArray(data)) {
-          return data.map(user => ({
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role
-          })) as Profile[];
-        }
-        
-        return [];
-      } catch (error) {
-        console.error('Error fetching profiles:', error);
-        return [];
-      }
-    }
-  });
 
   const { data: activeInstructors, isLoading: isLoadingActive } = useQuery({
     queryKey: ['admin', 'instructors', 'active'],
@@ -322,13 +285,10 @@ export const useAdminInstructors = () => {
     activeInstructors: activeInstructors || [],
     pendingInstructors: pendingInstructors || [],
     inactiveInstructors: inactiveInstructors || [],
-    allUsers: allUsers || [],
     isLoading: isLoadingActive || isLoadingPending || isLoadingInactive,
     approveInstructor,
     declineInstructor,
     deactivateInstructor,
     activateInstructor,
-    createInstructor,
-    addNewInstructor
   };
 };
