@@ -31,7 +31,7 @@ export const StudentNavigation = () => {
 
   const navItems = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
-    { title: "Progress", icon: BarChart, href: "/student/progress" },
+    { title: "Skills", icon: BarChart, href: "/student/progress" },
     { title: "Curriculum", icon: BookOpen, href: "/student/curriculum" },
     { title: "Classes", icon: Calendar, href: "/student/classes" },
     { title: "Notes", icon: StickyNote, href: "/student/notes", badge: unreadNotesCount },
