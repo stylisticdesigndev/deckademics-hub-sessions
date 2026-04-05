@@ -1,39 +1,31 @@
 
 
-# Fix Inconsistent Progress Calculations
+# Fix Skill Breakdown Card: Cap at 6 + Use Real Data
 
-## Problem
+## Problems
 
-Three hooks calculate progress differently, causing mismatched percentages:
+1. **SkillBreakdownChart** renders all skills with no limit — card grows unbounded
+2. **ProgressSection** has hardcoded skill names ("Beat Matching", "Scratching", etc.) instead of using admin-defined skills from `progress_skills`
 
-| View | Shows | Why |
-|------|-------|-----|
-| Instructor student detail | **10%** (correct) | Includes all 3 admin skills, even those with no record (0%) |
-| Student dashboard | **30%** | Only counts skills with existing `student_progress` rows (misses Skill 1, Skill 2 at 0%) |
-| Instructor dashboard | **23%** | Averages ALL `student_progress` rows including legacy curriculum entries |
+## Changes
 
-The instructor student detail hook (`useInstructorStudentsSimple.ts`) has the correct approach: fetch admin-defined `progress_skills` for the student's level, then match against `student_progress` records, defaulting unmatched skills to 0%.
+### 1. `src/components/student/dashboard/SkillBreakdownChart.tsx`
+- Slice the `skills` array to show only the **first 6** (most recently updated or highest proficiency — sorted before slicing)
+- If more than 6 skills exist, render a "View All" link pointing to `/student/progress`
 
-## Fix
+### 2. `src/components/student/dashboard/ProgressSection.tsx`
+- Accept `skills` data as a prop (array of `{ skill_name, proficiency }`)
+- Replace the four hardcoded progress bars with dynamic bars from the passed-in skills data
+- Cap the displayed skills at 4 with a "View All" link if more exist
 
-### 1. `src/hooks/student/dashboard/useStudentProgress.ts`
-- After fetching admin-defined skill names and student progress records, build the result from the admin skill list (not from matching records)
-- For each admin skill, look up the `student_progress` record; default to 0% if none exists
-- This ensures Skill 1 and Skill 2 appear at 0%, making the average 10% instead of 30%
-
-### 2. `src/hooks/instructor/useInstructorDashboard.ts`
-- After fetching student IDs, also fetch admin-defined `progress_skills`
-- For each student, get their level, filter the relevant skills, and compute average from matched records only (defaulting missing to 0%)
-- This eliminates legacy curriculum records from the calculation
-
-## Result
-
-All three views will show **10%** for Son Gohan (30 + 0 + 0 / 3 = 10%).
+### 3. `src/pages/student/StudentDashboard.tsx` (or wherever ProgressSection is rendered)
+- Pass the `progressData` from `useStudentDashboardCore` into `ProgressSection` as a prop
 
 ## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/hooks/student/dashboard/useStudentProgress.ts` | Build progress array from admin skill definitions, not from matching DB records |
-| `src/hooks/instructor/useInstructorDashboard.ts` | Add `progress_skills` fetch; filter progress by admin skills per student level |
+| `src/components/student/dashboard/SkillBreakdownChart.tsx` | Limit to 6 skills, add "View All" link |
+| `src/components/student/dashboard/ProgressSection.tsx` | Accept skills prop, render dynamically, cap at 4 |
+| Parent that renders ProgressSection | Pass `progressData` prop |
 
