@@ -103,7 +103,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       const unreadMessages = notifications.filter(n => n.type === 'message' && !n.read);
       const unreadAnnouncements = notifications.filter(n => n.type === 'announcement' && !n.read);
 
-      const promises: Promise<any>[] = [];
+      const promises: PromiseLike<any>[] = [];
 
       if (unreadMessages.length > 0) {
         promises.push(
