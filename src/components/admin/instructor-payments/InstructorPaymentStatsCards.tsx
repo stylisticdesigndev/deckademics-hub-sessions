@@ -25,9 +25,9 @@ export const InstructorPaymentStatsCards = ({ stats, instructors }: InstructorPa
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.pendingPaymentsCount}</div>
+          <div className="text-2xl font-bold">{stats.pendingPaymentsCount ?? 0}</div>
           <p className="text-xs text-muted-foreground">
-            ${stats.totalPendingAmount.toFixed(2)} pending
+            ${(stats.totalPendingAmount ?? 0).toFixed(2)} pending
           </p>
         </CardContent>
       </Card>
@@ -40,7 +40,7 @@ export const InstructorPaymentStatsCards = ({ stats, instructors }: InstructorPa
           <CheckCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${stats.totalPaidThisMonth.toFixed(2)}</div>
+          <div className="text-2xl font-bold">${(stats.totalPaidThisMonth ?? 0).toFixed(2)}</div>
           <p className="text-xs text-muted-foreground">
             Total paid this month
           </p>
