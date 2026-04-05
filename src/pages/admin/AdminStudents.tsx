@@ -278,7 +278,43 @@ const AdminStudents = () => {
     )
   ) || [];
 
-  if (isLoading) {
+  // Bulk action helpers
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredActiveStudents.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredActiveStudents.map(s => s.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkLevelChange = async () => {
+    for (const id of selectedIds) {
+      await updateStudentLevel.mutateAsync({ studentId: id, level: bulkLevel });
+    }
+    setSelectedIds([]);
+    setShowBulkLevelDialog(false);
+    await refetchData();
+  };
+
+  const handleBulkDeactivate = async () => {
+    for (const id of selectedIds) {
+      await deactivateStudent.mutateAsync(id);
+    }
+    setSelectedIds([]);
+    setShowBulkDeactivateDialog(false);
+    await refetchData();
+  };
+
+  const handleBulkMessage = () => {
+    // Navigate to admin messages with pre-selected recipients
+    const recipientIds = selectedIds.join(',');
+    navigate(`/admin/messages?recipients=${recipientIds}`);
+  };
+
     return (
       <>
         <div className="flex items-center justify-center h-full">
