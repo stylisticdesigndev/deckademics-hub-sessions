@@ -704,8 +704,10 @@ const AdminInstructorPayments = () => {
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No payment history found.</p>
             )}
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Payment Detail Dialog */}
       <Dialog open={!!selectedDetailPayment} onOpenChange={(open) => { if (!open) setSelectedDetailPayment(null); }}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
