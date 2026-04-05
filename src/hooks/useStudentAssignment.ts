@@ -28,7 +28,7 @@ const transformStudentRows = (students: any[]): StudentForAssignment[] => {
     if (obj.id && profiles) {
       result.push({
         id: obj.id,
-        level: obj.level || 'beginner',
+        level: obj.level || 'novice',
         enrollment_status: obj.enrollment_status,
         instructor_id: obj.instructor_id,
         first_name: profiles.first_name || '',

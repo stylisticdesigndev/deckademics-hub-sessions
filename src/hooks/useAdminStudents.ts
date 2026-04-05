@@ -82,7 +82,7 @@ export const useAdminStudents = () => {
           if (student && typeof student === 'object') {
             const studentObj = student as any;
             const id = studentObj.id;
-            const level = studentObj.level || 'beginner';
+const level = studentObj.level || 'novice';
             const enrollment_status = studentObj.enrollment_status;
             const instructor_id = studentObj.instructor_id;
             const profiles = studentObj.profiles;
@@ -155,7 +155,7 @@ export const useAdminStudents = () => {
           if (student && typeof student === 'object') {
             const studentObj = student as any;
             const id = studentObj.id;
-            const level = studentObj.level || 'beginner';
+            const level = studentObj.level || 'novice';
             const enrollment_status = studentObj.enrollment_status;
             const instructor_id = studentObj.instructor_id;
             const profiles = studentObj.profiles;

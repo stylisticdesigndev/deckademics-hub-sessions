@@ -5,8 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, MapPin, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, formatDateUS } from '@/lib/utils';
 
 interface ClassAttendanceCardProps {
   date: Date;
@@ -71,7 +70,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
               <div className="flex items-center gap-2">
                 {statusBadge()}
                 <span className="text-sm font-medium">
-                  {format(date, 'EEEE, MMM d, yyyy')}
+                  {formatDateUS(date)}
                 </span>
               </div>
 
@@ -108,7 +107,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Mark Absent for {format(date, 'EEEE, MMM d')}</DialogTitle>
+            <DialogTitle>Mark Absent for {formatDateUS(date)}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Your instructor will be notified and this class will be available for makeup.

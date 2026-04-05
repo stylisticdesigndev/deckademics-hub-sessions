@@ -81,7 +81,7 @@ export const useAdminProgress = () => {
           firstName: profile?.first_name || '',
           lastName: profile?.last_name || '',
           email: profile?.email || '',
-          level: s.level || 'beginner',
+          level: s.level || 'novice',
           instructorName: instructor
             ? `${instructor.profiles?.first_name || ''} ${instructor.profiles?.last_name || ''}`.trim()
             : null,
