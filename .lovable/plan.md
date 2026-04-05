@@ -1,46 +1,79 @@
 
 
-# Fix Instructor View Details + Deactivation Flow + Admin Skill Management
+# Separate Student Progress Skills from Curriculum
 
-## Issues Found
+## Problem
 
-1. **"View Details" does nothing**: The `viewInstructor` function sets `viewInstructorId` state, but no Sheet/Dialog reads that state to render anything. The button is a dead end.
+The current system conflates two different concepts:
+- **Curriculum**: A reference overview of what's taught at each level (modules + lessons). Already correct on all sides.
+- **Student Progress Skills**: Trackable skills per level that the admin creates, the instructor sees and updates proficiency on, and the student sees as their progress.
 
-2. **Deactivating an instructor with students**: Currently the deactivation dialog is a simple "Are you sure?" confirmation with no mention of what happens to the instructor's assigned students. Students remain orphaned (still pointing to the now-inactive instructor).
-
-3. **Admin skill management**: The Curriculum page (`/admin/curriculum`) already lets the admin create modules and lessons per level. These lessons ARE the skills -- the student progress system maps `student_progress.skill_name` to `"Module Name - Lesson Title"`. However, there is no direct UI on the admin side to view/update individual student proficiency values for those skills. The instructor does this from their Students tab. The admin currently has the Progress Overview page but it's read-only summary data.
+Currently, the instructor side uses **hardcoded** module/lesson arrays (lines 124-175 of `InstructorStudents.tsx`) rather than pulling from the database. The admin has no dedicated interface to manage progress skills separately from curriculum.
 
 ## Plan
 
-### Step 1 -- Replace "View Details" with a useful detail Sheet
+### 1. Create a new `progress_skills` database table
 
-Replace the non-functional Eye button with a Sheet that opens when clicked, showing:
-- Instructor name, email, status, hourly rate, years of experience, specialties, bio
-- List of currently assigned students (reuse the same query pattern from `useStudentAssignment`)
-- Quick action buttons: Assign Students, Deactivate, Message
+A new table to store admin-defined skills per level:
 
-This makes "View Details" actually functional and useful.
+```
+progress_skills
+  - id (uuid, PK)
+  - name (text, NOT NULL) -- e.g. "Beat Juggling", "Double Click Flare"
+  - level (text, NOT NULL) -- novice, amateur, intermediate, advanced
+  - description (text, nullable)
+  - order_index (integer, default 0)
+  - created_at, updated_at (timestamps)
+```
 
-**Files changed**: `src/pages/admin/AdminInstructors.tsx` -- add a `<Sheet>` component controlled by `viewInstructorId`
+Add RLS policies for admin full access, instructor/student read access. The existing `student_progress` table continues to store per-student proficiency, but `skill_name` will reference these admin-defined skills.
 
-### Step 2 -- Improve deactivation flow for instructors with students
+### 2. Add "Skills Management" section to Admin
 
-When deactivating an instructor who has assigned students:
-- Before confirming, fetch and display the list of students assigned to that instructor
-- Show a warning: "This instructor has X students assigned. Their students will become unassigned."
-- On confirm, unassign all students (set `instructor_id = null`) then deactivate the instructor
+Add a new admin page or a new tab/section within the existing admin area. Given the nav already has "Curriculum" and "Progress Overview", the cleanest approach is a new nav item **"Skills"** between Curriculum and Progress Overview.
 
-This prevents orphaned student-instructor relationships.
+**New page: `AdminSkills.tsx`**
+- Tabbed by level (Novice / Amateur / Intermediate / Advanced)
+- Each tab shows a list of skills for that level
+- Admin can add, edit, reorder, and delete skills
+- Simple card/list UI similar to curriculum but focused on skill names
 
-**Files changed**: 
-- `src/pages/admin/AdminInstructors.tsx` -- update `DeactivateInstructorDialog` to fetch assigned students and unassign them on confirm
-- `src/hooks/useAdminInstructors.ts` -- add a `deactivateAndUnassign` mutation that first nulls out `instructor_id` on affected students, then sets instructor status to inactive
+**Files**: New `src/pages/admin/AdminSkills.tsx`, new route in `App.tsx`, new nav item in `AdminNavigation.tsx`
 
-### Step 3 -- Clarify admin skill management (Curriculum page)
+### 3. Create hooks for skill management
 
-The Curriculum page at `/admin/curriculum` is already where the admin creates modules and lessons (skills) per level. These are the same skills that appear on instructor and student sides. No new page is needed.
+- `useProgressSkills.ts` -- fetch skills, optionally filtered by level
+- `useCreateProgressSkill.ts` -- insert new skill
+- `useUpdateProgressSkill.ts` -- update skill
+- `useDeleteProgressSkill.ts` -- delete skill
 
-Add a brief explanatory note/banner to the Curriculum page making this connection clear: "Lessons created here appear as trackable skills on instructor and student dashboards. Instructors can then set proficiency percentages for each student."
+### 4. Update Instructor Students page to use database skills
 
-**Files changed**: `src/pages/admin/AdminCurriculum.tsx` -- add an informational `Alert` below the header explaining the curriculum-to-skills relationship
+Replace the hardcoded `curriculumModules` array (lines 124-175) with a query to `progress_skills` filtered by the student's level. The instructor sees skills relevant to each student's current level and can update proficiency via the existing `student_progress` table, using the skill name from `progress_skills`.
+
+**File**: `src/pages/instructor/InstructorStudents.tsx`
+
+### 5. Update Student Progress page to display skills by level
+
+The student progress page already reads from `student_progress` table. No major change needed -- it will continue showing whatever skills have proficiency entries. The skill names will now match the admin-defined skills.
+
+**File**: `src/pages/student/StudentProgress.tsx` (minor, if any changes)
+
+### 6. Update the Curriculum page banner
+
+Change the existing info banner on `AdminCurriculum.tsx` to clarify that curriculum is a reference guide only, and that trackable skills are managed separately in the Skills section.
+
+**File**: `src/pages/admin/AdminCurriculum.tsx`
+
+## Summary of changes
+
+| Area | What changes |
+|------|-------------|
+| Database | New `progress_skills` table with RLS |
+| Admin nav | New "Skills" nav item |
+| New page | `AdminSkills.tsx` -- CRUD for skills per level |
+| New hooks | 4 hooks for progress skill management |
+| Instructor | Replace hardcoded modules with DB skills query |
+| Admin Curriculum | Update info banner text |
+| Routing | Add `/admin/skills` route |
 
