@@ -392,20 +392,22 @@ const AdminStudents = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <InstructorAssignmentDialog
-                                    studentId={student.id}
-                                    studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
-                                    currentInstructorId={student.instructor_id}
-                                  >
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
-                                      <UserRound className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Assign Instructor</p></TooltipContent>
-                                </Tooltip>
-                              </InstructorAssignmentDialog>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <InstructorAssignmentDialog
+                                      studentId={student.id}
+                                      studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
+                                      currentInstructorId={student.instructor_id}
+                                    >
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
+                                        <UserRound className="h-4 w-4" />
+                                      </Button>
+                                    </InstructorAssignmentDialog>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Assign Instructor</p></TooltipContent>
+                              </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button 
