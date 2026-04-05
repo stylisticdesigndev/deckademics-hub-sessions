@@ -19,6 +19,23 @@ const AdminDashboard = () => {
     isLoading: isLoadingInstructors 
   } = useAdminInstructors();
   const { stats: paymentStats, isLoading: isLoadingPayments } = useAdminPayments();
+  
+  const { data: pendingStudents } = useQuery({
+    queryKey: ['pending-students-dashboard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, enrollment_status, profiles!inner(first_name, last_name, email)')
+        .eq('enrollment_status', 'pending');
+      if (error) throw error;
+      return (data || []).map((s: any) => ({
+        id: s.id,
+        first_name: s.profiles?.first_name,
+        last_name: s.profiles?.last_name,
+        email: s.profiles?.email,
+      }));
+    },
+  });
 
   useEffect(() => {
     if (error) {
