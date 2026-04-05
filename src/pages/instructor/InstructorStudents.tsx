@@ -53,7 +53,7 @@ interface Student {
   
   skillProgress?: SkillProgress[];
 }
-
+import { Checkbox } from "@/components/ui/checkbox";
 
 const InstructorStudents = () => {
   const { toast } = useToast();
