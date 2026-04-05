@@ -1,44 +1,46 @@
 
 
-# Fix Skills Not Reflecting Across Views
+# Fix Three Issues: Rename to Skills, Remove Curriculum Modules from Student View, Fix Notification Bell Flicker
 
-## Problem
+## Issue 1: Rename "Curriculum Modules" and "Skills Breakdown" labels
 
-The student progress page (`/student/progress`) reads directly from the `student_progress` table, which contains a mix of:
-- **Curriculum lesson completions** (e.g., "Advanced Mixing - Creative Transitions") -- written when instructors toggle lesson checkboxes
-- **Admin-defined skill assessments** (e.g., "Beat Juggling") -- written when instructors update skill proficiency
+The admin page calls them "Skills," so the student and instructor sides should match.
 
-The student page shows ALL of these indiscriminately, instead of only showing the admin-defined skills from `progress_skills`. The instructor side already correctly separates these two concepts (skills vs. curriculum modules), but the student side does not.
+### Student Progress page (`StudentProgress.tsx`)
+- "Skills Breakdown" -> "Skills"
+- "Curriculum Modules" -> keep this section but see Issue 2
 
-## Solution
+### Instructor Students page (`InstructorStudents.tsx`)
+- "Curriculum Modules" heading (line 1160) is already alongside "Skills" (line 1104) -- no rename needed there, already says "Skills"
 
-Refactor `StudentProgress.tsx` to match the instructor-side pattern:
+## Issue 2: Curriculum Modules still showing on Student Progress
 
-1. **Fetch the student's level** from the `students` table
-2. **Fetch admin-defined skills** from `progress_skills` filtered by the student's level
-3. **Fetch student_progress records** and match them against admin-defined skill names only
-4. **Display two separate sections**: Skills (from `progress_skills`) and Curriculum Modules (from `curriculum_modules` + `curriculum_lessons`)
-5. **Overall progress** calculated only from admin-defined skill proficiencies (not curriculum completions)
+The screenshot shows "Curriculum Modules" with lesson completion data (Advanced Mixing, etc.) on the student progress page. This section should be removed -- the student progress page should only show admin-defined skills and overall proficiency. Curriculum content belongs on the Curriculum page, not the Progress page.
+
+### Changes in `StudentProgress.tsx`
+- Remove the entire Curriculum Modules card (lines 228-273)
+- Remove all curriculum-related state, interfaces, and fetch logic (modules state, CurriculumModule/CurriculumLesson interfaces, curriculum fetch code lines 88-128)
+- Remove unused imports: `BookOpen`, `CheckCircle2`, `Circle`
+
+## Issue 3: Notification bell flickering on student/instructor side
+
+The bell in `DashboardLayout.tsx` counts unread announcements by fetching all announcements with a left join on `announcement_reads`, then filtering client-side. The flickering is caused by:
+
+1. **Realtime subscription on `announcement_reads`** -- when the user clicks through to announcements and reads them, the INSERT triggers a refetch, but there's a race between the optimistic local state and the refetched data
+2. **No optimistic update** -- the count resets to whatever the query returns on each refetch, causing flicker
+3. **Interval polling every 60s** combined with realtime creates competing updates
+
+### Fix in `DashboardLayout.tsx`
+- Remove the realtime subscription on `announcement_reads` (it's causing the flickering loop)
+- Keep only the interval-based polling (every 60s) for a stable count
+- Add a ref to track whether the component is mounted to prevent state updates after unmount
+- Use `useCallback` for the fetch function to avoid stale closures
 
 ## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/pages/student/StudentProgress.tsx` | Rewrite data fetching to use `progress_skills` for the skills section; add curriculum module progress section; filter `student_progress` to only match admin-defined skill names |
-| `src/hooks/student/dashboard/useStudentProgress.ts` | Update to join against `progress_skills` so dashboard widgets also show correct data |
-
-## Detail
-
-### `StudentProgress.tsx` changes
-- Fetch student's level from `students` table using `userId`
-- Fetch `progress_skills` filtered by that level
-- Fetch `student_progress` for the student
-- Match: for each `progress_skills` entry, find the corresponding `student_progress` row by `skill_name`
-- Display skills with their proficiency (0% if no matching record)
-- Separately fetch `curriculum_modules` and `curriculum_lessons` for the student's level, and show lesson completion status (checked off via `student_progress` entries like "Module - Lesson")
-- Overall progress = average of admin-defined skill proficiencies only
-
-### `useStudentProgress.ts` (dashboard hook) changes
-- Same filtering: only include `student_progress` rows whose `skill_name` matches an entry in `progress_skills` for the student's level
-- This fixes the dashboard progress ring and skill breakdown chart
+| `src/pages/student/StudentProgress.tsx` | Remove Curriculum Modules section entirely; rename "Skills Breakdown" to "Skills"; remove unused imports and state |
+| `src/pages/instructor/InstructorStudents.tsx` | Rename "Curriculum Modules" heading to "Curriculum" (line 1160) for consistency |
+| `src/components/layout/DashboardLayout.tsx` | Remove realtime subscription on `announcement_reads` to fix bell flickering; keep interval polling only |
 
