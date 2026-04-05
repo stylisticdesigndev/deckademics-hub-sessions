@@ -295,6 +295,53 @@ const AdminInstructorPayments = () => {
     setClassAmountOverride('');
   };
 
+  const openAddBonusToRow = (paymentId: string) => {
+    setBonusRowPaymentId(paymentId);
+    const payment = payments?.find(p => p.id === paymentId);
+    setBonusRowAmount(payment?.bonusAmount ? payment.bonusAmount.toString() : '');
+    setBonusRowDescription(payment?.bonusDescription || '');
+    setShowAddBonusToRowDialog(true);
+  };
+
+  const handleSaveBonusToRow = async () => {
+    if (!bonusRowPaymentId) return;
+    const amount = parseFloat(bonusRowAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid bonus amount');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ bonus_amount: amount, bonus_description: bonusRowDescription || null } as any)
+        .eq('id', bonusRowPaymentId as any);
+      if (error) throw error;
+      toast.success('Bonus added to payment');
+      setShowAddBonusToRowDialog(false);
+      invalidate();
+    } catch (error) {
+      console.error('Error adding bonus:', error);
+      toast.error('Failed to add bonus');
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletePaymentId) return;
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .delete()
+        .eq('id', deletePaymentId as any);
+      if (error) throw error;
+      toast.success('Payment deleted');
+      setShowDeleteDialog(false);
+      setDeletePaymentId(null);
+      invalidate();
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast.error('Failed to delete payment');
+    }
+
   const resetBonusForm = () => {
     setBonusInstructorId('');
     setBonusAmount('');
