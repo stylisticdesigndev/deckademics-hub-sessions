@@ -1,53 +1,29 @@
 
 
-# Automate Instructor Payment Generation
+# Allow Admin to Manage Instructor Schedules
 
 ## Problem
-Currently the admin must manually create a payment record for each instructor one-by-one, entering hours by hand. This is tedious when there are multiple instructors.
+The "Generate Pay Period" button shows "No payments to generate" because the `instructor_schedules` table is empty. Currently, only instructors can set their own schedule via their profile page. If they haven't done so, the admin has no way to generate automated payments.
 
-## Solution: "Generate Pay Period" Button
-Add a single action that auto-creates pending payment records for ALL active instructors at once, using their saved weekly schedules to calculate hours worked.
-
-## How It Works
-
-```text
-Admin clicks "Generate Pay Period"
-  -> Picks start date and end date
-  -> System reads each instructor's weekly schedule (instructor_schedules table)
-  -> Counts scheduled days that fall within the date range
-  -> Calculates hours per day from time ranges (e.g. "2:00 PM - 5:00 PM" = 3 hrs)
-  -> Creates one pending "class" payment per instructor with total hours & amount
-  -> All payments appear in "Current Pay Period" section
-  -> Admin reviews and adjusts: increase/decrease hours, add bonus payments
-  -> Admin marks each as paid when ready
-```
-
-Example: If an instructor works Monday and Wednesday, 2:00-5:00 PM (3 hrs/day), and the pay period is 2 weeks, that's ~4 days x 3 hrs = 12 hours x hourly rate.
+## Solution
+Add the ability for the admin to view and edit instructor schedules directly from the **Admin Instructor Payments** page (or the Instructors page). This way the admin can ensure schedules are configured before generating pay periods.
 
 ## Changes
 
-### 1. New utility function: `calculateScheduledHours`
-Parse instructor schedule entries and count how many scheduled days fall in a date range, then compute total hours from time strings.
+### 1. Add "Set Schedule" button to the Instructor Rates table
+In `AdminInstructorPayments.tsx`, add a "Set Schedule" action button next to each instructor's "Update Rate" button. Clicking it opens a dialog with the existing `ScheduleRowEditor` component (already built) to add/edit day + hours rows.
 
-### 2. Update `AdminInstructorPayments.tsx`
-- Add "Generate Pay Period" button (prominent, next to existing buttons)
-- New dialog with just start/end date pickers
-- On submit: fetch all active instructors + their schedules, calculate hours for each, batch-create pending payments via `useCreateInstructorPayment`
-- Skip instructors who already have a pending payment overlapping that period
-- Show a summary before confirming (instructor name, calculated hours, amount)
+### 2. Save schedules from admin side
+Reuse the save logic from `useScheduleActions.ts` -- delete existing schedule rows for that instructor and insert the new ones into `instructor_schedules`.
 
-### 3. Keep existing manual controls
-- "Create Payment" button stays for one-off manual entries
-- "Add Bonus Payment" stays as-is
-- Edit hours (add/subtract) stays for adjustments after generation
-- Mark as paid stays as-is
+### 3. Load existing schedules when opening the dialog
+Fetch from `instructor_schedules` where `instructor_id` matches, and pre-populate the editor.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/AdminInstructorPayments.tsx` | Add "Generate Pay Period" button, dialog, and batch creation logic |
-| `src/utils/scheduleHours.ts` (new) | Utility to parse schedule time ranges and count days in a period |
+| `src/pages/admin/AdminInstructorPayments.tsx` | Add "Set Schedule" button per instructor row, schedule editor dialog, fetch/save logic |
 
-No database changes needed -- uses existing `instructor_schedules` and `instructor_payments` tables.
+No database changes needed -- the `instructor_schedules` table already exists with the right schema.
 
