@@ -87,9 +87,9 @@ export const useStudentAssignment = (instructorId?: string | null) => {
       if (!instructorId || !studentIds.length) throw new Error('Missing instructor ID or student IDs');
       const updates = studentIds.map(async (studentId) => {
         const { data, error } = await supabase.rpc('assign_student_to_instructor', {
-          student_id: studentId,
-          instructor_id: instructorId,
-        });
+          _student_id: studentId,
+          _instructor_id: instructorId,
+        } as any);
         if (error) {
           console.error('assign_student_to_instructor error:', error);
           throw new Error(error.message || 'Failed to assign student');
