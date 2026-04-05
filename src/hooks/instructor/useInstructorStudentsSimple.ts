@@ -114,32 +114,20 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
 
         const allProgressSkills = (skillsResult.data || []) as any[];
 
-        // Group non-aggregate student_progress skill_names by student
-        const filteredProgressRows = (progressResult.data || []).filter(
-          (row) => row.skill_name?.toLowerCase() !== 'overall progress'
-        );
-
+        // Build a set of admin-defined skill names for filtering
+        const adminSkillNames = new Set(allProgressSkills.map((s: any) => s.name));
 
         // Build a map of student_id -> skill_name -> { proficiency, id }
+        // Only include records matching admin-defined skills
         const progressRecordMap: { [studentId: string]: { [skillName: string]: { proficiency: number; id: string } } } = {};
-        filteredProgressRows.forEach((row) => {
-          if (!progressRecordMap[row.student_id]) progressRecordMap[row.student_id] = {};
-          if (row.skill_name) {
+        (progressResult.data || []).forEach((row) => {
+          if (row.skill_name && adminSkillNames.has(row.skill_name)) {
+            if (!progressRecordMap[row.student_id]) progressRecordMap[row.student_id] = {};
             progressRecordMap[row.student_id][row.skill_name] = {
               proficiency: row.proficiency || 0,
               id: row.id,
             };
           }
-        });
-
-        // Match student-side overall progress calculation
-        const progressById: { [id: string]: number } = {};
-        studentIds.forEach((id) => {
-          const records = filteredProgressRows.filter((row) => row.student_id === id);
-          const profs = records.map((r) => r.proficiency || 0);
-          progressById[id] = profs.length
-            ? Math.round(profs.reduce((a, b) => a + b, 0) / profs.length)
-            : 0;
         });
 
         // Group notes by student
