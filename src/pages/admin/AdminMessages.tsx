@@ -245,28 +245,53 @@ const AdminMessages = () => {
               <CardTitle className="text-lg">New Message</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>To (select recipients)</Label>
                 {users.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No users found.</p>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                    {users.map(user => (
-                      <label
-                        key={user.id}
-                        className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/50 transition-colors"
-                      >
-                        <Checkbox
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={() => toggleUser(user.id)}
-                        />
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium block truncate">{user.name}</span>
-                          <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+                  <>
+                    {/* Students */}
+                    {users.filter(u => u.role === 'student').length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Students</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+                          {users.filter(u => u.role === 'student').map(user => (
+                            <label
+                              key={user.id}
+                              className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/50 transition-colors"
+                            >
+                              <Checkbox
+                                checked={selectedUsers.includes(user.id)}
+                                onCheckedChange={() => toggleUser(user.id)}
+                              />
+                              <span className="text-sm font-medium truncate">{user.name}</span>
+                            </label>
+                          ))}
                         </div>
-                      </label>
-                    ))}
-                  </div>
+                      </div>
+                    )}
+                    {/* Instructors */}
+                    {users.filter(u => u.role === 'instructor').length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Instructors</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+                          {users.filter(u => u.role === 'instructor').map(user => (
+                            <label
+                              key={user.id}
+                              className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/50 transition-colors"
+                            >
+                              <Checkbox
+                                checked={selectedUsers.includes(user.id)}
+                                onCheckedChange={() => toggleUser(user.id)}
+                              />
+                              <span className="text-sm font-medium truncate">{user.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="space-y-2">
