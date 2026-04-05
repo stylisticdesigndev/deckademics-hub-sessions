@@ -79,7 +79,8 @@ export const useAdminPayments = () => {
           const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
-          const profile = safelyAccessProperty<ProfileData, 'profiles'>(payment, 'profiles');
+          const students = safelyAccessProperty<any, 'students'>(payment, 'students');
+          const profile = students?.profiles as ProfileData | undefined;
           const firstName = profile?.first_name || '';
           const lastName = profile?.last_name || '';
           const email = profile?.email || '';
