@@ -1,86 +1,98 @@
 
+# Fix payments not loading after create
 
-# Revamp Student Payment Creation + Fix Data Display
+## What is actually happening
+- The payment is being saved. The database already contains the recently created payment rows.
+- The page is blank because the fetch in `src/hooks/useAdminPayments.ts` is failing, and that hook shows the toast: “Failed to fetch payments.”
 
-## Two issues to address
+## Root cause
+Do I know what the issue is? Yes.
 
-1. **Payments data not showing** (ongoing bug): The `payments` table has no foreign keys, so PostgREST nested joins fail silently. Need to either add a FK or use a two-query approach.
+The payments query is using an embedded join that is now brittle/ambiguous:
 
-2. **Create Payment dialog needs to reflect actual school pricing**: Replace generic form with course-aware payment creation that understands levels, pricing, and payment schedules.
+```ts
+profiles:student_id (
+  first_name,
+  last_name,
+  email
+)
+```
 
-## School Pricing Structure
+`payments.student_id` currently has multiple foreign-key paths, so PostgREST/Supabase can’t safely infer which relationship to use unless the query explicitly chooses one with `!foreign_key`, or the app avoids the embedded join entirely.
 
-| Level | Duration | Total | Payment Options |
-|-------|----------|-------|-----------------|
-| Novice | 6 weeks | $330 | Pay in full only |
-| Amateur | 12 weeks | $660 | Full, biweekly ($55/2wk), weekly ($55/wk) |
-| Intermediate | 12 weeks | $660 | Full, biweekly, weekly |
-| Advanced | 6 weeks | $330 | Full, biweekly, weekly |
-| Advanced Plus | Optional | TBD | Full, biweekly, weekly |
+There is also a second bug in the same area:
+- the UI now offers status `partial`
+- the database constraint still only allows `pending`, `completed`, `failed`, `refunded`
 
 ## Plan
 
-### Step 1: Fix payments query (DB migration)
+### 1. Make the payments fetch stable
+Refactor `src/hooks/useAdminPayments.ts` to use a two-step fetch instead of the fragile embedded join:
 
-Add a foreign key from `payments.student_id` to `profiles.id` so PostgREST can resolve the join. This fixes the blank data issue across all three tabs.
+1. Fetch `payments` only
+2. Collect unique `student_id` values
+3. Fetch related student/profile data separately using the same `students -> profiles` pattern that already works elsewhere in the app
+4. Merge the results in memory
 
-```sql
-ALTER TABLE payments
-  ADD CONSTRAINT payments_student_id_fkey
-  FOREIGN KEY (student_id) REFERENCES profiles(id) ON DELETE CASCADE;
+Recommended shape:
+```ts
+payments: select(id, amount, payment_date, payment_type, status, description, student_id)
+
+students: select(
+  id,
+  profiles(first_name, last_name, email)
+).in('id', studentIds)
 ```
 
-Then simplify the query in `useAdminPayments.ts` to:
-```
-profiles:student_id ( first_name, last_name, email )
-```
+Why this is the safest fix:
+- avoids PostgREST foreign-key ambiguity
+- avoids blanking the whole screen because of one bad relation
+- reuses an already-working query pattern from `useAdminStudents`
 
-And read directly from `profiles` without the nested `students` intermediary.
+### 2. Clean up the schema that caused the ambiguity
+Create a migration to remove the extra `payments_student_id_profiles_fkey` relationship if it is not intentionally needed.
 
-### Step 2: Add "partial" status (DB migration)
+Keep one canonical relationship:
+- `payments.student_id -> students.id`
 
-Update the `payments.status` check constraint (if one exists) or just allow "partial" as a valid status value in code. Add it to the form and display logic.
+That matches the rest of the app’s data model and prevents future join confusion.
 
-### Step 3: Redesign CreatePaymentDialog
+### 3. Fix the status mismatch
+Update the database constraint so `partial` is valid if the UI should support it.
 
-Replace the current generic form with a course-aware flow:
+If `partial` is not needed, remove it from:
+- `CreatePaymentDialog`
+- `EditPaymentDialog`
+- `useCreatePayment`
+- `useUpdatePayment`
+- `PaymentsTable`
 
-1. **Select Student** -- same as now, but also show student's current level next to their name
-2. **Select Course Level** -- dropdown: Novice ($330/6wk), Amateur ($660/12wk), Intermediate ($660/12wk), Advanced ($330/6wk), Advanced Plus (custom)
-3. **Payment Schedule** -- conditionally shown:
-   - Novice: "Pay in Full" only (auto-selected, no dropdown)
-   - All others: dropdown with "Pay in Full", "Biweekly", "Weekly"
-4. **Amount** -- auto-calculated based on course + schedule selection:
-   - Full: total amount
-   - Biweekly: total / (weeks / 2) per installment
-   - Weekly: total / weeks per installment
-   - Editable override for adjustments
-5. **Start Date** -- single date picker for when the payment plan begins
-6. **Status** -- pending, completed, partial, failed, refunded
-7. **Description** -- optional, auto-populated with e.g. "Amateur - Biweekly (1 of 6)"
+### 4. Add safer UI fallbacks
+In `useAdminPayments.ts`, ensure missing related profile data does not break rendering:
+- fallback student name like `Unknown Student`
+- fallback email as empty string
+- log the real fetch error once in dev so future failures are easier to diagnose
 
-When a payment schedule (biweekly/weekly) is selected, clicking "Create" generates ALL installment records at once with future dates, each marked "pending". For "pay in full", a single record is created.
+### 5. Verify end to end
+After the fix:
+- existing payments should load again in Pending, Upcoming, and All Payments
+- newly created payments should appear immediately after create
+- student names should render consistently
+- `partial` should either work end-to-end or be fully removed
 
-### Step 4: Update useCreatePayment hook
+## Files involved
+- `src/hooks/useAdminPayments.ts`
+- new migration to remove the extra payments/profiles FK
+- new migration to fix `payments_status_check`
+- possibly:
+  - `src/components/admin/payments/CreatePaymentDialog.tsx`
+  - `src/components/admin/payments/EditPaymentDialog.tsx`
+  - `src/hooks/useCreatePayment.ts`
+  - `src/hooks/useUpdatePayment.ts`
+  - `src/components/admin/payments/PaymentsTable.tsx`
 
-Support creating multiple payment records in a single batch insert for installment plans.
-
-### Step 5: Update status options everywhere
-
-Add "partial" to the status enum in:
-- `CreatePaymentDialog` form schema
-- `EditPaymentDialog` (if it has status)
-- `PaymentsTable` badge rendering
-- `useCreatePayment` type definition
-
-## Files Changed
-
-| File | Change |
-|------|--------|
-| DB migration | Add FK `payments.student_id → profiles.id`; no status constraint change needed (column is plain text) |
-| `src/hooks/useAdminPayments.ts` | Simplify query to use `profiles:student_id(...)` directly; add "partial" to type |
-| `src/components/admin/payments/CreatePaymentDialog.tsx` | Full redesign: course level selector, payment schedule logic, auto-amount calculation, batch installment creation |
-| `src/hooks/useCreatePayment.ts` | Support batch insert for installment plans; add "partial" to status type |
-| `src/components/admin/payments/PaymentsTable.tsx` | Add "partial" badge styling |
-| `src/components/admin/payments/EditPaymentDialog.tsx` | Add "partial" status option |
-
+## Technical details
+- Confirmed: the problem is on the read path, not the insert path.
+- Confirmed: `payments` rows exist in the database already.
+- Confirmed: this does not currently look like an admin RLS access problem.
+- Supabase/PostgREST requires explicit `!foreign_key` syntax when multiple FKs can satisfy a join. If the direct embedded join is kept, it must be explicit; otherwise the two-query merge is the more reliable fix.
