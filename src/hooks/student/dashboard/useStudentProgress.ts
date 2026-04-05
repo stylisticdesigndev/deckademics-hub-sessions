@@ -46,18 +46,23 @@ export function useStudentProgress(userId?: string) {
         if (error) {
           console.error('Error fetching student progress:', error);
           setProgress([]);
-        } else if (data && Array.isArray(data)) {
-          // Only include skills that match admin-defined progress_skills
-          const filtered = data
-            .filter((item: any) => skillNames.has(item.skill_name))
-            .map((item: any) => ({
-              skill_name: item.skill_name,
-              proficiency: item.proficiency || 0,
-            }));
-          
-          setProgress(filtered);
         } else {
-          setProgress([]);
+          // Build progress from admin skill definitions, defaulting missing to 0%
+          const progressMap = new Map<string, number>();
+          if (data && Array.isArray(data)) {
+            data.forEach((item: any) => {
+              if (skillNames.has(item.skill_name)) {
+                progressMap.set(item.skill_name, item.proficiency || 0);
+              }
+            });
+          }
+          
+          const result: ProgressItem[] = (skillDefs || []).map((s: any) => ({
+            skill_name: s.name,
+            proficiency: progressMap.get(s.name) || 0,
+          }));
+          
+          setProgress(result);
         }
       } catch (e) {
         setProgress([]);
