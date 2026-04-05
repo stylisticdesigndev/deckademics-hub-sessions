@@ -54,7 +54,7 @@ interface Instructor {
 }
 
 const AdminInstructorPayments = () => {
-  const { payments, stats, isLoading, invalidate } = useInstructorPayments();
+  const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
   const [historyPage, setHistoryPage] = useState(1);
