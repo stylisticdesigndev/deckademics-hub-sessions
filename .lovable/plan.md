@@ -1,91 +1,53 @@
 
 
-# Rebuild Instructor Payments: Pay Period Workflow
+# Automate Instructor Payment Generation
 
-## Current State
+## Problem
+Currently the admin must manually create a payment record for each instructor one-by-one, entering hours by hand. This is tedious when there are multiple instructors.
 
-The `instructor_payments` table has: `id`, `instructor_id`, `amount`, `status` (pending/paid), `hours_worked`, `payment_date`, `description`. But there's no way to create payments from the UI, no real pay period dates, and no concept of "bonus/extra" payments.
+## Solution: "Generate Pay Period" Button
+Add a single action that auto-creates pending payment records for ALL active instructors at once, using their saved weekly schedules to calculate hours worked.
 
-## Plan
-
-### 1. Database Migration
-
-Add columns to `instructor_payments`:
-- `pay_period_start` (date, NOT NULL)
-- `pay_period_end` (date, NOT NULL)
-- `payment_type` (text, NOT NULL, default `'class'`) -- values: `'class'` or `'bonus'`
-
-Backfill existing rows with `payment_date` for both start/end and `'class'` for type.
-
-### 2. Rework the Page Layout
-
-The page will have these sections:
-
-**Stats Cards** -- keep existing, add "Total Paid This Month" card.
-
-**Instructor Rates** -- keep as-is (set hourly rates).
-
-**Create Pay Period Payment** -- new section with a "Create Payment" button that opens a dialog:
-- Select instructor (dropdown)
-- Pay period start date and end date (date pickers)
-- Hours worked (number input)
-- Amount auto-calculates from hours x hourly rate (editable override)
-- Type defaults to "class"
-
-**Create Bonus Payment** -- a separate "Add Bonus Payment" button (or a toggle in the same dialog):
-- Select instructor
-- Amount (manual entry)
-- Description (text field for "Extra class", "Event DJ", etc.)
-- Date
-- Type = "bonus"
-
-**Current Pay Period** -- shows all `pending` payments, grouped by instructor. Each row shows:
-- Instructor name
-- Type (Class / Bonus with description)
-- Hours (for class type) or Description (for bonus type)
-- Rate, Amount
-- Actions: Edit Hours, Mark Paid
-
-**Payment History** -- shows all `paid` payments with proper pay period start/end dates, type badge, and description.
-
-### 3. Hook Updates
-
-Update `useInstructorPayments.ts`:
-- Fetch `pay_period_start`, `pay_period_end`, `payment_type`, `description` from query
-- Add these to the `InstructorPayment` interface
-- Remove the hack of using `payment_date` for both start/end
-
-Create a new `useCreateInstructorPayment.ts` hook for inserting payments.
-
-### 4. UI Component Changes
-
-**`AdminInstructorPayments.tsx`**:
-- Add "Create Payment" and "Add Bonus Payment" buttons in the header area
-- New dialog for creating class payments (instructor select, date range, hours, auto-calc amount)
-- New dialog for creating bonus payments (instructor select, amount, description, date)
-- Update pending table to show payment type badge and description column
-- Update history table to show real pay period dates and type
-
-**`InstructorPaymentStatsCards.tsx`**:
-- Add a third card showing total paid amount for the current month
-
-### 5. Flow Summary
+## How It Works
 
 ```text
-Admin creates payment record (class or bonus)
-  -> Appears in "Current Pay Period" as pending
-  -> Admin can edit hours / amount
-  -> Admin clicks "Mark Paid"
-  -> Moves to "Payment History" with full details
+Admin clicks "Generate Pay Period"
+  -> Picks start date and end date
+  -> System reads each instructor's weekly schedule (instructor_schedules table)
+  -> Counts scheduled days that fall within the date range
+  -> Calculates hours per day from time ranges (e.g. "2:00 PM - 5:00 PM" = 3 hrs)
+  -> Creates one pending "class" payment per instructor with total hours & amount
+  -> All payments appear in "Current Pay Period" section
+  -> Admin reviews and adjusts: increase/decrease hours, add bonus payments
+  -> Admin marks each as paid when ready
 ```
 
-### Files Changed
+Example: If an instructor works Monday and Wednesday, 2:00-5:00 PM (3 hrs/day), and the pay period is 2 weeks, that's ~4 days x 3 hrs = 12 hours x hourly rate.
+
+## Changes
+
+### 1. New utility function: `calculateScheduledHours`
+Parse instructor schedule entries and count how many scheduled days fall in a date range, then compute total hours from time strings.
+
+### 2. Update `AdminInstructorPayments.tsx`
+- Add "Generate Pay Period" button (prominent, next to existing buttons)
+- New dialog with just start/end date pickers
+- On submit: fetch all active instructors + their schedules, calculate hours for each, batch-create pending payments via `useCreateInstructorPayment`
+- Skip instructors who already have a pending payment overlapping that period
+- Show a summary before confirming (instructor name, calculated hours, amount)
+
+### 3. Keep existing manual controls
+- "Create Payment" button stays for one-off manual entries
+- "Add Bonus Payment" stays as-is
+- Edit hours (add/subtract) stays for adjustments after generation
+- Mark as paid stays as-is
+
+## Files Changed
 
 | File | Change |
 |------|--------|
-| Migration SQL | Add `pay_period_start`, `pay_period_end`, `payment_type` columns |
-| `src/hooks/useInstructorPayments.ts` | Fetch new columns, update interface |
-| New: `src/hooks/useCreateInstructorPayment.ts` | Insert mutation hook |
-| `src/pages/admin/AdminInstructorPayments.tsx` | Add create dialogs, update tables |
-| `src/components/admin/instructor-payments/InstructorPaymentStatsCards.tsx` | Add third stat card |
+| `src/pages/admin/AdminInstructorPayments.tsx` | Add "Generate Pay Period" button, dialog, and batch creation logic |
+| `src/utils/scheduleHours.ts` (new) | Utility to parse schedule time ranges and count days in a period |
+
+No database changes needed -- uses existing `instructor_schedules` and `instructor_payments` tables.
 
