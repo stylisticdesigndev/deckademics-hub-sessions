@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
+import { Search, Check, X, Eye, UserRound, Loader2, Edit2, MessageSquare } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -66,7 +66,7 @@ const AdminStudents = () => {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
   
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const [selectedTabValue, setSelectedTabValue] = useState('active');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
@@ -90,19 +90,8 @@ const AdminStudents = () => {
     setSelectedIds([]);
   }, [selectedTabValue]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsRefreshing(true);
-      try {
-        await refetchData();
-      } catch (error) {
-        console.error("Error refreshing data:", error);
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-    fetchData();
-  }, [selectedTabValue, refetchData]);
+
+
 
   const handleApprove = useCallback(async (id: string) => {
     try {
@@ -171,17 +160,8 @@ const AdminStudents = () => {
 
 
 
-  const handleForceRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetchData();
-      toast.success("Data refreshed");
-    } catch (error: any) {
-      toast.error("Failed to refresh");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+
+
 
   const filteredActiveStudents = activeStudents?.filter(
     student => (
@@ -249,25 +229,11 @@ const AdminStudents = () => {
   return (
     <TooltipProvider>
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
+      <div>
           <h1 className="text-2xl font-bold">Students Management</h1>
           <p className="text-muted-foreground">
             Manage all students, approve new registrations, and track progress.
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleForceRefresh} 
-            variant="outline" 
-            size="icon" 
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-          </Button>
-
-
-        </div>
       </div>
 
       <div className="relative flex-1">
@@ -283,10 +249,10 @@ const AdminStudents = () => {
 
       <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
         <TabsList>
-          <TabsTrigger value="active" disabled={isRefreshing}>
+          <TabsTrigger value="active">
             Active Students ({filteredActiveStudents.length})
           </TabsTrigger>
-          <TabsTrigger value="pending" disabled={isRefreshing}>
+          <TabsTrigger value="pending">
             Pending Approval ({filteredPendingStudents.length})
           </TabsTrigger>
         </TabsList>
@@ -418,14 +384,7 @@ const AdminStudents = () => {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {isRefreshing ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <Loader2 className="h-6 w-6 animate-spin" />
-                              <p>Loading students...</p>
-                            </div>
-                          ) : (
-                            'No active students found.'
-                          )}
+                          No active students found.
                         </TableCell>
                       </TableRow>
                     )}
@@ -490,7 +449,7 @@ const AdminStudents = () => {
                                     size="icon"
                                     onClick={() => handleApprove(student.id)}
                                     className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                    disabled={processingStudentId === student.id || isRefreshing}
+                                    disabled={processingStudentId === student.id}
                                   >
                                     {processingStudentId === student.id ? (
                                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -508,7 +467,7 @@ const AdminStudents = () => {
                                     size="icon"
                                     onClick={() => handleDecline(student.id)}
                                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    disabled={processingStudentId === student.id || isRefreshing}
+                                    disabled={processingStudentId === student.id}
                                   >
                                     {processingStudentId === student.id ? (
                                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -526,14 +485,7 @@ const AdminStudents = () => {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          {isRefreshing ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <Loader2 className="h-6 w-6 animate-spin" />
-                              <p>Loading pending students...</p>
-                            </div>
-                          ) : (
-                            'No pending students.'
-                          )}
+                          No pending students.
                         </TableCell>
                       </TableRow>
                     )}
