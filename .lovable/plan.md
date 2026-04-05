@@ -1,44 +1,58 @@
 
-Fix message link handling from the ground up so YouTube links work reliably and sent link-only messages stay readable.
 
-What I found
-- Both message threads currently use the same custom link opener (`preventDefault` + `window.open()` + fallback to `window.top.location.href`).
-- That fallback is likely the reason YouTube still shows as blocked in preview: when popup opening fails, the app tries to load YouTube in the preview frame/top frame, and YouTube refuses iframe-style embedding.
-- The instructor thread also hardcodes link text as `text-primary` even inside the sender’s green bubble. So if a sent message is mostly or entirely a URL, it can look like an empty green bubble because the link color blends into the bubble.
+# Audit: Student vs Instructor Side Consistency
 
-Plan
-1. Remove the current custom external-link opener logic
-- Delete the `openExternalLink` flow from the instructor thread, student thread, and the student notes page.
-- Stop preventing the anchor’s default behavior for normal message links.
-- Use native external anchors instead: real `<a href="..." target="_blank" rel="noopener noreferrer">`.
-- This gives the browser the cleanest, most reliable “open in new tab” behavior for YouTube links.
+## Findings
 
-2. Create one shared message/note link renderer
-- Extract the duplicated URL parsing/rendering into one shared helper/component.
-- Use it in both:
-  - `src/components/instructor/messages/ConversationThread.tsx`
-  - `src/components/student/messages/StudentConversationThread.tsx`
-- Also apply it in `src/pages/student/StudentNotes.tsx` so saved links behave the same way everywhere.
+After reviewing all pages, hooks, navigation, and shared utilities across both the student and instructor sides, here is what I found:
 
-3. Make link colors bubble-aware
-- For sent messages (`isMe` / green bubble), links should use the same readable foreground color as the bubble text, not `text-primary`.
-- For received messages, keep the existing primary-colored link styling.
-- Ensure plain text remains inherited from the bubble and long URLs wrap cleanly.
+---
 
-4. Harden URL rendering a bit
-- Normalize detected URLs before rendering so common trailing punctuation does not get included in the link.
-- Keep `whitespace-pre-wrap` and add safe wrapping behavior for long URLs.
+### 1. Console Error: `data-lov-id` on `React.Fragment` (Bug)
 
-5. QA after implementation
-- Send a plain YouTube link from instructor to student.
-- Open it from both the instructor thread and student thread and confirm it opens in a real browser tab/window instead of the preview frame.
-- Verify a URL-only sent message is visible inside the green bubble on the instructor side.
-- Re-check regular text messages, mixed text+URL messages, and inline image attachments.
+**File**: `src/utils/renderTextWithLinks.tsx` (line 40)
 
-Files likely changed
-- `src/components/instructor/messages/ConversationThread.tsx`
-- `src/components/student/messages/StudentConversationThread.tsx`
-- `src/pages/student/StudentNotes.tsx`
-- one new shared link-rendering helper/component
+The Lovable editor injects a `data-lov-id` prop onto JSX elements for tracking. `React.Fragment` does not accept any props other than `key` and `children`, causing a React warning on every message that contains a URL. This is a dev-mode-only cosmetic warning but clutters the console.
 
-No database changes are needed for this fix.
+**Fix**: Replace the `React.Fragment` wrapper with a plain `<span>` element, which accepts arbitrary props without warnings. This applies to lines 40 and 51 in the function, and similarly around lines 89 and 104 in `renderNoteTextWithLinks`.
+
+---
+
+### 2. Instructor Navigation: No Unread Message Badge (Inconsistency)
+
+**Student side** (`StudentNavigation.tsx`): Shows badge counts for unread notes and unread messages on the sidebar nav items.
+
+**Instructor side** (`InstructorNavigation.tsx`): Has no badge counts at all -- no unread message indicator.
+
+**Fix**: Add an unread message count badge to the instructor Messages nav item. This requires querying `messages` where `receiver_id = instructorId` and `read_at IS NULL`, similar to the student-side `useUnreadMessages` hook.
+
+---
+
+### 3. Everything Else: Consistent
+
+The following areas are already aligned between both sides:
+
+- **Link rendering**: Both `ConversationThread` (instructor) and `StudentConversationThread` (student) use the shared `renderTextWithLinks` utility with `isSentByMe` for bubble-aware colors. Native `<a target="_blank">` anchors are used on both.
+- **Image attachments**: Both threads handle `image_url` identically with native anchor wrappers.
+- **Overall progress calculation**: Both `useInstructorDashboard` and `useInstructorStudentsSimple` filter out "Overall Progress" rows and auto-calculate averages, matching the student-side logic in `useStudentProgress` and `useStudentDashboardCore`.
+- **Demo mode**: All pages on both sides have consistent demo/live toggle buttons with warning banners.
+- **Profile pages**: Both have avatar upload, edit mode, and similar field structures.
+- **Curriculum**: Both sides use the same `useCurriculumModules` and `useCurriculumLessons` hooks. Student side additionally filters by the student's level.
+- **Classes**: Both sides have class views with appropriate filtering.
+- **Notes**: Student side has the notes page with `renderNoteContent`. Instructor side manages notes per-student in the Students page. No gap here.
+
+---
+
+## Plan Summary
+
+| # | Change | File(s) |
+|---|--------|---------|
+| 1 | Fix `React.Fragment` warning by switching to `<span>` wrappers | `src/utils/renderTextWithLinks.tsx` |
+| 2 | Add unread message badge to instructor sidebar navigation | `src/components/navigation/InstructorNavigation.tsx` + new hook or inline query |
+
+### Technical Details
+
+**Fix 1** -- In `renderTextWithLinks`, replace all `<React.Fragment key={...}>` wrapping URL + trailing punctuation with `<span key={...}>`. Same change in `renderNoteTextWithLinks`. About 4 lines changed total.
+
+**Fix 2** -- Add a `useEffect` + Supabase query in `InstructorNavigation` (or a dedicated hook) to count messages where `receiver_id = currentUserId AND read_at IS NULL`. Display the count as a `<Badge>` on the Messages nav item, matching the student-side pattern. Approximately 20-25 new lines.
+
