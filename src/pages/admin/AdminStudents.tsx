@@ -263,6 +263,7 @@ const AdminStudents = () => {
   const viewedStudent = viewStudentId ? getStudentById(viewStudentId) : null;
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
@@ -495,41 +496,56 @@ const AdminStudents = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setViewStudentId(student.id)}
-                                className="h-8 w-8"
-                                disabled={processingStudentId === student.id}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleApprove(student.id)}
-                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                disabled={processingStudentId === student.id || isRefreshing}
-                              >
-                                {processingStudentId === student.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Check className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDecline(student.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={processingStudentId === student.id || isRefreshing}
-                              >
-                                {processingStudentId === student.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <X className="h-4 w-4" />
-                                )}
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => setViewStudentId(student.id)}
+                                    className="h-8 w-8"
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>View Details</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleApprove(student.id)}
+                                    className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                    disabled={processingStudentId === student.id || isRefreshing}
+                                  >
+                                    {processingStudentId === student.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Approve Student</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDecline(student.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={processingStudentId === student.id || isRefreshing}
+                                  >
+                                    {processingStudentId === student.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <X className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Decline Student</p></TooltipContent>
+                              </Tooltip>
                             </div>
                           </TableCell>
                         </TableRow>
