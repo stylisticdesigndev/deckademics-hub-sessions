@@ -112,6 +112,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
             .update({ read_at: new Date().toISOString() })
             .eq('receiver_id', userId)
             .is('read_at', null)
+            .then()
         );
       }
 
@@ -120,7 +121,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
           announcement_id: a.id,
           user_id: userId,
         }));
-        promises.push(supabase.from('announcement_reads').insert(inserts));
+        promises.push(supabase.from('announcement_reads').insert(inserts).then());
       }
 
       await Promise.all(promises);
