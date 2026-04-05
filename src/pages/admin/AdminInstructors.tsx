@@ -536,81 +536,112 @@ const AdminInstructors = () => {
 
             {/* New Dialog for Assigning Students to Instructor */}
             <Dialog open={showStudentAssignment} onOpenChange={setShowStudentAssignment}>
-              <DialogContent className="sm:max-w-[600px]">
+              <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                  <DialogTitle>Assign Students to Instructor</DialogTitle>
+                  <DialogTitle>Manage Student Assignments</DialogTitle>
                   <DialogDescription>
-                    Select students to assign to this instructor
+                    View currently assigned students and assign new ones.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  {isLoadingStudents ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
-                  ) : unassignedStudents.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">Select</TableHead>
-                          <TableHead>Student</TableHead>
-                          <TableHead>Level</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {unassignedStudents.map(student => (
-                          <TableRow key={student.id}>
-                            <TableCell>
-                              <input 
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300"
-                                checked={selectedStudentIds.includes(student.id)}
-                                onChange={() => toggleStudentSelection(student.id)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {student.first_name} {student.last_name}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {student.email}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{student.level}</TableCell>
+                <div className="flex-1 overflow-auto space-y-6 py-4">
+                  {/* Currently Assigned Section */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Currently Assigned ({assignedStudents.length})</h3>
+                    {isLoadingAssigned ? (
+                      <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                    ) : assignedStudents.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Student</TableHead>
+                            <TableHead>Level</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground">No unassigned students available</p>
-                    </div>
-                  )}
+                        </TableHeader>
+                        <TableBody>
+                          {assignedStudents.map(student => (
+                            <TableRow key={student.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{student.first_name} {student.last_name}</div>
+                                  <div className="text-sm text-muted-foreground">{student.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{student.level}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => unassignStudent.mutate(student.id)}
+                                  disabled={unassignStudent.isPending}
+                                >
+                                  Unassign
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No students currently assigned.</p>
+                    )}
+                  </div>
+
+                  {/* Available (Unassigned) Section */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Available Students ({unassignedStudents.length})</h3>
+                    {isLoadingStudents ? (
+                      <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                    ) : unassignedStudents.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">Select</TableHead>
+                            <TableHead>Student</TableHead>
+                            <TableHead>Level</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {unassignedStudents.map(student => (
+                            <TableRow key={student.id}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedStudentIds.includes(student.id)}
+                                  onCheckedChange={() => toggleStudentSelection(student.id)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{student.first_name} {student.last_name}</div>
+                                  <div className="text-sm text-muted-foreground">{student.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{student.level}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No unassigned students available.</p>
+                    )}
+                  </div>
                 </div>
                 <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setShowStudentAssignment(false);
-                      setInstructorToAssign(null);
-                      setSelectedStudentIds([]);
-                    }}
+                  <Button
+                    variant="outline"
+                    onClick={() => { setShowStudentAssignment(false); setInstructorToAssign(null); setSelectedStudentIds([]); }}
                   >
-                    Cancel
+                    Close
                   </Button>
-                  <Button 
-                    onClick={handleAssignStudents} 
+                  <Button
+                    onClick={handleAssignStudents}
                     disabled={isLoadingStudents || selectedStudentIds.length === 0 || assignStudentsToInstructor.isPending}
                   >
                     {assignStudentsToInstructor.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Assigning...
-                      </>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Assigning...</>
                     ) : (
-                      'Assign Students'
+                      `Assign ${selectedStudentIds.length} Student${selectedStudentIds.length !== 1 ? 's' : ''}`
                     )}
                   </Button>
                 </DialogFooter>
