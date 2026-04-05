@@ -1,47 +1,36 @@
 
 
-# Sync Instructor & Student Sides with Admin Changes
+# Remove Add Student Button + Clean Up Demo Students
 
-After reviewing all the changes made on the admin side, here are the issues that need fixing on the instructor and student sides.
+## What changes
 
-## Issues Found
+### 1. Remove "Add Student" and "Create Demo Student" buttons from `AdminStudents.tsx`
+Both buttons are unnecessary:
+- Students self-register and admins approve/decline them
+- Demo students were for testing and are no longer needed
 
-### 1. Inconsistent date formatting (2 files)
-Two files still use non-standard date formats instead of the shared `formatDateUS`/`formatDateTimeUS` utilities:
+Remove the buttons, the `handleCreateDemoStudent` function, and the `isCreatingDemo` state. Also remove the `createDemoStudent` import from `useAdminStudents` if no longer used.
 
-- **`src/components/student/classes/ClassAttendanceCard.tsx`**: Uses `format(date, 'EEEE, MMM d, yyyy')` and `format(date, 'EEEE, MMM d')` instead of `formatDateUS`
-- **`src/pages/admin/AdminAttendance.tsx`**: Defines its own local `formatDateUS` function instead of importing the shared one from `src/lib/utils`
+### 2. Delete the 6 demo student records from the database
+All are inactive with emails like `demo*.example.com`:
+- `dfa19042-be3d-4a7d-87d7-3a91e78df810`
+- `0ace5fe2-be64-42f8-bd89-3f37c92c668b`
+- `e513c88f-0e1f-4762-935b-2b62adad3cbf`
+- `07c3b0c1-d681-443a-b865-29ce6637168d`
+- `a24182e3-dd34-4d49-a661-d1743edf5ce2`
+- `803d4086-13bc-4ea9-9b69-8600f5671eb3`
 
-### 2. Student level naming mismatch
-The admin payment system uses school-specific levels: **Novice, Amateur, Intermediate, Advanced**. But several files on the student and instructor side default to `'Beginner'` or `'beginner'` which doesn't match any of the school's actual levels.
+Delete from `students`, `profiles`, and `user_roles` tables for these IDs.
 
-Files affected:
-- `src/hooks/student/useStudentDashboardCore.ts` -- defaults to `'Beginner'`
-- `src/hooks/instructor/useInstructorDashboard.ts` -- defaults to `'Beginner'`
-- `src/hooks/instructor/useInstructorStudentsSimple.ts` -- defaults to `'beginner'`
-- `src/hooks/useAdminStudents.ts` -- defaults to `'beginner'`
-- `src/hooks/useAdminProgress.ts` -- defaults to `'beginner'`
-- `src/hooks/useStudentAssignment.ts` -- defaults to `'beginner'`
+### 3. Clean up unused demo student code
+- Remove `createDemoStudent` and `debugFetchStudents` from `useAdminStudents.ts` (dead code)
+- The `create-demo-student` edge function can remain (no harm) or be deleted
 
-The DB default for `students.level` is `'novice'`, so all fallback defaults should be `'Novice'` (or `'novice'`) to align with the school's terminology.
-
-### 3. No other architectural gaps
-- Instructor dashboard fetches student data using `students → profiles` join (same two-step pattern isn't needed here because `students.id` references `profiles.id` directly via `!inner` and there's no FK ambiguity like with `payments`)
-- Student progress, attendance, classes pages all query data correctly
-- The `useAdminPayments` two-step fetch pattern is working and doesn't affect student/instructor read paths (students see their own payments via RLS)
-
-## Plan
+## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/components/student/classes/ClassAttendanceCard.tsx` | Replace `format(date, 'EEEE, MMM d, yyyy')` with `formatDateUS(date)` and dialog title date similarly |
-| `src/pages/admin/AdminAttendance.tsx` | Remove local `formatDateUS`, import from `@/lib/utils` |
-| `src/hooks/student/useStudentDashboardCore.ts` | Change default `'Beginner'` → `'Novice'` (2 places) |
-| `src/hooks/instructor/useInstructorDashboard.ts` | Change default `'Beginner'` → `'Novice'` |
-| `src/hooks/instructor/useInstructorStudentsSimple.ts` | Change default `'beginner'` → `'novice'` (2 places) |
-| `src/hooks/useAdminStudents.ts` | Change default `'beginner'` → `'novice'` (2 places) |
-| `src/hooks/useAdminProgress.ts` | Change default `'beginner'` → `'novice'` |
-| `src/hooks/useStudentAssignment.ts` | Change default `'beginner'` → `'novice'` |
-
-All changes are small string replacements and import additions. No database changes needed.
+| `src/pages/admin/AdminStudents.tsx` | Remove Add Student button, Create Demo Student button, and related state/handlers |
+| `src/hooks/useAdminStudents.ts` | Remove `createDemoStudent` and `debugFetchStudents` functions and their exports |
+| Database | Delete 6 demo student records from `students`, `profiles`, `user_roles` |
 
