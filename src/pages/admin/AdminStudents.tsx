@@ -26,6 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -43,20 +50,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "@/components/ui/tooltip";
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 
 const AdminStudents = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
+  const [viewStudentId, setViewStudentId] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('active');
@@ -79,142 +81,78 @@ const AdminStudents = () => {
     refetchData
   } = useAdminStudents();
 
-  // Clear selection when tab changes
   useEffect(() => {
     setSelectedIds([]);
   }, [selectedTabValue]);
 
-  // Refresh data on first load
-
-  // Enhanced effect to ensure we have fresh data when changing tabs
   useEffect(() => {
     const fetchData = async () => {
       setIsRefreshing(true);
-      console.log(`Fetching fresh data after tab change to ${selectedTabValue}`);
       try {
         await refetchData();
-        console.log(`Data refreshed for ${selectedTabValue} tab`);
       } catch (error) {
-        console.error("Error refreshing data after tab change:", error);
+        console.error("Error refreshing data:", error);
       } finally {
         setIsRefreshing(false);
       }
     };
-    
     fetchData();
   }, [selectedTabValue, refetchData]);
 
-  // Memoized handler for approving a student with better error handling
   const handleApprove = useCallback(async (id: string) => {
     try {
       setProcessingStudentId(id);
-      console.log("Approving student with ID:", id);
-      
-      toast.info("Approving student enrollment...");
-      
       await approveStudent.mutateAsync(id);
-      
-      console.log("Approval complete, switching to active tab");
-      
-      // Switch to active tab to see the newly approved student
       setSelectedTabValue('active');
-      
-      // Schedule multiple data refreshes to ensure UI consistency
       setTimeout(async () => {
-        console.log("First check after approval");
         await refetchData();
-        
-        // Second check after a longer delay
-        setTimeout(async () => {
-          console.log("Second verification check after approval");
-          await refetchData();
-        }, 1000);
+        setTimeout(async () => { await refetchData(); }, 1000);
       }, 500);
-      
     } catch (error: any) {
-      console.error("Error in handleApprove:", error);
       toast.error(`Failed to approve student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
     }
-  }, [approveStudent, refetchData, setSelectedTabValue, setProcessingStudentId]);
+  }, [approveStudent, refetchData]);
 
-  // Memoized handler for declining a student with verification
   const handleDecline = useCallback(async (id: string) => {
     try {
       setProcessingStudentId(id);
-      console.log("Declining student with ID:", id);
-      
-      toast.info("Declining student enrollment...");
-      
       await declineStudent.mutateAsync(id);
-      
-      // Multiple data refreshes to ensure UI consistency
-      console.log("Refreshing data after decline");
       await refetchData();
-      
-      // Second verification check
-      setTimeout(async () => {
-        console.log("Second verification check after declining");
-        await refetchData();
-      }, 1000);
-      
+      setTimeout(async () => { await refetchData(); }, 1000);
     } catch (error: any) {
-      console.error("Error in handleDecline:", error);
       toast.error(`Failed to decline student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
     }
-  }, [declineStudent, refetchData, setProcessingStudentId]);
+  }, [declineStudent, refetchData]);
 
   const handleDeactivate = (id: string) => {
-    setSelectedStudent(id);
+    setStudentToDeactivate(id);
     setShowDeactivateDialog(true);
   };
   
-  // Updated deactivation confirmation with verification
   const confirmDeactivate = async () => {
-    if (!selectedStudent) return;
-    
+    if (!studentToDeactivate) return;
     try {
-      setProcessingStudentId(selectedStudent);
-      console.log("Deactivating student with ID:", selectedStudent);
-      
-      toast.info("Deactivating student account...");
-      
-      await deactivateStudent.mutateAsync(selectedStudent);
-      
-      // Multiple refreshes for UI consistency
-      console.log("Refreshing data after deactivation");
+      setProcessingStudentId(studentToDeactivate);
+      await deactivateStudent.mutateAsync(studentToDeactivate);
       await refetchData();
-      
-      // Second verification check
-      setTimeout(async () => {
-        console.log("Second verification check after deactivation");
-        await refetchData();
-      }, 1000);
-      
+      setTimeout(async () => { await refetchData(); }, 1000);
     } catch (error: any) {
-      console.error("Error in confirmDeactivate:", error);
       toast.error(`Failed to deactivate student: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingStudentId(null);
       setShowDeactivateDialog(false);
-      setSelectedStudent(null);
+      setStudentToDeactivate(null);
     }
-  };
-
-  const handleView = (id: string) => {
-    setSelectedStudent(id);
-    setShowViewStudentDialog(true);
   };
 
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
       await updateStudentLevel.mutateAsync({ studentId, level: newLevel });
       setEditingLevelStudentId(null);
-      
-      // Refresh data
       await refetchData();
     } catch (error) {
       console.error('Error updating level:', error);
@@ -222,8 +160,8 @@ const AdminStudents = () => {
   };
 
   const getStudentById = (id: string) => {
-    return activeStudents?.find(student => student.id === id) || 
-           pendingStudents?.find(student => student.id === id);
+    return activeStudents?.find(s => s.id === id) || 
+           pendingStudents?.find(s => s.id === id);
   };
 
   const handleCreateDemoStudent = async () => {
@@ -237,24 +175,19 @@ const AdminStudents = () => {
         toast.error("Failed to create demo student");
       }
     } catch (error: any) {
-      console.error("Error creating demo student:", error);
       toast.error("Failed to create demo student");
     } finally {
       setIsCreatingDemo(false);
     }
   };
   
-  // Add a forced data refresh function for UI buttons
   const handleForceRefresh = async () => {
     setIsRefreshing(true);
     try {
-      console.log("Force refreshing all student data");
       await refetchData();
-      toast.success("Student data refreshed successfully");
+      toast.success("Data refreshed");
     } catch (error: any) {
-      console.error("Error during force refresh:", error);
-      // Add error toast for better user experience
-      toast.error("Failed to refresh student data");
+      toast.error("Failed to refresh");
     } finally {
       setIsRefreshing(false);
     }
@@ -278,7 +211,6 @@ const AdminStudents = () => {
     )
   ) || [];
 
-  // Bulk action helpers
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredActiveStudents.length) {
       setSelectedIds([]);
@@ -310,7 +242,6 @@ const AdminStudents = () => {
   };
 
   const handleBulkMessage = () => {
-    // Navigate to admin messages with pre-selected recipients
     const recipientIds = selectedIds.join(',');
     navigate(`/admin/messages?recipients=${recipientIds}`);
   };
@@ -323,520 +254,469 @@ const AdminStudents = () => {
     );
   }
 
-  const selectedStudentData = selectedStudent ? getStudentById(selectedStudent) : null;
+  const viewedStudent = viewStudentId ? getStudentById(viewStudentId) : null;
 
   return (
-    <>
-      <TooltipProvider>
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Students Management</h1>
-              <p className="text-muted-foreground">
-                Manage all students, approve new registrations, and track payments.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleForceRefresh} 
-                variant="outline" 
-                size="icon" 
-                disabled={isRefreshing}
-                title="Refresh Data"
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCcw className="h-4 w-4" />
-                )}
-              </Button>
-              <Button 
-                onClick={handleCreateDemoStudent} 
-                variant="outline"
-                disabled={isCreatingDemo || isRefreshing}
-              >
-                {isCreatingDemo ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>Create Demo Student</>
-                )}
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button disabled={isRefreshing}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Add Student
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add a new student to the system</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search students..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
-            <TabsList>
-              <TabsTrigger value="active" disabled={isRefreshing}>
-                Active Students ({filteredActiveStudents.length})
-                {isRefreshing && selectedTabValue === 'active' && (
-                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="pending" disabled={isRefreshing}>
-                Pending Approval ({filteredPendingStudents.length})
-                {isRefreshing && selectedTabValue === 'pending' && (
-                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="active" className="space-y-4 pt-4">
-              {/* Bulk Action Toolbar */}
-              {selectedIds.length > 0 && (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">{selectedIds.length} selected</span>
-                  <Button size="sm" variant="outline" onClick={() => setShowBulkLevelDialog(true)}>
-                    Change Level
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleBulkMessage}>
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                    Message
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateDialog(true)}>
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
-                    Clear
-                  </Button>
-                </div>
-              )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Students</CardTitle>
-                  <CardDescription>
-                    Manage currently enrolled students.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={filteredActiveStudents.length > 0 && selectedIds.length === filteredActiveStudents.length}
-                            onCheckedChange={toggleSelectAll}
-                          />
-                        </TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Instructor</TableHead>
-                        <TableHead>Level</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredActiveStudents.length > 0 ? (
-                        filteredActiveStudents.map((student) => (
-                          <TableRow key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedIds.includes(student.id)}
-                                onCheckedChange={() => toggleSelect(student.id)}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {student.profile?.first_name} {student.profile?.last_name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {student.profile?.email}
-                            </TableCell>
-                            <TableCell>
-                              {student.instructor ? 
-                                `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
-                                'Not assigned'}
-                            </TableCell>
-                            <TableCell>
-                              {editingLevelStudentId === student.id ? (
-                                <Select
-                                  value={student.level}
-                                  onValueChange={(value) => handleLevelChange(student.id, value)}
-                                  disabled={updateStudentLevel.isPending}
-                                >
-                                  <SelectTrigger className="w-[130px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="novice">Novice</SelectItem>
-                                    <SelectItem value="amateur">Amateur</SelectItem>
-                                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                                    <SelectItem value="advanced">Advanced</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="capitalize">
-                                    {student.level}
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => setEditingLevelStudentId(student.id)}
-                                    disabled={processingStudentId === student.id}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="outline" className="bg-green-500/10 text-green-500">
-                                Active
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <InstructorAssignmentDialog
-                                      studentId={student.id}
-                                      studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
-                                      currentInstructorId={student.instructor_id}
-                                    >
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        disabled={processingStudentId === student.id}
-                                      >
-                                        <UserRound className="h-4 w-4" />
-                                      </Button>
-                                    </InstructorAssignmentDialog>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Assign Instructor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleView(student.id)}
-                                      className="h-8 w-8"
-                                      disabled={processingStudentId === student.id}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View Student Details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleDeactivate(student.id)}
-                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      disabled={processingStudentId === student.id}
-                                    >
-                                      {processingStudentId === student.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <X className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Deactivate Student</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                            {isRefreshing ? (
-                              <div className="flex flex-col items-center justify-center space-y-2">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                                <p>Loading active students...</p>
-                              </div>
-                            ) : (
-                              <>
-                                No active students found matching your search.
-                                <div className="mt-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={handleForceRefresh}
-                                    className="mx-auto"
-                                    disabled={isRefreshing}
-                                  >
-                                    <RefreshCcw className="mr-2 h-4 w-4" />
-                                    Refresh Data
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="pending" className="space-y-4 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pending Students</CardTitle>
-                  <CardDescription>
-                    Review and approve student registration requests.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPendingStudents.length > 0 ? (
-                        filteredPendingStudents.map((student) => (
-                          <TableRow key={student.id}>
-                            <TableCell className="font-medium">
-                              {student.profile?.first_name} {student.profile?.last_name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {student.profile?.email}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500">
-                                Pending
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => handleApprove(student.id)}
-                                  className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
-                                  disabled={processingStudentId === student.id || isRefreshing}
-                                >
-                                  {processingStudentId === student.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Check className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => handleDecline(student.id)}
-                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  disabled={processingStudentId === student.id || isRefreshing}
-                                >
-                                  {processingStudentId === student.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <X className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                            {isRefreshing ? (
-                              <div className="flex flex-col items-center justify-center space-y-2">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                                <p>Loading pending students...</p>
-                              </div>
-                            ) : (
-                              <>
-                                No pending students found matching your search.
-                                <div className="mt-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={handleForceRefresh}
-                                    className="mx-auto"
-                                    disabled={isRefreshing}
-                                  >
-                                    <RefreshCcw className="mr-2 h-4 w-4" />
-                                    Refresh Data
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-          </Tabs>
-
-          {/* View Student Dialog */}
-          <Dialog open={showViewStudentDialog} onOpenChange={setShowViewStudentDialog}>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Student Details</DialogTitle>
-              </DialogHeader>
-              {selectedStudentData && (
-                <div className="py-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Name</p>
-                      <p className="font-medium">{selectedStudentData.profile?.first_name} {selectedStudentData.profile?.last_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{selectedStudentData.profile?.email}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Level</p>
-                      <p className="font-medium capitalize">{selectedStudentData.level || 'Not set'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium capitalize">{selectedStudentData.enrollment_status}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Instructor</p>
-                      <p className="font-medium">
-                        {selectedStudentData.instructor
-                          ? `${selectedStudentData.instructor.profile?.first_name} ${selectedStudentData.instructor.profile?.last_name}`
-                          : 'Not assigned'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Start Date</p>
-                      <p className="font-medium">{(selectedStudentData as any).start_date || 'Not set'}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button onClick={() => setShowViewStudentDialog(false)}>Close</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Deactivate Confirmation Dialog */}
-          <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Deactivate Student</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to deactivate this student account? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={confirmDeactivate}
-                  disabled={processingStudentId !== null}
-                >
-                  {processingStudentId !== null ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    'Deactivate'
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Bulk Change Level Dialog */}
-          <Dialog open={showBulkLevelDialog} onOpenChange={setShowBulkLevelDialog}>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Change Level for {selectedIds.length} Students</DialogTitle>
-                <DialogDescription>
-                  All selected students will be updated to the chosen level.
-                </DialogDescription>
-              </DialogHeader>
-              <Select value={bulkLevel} onValueChange={setBulkLevel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="novice">Novice</SelectItem>
-                  <SelectItem value="amateur">Amateur</SelectItem>
-                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                  <SelectItem value="advanced">Advanced</SelectItem>
-                </SelectContent>
-              </Select>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowBulkLevelDialog(false)}>Cancel</Button>
-                <Button onClick={handleBulkLevelChange} disabled={updateStudentLevel.isPending}>
-                  {updateStudentLevel.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Apply
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Bulk Deactivate Dialog */}
-          <Dialog open={showBulkDeactivateDialog} onOpenChange={setShowBulkDeactivateDialog}>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Deactivate {selectedIds.length} Students</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to deactivate all selected students?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowBulkDeactivateDialog(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleBulkDeactivate} disabled={deactivateStudent.isPending}>
-                  Deactivate All
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+    <div className="space-y-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold">Students Management</h1>
+          <p className="text-muted-foreground">
+            Manage all students, approve new registrations, and track progress.
+          </p>
         </div>
-      </TooltipProvider>
-    </>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleForceRefresh} 
+            variant="outline" 
+            size="icon" 
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          </Button>
+          <Button 
+            onClick={handleCreateDemoStudent} 
+            variant="outline"
+            disabled={isCreatingDemo || isRefreshing}
+          >
+            {isCreatingDemo ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+            ) : (
+              'Create Demo Student'
+            )}
+          </Button>
+          <Button disabled={isRefreshing}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Student
+          </Button>
+        </div>
+      </div>
+
+      <div className="relative flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search students..."
+          className="pl-8"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
+        <TabsList>
+          <TabsTrigger value="active" disabled={isRefreshing}>
+            Active Students ({filteredActiveStudents.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending" disabled={isRefreshing}>
+            Pending Approval ({filteredPendingStudents.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Active Students Tab */}
+        <TabsContent value="active" className="space-y-4 pt-4">
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium">{selectedIds.length} selected</span>
+              <Button size="sm" variant="outline" onClick={() => setShowBulkLevelDialog(true)}>
+                Change Level
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleBulkMessage}>
+                <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateDialog(true)}>
+                Deactivate
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
+                Clear
+              </Button>
+            </div>
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Students</CardTitle>
+              <CardDescription>Currently enrolled students.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={filteredActiveStudents.length > 0 && selectedIds.length === filteredActiveStudents.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Instructor</TableHead>
+                      <TableHead>Level</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredActiveStudents.length > 0 ? (
+                      filteredActiveStudents.map((student) => (
+                        <TableRow key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.includes(student.id)}
+                              onCheckedChange={() => toggleSelect(student.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {student.profile?.first_name} {student.profile?.last_name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {student.profile?.email}
+                          </TableCell>
+                          <TableCell>
+                            {student.instructor ? 
+                              `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` : 
+                              <span className="text-muted-foreground">Unassigned</span>}
+                          </TableCell>
+                          <TableCell>
+                            {editingLevelStudentId === student.id ? (
+                              <Select
+                                value={student.level}
+                                onValueChange={(value) => handleLevelChange(student.id, value)}
+                                disabled={updateStudentLevel.isPending}
+                              >
+                                <SelectTrigger className="w-[120px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="novice">Novice</SelectItem>
+                                  <SelectItem value="amateur">Amateur</SelectItem>
+                                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="advanced">Advanced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className="capitalize">{student.level}</Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setEditingLevelStudentId(student.id)}
+                                  disabled={processingStudentId === student.id}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-green-500/10 text-green-500">Active</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <InstructorAssignmentDialog
+                                studentId={student.id}
+                                studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
+                                currentInstructorId={student.instructor_id}
+                              >
+                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
+                                  <UserRound className="h-4 w-4" />
+                                </Button>
+                              </InstructorAssignmentDialog>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setViewStudentId(student.id)}
+                                className="h-8 w-8"
+                                disabled={processingStudentId === student.id}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeactivate(student.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={processingStudentId === student.id}
+                              >
+                                {processingStudentId === student.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          {isRefreshing ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                              <p>Loading students...</p>
+                            </div>
+                          ) : (
+                            'No active students found.'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Pending Students Tab */}
+        <TabsContent value="pending" className="space-y-4 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Students</CardTitle>
+              <CardDescription>Review and approve student registration requests.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPendingStudents.length > 0 ? (
+                      filteredPendingStudents.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">
+                            {student.profile?.first_name} {student.profile?.last_name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {student.profile?.email}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500">Pending</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setViewStudentId(student.id)}
+                                className="h-8 w-8"
+                                disabled={processingStudentId === student.id}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleApprove(student.id)}
+                                className="h-8 w-8 text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                                disabled={processingStudentId === student.id || isRefreshing}
+                              >
+                                {processingStudentId === student.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDecline(student.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={processingStudentId === student.id || isRefreshing}
+                              >
+                                {processingStudentId === student.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          {isRefreshing ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                              <p>Loading pending students...</p>
+                            </div>
+                          ) : (
+                            'No pending students.'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Student Detail Sheet */}
+      <Sheet open={!!viewStudentId} onOpenChange={(open) => !open && setViewStudentId(null)}>
+        <SheetContent className="sm:max-w-lg overflow-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {viewedStudent ? `${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}` : 'Student Details'}
+            </SheetTitle>
+            <SheetDescription>
+              {viewedStudent?.profile?.email}
+            </SheetDescription>
+          </SheetHeader>
+          {viewedStudent && (
+            <div className="space-y-6 mt-6">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={
+                  viewedStudent.enrollment_status === 'active' 
+                    ? 'bg-green-500/10 text-green-500' 
+                    : 'bg-amber-500/10 text-amber-500'
+                }>
+                  {viewedStudent.enrollment_status}
+                </Badge>
+                <Badge variant="outline" className="capitalize">{viewedStudent.level}</Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Level</p>
+                  <p className="text-sm font-medium capitalize">{viewedStudent.level || 'Not set'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Start Date</p>
+                  <p className="text-sm font-medium">{(viewedStudent as any).start_date || 'Not set'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Instructor</p>
+                  <p className="text-sm font-medium">
+                    {viewedStudent.instructor
+                      ? `${viewedStudent.instructor.profile?.first_name} ${viewedStudent.instructor.profile?.last_name}`
+                      : 'Unassigned'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium capitalize">{viewedStudent.enrollment_status}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col gap-2">
+                {viewedStudent.enrollment_status === 'active' && (
+                  <>
+                    <InstructorAssignmentDialog
+                      studentId={viewedStudent.id}
+                      studentName={`${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}`}
+                      currentInstructorId={viewedStudent.instructor_id}
+                    >
+                      <Button size="sm" variant="outline" className="w-full justify-start">
+                        <UserRound className="h-4 w-4 mr-2" /> Assign Instructor
+                      </Button>
+                    </InstructorAssignmentDialog>
+                    <Button size="sm" variant="outline" className="w-full justify-start" onClick={() => { setViewStudentId(null); navigate(`/admin/messages?recipient=${viewStudentId}`); }}>
+                      <MessageSquare className="h-4 w-4 mr-2" /> Send Message
+                    </Button>
+                    <Button size="sm" variant="destructive" className="w-full justify-start" onClick={() => { setViewStudentId(null); handleDeactivate(viewStudentId!); }}>
+                      <X className="h-4 w-4 mr-2" /> Deactivate
+                    </Button>
+                  </>
+                )}
+                {viewedStudent.enrollment_status === 'pending' && (
+                  <>
+                    <Button size="sm" className="w-full justify-start bg-green-600 hover:bg-green-700" onClick={() => { setViewStudentId(null); handleApprove(viewStudentId!); }}>
+                      <Check className="h-4 w-4 mr-2" /> Approve
+                    </Button>
+                    <Button size="sm" variant="destructive" className="w-full justify-start" onClick={() => { setViewStudentId(null); handleDecline(viewStudentId!); }}>
+                      <X className="h-4 w-4 mr-2" /> Decline
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Deactivate Student</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate this student? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeactivate}
+              disabled={processingStudentId !== null}
+            >
+              {processingStudentId !== null ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+              ) : (
+                'Deactivate'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Change Level Dialog */}
+      <Dialog open={showBulkLevelDialog} onOpenChange={setShowBulkLevelDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Change Level for {selectedIds.length} Students</DialogTitle>
+            <DialogDescription>All selected students will be updated to the chosen level.</DialogDescription>
+          </DialogHeader>
+          <Select value={bulkLevel} onValueChange={setBulkLevel}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="novice">Novice</SelectItem>
+              <SelectItem value="amateur">Amateur</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkLevelDialog(false)}>Cancel</Button>
+            <Button onClick={handleBulkLevelChange} disabled={updateStudentLevel.isPending}>
+              {updateStudentLevel.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Deactivate Dialog */}
+      <Dialog open={showBulkDeactivateDialog} onOpenChange={setShowBulkDeactivateDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Deactivate {selectedIds.length} Students</DialogTitle>
+            <DialogDescription>Are you sure you want to deactivate all selected students?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDeactivateDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleBulkDeactivate} disabled={deactivateStudent.isPending}>
+              Deactivate All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
