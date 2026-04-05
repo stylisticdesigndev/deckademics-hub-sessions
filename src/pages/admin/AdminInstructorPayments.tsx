@@ -44,26 +44,33 @@ const AdminInstructorPayments = () => {
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   
-  // Generate instructors list from payments data
-  const instructorsList = React.useMemo(() => {
-    if (!payments || payments.length === 0) return [];
-    
-    const uniqueInstructors = new Map<string, Instructor>();
-    
-    payments.forEach(payment => {
-      if (!uniqueInstructors.has(payment.instructorId || '')) {
-        uniqueInstructors.set(payment.instructorId || '', {
-          id: payment.instructorId || '',
-          name: payment.instructorName,
-          email: `${payment.instructorName.toLowerCase().replace(/\s+/g, '.')}@example.com`, // Generate email for display
-          hourlyRate: payment.hourlyRate,
-          specialization: 'DJ Instruction', // Default value
-        });
+  // Fetch instructors independently so they always show even with zero payments
+  const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
+  
+  React.useEffect(() => {
+    const fetchInstructors = async () => {
+      const { data, error } = await supabase
+        .from('instructors')
+        .select('id, hourly_rate, specialties, profiles (first_name, last_name, email)')
+        .eq('status', 'active' as any);
+      
+      if (error) {
+        console.error('Error fetching instructors:', error);
+        return;
       }
-    });
-    
-    return Array.from(uniqueInstructors.values());
-  }, [payments]);
+      
+      const list: Instructor[] = (data || []).map((inst: any) => ({
+        id: inst.id,
+        name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
+        email: inst.profiles?.email || '',
+        hourlyRate: inst.hourly_rate || 0,
+        specialization: inst.specialties?.join(', ') || 'DJ Instruction',
+      }));
+      
+      setInstructorsList(list);
+    };
+    fetchInstructors();
+  }, []);
   
   // Split payments into pending and completed
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];

@@ -18,15 +18,23 @@ export const NotificationDropdown = () => {
   const userId = userData.user?.id;
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useAdminNotifications(userId);
   const [open, setOpen] = useState(false);
+  const [optimisticUnread, setOptimisticUnread] = useState<number | null>(null);
+
+  const displayCount = optimisticUnread !== null ? optimisticUnread : unreadCount;
+
+  // Sync optimistic state with real data
+  React.useEffect(() => {
+    setOptimisticUnread(null);
+  }, [unreadCount]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {displayCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-              {unreadCount}
+              {displayCount}
             </span>
           )}
         </Button>
@@ -34,12 +42,15 @@ export const NotificationDropdown = () => {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b">
           <h4 className="font-semibold text-sm">Notifications</h4>
-          {unreadCount > 0 && (
+          {displayCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               className="text-xs h-7"
-              onClick={() => markAllAsRead.mutate()}
+              onClick={() => {
+                setOptimisticUnread(0);
+                markAllAsRead.mutate();
+              }}
             >
               <Check className="h-3 w-3 mr-1" />
               Mark all read
@@ -61,7 +72,10 @@ export const NotificationDropdown = () => {
                     !notification.read ? 'bg-primary/5' : ''
                   }`}
                   onClick={() => {
-                    if (!notification.read) markAsRead.mutate(notification.id);
+                    if (!notification.read) {
+                      setOptimisticUnread(Math.max(0, (optimisticUnread !== null ? optimisticUnread : unreadCount) - 1));
+                      markAsRead.mutate(notification.id);
+                    }
                   }}
                 >
                   <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />

@@ -59,7 +59,7 @@ const AdminStudents = () => {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedTabValue, setSelectedTabValue] = useState('pending');
+  const [selectedTabValue, setSelectedTabValue] = useState('active');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
