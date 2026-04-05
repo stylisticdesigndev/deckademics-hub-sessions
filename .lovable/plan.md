@@ -1,33 +1,31 @@
 
 
-# Add Inactive Tab + Pagination to Student Management
+# Remove Add Instructor Button from Instructor Management
 
-## Changes
+## What changes
 
-### 1. Add "Inactive Students" tab
-- Add a third tab showing students with `enrollment_status = 'inactive'` or `'declined'`
-- Each row shows name, email, previous level, and a "Reactivate" action button
-- Reactivate sets `enrollment_status` back to `'active'`
-- Update the deactivate confirmation dialog text (remove "cannot be undone" since it now can be)
+Remove both the **"Add Instructor"** button and the **"Convert User to Instructor"** button from the header. Instructors self-register at `/auth/instructor` and admins approve them -- same pattern as students.
 
-### 2. Add pagination to Active Students table
-- Show 10 students per page
-- Add simple Previous/Next controls below the table with a page indicator ("Page 1 of 3")
-- Reset to page 1 when search query changes
+## Cleanup
 
-### 3. Hook changes (`useAdminStudents.ts`)
-- Add `fetchInactiveStudents` query that fetches students where `enrollment_status IN ('inactive', 'declined')`
-- Add `reactivateStudent` mutation that sets `enrollment_status = 'active'`
-- Export `inactiveStudents`, `isLoadingInactive`, and `reactivateStudent`
+### `src/pages/admin/AdminInstructors.tsx`
+- Remove the "Add Instructor" dialog (lines 493-579) and all related state: `addInstructorOpen`, `newInstructor`, `handleAddInstructor`
+- Remove the "Convert User to Instructor" dialog (lines 432-491) and related state: `showCreateInstructorDialog`, `selectedUserId`, `handleCreateInstructor`, `eligibleUsers` query
+- Remove unused imports: `UserPlus`, `UserRound`, `Label`, `Select`/`SelectContent`/`SelectItem`/`SelectTrigger`/`SelectValue`
+- The header becomes just the title and description (no buttons)
 
-### 4. Detail sheet update
-- When viewing an inactive student, show a "Reactivate" button instead of "Deactivate"
-- Update status badge styling to show inactive/declined in gray/red
+### `src/hooks/useAdminInstructors.ts`
+- Remove `addNewInstructor` mutation and `createInstructor` mutation (dead code)
+- Remove `allUsers` query (only used by "Convert User" dialog)
+- Remove their exports
+
+### `supabase/functions/create-instructor/index.ts`
+- Can remain (no harm), but is now dead code
 
 ## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/hooks/useAdminStudents.ts` | Add `fetchInactiveStudents` query + `reactivateStudent` mutation |
-| `src/pages/admin/AdminStudents.tsx` | Add Inactive tab, pagination controls for active table, reactivate actions, update detail sheet |
+| `src/pages/admin/AdminInstructors.tsx` | Remove both buttons, dialogs, related state/handlers, and unused imports |
+| `src/hooks/useAdminInstructors.ts` | Remove `addNewInstructor`, `createInstructor`, `allUsers` and their exports |
 
