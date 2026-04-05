@@ -18,73 +18,52 @@ interface AssignStudentsParams {
   studentIds: string[];
 }
 
-export const useStudentAssignment = () => {
+const transformStudentRows = (students: any[]): StudentForAssignment[] => {
+  const result: StudentForAssignment[] = [];
+  if (!students || !Array.isArray(students)) return result;
+  for (const s of students) {
+    if (!s || typeof s !== 'object') continue;
+    const obj = s as any;
+    const profiles = obj.profiles;
+    if (obj.id && profiles) {
+      result.push({
+        id: obj.id,
+        level: obj.level || 'beginner',
+        enrollment_status: obj.enrollment_status,
+        instructor_id: obj.instructor_id,
+        first_name: profiles.first_name || '',
+        last_name: profiles.last_name || '',
+        email: profiles.email || '',
+      });
+    }
+  }
+  return result;
+};
+
+export const useStudentAssignment = (instructorId?: string | null) => {
   const queryClient = useQueryClient();
 
-  // Function to fetch unassigned students (students without an instructor)
   const fetchUnassignedStudents = async (): Promise<StudentForAssignment[]> => {
-    console.log('Fetching unassigned students...');
-    try {
-      const { data: students, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          level,
-          enrollment_status,
-          instructor_id,
-          profiles (
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .eq('enrollment_status', 'active' as any)
-        .is('instructor_id', null);
-
-      if (error) {
-        console.error('Error fetching unassigned students:', error);
-        toast.error('Failed to load unassigned students');
-        throw error;
-      }
-
-      console.log('Raw unassigned students data:', students);
-
-      const studentsList: StudentForAssignment[] = [];
-
-      if (students && Array.isArray(students)) {
-        for (const student of students) {
-          if (student && typeof student === 'object') {
-            const studentObj = student as any;
-            const id = studentObj.id;
-            const level = studentObj.level || 'beginner';
-            const enrollment_status = studentObj.enrollment_status;
-            const instructor_id = studentObj.instructor_id;
-            const profiles = studentObj.profiles;
-
-            if (id && profiles) {
-              studentsList.push({
-                id,
-                level,
-                enrollment_status,
-                instructor_id,
-                first_name: profiles.first_name || '',
-                last_name: profiles.last_name || '',
-                email: profiles.email || ''
-              });
-            }
-          }
-        }
-      }
-
-      console.log('Transformed unassigned students:', studentsList);
-      return studentsList;
-    } catch (err) {
-      console.error('Error in fetchUnassignedStudents:', err);
-      return [];
-    }
+    const { data, error } = await supabase
+      .from('students')
+      .select(`id, level, enrollment_status, instructor_id, profiles ( first_name, last_name, email )`)
+      .eq('enrollment_status', 'active' as any)
+      .is('instructor_id', null);
+    if (error) { toast.error('Failed to load unassigned students'); throw error; }
+    return transformStudentRows(data || []);
   };
 
-  // Query for unassigned students
+  const fetchAssignedStudents = async (): Promise<StudentForAssignment[]> => {
+    if (!instructorId) return [];
+    const { data, error } = await supabase
+      .from('students')
+      .select(`id, level, enrollment_status, instructor_id, profiles ( first_name, last_name, email )`)
+      .eq('enrollment_status', 'active' as any)
+      .eq('instructor_id', instructorId as any);
+    if (error) { toast.error('Failed to load assigned students'); throw error; }
+    return transformStudentRows(data || []);
+  };
+
   const {
     data: unassignedStudents = [],
     isLoading: isLoadingStudents,
@@ -94,55 +73,69 @@ export const useStudentAssignment = () => {
     queryFn: fetchUnassignedStudents,
   });
 
-  // Mutation to assign students to an instructor
+  const {
+    data: assignedStudents = [],
+    isLoading: isLoadingAssigned,
+  } = useQuery({
+    queryKey: ['admin', 'assigned-students', instructorId],
+    queryFn: fetchAssignedStudents,
+    enabled: !!instructorId,
+  });
+
   const assignStudentsToInstructor = useMutation({
     mutationFn: async ({ instructorId, studentIds }: AssignStudentsParams) => {
-      console.log(`Assigning ${studentIds.length} students to instructor ${instructorId}`);
-
-      if (!instructorId || !studentIds.length) {
-        throw new Error('Missing instructor ID or student IDs');
-      }
-
-      // Use the database function to assign each student
+      if (!instructorId || !studentIds.length) throw new Error('Missing instructor ID or student IDs');
       const updates = studentIds.map(async (studentId) => {
-        const { data, error } = await supabase
-          .rpc('assign_student_to_instructor', {
-            student_id: studentId,
-            instructor_id: instructorId
-          });
-
-        if (error) {
-          console.error(`Error assigning student ${studentId} to instructor:`, error);
-          throw error;
-        }
-
+        const { data, error } = await supabase.rpc('assign_student_to_instructor', {
+          student_id: studentId,
+          instructor_id: instructorId,
+        });
+        if (error) throw error;
         return data;
       });
-
-      // Wait for all updates to complete
       await Promise.all(updates);
-
       return { success: true, instructorId, studentIds };
     },
     onSuccess: (result) => {
-      console.log('Students assigned successfully:', result);
       toast.success(`${result.studentIds.length} students assigned to instructor`);
-      
-      // Refetch relevant data
       queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assigned-students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     },
     onError: (error: any) => {
-      console.error('Error assigning students:', error);
       toast.error(`Failed to assign students: ${error.message || 'Unknown error'}`);
-    }
+    },
+  });
+
+  const unassignStudent = useMutation({
+    mutationFn: async (studentId: string) => {
+      const { error } = await supabase
+        .from('students')
+        .update({ instructor_id: null } as any)
+        .eq('id', studentId as any);
+      if (error) throw error;
+      return studentId;
+    },
+    onSuccess: () => {
+      toast.success('Student unassigned');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to unassign student: ${error.message || 'Unknown error'}`);
+    },
   });
 
   return {
     unassignedStudents,
+    assignedStudents,
     isLoadingStudents,
+    isLoadingAssigned,
     assignStudentsToInstructor,
-    refetchUnassignedStudents
+    unassignStudent,
+    refetchUnassignedStudents,
   };
 };
