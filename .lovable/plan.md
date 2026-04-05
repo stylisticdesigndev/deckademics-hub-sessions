@@ -1,73 +1,36 @@
 
 
-# Build 3 New Admin Features
+# Fix: Duplicate Instructor + Student Assignment Visibility
 
-## Feature 3: Student Progress Overview
+## Root Causes
 
-A new page at `/admin/progress` showing a bird's-eye view of curriculum completion across all students, grouped by level and instructor.
+1. **Duplicate Master Roshi**: Two separate instructor records exist in the database with different UUIDs but the same email (`kame@dbz.com`). One is a duplicate that needs to be removed via a migration. Students (Future Trunks, Son Gohan) are assigned to ID `7e03a1db...`; the other ID `af93c4f3...` has no students. The migration will delete the orphan instructor record and its associated profile/user_roles rows.
 
-**What it shows:**
-- Summary cards: average overall progress across all students, count by level
-- A table listing every active student with their auto-calculated overall progress percentage (average of module completions), level, and assigned instructor
-- Grouping/filtering by level (novice, amateur, intermediate, advanced) and by instructor
-
-**Files:**
-- New `src/pages/admin/AdminProgress.tsx` -- the page component
-- New `src/hooks/useAdminProgress.ts` -- fetches all active students, their `student_progress` records, and `curriculum_modules`/`curriculum_lessons` to compute per-student overall progress (same auto-calc logic used on instructor/student sides)
-- Update `src/App.tsx` -- add route `/admin/progress`
-- Update `src/components/navigation/AdminNavigation.tsx` -- add "Progress Overview" nav item with `TrendingUp` icon
+2. **"Assign Students" only shows unassigned students**: The dialog currently only lists students with `instructor_id IS NULL`. It should also show the instructor's currently assigned students so the admin can see who is already assigned and optionally unassign them.
 
 ---
 
-## Feature 4: Bulk Actions on Student & Instructor Tables
+## Plan
 
-Add multi-select checkboxes to the Active Students table and Active Instructors table, with a toolbar that appears when items are selected.
+### Step 1 — Remove the duplicate instructor record (database migration)
 
-**Student bulk actions:**
-- Change level (apply same level to all selected)
-- Deactivate selected
-- Send message to selected (opens compose with pre-filled recipients)
+Write a migration that:
+- Deletes the instructor row with ID `af93c4f3-4fdc-48d9-8e01-985b0f41d737` (the one with zero students)
+- Deletes the corresponding `profiles` and `user_roles` rows for that same ID
+- Leaves the other Master Roshi (`7e03a1db...`) and his assigned students untouched
 
-**Instructor bulk actions:**
-- Deactivate selected
-- Send message to selected
+### Step 2 — Enhance the "Assign Students" dialog
 
-**Files:**
-- Update `src/pages/admin/AdminStudents.tsx` -- add checkbox column, selection state, bulk action toolbar
-- Update `src/pages/admin/AdminInstructors.tsx` -- same pattern
-- No new hooks needed; reuse existing mutation hooks for level changes, deactivation, and messaging
+Update `useStudentAssignment.ts` to also fetch students currently assigned to the selected instructor (a second query filtered by `instructor_id = instructorId`).
 
----
+Update the student assignment section in `AdminInstructors.tsx` to show two groups:
+- **Currently Assigned** — students already linked to this instructor, each with an "Unassign" button
+- **Available Students** — unassigned students that can be selected and assigned (existing behavior)
 
-## Feature 5: Functional Notification System
+This gives the admin a complete picture when clicking "Assign Students."
 
-Connect the existing notification toggle switches in Admin Settings to real triggers. When enabled, the system will send in-app notifications (shown as announcements or toast-style alerts) when key events occur.
-
-**Triggers to implement:**
-- New student signup (pending approval)
-- New instructor signup (pending approval)
-- Payment marked as overdue
-
-**How it works:**
-- New `admin_notifications` database table: `id`, `admin_id`, `type` (new_student, new_instructor, overdue_payment), `title`, `message`, `read`, `created_at`
-- A database trigger function that inserts a notification row when a new student or instructor record is created with `pending` status
-- A database trigger function that inserts a notification when a payment status changes to a past-due state
-- New `src/hooks/useAdminNotifications.ts` hook to query unread notifications
-- A notification bell/dropdown in the admin layout header showing unread count and recent notifications
-- The existing Settings toggles will control whether these notifications are generated (check `app_settings.notifications_enabled` in the trigger functions)
-
-**Files:**
-- Database migration: create `admin_notifications` table with RLS, create trigger functions
-- New `src/hooks/useAdminNotifications.ts`
-- New `src/components/admin/NotificationDropdown.tsx` -- bell icon + dropdown list
-- Update `src/routes/AdminLayoutRoute.tsx` or `src/components/layout/DashboardLayout.tsx` -- add notification dropdown to header
-- Existing `AdminSettings.tsx` toggles already save to `app_settings` -- no change needed there
-
----
-
-## Implementation Order
-
-1. Student Progress Overview (standalone, no dependencies)
-2. Bulk Actions on tables (UI-only, uses existing hooks)
-3. Functional Notifications (requires migration + triggers + new components)
+### Files changed
+- New database migration (remove duplicate record)
+- `src/hooks/useStudentAssignment.ts` — add `fetchAssignedStudents` query parameterized by instructor ID
+- `src/pages/admin/AdminInstructors.tsx` — update the student assignment Sheet to display both sections
 
