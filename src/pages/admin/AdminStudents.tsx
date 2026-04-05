@@ -657,11 +657,11 @@ const AdminStudents = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Level</p>
-                      <p className="font-medium">{selectedStudentData.level || 'Not set'}</p>
+                      <p className="font-medium capitalize">{selectedStudentData.level || 'Not set'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium">{selectedStudentData.enrollment_status}</p>
+                      <p className="font-medium capitalize">{selectedStudentData.enrollment_status}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Instructor</p>
@@ -670,6 +670,10 @@ const AdminStudents = () => {
                           ? `${selectedStudentData.instructor.profile?.first_name} ${selectedStudentData.instructor.profile?.last_name}`
                           : 'Not assigned'}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Start Date</p>
+                      <p className="font-medium">{selectedStudentData.start_date || 'Not set'}</p>
                     </div>
                   </div>
                 </div>

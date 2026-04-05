@@ -14,14 +14,24 @@ import {
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle, Loader2 } from 'lucide-react';
+import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle, Loader2, UserPlus } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoBackground } from '@/components/background/VideoBackground';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const AdminSettings = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
