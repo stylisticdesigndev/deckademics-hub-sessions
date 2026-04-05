@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { DollarSign, Save, Edit, Plus, Gift, CalendarIcon } from 'lucide-react';
+import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -34,6 +34,7 @@ import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
+import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 
 interface Instructor {
   id: string;
@@ -53,6 +54,12 @@ const AdminInstructorPayments = () => {
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
   const [showCreateClassDialog, setShowCreateClassDialog] = useState(false);
   const [showCreateBonusDialog, setShowCreateBonusDialog] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [generateStep, setGenerateStep] = useState<'dates' | 'preview'>('dates');
+  const [generateStartDate, setGenerateStartDate] = useState<Date>();
+  const [generateEndDate, setGenerateEndDate] = useState<Date>();
+  const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
@@ -159,7 +166,6 @@ const AdminInstructorPayments = () => {
       toast.success(`${selectedInstructor.name}'s hourly rate updated to $${rate}`);
       setShowSetRateDialog(false);
       setSelectedInstructor(null);
-      // Refresh instructors list
       const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, hourlyRate: rate } : i);
       setInstructorsList(updated);
     } catch (error) {
@@ -279,6 +285,126 @@ const AdminInstructorPayments = () => {
     setBonusDate(undefined);
   };
 
+  const resetGenerateForm = () => {
+    setGenerateStartDate(undefined);
+    setGenerateEndDate(undefined);
+    setGeneratedPayments([]);
+    setGenerateStep('dates');
+  };
+
+  const handleGeneratePreview = async () => {
+    if (!generateStartDate || !generateEndDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+
+    if (generateEndDate <= generateStartDate) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      // Fetch schedules for all active instructors
+      const { data: schedulesData, error: schedError } = await supabase
+        .from('instructor_schedules')
+        .select('instructor_id, day, hours');
+
+      if (schedError) throw schedError;
+
+      const schedulesByInstructor: Record<string, ScheduleEntry[]> = {};
+      for (const row of (schedulesData || []) as any[]) {
+        const id = row.instructor_id;
+        if (!schedulesByInstructor[id]) schedulesByInstructor[id] = [];
+        schedulesByInstructor[id].push({ day: row.day, hours: row.hours });
+      }
+
+      // Check for existing pending payments that overlap this period
+      const startStr = format(generateStartDate, 'yyyy-MM-dd');
+      const endStr = format(generateEndDate, 'yyyy-MM-dd');
+
+      const preview: GeneratedPayment[] = [];
+
+      for (const inst of instructorsList) {
+        // Skip if instructor already has a pending class payment overlapping this period
+        const hasOverlap = pendingPayments.some(p => 
+          p.instructorId === inst.id && 
+          p.paymentType === 'class' &&
+          p.payPeriodStart <= endStr && 
+          p.payPeriodEnd >= startStr
+        );
+
+        if (hasOverlap) continue;
+
+        const schedules = schedulesByInstructor[inst.id];
+        if (!schedules || schedules.length === 0) continue;
+
+        const { totalHours, totalAmount } = calculateScheduledHours(
+          schedules,
+          generateStartDate,
+          generateEndDate,
+          inst.hourlyRate
+        );
+
+        if (totalHours > 0) {
+          preview.push({
+            instructorId: inst.id,
+            instructorName: inst.name,
+            hourlyRate: inst.hourlyRate,
+            totalHours,
+            totalAmount,
+          });
+        }
+      }
+
+      if (preview.length === 0) {
+        toast.error('No payments to generate. Instructors may not have schedules set, or already have pending payments for this period.');
+        setIsGenerating(false);
+        return;
+      }
+
+      setGeneratedPayments(preview);
+      setGenerateStep('preview');
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast.error('Failed to generate payment preview');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleConfirmGenerate = async () => {
+    if (!generateStartDate || !generateEndDate || generatedPayments.length === 0) return;
+
+    setIsGenerating(true);
+    const startStr = format(generateStartDate, 'yyyy-MM-dd');
+    const endStr = format(generateEndDate, 'yyyy-MM-dd');
+
+    try {
+      for (const gp of generatedPayments) {
+        await createPayment({
+          instructor_id: gp.instructorId,
+          amount: gp.totalAmount,
+          hours_worked: gp.totalHours,
+          pay_period_start: startStr,
+          pay_period_end: endStr,
+          payment_type: 'class',
+          description: null,
+        });
+      }
+
+      toast.success(`${generatedPayments.length} payment(s) generated successfully`);
+      setShowGenerateDialog(false);
+      resetGenerateForm();
+    } catch (error) {
+      console.error('Error creating payments:', error);
+      toast.error('Failed to create some payments');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const selectedClassInstructor = instructorsList.find(i => i.id === classInstructorId);
   const autoCalcAmount = selectedClassInstructor && classHours 
     ? (parseFloat(classHours) * selectedClassInstructor.hourlyRate).toFixed(2)
@@ -309,13 +435,17 @@ const AdminInstructorPayments = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setShowCreateClassDialog(true)}>
+            <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
+              <Zap className="mr-1 h-4 w-4" />
+              Generate Pay Period
+            </Button>
+            <Button variant="outline" onClick={() => setShowCreateClassDialog(true)}>
               <Plus className="mr-1 h-4 w-4" />
               Create Payment
             </Button>
             <Button variant="outline" onClick={() => setShowCreateBonusDialog(true)}>
               <Gift className="mr-1 h-4 w-4" />
-              Add Bonus Payment
+              Add Bonus
             </Button>
           </div>
         </div>
@@ -425,7 +555,7 @@ const AdminInstructorPayments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-green-500 text-white hover:bg-green-600"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
                             onClick={() => handleMarkAsPaid(payment.id)}
                           >
                             <Save className="mr-1 h-3 w-3" />
@@ -488,7 +618,7 @@ const AdminInstructorPayments = () => {
                       </TableCell>
                       <TableCell className="text-right">${payment.totalAmount}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500">Paid</Badge>
+                        <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -500,6 +630,101 @@ const AdminInstructorPayments = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Generate Pay Period Dialog */}
+      <Dialog open={showGenerateDialog} onOpenChange={(open) => { setShowGenerateDialog(open); if (!open) resetGenerateForm(); }}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Generate Pay Period</DialogTitle>
+            <DialogDescription>
+              {generateStep === 'dates' 
+                ? 'Select the pay period dates. The system will calculate hours from each instructor\'s weekly schedule.'
+                : 'Review the calculated payments below before confirming.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {generateStep === 'dates' && (
+            <>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Pay Period Start</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal", !generateStartDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {generateStartDate ? format(generateStartDate, 'MM/dd/yyyy') : 'Pick date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={generateStartDate} onSelect={setGenerateStartDate} className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Pay Period End</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("justify-start text-left font-normal", !generateEndDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {generateEndDate ? format(generateEndDate, 'MM/dd/yyyy') : 'Pick date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={generateEndDate} onSelect={setGenerateEndDate} className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setShowGenerateDialog(false); resetGenerateForm(); }}>Cancel</Button>
+                <Button onClick={handleGeneratePreview} disabled={isGenerating || !generateStartDate || !generateEndDate}>
+                  {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calculating...</> : 'Preview Payments'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+
+          {generateStep === 'preview' && (
+            <>
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Period: {generateStartDate && format(generateStartDate, 'MM/dd/yyyy')} – {generateEndDate && format(generateEndDate, 'MM/dd/yyyy')}
+                </p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Instructor</TableHead>
+                      <TableHead className="text-right">Rate</TableHead>
+                      <TableHead className="text-right">Hours</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {generatedPayments.map((gp) => (
+                      <TableRow key={gp.instructorId}>
+                        <TableCell className="font-medium">{gp.instructorName}</TableCell>
+                        <TableCell className="text-right">${gp.hourlyRate}/hr</TableCell>
+                        <TableCell className="text-right">{gp.totalHours}</TableCell>
+                        <TableCell className="text-right">${gp.totalAmount.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="mt-3 flex justify-between text-sm font-medium border-t pt-2">
+                  <span>Total ({generatedPayments.length} instructor{generatedPayments.length !== 1 ? 's' : ''})</span>
+                  <span>${generatedPayments.reduce((sum, gp) => sum + gp.totalAmount, 0).toFixed(2)}</span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setGenerateStep('dates')}>Back</Button>
+                <Button onClick={handleConfirmGenerate} disabled={isGenerating}>
+                  {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : `Create ${generatedPayments.length} Payment(s)`}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create Class Payment Dialog */}
       <Dialog open={showCreateClassDialog} onOpenChange={setShowCreateClassDialog}>
