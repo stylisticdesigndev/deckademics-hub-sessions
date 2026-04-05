@@ -341,6 +341,7 @@ const AdminInstructorPayments = () => {
       console.error('Error deleting payment:', error);
       toast.error('Failed to delete payment');
     }
+  };
 
   const resetBonusForm = () => {
     setBonusInstructorId('');
