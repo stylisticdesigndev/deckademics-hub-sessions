@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
+import { formatDateUS, formatDateTimeUS } from '@/lib/utils';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
 import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
 import { mockStudentConversations, mockStudentMessages } from '@/data/mockDashboardData';
@@ -68,7 +69,7 @@ const demoAnnouncements: StudentAnnouncement[] = [
     id: 'demo-1',
     title: 'Spring Showcase Performance — Sign Up Now!',
     content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set.',
-    date: new Date().toLocaleDateString(),
+    date: formatDateUS(new Date()),
     publishedAt: new Date().toISOString(),
     instructor: { name: 'Admin', initials: 'DA' },
     isNew: true,
@@ -78,7 +79,7 @@ const demoAnnouncements: StudentAnnouncement[] = [
     id: 'demo-2',
     title: 'New Equipment in Classroom B',
     content: "We've upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.",
-    date: new Date(Date.now() - 2 * 86400000).toLocaleDateString(),
+    date: formatDateUS(new Date(Date.now() - 2 * 86400000)),
     publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
     instructor: { name: 'DJ Marcus', initials: 'DM' },
     isNew: true,
@@ -160,7 +161,7 @@ const StudentMessages = () => {
             id: ann.id,
             title: ann.title || 'Announcement',
             content: ann.content || '',
-            date: new Date(ann.published_at).toLocaleDateString(),
+            date: formatDateUS(ann.published_at),
             publishedAt: ann.published_at,
             instructor: {
               name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
@@ -345,7 +346,7 @@ const StudentMessages = () => {
     }
     if (!userId) return;
     const activeInstructor = instructors.find(i => i.id === activeInstructorId);
-    const title = `From ${activeInstructor?.name || 'Instructor'} — ${format(new Date(msg.sent_at), 'MMM d, yyyy')}`;
+    const title = `From ${activeInstructor?.name || 'Instructor'} — ${formatDateUS(msg.sent_at)}`;
     const content = msg.image_url
       ? `${msg.content}\n\n📎 Image: ${msg.image_url}`
       : msg.content;
@@ -604,7 +605,7 @@ const ConversationItem = ({ conversation, onClick }: { conversation: Conversatio
         <div className="flex items-center justify-between">
           <span className="font-semibold text-sm">{conversation.instructorName}</span>
           <span className="text-xs text-muted-foreground">
-            {format(new Date(conversation.lastMessageAt), 'MMM d')}
+            {formatDateUS(conversation.lastMessageAt)}
           </span>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{conversation.lastMessage}</p>

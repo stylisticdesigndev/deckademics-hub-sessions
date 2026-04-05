@@ -1,4 +1,5 @@
 // Mock data for instructor demo mode
+import { formatDateUS } from '@/lib/utils';
 
 export const mockInstructorDashboard = {
   students: [
@@ -16,7 +17,7 @@ const today = new Date();
 const formatMockDate = (offset: number) => {
   const d = new Date(today);
   d.setDate(d.getDate() + offset);
-  return d.toLocaleDateString();
+  return formatDateUS(d);
 };
 
 export const mockInstructorClasses = [

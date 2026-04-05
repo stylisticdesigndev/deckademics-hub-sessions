@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
+import { formatDateUS } from '@/lib/utils';
 
 export interface Announcement {
   id: string;
@@ -113,7 +114,7 @@ export function useAnnouncements(targetRole: string = 'student') {
                 id: annRaw.id || '',
                 title: annRaw.title || '',
                 content: annRaw.content || '',
-                date: annRaw.published_at ? new Date(annRaw.published_at).toLocaleDateString() : 'Unknown date',
+                date: annRaw.published_at ? formatDateUS(annRaw.published_at) : 'Unknown date',
                 instructor: {
                   name: fullName,
                   initials

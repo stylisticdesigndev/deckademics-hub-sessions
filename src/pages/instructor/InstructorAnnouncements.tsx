@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { formatDateUS } from '@/lib/utils';
 import { Bell, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,7 @@ const InstructorAnnouncements = () => {
             id: ann.id,
             title: ann.title || 'Announcement',
             content: ann.content || '',
-            date: new Date(ann.published_at).toLocaleDateString(),
+            date: formatDateUS(ann.published_at),
             instructor: {
               name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
               initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { formatDateUS } from '@/lib/utils';
 
 export interface PaymentStats {
   missedPaymentsCount: number;
@@ -90,7 +90,7 @@ export const useAdminPayments = () => {
             studentName: `${firstName} ${lastName}`.trim() || 'Unknown Student',
             email,
             amount: payment.amount || 0,
-            dueDate: format(dueDate, 'yyyy-MM-dd'),
+            dueDate: formatDateUS(dueDate),
             paymentType: payment.payment_type || 'other',
             status: payment.status || 'pending',
             daysPastDue: daysDifference > 0 && payment.status === 'pending' ? daysDifference : undefined,

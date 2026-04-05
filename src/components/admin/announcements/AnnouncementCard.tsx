@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/types/database.types';
 import { isDataObject, asDatabaseParam } from '@/utils/supabaseHelpers';
+import { formatDateUS } from '@/lib/utils';
 
 // Define profile type to accommodate both object and array structures from Supabase
 interface ProfileData {
@@ -95,7 +96,7 @@ export const AnnouncementCard = ({ announcement }: AnnouncementCardProps) => {
           {typeBadge()}
         </div>
         <CardDescription>
-          Posted by {authorInfo.firstName} {authorInfo.lastName} on {new Date(announcement.published_at).toLocaleDateString()}
+          Posted by {authorInfo.firstName} {authorInfo.lastName} on {formatDateUS(announcement.published_at)}
         </CardDescription>
       </CardHeader>
       <CardContent>

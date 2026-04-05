@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isDataObject, hasProperty, safelyAccessProperty } from '@/utils/supabaseHelpers';
+import { formatDateUS } from '@/lib/utils';
 
 export interface InstructorProfile {
   id?: string;
@@ -114,7 +115,7 @@ export function useUpcomingClasses() {
               id: cls.id || '',
               title: cls.title || '',
               instructor: instructorName,
-              date: startTime.toLocaleDateString(),
+              date: formatDateUS(startTime),
               time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               duration: `${durationHours}h ${durationMinutes}m`,
               location: cls.location || 'Main Studio',
