@@ -147,7 +147,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               id: student.id as string,
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
               progress: averageStudentProgress,
-              level: studentData?.level || 'Beginner',
+              level: studentData?.level || 'Novice',
               hasNotes: !!studentData?.notes
             };
           })

@@ -17,7 +17,7 @@ export interface StudentData {
 export function useStudentDashboardCore() {
   const { session } = useAuth();
   const [studentLoading, setStudentLoading] = useState(true);
-  const [studentLevel, setStudentLevel] = useState('Beginner');
+  const [studentLevel, setStudentLevel] = useState('Novice');
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [assignedInstructor, setAssignedInstructor] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export function useStudentDashboardCore() {
           setFetchError(studentError.message);
         }
       } else if (studentInfo && typeof studentInfo === 'object') {
-        setStudentLevel(studentInfo.level || 'Beginner');
+        setStudentLevel(studentInfo.level || 'Novice');
         
         // Fetch assigned instructor name
         if (studentInfo.instructor_id) {

@@ -5,11 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
 import { Check, X, Clock, Calendar as CalendarIcon, Loader2, UserCheck, UserX, Clock3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAdminAttendance } from '@/hooks/useAdminAttendance';
 import { StatsCard } from '@/components/cards/StatsCard';
+import { formatDateUS } from '@/lib/utils';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -22,10 +22,6 @@ const AdminAttendance = () => {
     stats
   } = useAdminAttendance();
 
-  // Format dates in US format (MM/dd/yyyy)
-  const formatDateUS = (date: Date) => {
-    return format(date, 'MM/dd/yyyy');
-  };
 
   if (isLoading) {
     return (

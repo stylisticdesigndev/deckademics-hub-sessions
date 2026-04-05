@@ -203,7 +203,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           }
           
           // Build moduleProgress for this student (from curriculum)
-          const studentLevel = student.level || 'beginner';
+          const studentLevel = student.level || 'novice';
           const normalizedLevel = studentLevel.toLowerCase();
           const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
           const studentModules = allModules.filter((m) => m.level.toLowerCase() === normalizedLevel);
@@ -247,7 +247,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             email: profile?.email || '',
             avatar: profile?.avatar_url,
             progress: overallProgress,
-            level: student.level || 'beginner',
+            level: student.level || 'novice',
             initials: (firstName[0] || '') + (lastName[0] || ''),
             enrollmentDate,
             lastActive: '',
