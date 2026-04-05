@@ -1,46 +1,42 @@
 
 
-# Instructor Payments Page Improvements
+# Streamlined Date Range Picker for Generate Pay Period
 
-## 1. Clickable Payment History Rows with Detail View
+## Problem
+The current implementation uses two separate `Popover` + `Calendar` combos for start and end dates. This causes:
+- Calendar positioning issues (flipping above/below unpredictably) due to Popover auto-placement
+- Navigation arrows disappearing at certain months
+- Too many clicks: open popover → pick start → close → open another popover → pick end → close
 
-Add a detail dialog that opens when clicking any row in Payment History. It shows a full breakdown:
-- Instructor name, pay period dates
-- Hourly rate, hours worked, class amount
-- Bonus amount + description (if any)
-- Grand total
-- Date paid
+## Solution
+Replace the two separate date pickers with a single inline date range calendar, similar to airline booking sites. The user clicks the start date, then clicks the end date, and sees the range highlighted -- all in one view, no popovers.
 
-This gives the admin a clean summary at a glance without scanning across columns.
+### How it works
+- Use `react-day-picker`'s built-in `mode="range"` which supports selecting a date range with visual highlighting of all days between start and end
+- Render the calendar **inline** inside the dialog (not in a popover), eliminating all positioning/arrow bugs
+- Show two months side-by-side so the user can see more context
+- Display the selected range as text labels above the calendar
 
-**File**: `src/pages/admin/AdminInstructorPayments.tsx` -- add a `showPaymentDetailDialog` state, make history rows clickable with `cursor-pointer hover:bg-muted`, render a read-only detail dialog.
+### Implementation
 
-## 2. Remove "Create Payment" and "Add Bonus Payment" Header Buttons
+**File: `src/pages/admin/AdminInstructorPayments.tsx`**
 
-You're right -- with "Generate Pay Period" handling batch creation and per-row "Bonus" buttons for attaching bonuses, these two standalone buttons are redundant. They add confusion and duplicate functionality.
+Replace lines 749-777 (the two Popover/Calendar blocks) with:
+- A single `<Calendar mode="range" numberOfMonths={2} />` rendered inline
+- State change: replace `generateStartDate` and `generateEndDate` with a single `dateRange: DateRange | undefined` state (`{ from: Date, to: Date }`)
+- Show selected dates as formatted text above the calendar
+- Update `handleGeneratePreview` to read from `dateRange.from` and `dateRange.to`
+- Widen the dialog to `sm:max-w-[650px]` to fit two months side-by-side
 
-**Remove**: The "Create Payment" and "Add Bonus" buttons from the header, along with their dialogs (`showCreateClassDialog`, `showCreateBonusDialog`) and all associated form state and handlers (~150 lines of cleanup).
+**File: `src/components/ui/calendar.tsx`**
+- No changes needed -- `DayPicker` already supports `mode="range"` since react-day-picker v8
 
-The header will just have the single "Generate Pay Period" button.
+### User experience
+1. Admin clicks "Generate Pay Period"
+2. Dialog opens with an inline two-month calendar
+3. Admin clicks a start date → it highlights
+4. Admin clicks an end date → the full range highlights in between
+5. Click "Preview Payments" to proceed
 
-## 3. Replace Stat Cards with More Useful Metrics
-
-Current cards are weak: "Pending Payments" count is visible in the table, "Instructor Hourly Rates" duplicates the Rates table below.
-
-**Replace with these 3 cards**:
-- **Total Payroll This Period** -- sum of all pending payments (class + bonus). Shows what the admin owes right now.
-- **Total Paid This Month** -- keep this one, it's useful for tracking monthly spend.
-- **Total Paid All Time** -- lifetime total paid to all instructors, gives a big-picture view.
-
-These are actionable financial metrics rather than redundant info.
-
-**Files**: `src/components/admin/instructor-payments/InstructorPaymentStatsCards.tsx` (redesign cards), `src/hooks/useInstructorPayments.ts` (update stats calculation to include all-time total).
-
-## Summary
-
-| Area | Change |
-|------|--------|
-| `AdminInstructorPayments.tsx` | Add payment detail dialog on history row click; remove Create Payment + Add Bonus header buttons and their dialogs/state |
-| `InstructorPaymentStatsCards.tsx` | Replace 3 cards: Total Payroll This Period, Paid This Month, Total Paid All Time |
-| `useInstructorPayments.ts` | Update stats to compute all-time paid total instead of instructor rates count |
+One view, two clicks, no popovers, no positioning bugs.
 
