@@ -1,36 +1,33 @@
 
 
-# Remove Add Student Button + Clean Up Demo Students
+# Add Inactive Tab + Pagination to Student Management
 
-## What changes
+## Changes
 
-### 1. Remove "Add Student" and "Create Demo Student" buttons from `AdminStudents.tsx`
-Both buttons are unnecessary:
-- Students self-register and admins approve/decline them
-- Demo students were for testing and are no longer needed
+### 1. Add "Inactive Students" tab
+- Add a third tab showing students with `enrollment_status = 'inactive'` or `'declined'`
+- Each row shows name, email, previous level, and a "Reactivate" action button
+- Reactivate sets `enrollment_status` back to `'active'`
+- Update the deactivate confirmation dialog text (remove "cannot be undone" since it now can be)
 
-Remove the buttons, the `handleCreateDemoStudent` function, and the `isCreatingDemo` state. Also remove the `createDemoStudent` import from `useAdminStudents` if no longer used.
+### 2. Add pagination to Active Students table
+- Show 10 students per page
+- Add simple Previous/Next controls below the table with a page indicator ("Page 1 of 3")
+- Reset to page 1 when search query changes
 
-### 2. Delete the 6 demo student records from the database
-All are inactive with emails like `demo*.example.com`:
-- `dfa19042-be3d-4a7d-87d7-3a91e78df810`
-- `0ace5fe2-be64-42f8-bd89-3f37c92c668b`
-- `e513c88f-0e1f-4762-935b-2b62adad3cbf`
-- `07c3b0c1-d681-443a-b865-29ce6637168d`
-- `a24182e3-dd34-4d49-a661-d1743edf5ce2`
-- `803d4086-13bc-4ea9-9b69-8600f5671eb3`
+### 3. Hook changes (`useAdminStudents.ts`)
+- Add `fetchInactiveStudents` query that fetches students where `enrollment_status IN ('inactive', 'declined')`
+- Add `reactivateStudent` mutation that sets `enrollment_status = 'active'`
+- Export `inactiveStudents`, `isLoadingInactive`, and `reactivateStudent`
 
-Delete from `students`, `profiles`, and `user_roles` tables for these IDs.
-
-### 3. Clean up unused demo student code
-- Remove `createDemoStudent` and `debugFetchStudents` from `useAdminStudents.ts` (dead code)
-- The `create-demo-student` edge function can remain (no harm) or be deleted
+### 4. Detail sheet update
+- When viewing an inactive student, show a "Reactivate" button instead of "Deactivate"
+- Update status badge styling to show inactive/declined in gray/red
 
 ## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/AdminStudents.tsx` | Remove Add Student button, Create Demo Student button, and related state/handlers |
-| `src/hooks/useAdminStudents.ts` | Remove `createDemoStudent` and `debugFetchStudents` functions and their exports |
-| Database | Delete 6 demo student records from `students`, `profiles`, `user_roles` |
+| `src/hooks/useAdminStudents.ts` | Add `fetchInactiveStudents` query + `reactivateStudent` mutation |
+| `src/pages/admin/AdminStudents.tsx` | Add Inactive tab, pagination controls for active table, reactivate actions, update detail sheet |
 
