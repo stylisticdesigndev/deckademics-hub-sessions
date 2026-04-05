@@ -8,6 +8,8 @@ import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { Loader2 } from 'lucide-react';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
