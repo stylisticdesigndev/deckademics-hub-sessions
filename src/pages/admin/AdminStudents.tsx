@@ -378,36 +378,7 @@ const AdminStudents = () => {
                               <span className="text-muted-foreground">Unassigned</span>}
                           </TableCell>
                           <TableCell>
-                            {editingLevelStudentId === student.id ? (
-                              <Select
-                                value={student.level}
-                                onValueChange={(value) => handleLevelChange(student.id, value)}
-                                disabled={updateStudentLevel.isPending}
-                              >
-                                <SelectTrigger className="w-[120px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="novice">Novice</SelectItem>
-                                  <SelectItem value="amateur">Amateur</SelectItem>
-                                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                                  <SelectItem value="advanced">Advanced</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <Badge variant="outline" className="capitalize">{student.level}</Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => setEditingLevelStudentId(student.id)}
-                                  disabled={processingStudentId === student.id}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
+                            <Badge variant="outline" className="capitalize">{student.level}</Badge>
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="bg-green-500/10 text-green-500">Active</Badge>
@@ -591,7 +562,21 @@ const AdminStudents = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Level</p>
-                  <p className="text-sm font-medium capitalize">{viewedStudent.level || 'Not set'}</p>
+                  <Select
+                    value={viewedStudent.level || 'novice'}
+                    onValueChange={(value) => handleLevelChange(viewedStudent.id, value)}
+                    disabled={updateStudentLevel.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="novice">Novice</SelectItem>
+                      <SelectItem value="amateur">Amateur</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Start Date</p>
