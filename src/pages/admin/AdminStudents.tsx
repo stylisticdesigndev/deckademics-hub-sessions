@@ -408,6 +408,25 @@ const AdminStudents = () => {
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 pt-4">
+              {/* Bulk Action Toolbar */}
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">{selectedIds.length} selected</span>
+                  <Button size="sm" variant="outline" onClick={() => setShowBulkLevelDialog(true)}>
+                    Change Level
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleBulkMessage}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Message
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateDialog(true)}>
+                    Deactivate
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
+                    Clear
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Active Students</CardTitle>
@@ -419,6 +438,12 @@ const AdminStudents = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={filteredActiveStudents.length > 0 && selectedIds.length === filteredActiveStudents.length}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Instructor</TableHead>
@@ -430,7 +455,13 @@ const AdminStudents = () => {
                     <TableBody>
                       {filteredActiveStudents.length > 0 ? (
                         filteredActiveStudents.map((student) => (
-                          <TableRow key={student.id}>
+                          <TableRow key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.includes(student.id)}
+                                onCheckedChange={() => toggleSelect(student.id)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">
                               {student.profile?.first_name} {student.profile?.last_name}
                             </TableCell>
