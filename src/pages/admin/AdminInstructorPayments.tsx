@@ -303,8 +303,7 @@ const AdminInstructorPayments = () => {
   };
 
   const resetGenerateForm = () => {
-    setGenerateStartDate(undefined);
-    setGenerateEndDate(undefined);
+    setDateRange(undefined);
     setGeneratedPayments([]);
     setGenerateStep('dates');
   };
