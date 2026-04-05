@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
 import { useAuth } from '@/providers/AuthProvider';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
+import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
@@ -175,6 +176,7 @@ export const DashboardLayout = ({
               <h1 className="text-xl font-semibold">Deckademics DJ School</h1>
             </div>
             <div className="flex items-center gap-4">
+              {userType === 'admin' && <NotificationDropdown />}
               <Button variant="outline" size="icon" className="relative" onClick={handleNotificationClick}>
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
