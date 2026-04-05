@@ -944,7 +944,7 @@ export type Database = {
         Returns: Json
       }
       assign_student_to_instructor: {
-        Args: { instructor_id: string; student_id: string }
+        Args: { _instructor_id: string; _student_id: string }
         Returns: Json
       }
       create_demo_student: {
