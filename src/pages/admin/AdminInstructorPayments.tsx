@@ -654,14 +654,37 @@ const AdminInstructorPayments = () => {
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
-                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div>
+                          <span>${payment.totalAmount}</span>
+                          {payment.bonusAmount > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              + ${payment.bonusAmount} bonus
+                              {payment.bonusDescription && (
+                                <span className="italic"> ({payment.bonusDescription})</span>
+                              )}
+                            </div>
+                          )}
+                          {payment.bonusAmount > 0 && (
+                            <div className="text-xs font-semibold">
+                              Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
                           {payment.paymentType === 'class' && (
-                            <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
-                              <Edit className="mr-1 h-3 w-3" />
-                              Edit Hours
-                            </Button>
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
+                                <Edit className="mr-1 h-3 w-3" />
+                                Edit Hours
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
+                                <DollarSign className="mr-1 h-3 w-3" />
+                                Bonus
+                              </Button>
+                            </>
                           )}
                           <Button 
                             variant="outline" 
@@ -671,6 +694,14 @@ const AdminInstructorPayments = () => {
                           >
                             <Save className="mr-1 h-3 w-3" />
                             Mark Paid
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => { setDeletePaymentId(payment.id); setShowDeleteDialog(true); }}
+                          >
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
