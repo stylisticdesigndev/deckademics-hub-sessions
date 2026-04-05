@@ -1,7 +1,5 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 export interface PaymentStats {
@@ -30,38 +28,54 @@ export const useAdminPayments = () => {
   const { data: payments, isLoading } = useQuery({
     queryKey: ['adminPayments'],
     queryFn: async () => {
-      const { data: paymentsData, error } = await supabase
+      // Step 1: fetch payments (no embedded join)
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select(`
-          id,
-          amount,
-          payment_date,
-          payment_type,
-          status,
-          description,
-          student_id,
-          profiles:student_id (
-            first_name,
-            last_name,
-            email
-          )
-        `);
+        .select('id, amount, payment_date, payment_type, status, description, student_id');
 
-      if (error) {
-        console.error('Error fetching payments:', error);
-        toast.error('Failed to fetch payments');
-        throw error;
+      if (paymentsError) {
+        console.error('Error fetching payments:', paymentsError);
+        throw paymentsError;
       }
 
+      if (!paymentsData || paymentsData.length === 0) return [];
+
+      // Step 2: collect unique student IDs and fetch profiles via students table
+      const studentIds = [...new Set(
+        paymentsData
+          .map((p: any) => p.student_id)
+          .filter(Boolean) as string[]
+      )];
+
+      const profileMap = new Map<string, { first_name: string; last_name: string; email: string }>();
+
+      if (studentIds.length > 0) {
+        const { data: studentsData } = await supabase
+          .from('students')
+          .select('id, profiles(first_name, last_name, email)')
+          .in('id', studentIds);
+
+        if (studentsData) {
+          for (const s of studentsData as any[]) {
+            if (s?.id && s?.profiles) {
+              profileMap.set(s.id, {
+                first_name: s.profiles.first_name || '',
+                last_name: s.profiles.last_name || '',
+                email: s.profiles.email || '',
+              });
+            }
+          }
+        }
+      }
+
+      // Step 3: merge
       const today = new Date();
 
-      return (paymentsData || [])
+      return paymentsData
         .map((payment: any) => {
-          if (!payment || !payment.payment_date || !payment.id || !payment.student_id) {
-            return null;
-          }
+          if (!payment?.payment_date || !payment?.id) return null;
 
-          const profile = payment.profiles as { first_name?: string; last_name?: string; email?: string } | null;
+          const profile = profileMap.get(payment.student_id);
           const firstName = profile?.first_name || '';
           const lastName = profile?.last_name || '';
           const email = profile?.email || '';
@@ -72,9 +86,9 @@ export const useAdminPayments = () => {
 
           return {
             id: payment.id,
-            studentId: payment.student_id,
-            studentName: `${firstName} ${lastName}`.trim(),
-            email: email,
+            studentId: payment.student_id || '',
+            studentName: `${firstName} ${lastName}`.trim() || 'Unknown Student',
+            email,
             amount: payment.amount || 0,
             dueDate: format(dueDate, 'yyyy-MM-dd'),
             paymentType: payment.payment_type || 'other',
@@ -85,17 +99,12 @@ export const useAdminPayments = () => {
           };
         })
         .filter(Boolean) as Payment[];
-    }
+    },
   });
 
   const calculateStats = (): PaymentStats => {
     if (!payments || payments.length === 0) {
-      return {
-        missedPaymentsCount: 0,
-        upcomingPaymentsCount: 0,
-        totalMissedAmount: 0,
-        totalUpcomingAmount: 0
-      };
+      return { missedPaymentsCount: 0, upcomingPaymentsCount: 0, totalMissedAmount: 0, totalUpcomingAmount: 0 };
     }
 
     const today = new Date();
@@ -106,8 +115,8 @@ export const useAdminPayments = () => {
     return {
       missedPaymentsCount: missedPayments.length,
       upcomingPaymentsCount: upcomingPayments.length,
-      totalMissedAmount: missedPayments.reduce((sum, payment) => sum + payment.amount, 0),
-      totalUpcomingAmount: upcomingPayments.reduce((sum, payment) => sum + payment.amount, 0)
+      totalMissedAmount: missedPayments.reduce((sum, p) => sum + p.amount, 0),
+      totalUpcomingAmount: upcomingPayments.reduce((sum, p) => sum + p.amount, 0),
     };
   };
 
@@ -119,6 +128,6 @@ export const useAdminPayments = () => {
     upcomingPayments: payments?.filter(p => p.status === 'pending' && new Date(p.dueDate) >= today) || [],
     allPayments: payments || [],
     isLoading,
-    stats
+    stats,
   };
 };
