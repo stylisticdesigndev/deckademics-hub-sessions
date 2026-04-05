@@ -55,7 +55,6 @@ const AdminStudents = () => {
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
-  const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
@@ -221,19 +220,13 @@ const AdminStudents = () => {
            pendingStudents?.find(student => student.id === id);
   };
 
-  // Force data refresh function
-  const handleForceRefresh = async () => {
+  const handleCreateDemoStudent = async () => {
     setIsCreatingDemo(true);
     try {
       const result = await createDemoStudent();
-      
       if (result) {
         toast.success("Demo student created successfully");
-        
-        // Add explicit refresh after a delay
-        setTimeout(async () => {
-          await handleDebugRefresh();
-        }, 1000);
+        setTimeout(async () => { await refetchData(); }, 1000);
       } else {
         toast.error("Failed to create demo student");
       }
