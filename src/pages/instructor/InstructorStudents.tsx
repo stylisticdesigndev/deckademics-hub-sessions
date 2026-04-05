@@ -1098,68 +1098,129 @@ const InstructorStudents = () => {
                   </TabsContent>
                   
                   <TabsContent value="progress" className="space-y-6">
-                    {detailedStudent.moduleProgress?.length ? (
-                      detailedStudent.moduleProgress.map((module) => (
-                        <div key={module.moduleId} className="border rounded-md p-4 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium">{module.moduleName}</h3>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{module.progress}%</span>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => openModuleProgressDialog(detailedStudent.id, module)}
-                              >
-                                Update
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <Progress value={module.progress} className="h-2" />
-                          
-                          <div className="space-y-2 mt-4">
-                            {module.lessons.map((lesson) => (
-                              <div key={lesson.id} className="flex items-center gap-2">
-                                <Checkbox 
-                                  checked={lesson.completed} 
-                                  onCheckedChange={() => toggleLessonCompletion(
-                                    detailedStudent.id, 
-                                    module.moduleId, 
-                                    lesson.id
-                                  )}
-                                  id={`lesson-${lesson.id}`}
-                                />
-                                <label 
-                                  htmlFor={`lesson-${lesson.id}`}
-                                  className={cn(
-                                    "text-sm cursor-pointer flex-grow",
-                                    lesson.completed && "line-through text-muted-foreground"
-                                  )}
+                    {/* Admin-defined Skills */}
+                    {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="font-medium text-base">Skills</h3>
+                        {detailedStudent.skillProgress.map((skill) => (
+                          <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">{skill.skillName}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{skill.proficiency}%</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs"
+                                  onClick={() => {
+                                    setUpdatingSkillId(skill.skillId);
+                                    setSkillProficiency(skill.proficiency);
+                                    setSelectedStudent(detailedStudent.id);
+                                  }}
                                 >
-                                  {lesson.title}
-                                </label>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => openLessonNoteDialog(
-                                    detailedStudent.id,
-                                    lesson.id,
-                                    lesson.title
-                                  )}
-                                >
-                                  <Edit className="h-3 w-3" />
+                                  Update
                                 </Button>
                               </div>
-                            ))}
+                            </div>
+                            <Progress value={skill.proficiency} className="h-2" />
+                            
+                            {updatingSkillId === skill.skillId && (
+                              <div className="pt-2 space-y-3">
+                                <Slider
+                                  value={[skillProficiency]}
+                                  min={0}
+                                  max={100}
+                                  step={5}
+                                  onValueChange={([v]) => setSkillProficiency(v)}
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => setUpdatingSkillId(null)}>
+                                    Cancel
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleSkillProficiencyUpdate(
+                                    detailedStudent.id,
+                                    skill.skillName,
+                                    skillProficiency,
+                                    skill.progressRecordId
+                                  )}>
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))
-                    ) : (
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Curriculum-based Module Progress */}
+                    {detailedStudent.moduleProgress?.length ? (
+                      <>
+                        {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
+                          <h3 className="font-medium text-base">Curriculum Modules</h3>
+                        )}
+                        {detailedStudent.moduleProgress.map((module) => (
+                          <div key={module.moduleId} className="border rounded-md p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">{module.moduleName}</h3>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{module.progress}%</span>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openModuleProgressDialog(detailedStudent.id, module)}
+                                >
+                                  Update
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <Progress value={module.progress} className="h-2" />
+                            
+                            <div className="space-y-2 mt-4">
+                              {module.lessons.map((lesson) => (
+                                <div key={lesson.id} className="flex items-center gap-2">
+                                  <Checkbox 
+                                    checked={lesson.completed} 
+                                    onCheckedChange={() => toggleLessonCompletion(
+                                      detailedStudent.id, 
+                                      module.moduleId, 
+                                      lesson.id
+                                    )}
+                                    id={`lesson-${lesson.id}`}
+                                  />
+                                  <label 
+                                    htmlFor={`lesson-${lesson.id}`}
+                                    className={cn(
+                                      "text-sm cursor-pointer flex-grow",
+                                      lesson.completed && "line-through text-muted-foreground"
+                                    )}
+                                  >
+                                    {lesson.title}
+                                  </label>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => openLessonNoteDialog(
+                                      detailedStudent.id,
+                                      lesson.id,
+                                      lesson.title
+                                    )}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : !detailedStudent.skillProgress?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
                         No progress data available for this student.
                       </div>
-                    )}
+                    ) : null}
                   </TabsContent>
                   
                   <TabsContent value="notes" className="space-y-4">
