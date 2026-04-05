@@ -245,10 +245,11 @@ const InstructorStudents = () => {
       setIsAddingNote(false);
     }
   };
-  
-  
-
-
+  const openNoteDialog = (studentId: string) => {
+    setSelectedStudent(studentId);
+    setNoteText('');
+    setShowNoteDialog(true);
+  };
 
 
   const handleSkillProficiencyUpdate = async (studentId: string, skillName: string, proficiency: number, existingRecordId?: string) => {
@@ -661,74 +662,6 @@ const InstructorStudents = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showLessonNoteDialog} onOpenChange={setShowLessonNoteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Lesson Note</DialogTitle>
-              <DialogDescription>
-                {selectedLessonTitle && `Add a note for the lesson: ${selectedLessonTitle}`}
-              </DialogDescription>
-            </DialogHeader>
-            <Textarea 
-              value={lessonNoteText}
-              onChange={(e) => setLessonNoteText(e.target.value)}
-              placeholder="Enter your note about this lesson..."
-              className="min-h-[120px]"
-            />
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowLessonNoteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleAddLessonNote}>Save Note</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Update Module Progress</DialogTitle>
-              <DialogDescription>
-                {selectedModule 
-                  ? `Adjust the progress for ${selectedModule.moduleName}.`
-                  : 'Select a module to update.'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between">
-                <span>Progress: {progressValue}%</span>
-              </div>
-              <Slider
-                value={[progressValue]}
-                min={0}
-                max={100}
-                step={5}
-                onValueChange={([value]) => setProgressValue(value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowProgressDialog(false);
-                  setSelectedModule(null);
-                }}
-                disabled={isUpdatingProgress}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleModuleProgressUpdate}
-                disabled={isUpdatingProgress || !selectedModule}
-              >
-                {isUpdatingProgress ? "Updating..." : "Update Progress"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
