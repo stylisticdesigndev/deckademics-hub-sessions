@@ -195,6 +195,9 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor deactivated successfully');
     },
@@ -215,6 +218,9 @@ export const useAdminInstructors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'assigned-students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Instructor activated successfully');
     },
