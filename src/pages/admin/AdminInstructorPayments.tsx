@@ -1080,6 +1080,44 @@ const AdminInstructorPayments = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Bonus to Row Dialog */}
+      <Dialog open={showAddBonusToRowDialog} onOpenChange={setShowAddBonusToRowDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add Bonus to Payment</DialogTitle>
+            <DialogDescription>Attach a bonus amount to this class payment</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Bonus Amount ($)</Label>
+              <Input type="number" step="0.01" min="1" placeholder="Enter bonus amount" value={bonusRowAmount} onChange={(e) => setBonusRowAmount(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Description</Label>
+              <Textarea placeholder="e.g., Event DJ, Extra class..." value={bonusRowDescription} onChange={(e) => setBonusRowDescription(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddBonusToRowDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveBonusToRow}>Save Bonus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Payment Confirmation */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Payment</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this payment? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setDeletePaymentId(null); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeletePayment}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
