@@ -31,7 +31,6 @@ export const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { signOut, userData } = useAuth();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const handleLogout = () => {
     signOut();
@@ -51,52 +50,6 @@ export const DashboardLayout = ({
       return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
     }
     return userType ? `${userType.charAt(0).toUpperCase() + userType.slice(1)} User` : 'User';
-  };
-
-  useEffect(() => {
-    const fetchNotificationCount = async () => {
-      if (!userData.user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('announcements')
-          .select(`
-            id,
-            announcement_reads!left(id, user_id)
-          `)
-          .contains('target_role', [userType])
-          .order('published_at', { ascending: false });
-          
-        if (error) return;
-        
-        if (data) {
-          const unreadCount = data.filter(announcement => {
-            const readRecords = announcement.announcement_reads || [];
-            return !readRecords.some((record: any) => record.user_id === userData.user?.id);
-          }).length;
-          
-          setUnreadNotifications(unreadCount);
-        }
-      } catch (err) {
-        // silently fail
-      }
-    };
-    
-    fetchNotificationCount();
-    
-    const intervalId = setInterval(fetchNotificationCount, 60000);
-    
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [userData.user?.id, userType]);
-
-  const handleNotificationClick = () => {
-    if (userType === 'student' || userType === 'instructor') {
-      navigate(`/${userType}/messages`);
-    } else if (userType === 'admin') {
-      navigate('/admin/announcements');
-    }
   };
 
   const handleProfileClick = () => {
@@ -160,16 +113,7 @@ export const DashboardLayout = ({
             </div>
             <div className="flex items-center gap-4">
               {userType === 'admin' && <NotificationDropdown />}
-              {userType !== 'admin' && (
-                <Button variant="outline" size="icon" className="relative" onClick={handleNotificationClick}>
-                  <Bell className="h-5 w-5" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-deckademics-primary text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </Button>
-              )}
+              {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
