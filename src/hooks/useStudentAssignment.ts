@@ -90,7 +90,10 @@ export const useStudentAssignment = (instructorId?: string | null) => {
           student_id: studentId,
           instructor_id: instructorId,
         });
-        if (error) throw error;
+        if (error) {
+          console.error('assign_student_to_instructor error:', error);
+          throw new Error(error.message || 'Failed to assign student');
+        }
         return data;
       });
       await Promise.all(updates);

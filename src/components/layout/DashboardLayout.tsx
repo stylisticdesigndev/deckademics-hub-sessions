@@ -177,14 +177,16 @@ export const DashboardLayout = ({
             </div>
             <div className="flex items-center gap-4">
               {userType === 'admin' && <NotificationDropdown />}
-              <Button variant="outline" size="icon" className="relative" onClick={handleNotificationClick}>
-                <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-deckademics-primary text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadNotifications}
-                  </span>
-                )}
-              </Button>
+              {userType !== 'admin' && (
+                <Button variant="outline" size="icon" className="relative" onClick={handleNotificationClick}>
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-deckademics-primary text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
