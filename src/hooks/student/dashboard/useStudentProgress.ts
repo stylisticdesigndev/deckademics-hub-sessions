@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDataObject, processSafeItems, asDbType, asDatabaseParam } from '@/utils/supabaseHelpers';
 
 interface ProgressItem {
   skill_name: string;
@@ -21,22 +20,42 @@ export function useStudentProgress(userId?: string) {
     const fetchProgress = async () => {
       setLoading(true);
       try {
+        // Get student level
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('level')
+          .eq('id', userId)
+          .single();
+
+        const level = studentData?.level || 'novice';
+
+        // Get admin-defined skills for this level
+        const { data: skillDefs } = await supabase
+          .from('progress_skills' as any)
+          .select('name')
+          .eq('level', level);
+
+        const skillNames = new Set((skillDefs || []).map((s: any) => s.name));
+
+        // Get student progress
         const { data, error } = await supabase
           .from('student_progress')
           .select('skill_name, proficiency')
-          .eq('student_id', asDatabaseParam(userId));
+          .eq('student_id', userId);
 
         if (error) {
           console.error('Error fetching student progress:', error);
           setProgress([]);
         } else if (data && Array.isArray(data)) {
-          // Safely process progress data
-          const validProgressItems = processSafeItems<ProgressItem>(data, item => ({
-            skill_name: item.skill_name,
-            proficiency: item.proficiency
-          }));
+          // Only include skills that match admin-defined progress_skills
+          const filtered = data
+            .filter((item: any) => skillNames.has(item.skill_name))
+            .map((item: any) => ({
+              skill_name: item.skill_name,
+              proficiency: item.proficiency || 0,
+            }));
           
-          setProgress(validProgressItems.filter(item => item.skill_name?.toLowerCase() !== 'overall progress'));
+          setProgress(filtered);
         } else {
           setProgress([]);
         }
