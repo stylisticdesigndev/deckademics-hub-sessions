@@ -647,6 +647,22 @@ const AdminInstructors = () => {
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 pt-4">
+              {/* Bulk Action Toolbar */}
+              {selectedInstructorIds.length > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">{selectedInstructorIds.length} selected</span>
+                  <Button size="sm" variant="outline" onClick={handleBulkMessageInstructors}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Message
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateInstructors(true)}>
+                    Deactivate
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedInstructorIds([])}>
+                    Clear
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Active Instructors</CardTitle>
@@ -659,6 +675,12 @@ const AdminInstructors = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left w-10">
+                            <Checkbox
+                              checked={filteredActiveInstructors.length > 0 && selectedInstructorIds.length === filteredActiveInstructors.length}
+                              onCheckedChange={toggleInstructorSelectAll}
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left font-medium">Name</th>
                           <th className="px-4 py-3 text-left font-medium">Email</th>
                           <th className="px-4 py-3 text-center font-medium">Status</th>
@@ -668,7 +690,13 @@ const AdminInstructors = () => {
                       <tbody>
                         {filteredActiveInstructors && filteredActiveInstructors.length > 0 ? (
                           filteredActiveInstructors.map((instructor) => (
-                            <tr key={instructor.id} className="border-b last:border-0">
+                            <tr key={instructor.id} className={`border-b last:border-0 ${selectedInstructorIds.includes(instructor.id) ? 'bg-muted' : ''}`}>
+                              <td className="px-4 py-3">
+                                <Checkbox
+                                  checked={selectedInstructorIds.includes(instructor.id)}
+                                  onCheckedChange={() => toggleInstructorSelect(instructor.id)}
+                                />
+                              </td>
                               <td className="px-4 py-3 font-medium">
                                 {instructor.profile.first_name} {instructor.profile.last_name}
                               </td>
