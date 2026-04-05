@@ -173,7 +173,9 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             };
           });
 
-          const overallProgress = progressById[student.id] ?? 0;
+          const overallProgress = skillProgress.length
+            ? Math.round(skillProgress.reduce((sum, s) => sum + s.proficiency, 0) / skillProgress.length)
+            : 0;
 
           return {
             id: student.id,
