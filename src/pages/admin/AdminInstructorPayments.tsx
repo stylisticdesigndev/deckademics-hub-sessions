@@ -454,22 +454,20 @@ const AdminInstructorPayments = () => {
         </div>
 
         {/* Total Payroll This Period */}
-        {pendingPayments.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Payroll This Period</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Payroll This Period</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Instructor Rate Management */}
         <Card>
