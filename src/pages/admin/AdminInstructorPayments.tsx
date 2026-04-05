@@ -426,10 +426,6 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const selectedClassInstructor = instructorsList.find(i => i.id === classInstructorId);
-  const autoCalcAmount = selectedClassInstructor && classHours 
-    ? (parseFloat(classHours) * selectedClassInstructor.hourlyRate).toFixed(2)
-    : '';
 
   const formatDateToUS = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -460,20 +456,12 @@ const AdminInstructorPayments = () => {
               <Zap className="mr-1 h-4 w-4" />
               Generate Pay Period
             </Button>
-            <Button variant="outline" onClick={() => setShowCreateClassDialog(true)}>
-              <Plus className="mr-1 h-4 w-4" />
-              Create Payment
-            </Button>
-            <Button variant="outline" onClick={() => setShowCreateBonusDialog(true)}>
-              <Gift className="mr-1 h-4 w-4" />
-              Add Bonus
-            </Button>
           </div>
         </div>
 
         <InstructorPaymentStatsCards
           stats={stats}
-          instructors={instructorsList}
+        />
         />
 
         <InstructorPaymentSearch
