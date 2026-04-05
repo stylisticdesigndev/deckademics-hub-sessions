@@ -100,12 +100,14 @@ const AdminInstructors = () => {
     addNewInstructor
   } = useAdminInstructors();
   
-  // Use the new hook for student assignment
   const {
     unassignedStudents,
+    assignedStudents,
     isLoadingStudents,
-    assignStudentsToInstructor
-  } = useStudentAssignment();
+    isLoadingAssigned,
+    assignStudentsToInstructor,
+    unassignStudent,
+  } = useStudentAssignment(instructorToAssign);
 
   // Get instructor by ID now works with the correct types
   const getInstructorById = (id: string) => {
