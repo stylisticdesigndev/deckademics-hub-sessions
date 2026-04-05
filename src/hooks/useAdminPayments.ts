@@ -48,13 +48,10 @@ export const useAdminPayments = () => {
           status,
           description,
           student_id,
-          students:student_id (
-            id,
-            profiles(
-              first_name,
-              last_name,
-              email
-            )
+          profiles:student_id (
+            first_name,
+            last_name,
+            email
           )
         `);
 
@@ -65,9 +62,7 @@ export const useAdminPayments = () => {
       }
 
       const today = new Date();
-      const twoWeeksFromNow = addWeeks(today, 2);
 
-      // Transform the data to match our Payment interface
       return paymentsData
         .filter(payment => isDataObject(payment))
         .map(payment => {
@@ -81,13 +76,10 @@ export const useAdminPayments = () => {
           const daysDifference = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           const daysTillDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
-          // Safely access nested properties
-          const students = safelyAccessProperty<StudentsData, 'students'>(payment, 'students');
-          const studentProfile = students?.profiles?.[0] as StudentProfile | undefined;
-          
-          const firstName = studentProfile?.first_name || '';
-          const lastName = studentProfile?.last_name || '';
-          const email = studentProfile?.email || '';
+          const profile = safelyAccessProperty<ProfileData, 'profiles'>(payment, 'profiles');
+          const firstName = profile?.first_name || '';
+          const lastName = profile?.last_name || '';
+          const email = profile?.email || '';
           
           const paymentId = safelyAccessProperty<string, 'id'>(payment, 'id');
           if (!paymentId) return null;
