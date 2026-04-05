@@ -53,7 +53,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award, Separator } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
 import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
