@@ -28,6 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
@@ -869,30 +870,69 @@ const AdminInstructorPayments = () => {
 
       {/* Schedule Editor Dialog */}
       <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Set Schedule — {scheduleInstructor?.name}</DialogTitle>
             <DialogDescription>
-              Configure weekly teaching hours. These are used to auto-generate pay period payments.
+              Click the slots this instructor teaches. Used to auto-generate pay period payments.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-            {scheduleItems.map((item, index) => (
-              <ScheduleRowEditor
-                key={index}
-                item={item}
-                index={index}
-                onChangeDay={(i, day) => setScheduleItems(scheduleItems.map((s, idx) => idx === i ? { ...s, day } : s))}
-                onChangeHours={(i, hours) => setScheduleItems(scheduleItems.map((s, idx) => idx === i ? { ...s, hours } : s))}
-                onRemove={(i) => setScheduleItems(scheduleItems.filter((_, idx) => idx !== i))}
-              />
-            ))}
-            {scheduleItems.length === 0 && (
-              <p className="text-center py-4 text-muted-foreground">No teaching days added yet.</p>
-            )}
-            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '3:30 PM - 5:00 PM' }])}>
-              Add Teaching Day
-            </Button>
+          <div className="py-4">
+            {(() => {
+              const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+              const SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+              const SLOT_LABELS = ['3:30–5:00', '5:30–7:00', '7:30–9:00'];
+
+              // Build lookup from scheduleItems
+              const selected = new Set<string>();
+              scheduleItems.forEach(item => {
+                const slots = item.hours.split(', ').map(s => s.trim());
+                slots.forEach(slot => selected.add(`${item.day}|${slot}`));
+              });
+
+              const toggle = (day: string, slot: string) => {
+                const key = `${day}|${slot}`;
+                const next = new Set(selected);
+                if (next.has(key)) next.delete(key); else next.add(key);
+                // Convert back to scheduleItems format
+                const newItems: typeof scheduleItems = [];
+                DAYS.forEach(d => {
+                  const daySlots = SLOTS.filter(s => next.has(`${d}|${s}`));
+                  if (daySlots.length > 0) {
+                    newItems.push({ day: d, hours: daySlots.join(', ') });
+                  }
+                });
+                setScheduleItems(newItems);
+              };
+
+              return (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">Day</TableHead>
+                      {SLOT_LABELS.map((label, i) => (
+                        <TableHead key={i} className="text-center">{label}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {DAYS.map(day => (
+                      <TableRow key={day}>
+                        <TableCell className="font-medium py-2">{day}</TableCell>
+                        {SLOTS.map((slot, i) => (
+                          <TableCell key={i} className="text-center py-2">
+                            <Checkbox
+                              checked={selected.has(`${day}|${slot}`)}
+                              onCheckedChange={() => toggle(day, slot)}
+                            />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              );
+            })()}
           </div>
           <DialogFooter className="flex flex-row justify-between sm:justify-between">
             <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
