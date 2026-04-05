@@ -48,6 +48,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCurriculum from "./pages/admin/AdminCurriculum";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminProgress from "./pages/admin/AdminProgress";
 import StudentCurriculum from "./pages/student/StudentCurriculum";
 import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 
@@ -111,6 +112,7 @@ const App = () => (
             <Route path="/admin/instructors" element={<AdminInstructors />} />
             <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/curriculum" element={<AdminCurriculum />} />
+            <Route path="/admin/progress" element={<AdminProgress />} />
             <Route path="/admin/attendance" element={<AdminAttendance />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />

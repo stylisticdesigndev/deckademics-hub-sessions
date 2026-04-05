@@ -17,7 +17,8 @@ import {
   DollarSign,
   BookOpen,
   MessageSquare,
-  UserCog
+  UserCog,
+  TrendingUp
 } from 'lucide-react';
 
 export const AdminNavigation = () => {
@@ -58,6 +59,7 @@ export const AdminNavigation = () => {
     { title: "Instructors", icon: Users, href: "/admin/instructors", badge: pendingInstructorsCount },
     { title: "Students", icon: GraduationCap, href: "/admin/students", badge: pendingStudentsCount },
     { title: "Curriculum", icon: BookOpen, href: "/admin/curriculum" },
+    { title: "Progress Overview", icon: TrendingUp, href: "/admin/progress" },
     { title: "Attendance", icon: ClipboardCheck, href: "/admin/attendance" },
     { title: "Student Payments", icon: CreditCard, href: "/admin/payments" },
     { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
