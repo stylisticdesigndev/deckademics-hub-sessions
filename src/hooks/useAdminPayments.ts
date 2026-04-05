@@ -48,10 +48,13 @@ export const useAdminPayments = () => {
           status,
           description,
           student_id,
-          profiles:student_id (
-            first_name,
-            last_name,
-            email
+          students:student_id (
+            id,
+            profiles:id (
+              first_name,
+              last_name,
+              email
+            )
           )
         `);
 
