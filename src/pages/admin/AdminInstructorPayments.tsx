@@ -31,8 +31,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { InstructorPaymentStatsCards } from '@/components/admin/instructor-payments/InstructorPaymentStatsCards';
-import { InstructorPaymentSearch } from '@/components/admin/instructor-payments/InstructorPaymentSearch';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,10 +54,11 @@ interface Instructor {
 }
 
 const AdminInstructorPayments = () => {
-  const { payments, stats, isLoading, invalidate } = useInstructorPayments();
+  const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 10;
   const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
@@ -111,13 +118,10 @@ const AdminInstructorPayments = () => {
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
   const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
-  
-  const filteredPendingPayments = pendingPayments.filter(payment => 
-    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredCompletedPayments = completedPayments.filter(payment => 
-    payment.instructorName.toLowerCase().includes(searchQuery.toLowerCase())
+  const totalHistoryPages = Math.ceil(completedPayments.length / HISTORY_PER_PAGE);
+  const paginatedHistory = completedPayments.slice(
+    (historyPage - 1) * HISTORY_PER_PAGE,
+    historyPage * HISTORY_PER_PAGE
   );
   
   const handleMarkAsPaid = async (paymentId: string) => {
@@ -449,12 +453,23 @@ const AdminInstructorPayments = () => {
           </Button>
         </div>
 
-        <InstructorPaymentStatsCards stats={stats} />
-
-        <InstructorPaymentSearch
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        {/* Total Payroll This Period */}
+        {pendingPayments.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Payroll This Period</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Instructor Rate Management */}
         <Card>
@@ -509,7 +524,7 @@ const AdminInstructorPayments = () => {
             <CardDescription>Pending payments awaiting approval</CardDescription>
           </CardHeader>
           <CardContent>
-            {filteredPendingPayments.length > 0 ? (
+            {pendingPayments.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -523,7 +538,7 @@ const AdminInstructorPayments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPendingPayments.map((payment) => (
+                  {pendingPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.instructorName}</TableCell>
                       <TableCell>
@@ -613,48 +628,79 @@ const AdminInstructorPayments = () => {
             <CardDescription>Click a row to see full payment details</CardDescription>
           </CardHeader>
           <CardContent>
-            {filteredCompletedPayments.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Instructor</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCompletedPayments.map((payment) => (
-                    <TableRow 
-                      key={payment.id} 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedDetailPayment(payment)}
-                    >
-                      <TableCell className="font-medium">{payment.instructorName}</TableCell>
-                      <TableCell>
-                        {payment.paymentType === 'bonus' ? (
-                          <Badge variant="secondary">Bonus</Badge>
-                        ) : (
-                          <Badge variant="outline">Class</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span>${(payment.totalAmount + payment.bonusAmount).toFixed(2)}</span>
-                        {payment.bonusAmount > 0 && (
-                          <div className="text-xs text-muted-foreground">includes bonus</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
-                      </TableCell>
+            {completedPayments.length > 0 ? (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Instructor</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Pay Period</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedHistory.map((payment) => (
+                      <TableRow 
+                        key={payment.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedDetailPayment(payment)}
+                      >
+                        <TableCell className="font-medium">{payment.instructorName}</TableCell>
+                        <TableCell>
+                          {payment.paymentType === 'bonus' ? (
+                            <Badge variant="secondary">Bonus</Badge>
+                          ) : (
+                            <Badge variant="outline">Class</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span>${(payment.totalAmount + payment.bonusAmount).toFixed(2)}</span>
+                          {payment.bonusAmount > 0 && (
+                            <div className="text-xs text-muted-foreground">includes bonus</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {totalHistoryPages > 1 && (
+                  <Pagination className="mt-4">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                          className={historyPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            isActive={page === historyPage}
+                            onClick={() => setHistoryPage(page)}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
+                          className={historyPage >= totalHistoryPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No payment history found.</p>
             )}
@@ -662,7 +708,6 @@ const AdminInstructorPayments = () => {
         </Card>
       </div>
 
-      {/* Payment Detail Dialog */}
       <Dialog open={!!selectedDetailPayment} onOpenChange={(open) => { if (!open) setSelectedDetailPayment(null); }}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
