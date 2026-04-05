@@ -52,7 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Check, X, Eye, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
+import { Search, Check, X, Eye, Users, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
 import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -598,7 +598,7 @@ const AdminInstructors = () => {
                     {viewedInstructor.status === 'active' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); handleOpenAssignStudents(viewInstructorId!); }}>
-                          <UserRound className="h-4 w-4 mr-2" /> Assign Students
+                          <Users className="h-4 w-4 mr-2" /> Assign Students
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); navigate(`/admin/messages?recipient=${viewInstructorId}`); }}>
                           <MessageSquare className="h-4 w-4 mr-2" /> Send Message
@@ -715,7 +715,7 @@ const AdminInstructors = () => {
                                         onClick={() => handleOpenAssignStudents(instructor.id)}
                                         className="h-8 w-8"
                                       >
-                                        <UserRound className="h-4 w-4" />
+                                        <Users className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
