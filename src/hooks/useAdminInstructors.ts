@@ -2,15 +2,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuth } from '@/providers/AuthProvider';
-
-interface Profile {
-  id: string;
-  email: string;
-  first_name: string | null;
-  last_name: string | null;
-  role: string;
-}
 
 interface InstructorWithProfile {
   id: string;
@@ -28,7 +19,6 @@ interface InstructorWithProfile {
 
 export const useAdminInstructors = () => {
   const queryClient = useQueryClient();
-  const { session } = useAuth();
 
 
   const { data: activeInstructors, isLoading: isLoadingActive } = useQuery({
