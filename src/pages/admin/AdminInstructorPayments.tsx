@@ -53,8 +53,7 @@ const AdminInstructorPayments = () => {
   const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
-  const [showCreateClassDialog, setShowCreateClassDialog] = useState(false);
-  const [showCreateBonusDialog, setShowCreateBonusDialog] = useState(false);
+  const [selectedDetailPayment, setSelectedDetailPayment] = useState<InstructorPayment | null>(null);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [generateStep, setGenerateStep] = useState<'dates' | 'preview'>('dates');
   const [generateStartDate, setGenerateStartDate] = useState<Date>();
@@ -66,18 +65,6 @@ const AdminInstructorPayments = () => {
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   
-  // Create class payment form state
-  const [classInstructorId, setClassInstructorId] = useState('');
-  const [classPeriodStart, setClassPeriodStart] = useState<Date>();
-  const [classPeriodEnd, setClassPeriodEnd] = useState<Date>();
-  const [classHours, setClassHours] = useState('');
-  const [classAmountOverride, setClassAmountOverride] = useState('');
-  
-  // Create bonus payment form state
-  const [bonusInstructorId, setBonusInstructorId] = useState('');
-  const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusDescription, setBonusDescription] = useState('');
-  const [bonusDate, setBonusDate] = useState<Date>();
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
   
@@ -227,73 +214,6 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const handleCreateClassPayment = async () => {
-    if (!classInstructorId || !classPeriodStart || !classPeriodEnd || !classHours) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
-    const hours = parseFloat(classHours);
-    if (isNaN(hours) || hours <= 0) {
-      toast.error('Please enter valid hours');
-      return;
-    }
-
-    const instructor = instructorsList.find(i => i.id === classInstructorId);
-    if (!instructor) return;
-
-    const calculatedAmount = hours * instructor.hourlyRate;
-    const finalAmount = classAmountOverride ? parseFloat(classAmountOverride) : calculatedAmount;
-
-    await createPayment({
-      instructor_id: classInstructorId,
-      amount: finalAmount,
-      hours_worked: hours,
-      pay_period_start: format(classPeriodStart, 'yyyy-MM-dd'),
-      pay_period_end: format(classPeriodEnd, 'yyyy-MM-dd'),
-      payment_type: 'class',
-      description: null,
-    });
-
-    setShowCreateClassDialog(false);
-    resetClassForm();
-  };
-
-  const handleCreateBonusPayment = async () => {
-    if (!bonusInstructorId || !bonusAmount || !bonusDescription || !bonusDate) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    const amount = parseFloat(bonusAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    const dateStr = format(bonusDate, 'yyyy-MM-dd');
-
-    await createPayment({
-      instructor_id: bonusInstructorId,
-      amount,
-      hours_worked: null,
-      pay_period_start: dateStr,
-      pay_period_end: dateStr,
-      payment_type: 'bonus',
-      description: bonusDescription,
-    });
-
-    setShowCreateBonusDialog(false);
-    resetBonusForm();
-  };
-
-  const resetClassForm = () => {
-    setClassInstructorId('');
-    setClassPeriodStart(undefined);
-    setClassPeriodEnd(undefined);
-    setClassHours('');
-    setClassAmountOverride('');
-  };
 
   const openAddBonusToRow = (paymentId: string) => {
     setBonusRowPaymentId(paymentId);
@@ -343,12 +263,6 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const resetBonusForm = () => {
-    setBonusInstructorId('');
-    setBonusAmount('');
-    setBonusDescription('');
-    setBonusDate(undefined);
-  };
 
   const openScheduleDialog = async (instructor: Instructor) => {
     setScheduleInstructor(instructor);
