@@ -1,47 +1,31 @@
 
 
-# Redesign Schedule Editor as a Grid
+# Cleanup: Search, Stats Cards, and Pagination
 
-## Problem
-The current schedule editor requires adding days one at a time via "Add Teaching Day" button, selecting the day from a dropdown, then checking slots. Too many steps.
+## 1. Remove Search Bar
 
-## Solution
-Replace the entire schedule dialog content with a single grid/table showing all 7 days (Monday-Sunday) as rows and all 3 class slots as columns. Each cell is a checkbox. Admin just clicks the checkboxes for the slots that instructor teaches. One screen, no add/remove buttons needed.
+The search filters pending and completed payments by instructor name. With a small instructor roster, it adds no real value -- the admin can see all rows at a glance. It also doesn't filter the Instructor Rates table, making it inconsistent.
 
-```text
-              3:30-5:00   5:30-7:00   7:30-9:00
-Monday          [x]         [x]         [ ]
-Tuesday         [ ]         [x]         [x]
-Wednesday       [x]         [ ]         [ ]
-Thursday        [ ]         [ ]         [ ]
-Friday          [x]         [x]         [x]
-Saturday        [ ]         [ ]         [ ]
-Sunday          [ ]         [ ]         [ ]
-```
+**Action**: Remove `InstructorPaymentSearch` import, the `searchQuery` state, and the filter logic. Use `pendingPayments` and `completedPayments` directly instead of `filteredPendingPayments` and `filteredCompletedPayments`.
 
-## Implementation
+## 2. Simplify Stats Cards
 
-### File: `src/pages/admin/AdminInstructorPayments.tsx`
+"Paid This Month" and "Total Paid All Time" are not actionable -- they're just historical numbers the admin rarely needs at a glance. Keep only **Total Payroll This Period** (what's owed right now) since that's the one metric that drives action. Remove the other two cards entirely for a cleaner layout.
 
-**Schedule state change**: Replace `scheduleItems` array with a simpler grid state, or keep the same data format but render it differently. On dialog open, convert existing `scheduleItems` (array of `{day, hours}`) into a lookup map. On save, convert the grid back to the array format for the database.
+**Files**: `AdminInstructorPayments.tsx` (remove stats component or pass simplified props), `InstructorPaymentStatsCards.tsx` (reduce to single card or inline it), `useInstructorPayments.ts` (simplify stats calculation).
 
-**Replace the schedule dialog body** (lines 879-896): Remove the `ScheduleRowEditor` loop and "Add Teaching Day" button. Replace with a compact table:
-- 7 rows (Mon-Sun), 3 columns (the 3 slots)
-- Each cell is a `Checkbox`
-- Toggling a checkbox updates the internal state
-- Widen dialog slightly to fit the grid
+## 3. Add Pagination to Payment History
 
-**Save logic** stays the same -- `handleSaveSchedule` already deletes all rows and re-inserts. We just need to convert the grid state back to `{day, hours}[]` format (only include days that have at least one slot checked).
+Show **10 rows** per page in the Payment History table. Add pagination controls below using the existing `Pagination` UI components.
 
-### File: `src/components/instructor/ScheduleRowEditor.tsx`
-No changes needed -- it won't be used in the admin dialog anymore. It can remain for the instructor's own profile editor if desired.
+**Implementation**: Add `currentPage` state, slice `completedPayments` to show `(page-1)*10` through `page*10`, render `Pagination` / `PaginationContent` / `PaginationPrevious` / `PaginationNext` / `PaginationItem` below the table.
 
-### File: `src/utils/scheduleHours.ts`
-No changes -- it already parses comma-separated time ranges.
-
-## Summary
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `AdminInstructorPayments.tsx` | Replace schedule dialog body with a 7-day x 3-slot checkbox grid |
+| `AdminInstructorPayments.tsx` | Remove search bar + state + filters; remove stats cards component usage (replace with single inline "Total Payroll" card or keep just that one); add pagination state + controls to Payment History |
+| `InstructorPaymentStatsCards.tsx` | Remove file or simplify to single card |
+| `InstructorPaymentSearch.tsx` | Remove file (no longer used) |
+| `useInstructorPayments.ts` | Simplify stats to only pending total |
 
