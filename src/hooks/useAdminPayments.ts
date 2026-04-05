@@ -5,15 +5,10 @@ import { toast } from 'sonner';
 import { format, addWeeks } from 'date-fns';
 import { isDataObject, safelyAccessProperty } from '@/utils/supabaseHelpers';
 
-interface StudentProfile {
+interface ProfileData {
   first_name?: string;
   last_name?: string;
   email?: string;
-}
-
-interface StudentsData {
-  id?: string;
-  profiles?: StudentProfile[];
 }
 
 export interface PaymentStats {
