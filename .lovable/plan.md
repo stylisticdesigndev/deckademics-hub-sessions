@@ -1,31 +1,63 @@
+# Fix Student Names + Explain Upcoming Payments
 
+## 1. Student Names Not Showing
 
-# Cleanup: Search, Stats Cards, and Pagination
+**Root cause**: The Supabase query joins `payments → students → profiles`, but there's no foreign key relationship between `students` and `profiles` tables. Supabase can't resolve the nested join `students:student_id ( profiles(...) )`.
 
-## 1. Remove Search Bar
+Since `payments.student_id` and `profiles.id` are both the user's auth UUID, we can join `profiles` directly.
 
-The search filters pending and completed payments by instructor name. With a small instructor roster, it adds no real value -- the admin can see all rows at a glance. It also doesn't filter the Instructor Rates table, making it inconsistent.
+**Fix in `src/hooks/useAdminPayments.ts**`:
 
-**Action**: Remove `InstructorPaymentSearch` import, the `searchQuery` state, and the filter logic. Use `pendingPayments` and `completedPayments` directly instead of `filteredPendingPayments` and `filteredCompletedPayments`.
+Change the query from:
 
-## 2. Simplify Stats Cards
+```
+students:student_id (
+  id,
+  profiles(first_name, last_name, email)
+)
+```
 
-"Paid This Month" and "Total Paid All Time" are not actionable -- they're just historical numbers the admin rarely needs at a glance. Keep only **Total Payroll This Period** (what's owed right now) since that's the one metric that drives action. Remove the other two cards entirely for a cleaner layout.
+To:
 
-**Files**: `AdminInstructorPayments.tsx` (remove stats component or pass simplified props), `InstructorPaymentStatsCards.tsx` (reduce to single card or inline it), `useInstructorPayments.ts` (simplify stats calculation).
+```
+profiles:student_id (
+  first_name,
+  last_name,
+  email
+)
+```
 
-## 3. Add Pagination to Payment History
+Then simplify the data extraction -- instead of navigating `students.profiles[0]`, read directly from `profiles`:
 
-Show **10 rows** per page in the Payment History table. Add pagination controls below using the existing `Pagination` UI components.
+```ts
+const profile = safelyAccessProperty(payment, 'profiles');
+const firstName = profile?.first_name || '';
+const lastName = profile?.last_name || '';
+const email = profile?.email || '';
+```
 
-**Implementation**: Add `currentPage` state, slice `completedPayments` to show `(page-1)*10` through `page*10`, render `Pagination` / `PaginationContent` / `PaginationPrevious` / `PaginationNext` / `PaginationItem` below the table.
+Remove the `StudentsData` interface since it's no longer needed.
+
+This fix applies to all three tabs (Pending, Upcoming, All Payments) since they all use the same `payments` data source.
+
+## 2. How "Upcoming Payments" Works
+
+Currently, there is **no automated logic**. Here's how it works:
+
+- The admin manually creates a payment record (via "Create Payment") with a **future date** and status `pending`
+- The code splits pending payments into two buckets:
+  - `payment_date < today` → shows in **Pending** tab (overdue)
+  - `payment_date >= today` → shows in **Upcoming** tab (not yet due)
+- There is **no notification** sent to instructors or students about upcoming payments
+- It's purely a visual dashboard tool for the admin to track what's coming up
+
+If you want upcoming payments to be useful, we could later add: automatic recurring payment generation, or notifications to students when a payment is approaching its due date.
+
+Please add automatic recurring payment generation, or notifications to students when a payment is approaching its due date.
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `AdminInstructorPayments.tsx` | Remove search bar + state + filters; remove stats cards component usage (replace with single inline "Total Payroll" card or keep just that one); add pagination state + controls to Payment History |
-| `InstructorPaymentStatsCards.tsx` | Remove file or simplify to single card |
-| `InstructorPaymentSearch.tsx` | Remove file (no longer used) |
-| `useInstructorPayments.ts` | Simplify stats to only pending total |
 
+| File                            | Change                                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------------------------- |
+| `src/hooks/useAdminPayments.ts` | Fix query to join `profiles` directly instead of through `students`; simplify data extraction |
