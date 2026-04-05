@@ -57,8 +57,7 @@ const AdminInstructorPayments = () => {
   const [selectedDetailPayment, setSelectedDetailPayment] = useState<InstructorPayment | null>(null);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [generateStep, setGenerateStep] = useState<'dates' | 'preview'>('dates');
-  const [generateStartDate, setGenerateStartDate] = useState<Date>();
-  const [generateEndDate, setGenerateEndDate] = useState<Date>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
