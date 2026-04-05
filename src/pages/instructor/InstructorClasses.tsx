@@ -16,6 +16,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateUS } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorClasses } from '@/data/mockInstructorData';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, parse } from 'date-fns';
@@ -151,7 +152,7 @@ const InstructorClasses = () => {
           if (students.length === 0) {
             formattedClasses.push({
               id: cls.id, week: `Week ${weekNumber}`, title: cls.title,
-              date: startTime.toLocaleDateString(),
+              date: formatDateUS(startTime),
               time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               duration: `${durationMinutes} min`, room: cls.location || 'Main Studio',
               student: { id: 'none', name: 'No students enrolled', initials: 'NS' },
@@ -161,7 +162,7 @@ const InstructorClasses = () => {
             students.forEach((student: Student) => {
               formattedClasses.push({
                 id: `${cls.id}-${student.id}`, week: `Week ${weekNumber}`, title: cls.title,
-                date: startTime.toLocaleDateString(),
+                date: formatDateUS(startTime),
                 time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 duration: `${durationMinutes} min`, room: cls.location || 'Main Studio', student,
                 _rawDate: startTime

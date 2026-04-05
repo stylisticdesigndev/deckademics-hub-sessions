@@ -3,7 +3,7 @@ import { ArrowLeft, Send, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { formatDateTimeUS } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
@@ -161,7 +161,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
                     {msg.content && renderTextWithLinks(msg.content, { isSentByMe: isMe })}
                   </div>
                   <p className={`text-[11px] text-muted-foreground mt-1 ${isMe ? 'text-right' : ''}`}>
-                    {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
+                    {formatDateTimeUS(msg.sent_at)}
                   </p>
                 </div>
               </div>

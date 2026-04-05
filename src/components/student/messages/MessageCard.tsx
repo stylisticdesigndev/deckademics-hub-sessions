@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { formatDateTimeUS } from '@/lib/utils';
 import { MessageReplyForm } from './MessageReplyForm';
 
 interface DirectMessage {
@@ -55,7 +55,7 @@ export const MessageCard = ({ message, onMarkAsRead, onReply, isDemoMode }: Mess
                 <Badge variant="default" className="text-xs px-1.5 py-0">New</Badge>
               )}
               <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
-                {format(new Date(message.sent_at), 'MMM d, yyyy h:mm a')}
+                {formatDateTimeUS(message.sent_at)}
                 {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </span>
             </div>

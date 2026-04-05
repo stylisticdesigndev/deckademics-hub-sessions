@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { formatDateUS } from '@/lib/utils';
 
 export interface Conversation {
   studentId: string;
@@ -45,7 +45,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations, onSe
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-sm truncate">{convo.studentName}</span>
               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {format(new Date(convo.lastMessageAt), 'MMM d')}
+                {formatDateUS(convo.lastMessageAt)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2 mt-0.5">

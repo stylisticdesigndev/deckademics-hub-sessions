@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
+import { formatDateTimeUS } from '@/lib/utils';
 import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
 
 const REPLY_WINDOW_DAYS = 7;
@@ -127,7 +128,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                   </div>
                   <div className={`flex items-center gap-1.5 mt-1 ${isMe ? 'justify-end' : ''}`}>
                     <p className="text-[11px] text-muted-foreground">
-                      {format(new Date(msg.sent_at), 'MMM d, h:mm a')}
+                      {formatDateTimeUS(msg.sent_at)}
                     </p>
                     {!isMe && onSaveToNotes && (
                       <TooltipProvider>
