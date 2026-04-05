@@ -79,11 +79,10 @@ const AdminStudents = () => {
     refetchData
   } = useAdminStudents();
 
-  // Add useEffect to log data whenever it changes
+  // Clear selection when tab changes
   useEffect(() => {
-    console.log("AdminStudents - Active Students Updated:", activeStudents);
-    console.log("AdminStudents - Pending Students Updated:", pendingStudents);
-  }, [activeStudents, pendingStudents]);
+    setSelectedIds([]);
+  }, [selectedTabValue]);
 
   // Refresh data on first load
 
