@@ -54,7 +54,6 @@ const AdminStudents = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
@@ -70,7 +69,6 @@ const AdminStudents = () => {
     deactivateStudent,
     updateStudentLevel,
     createDemoStudent,
-    debugFetchStudents,
     refetchData
   } = useAdminStudents();
 
@@ -80,10 +78,7 @@ const AdminStudents = () => {
     console.log("AdminStudents - Pending Students Updated:", pendingStudents);
   }, [activeStudents, pendingStudents]);
 
-  // Auto-fetch debug data on first load
-  useEffect(() => {
-    handleDebugRefresh();
-  }, []);
+  // Refresh data on first load
 
   // Enhanced effect to ensure we have fresh data when changing tabs
   useEffect(() => {
@@ -225,38 +220,13 @@ const AdminStudents = () => {
            pendingStudents?.find(student => student.id === id);
   };
 
-  // Enhanced debug refresh with better error handling
-  const handleDebugRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      console.log("Fetching debug data and refreshing UI...");
-      const debug = await debugFetchStudents();
-      console.log("Debug data received:", debug);
-      setDebugInfo(debug);
-      
-      // Also refresh the UI data
-      await refetchData();
-      console.log("UI data refreshed");
-    } catch (error: any) {
-      console.error("Error fetching debug data:", error);
-      toast.error("Failed to fetch debug data");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleCreateDemoStudent = async () => {
     setIsCreatingDemo(true);
     try {
       const result = await createDemoStudent();
-      
       if (result) {
         toast.success("Demo student created successfully");
-        
-        // Add explicit refresh after a delay
-        setTimeout(async () => {
-          await handleDebugRefresh();
-        }, 1000);
+        setTimeout(async () => { await refetchData(); }, 1000);
       } else {
         toast.error("Failed to create demo student");
       }
@@ -391,12 +361,6 @@ const AdminStudents = () => {
               <TabsTrigger value="pending" disabled={isRefreshing}>
                 Pending Approval ({filteredPendingStudents.length})
                 {isRefreshing && selectedTabValue === 'pending' && (
-                  <Loader2 className="ml-2 h-3 w-3 animate-spin" />
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="debug" disabled={isRefreshing}>
-                Debug Info
-                {isRefreshing && selectedTabValue === 'debug' && (
                   <Loader2 className="ml-2 h-3 w-3 animate-spin" />
                 )}
               </TabsTrigger>
@@ -672,75 +636,6 @@ const AdminStudents = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="debug" className="space-y-4 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Debug Information</CardTitle>
-                  <CardDescription>
-                    Database details for debugging purposes
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
-                  {isRefreshing ? (
-                    <div className="flex justify-center py-12">
-                      <div className="flex flex-col items-center space-y-4">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                        <p>Loading debug information...</p>
-                      </div>
-                    </div>
-                  ) : debugInfo ? (
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">Profiles in Database:</h3>
-                      <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
-                        {JSON.stringify(debugInfo.allProfiles, null, 2)}
-                      </pre>
-                      
-                      <h3 className="text-lg font-medium mt-4 mb-2">Students in Database:</h3>
-                      <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-auto">
-                        {JSON.stringify(debugInfo.allStudents, null, 2)}
-                      </pre>
-                      
-                      <div className="mt-4">
-                        <Button 
-                          onClick={handleDebugRefresh} 
-                          variant="outline"
-                          disabled={isRefreshing}
-                        >
-                          {isRefreshing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Refreshing...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCcw className="mr-2 h-4 w-4" />
-                              Refresh Debug Data
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="mb-4 text-muted-foreground">Click refresh to load debug info</p>
-                      <Button onClick={handleDebugRefresh} disabled={isRefreshing}>
-                        {isRefreshing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCcw className="mr-2 h-4 w-4" />
-                            Load Debug Data
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
 
           {/* View Student Dialog */}
@@ -762,11 +657,11 @@ const AdminStudents = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Level</p>
-                      <p className="font-medium">{selectedStudentData.level || 'Not set'}</p>
+                      <p className="font-medium capitalize">{selectedStudentData.level || 'Not set'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium">{selectedStudentData.enrollment_status}</p>
+                      <p className="font-medium capitalize">{selectedStudentData.enrollment_status}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Instructor</p>
@@ -775,6 +670,10 @@ const AdminStudents = () => {
                           ? `${selectedStudentData.instructor.profile?.first_name} ${selectedStudentData.instructor.profile?.last_name}`
                           : 'Not assigned'}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Start Date</p>
+                      <p className="font-medium">{(selectedStudentData as any).start_date || 'Not set'}</p>
                     </div>
                   </div>
                 </div>
