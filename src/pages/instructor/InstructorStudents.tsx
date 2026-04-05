@@ -762,6 +762,10 @@ const InstructorStudents = () => {
                             
                             {updatingSkillId === skill.skillId && (
                               <div className="pt-2 space-y-3">
+                                <div className="flex items-center justify-between text-sm mb-1">
+                                  <span className="text-muted-foreground">Proficiency</span>
+                                  <span className="font-medium">{skillProficiency}%</span>
+                                </div>
                                 <Slider
                                   value={[skillProficiency]}
                                   min={0}
