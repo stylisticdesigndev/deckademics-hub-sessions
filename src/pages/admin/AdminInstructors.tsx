@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
-import { useStudentAssignment, StudentForAssignment } from '@/hooks/useStudentAssignment';
+import { useStudentAssignment } from '@/hooks/useStudentAssignment';
 import {
   Card,
   CardContent,
