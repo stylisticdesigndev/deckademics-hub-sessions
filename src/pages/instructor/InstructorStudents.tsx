@@ -429,6 +429,47 @@ const InstructorStudents = () => {
     }
   };
 
+  const handleSkillProficiencyUpdate = async (studentId: string, skillName: string, proficiency: number, existingRecordId?: string) => {
+    try {
+      if (existingRecordId) {
+        const { error } = await supabase
+          .from('student_progress')
+          .update({
+            proficiency,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          })
+          .eq('id', existingRecordId);
+        if (error) {
+          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from('student_progress')
+          .insert({
+            student_id: studentId,
+            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b',
+            skill_name: skillName,
+            proficiency,
+            assessment_date: new Date().toISOString(),
+            assessor_id: instructorId
+          });
+        if (error) {
+          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          return;
+        }
+      }
+      
+      setUpdatingSkillId(null);
+      toast({ title: "Skill updated", description: `${skillName} proficiency set to ${proficiency}%` });
+      await refetch();
+    } catch (error) {
+      console.error('Error updating skill proficiency:', error);
+      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
+    }
+  };
+
   const toggleLessonCompletion = async (studentId: string, moduleId: string, lessonId: string) => {
     try {
       // Get current lesson state to toggle it
