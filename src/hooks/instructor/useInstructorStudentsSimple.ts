@@ -119,11 +119,6 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           (row) => row.skill_name?.toLowerCase() !== 'overall progress'
         );
 
-        const progressSkillsByStudent: { [studentId: string]: Set<string> } = {};
-        filteredProgressRows.forEach((row) => {
-          if (!progressSkillsByStudent[row.student_id]) progressSkillsByStudent[row.student_id] = new Set();
-          if (row.skill_name) progressSkillsByStudent[row.student_id].add(row.skill_name);
-        });
 
         // Build a map of student_id -> skill_name -> { proficiency, id }
         const progressRecordMap: { [studentId: string]: { [skillName: string]: { proficiency: number; id: string } } } = {};
