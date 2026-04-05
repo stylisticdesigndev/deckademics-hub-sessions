@@ -1,5 +1,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface SkillData {
   skill_name: string;
@@ -64,11 +66,24 @@ export const SkillBreakdownChart = ({ skills }: SkillBreakdownChartProps) => {
     );
   }
 
+  const sorted = [...skills].sort((a, b) => b.proficiency - a.proficiency);
+  const displayed = sorted.slice(0, 6);
+  const hasMore = skills.length > 6;
+
   return (
     <div className="rounded-xl bg-card border border-border p-6">
-      <h3 className="text-sm font-semibold text-foreground mb-4">Skill Breakdown</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-semibold text-foreground">Skill Breakdown</h3>
+        {hasMore && (
+          <Link to="/student/progress">
+            <Button variant="link" size="sm" className="text-primary p-0 h-auto">
+              View All
+            </Button>
+          </Link>
+        )}
+      </div>
       <div className="flex flex-wrap gap-4 justify-center">
-        {skills.map((skill, i) => (
+        {displayed.map((skill, i) => (
           <SkillRing
             key={skill.skill_name}
             name={skill.skill_name}
