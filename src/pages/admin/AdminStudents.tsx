@@ -390,8 +390,6 @@ const AdminStudents = () => {
                           No active students found.
                         </TableCell>
                       </TableRow>
-                        </TableCell>
-                      </TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -491,8 +489,6 @@ const AdminStudents = () => {
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                           No pending students.
-                        </TableCell>
-                      </TableRow>
                         </TableCell>
                       </TableRow>
                     )}
