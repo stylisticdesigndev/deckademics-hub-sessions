@@ -577,7 +577,7 @@ const AdminStudents = () => {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                             {isRefreshing ? (
                               <div className="flex flex-col items-center justify-center space-y-2">
                                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -782,6 +782,54 @@ const AdminStudents = () => {
                   ) : (
                     'Deactivate'
                   )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bulk Change Level Dialog */}
+          <Dialog open={showBulkLevelDialog} onOpenChange={setShowBulkLevelDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Change Level for {selectedIds.length} Students</DialogTitle>
+                <DialogDescription>
+                  All selected students will be updated to the chosen level.
+                </DialogDescription>
+              </DialogHeader>
+              <Select value={bulkLevel} onValueChange={setBulkLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="novice">Novice</SelectItem>
+                  <SelectItem value="amateur">Amateur</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkLevelDialog(false)}>Cancel</Button>
+                <Button onClick={handleBulkLevelChange} disabled={updateStudentLevel.isPending}>
+                  {updateStudentLevel.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Apply
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bulk Deactivate Dialog */}
+          <Dialog open={showBulkDeactivateDialog} onOpenChange={setShowBulkDeactivateDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Deactivate {selectedIds.length} Students</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to deactivate all selected students?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkDeactivateDialog(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleBulkDeactivate} disabled={deactivateStudent.isPending}>
+                  Deactivate All
                 </Button>
               </DialogFooter>
             </DialogContent>
