@@ -392,20 +392,20 @@ const AdminStudents = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <InstructorAssignmentDialog
+                              <InstructorAssignmentDialog
                                     studentId={student.id}
                                     studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
                                     currentInstructorId={student.instructor_id}
                                   >
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
                                       <UserRound className="h-4 w-4" />
                                     </Button>
-                                  </InstructorAssignmentDialog>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Assign Instructor</p></TooltipContent>
-                              </Tooltip>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Assign Instructor</p></TooltipContent>
+                                </Tooltip>
+                              </InstructorAssignmentDialog>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button 
