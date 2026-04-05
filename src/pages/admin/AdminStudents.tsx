@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
+import { Search, Check, X, Eye, UserRound, Loader2, Edit2, MessageSquare } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -66,7 +66,7 @@ const AdminStudents = () => {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
   
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const [selectedTabValue, setSelectedTabValue] = useState('active');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
@@ -90,19 +90,8 @@ const AdminStudents = () => {
     setSelectedIds([]);
   }, [selectedTabValue]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsRefreshing(true);
-      try {
-        await refetchData();
-      } catch (error) {
-        console.error("Error refreshing data:", error);
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-    fetchData();
-  }, [selectedTabValue, refetchData]);
+
+
 
   const handleApprove = useCallback(async (id: string) => {
     try {
@@ -171,17 +160,8 @@ const AdminStudents = () => {
 
 
 
-  const handleForceRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetchData();
-      toast.success("Data refreshed");
-    } catch (error: any) {
-      toast.error("Failed to refresh");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+
+
 
   const filteredActiveStudents = activeStudents?.filter(
     student => (
@@ -256,17 +236,6 @@ const AdminStudents = () => {
             Manage all students, approve new registrations, and track progress.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleForceRefresh} 
-            variant="outline" 
-            size="icon" 
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-          </Button>
-
-
         </div>
       </div>
 
