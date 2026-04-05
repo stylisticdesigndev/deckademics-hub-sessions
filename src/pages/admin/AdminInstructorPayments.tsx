@@ -647,11 +647,18 @@ const AdminInstructorPayments = () => {
                       >
                         <TableCell className="font-medium">{payment.instructorName}</TableCell>
                         <TableCell>
-                          {payment.paymentType === 'bonus' ? (
-                            <Badge variant="secondary">Bonus</Badge>
-                          ) : (
-                            <Badge variant="outline">Class</Badge>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {payment.paymentType === 'bonus' ? (
+                              <Badge variant="secondary">Bonus</Badge>
+                            ) : (
+                              <>
+                                <Badge variant="outline">Class</Badge>
+                                {payment.bonusAmount > 0 && (
+                                  <Badge variant="secondary">+ Bonus</Badge>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
