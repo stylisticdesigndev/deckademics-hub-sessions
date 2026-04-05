@@ -92,12 +92,16 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-between text-xs font-medium mb-1">
-                <span>Pending</span>
                 <span>Overdue</span>
+                <span>Upcoming</span>
               </div>
               <div className="flex justify-between text-lg font-bold">
-                <span>{paymentStats?.pending ?? 0}</span>
-                <span>{paymentStats?.overdue ?? 0}</span>
+                <span>{paymentStats.missedPaymentsCount}</span>
+                <span>{paymentStats.upcomingPaymentsCount}</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>${paymentStats.totalMissedAmount.toLocaleString()}</span>
+                <span>${paymentStats.totalUpcomingAmount.toLocaleString()}</span>
               </div>
             </CardContent>
           </Card>
