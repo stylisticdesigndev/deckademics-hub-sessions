@@ -10,6 +10,13 @@ interface StudentNote {
   created_at: string;
 }
 
+export interface SkillProgress {
+  skillId: string;
+  skillName: string;
+  proficiency: number;
+  progressRecordId?: string;
+}
+
 interface Student {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ interface Student {
   enrollmentDate: string;
   notes?: StudentNote[];
   moduleProgress?: ModuleProgress[];
+  skillProgress?: SkillProgress[];
 }
 
 interface ModuleProgress {
@@ -90,11 +98,11 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
 
         const studentIds = assignedStudents.map(s => s.id);
 
-        // Get progress data, notes, and curriculum in parallel
-        const [progressResult, notesResult, modulesResult, lessonsResult] = await Promise.all([
+        // Get progress data, notes, curriculum, and progress_skills in parallel
+        const [progressResult, notesResult, modulesResult, lessonsResult, skillsResult] = await Promise.all([
           supabase
             .from('student_progress')
-            .select('student_id, skill_name, proficiency')
+            .select('id, student_id, skill_name, proficiency')
             .in('student_id', studentIds),
           supabase
             .from('student_notes')
@@ -110,6 +118,10 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .from('curriculum_lessons')
             .select('id, module_id, title, order_index')
             .order('order_index', { ascending: true }),
+          supabase
+            .from('progress_skills' as any)
+            .select('id, name, level, order_index')
+            .order('order_index', { ascending: true }),
         ]);
 
         if (progressResult.error) {
@@ -121,6 +133,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
 
         const allModules = modulesResult.data || [];
         const allLessons = lessonsResult.data || [];
+        const allProgressSkills = (skillsResult.data || []) as any[];
 
         // Group lessons by module
         const lessonsByModule: { [moduleId: string]: typeof allLessons } = {};
@@ -138,6 +151,18 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
         filteredProgressRows.forEach((row) => {
           if (!progressSkillsByStudent[row.student_id]) progressSkillsByStudent[row.student_id] = new Set();
           if (row.skill_name) progressSkillsByStudent[row.student_id].add(row.skill_name);
+        });
+
+        // Build a map of student_id -> skill_name -> { proficiency, id }
+        const progressRecordMap: { [studentId: string]: { [skillName: string]: { proficiency: number; id: string } } } = {};
+        filteredProgressRows.forEach((row) => {
+          if (!progressRecordMap[row.student_id]) progressRecordMap[row.student_id] = {};
+          if (row.skill_name) {
+            progressRecordMap[row.student_id][row.skill_name] = {
+              proficiency: row.proficiency || 0,
+              id: row.id,
+            };
+          }
         });
 
         // Match student-side overall progress calculation
@@ -177,7 +202,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             }
           }
           
-          // Build moduleProgress for this student
+          // Build moduleProgress for this student (from curriculum)
           const studentLevel = student.level || 'beginner';
           const normalizedLevel = studentLevel.toLowerCase();
           const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
@@ -197,7 +222,20 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
               lessons,
             };
           });
-          // Keep module progress for lesson tracking, but match the student-side overall percentage
+
+          // Build skillProgress from admin-defined progress_skills
+          const levelSkills = allProgressSkills.filter((s: any) => s.level.toLowerCase() === normalizedLevel);
+          const studentProgressMap = progressRecordMap[student.id] || {};
+          const skillProgress: SkillProgress[] = levelSkills.map((skill: any) => {
+            const record = studentProgressMap[skill.name];
+            return {
+              skillId: skill.id,
+              skillName: skill.name,
+              proficiency: record?.proficiency || 0,
+              progressRecordId: record?.id,
+            };
+          });
+
           const moduleBasedProgress = moduleProgress.length
             ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
             : 0;
@@ -216,6 +254,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             nextClass: '',
             notes: notesById[student.id] || [],
             moduleProgress,
+            skillProgress,
           };
         });
 
