@@ -59,6 +59,7 @@ export const AdminNavigation = () => {
     { title: "Instructors", icon: Users, href: "/admin/instructors", badge: pendingInstructorsCount },
     { title: "Students", icon: GraduationCap, href: "/admin/students", badge: pendingStudentsCount },
     { title: "Curriculum", icon: BookOpen, href: "/admin/curriculum" },
+    { title: "Skills", icon: ClipboardCheck, href: "/admin/skills" },
     { title: "Progress Overview", icon: TrendingUp, href: "/admin/progress" },
     { title: "Attendance", icon: ClipboardCheck, href: "/admin/attendance" },
     { title: "Student Payments", icon: CreditCard, href: "/admin/payments" },
