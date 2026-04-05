@@ -388,11 +388,11 @@ const AdminInstructorPayments = () => {
   };
 
   const handleConfirmGenerate = async () => {
-    if (!generateStartDate || !generateEndDate || generatedPayments.length === 0) return;
+    if (!dateRange?.from || !dateRange?.to || generatedPayments.length === 0) return;
 
     setIsGenerating(true);
-    const startStr = format(generateStartDate, 'yyyy-MM-dd');
-    const endStr = format(generateEndDate, 'yyyy-MM-dd');
+    const startStr = format(dateRange.from, 'yyyy-MM-dd');
+    const endStr = format(dateRange.to, 'yyyy-MM-dd');
 
     try {
       for (const gp of generatedPayments) {
