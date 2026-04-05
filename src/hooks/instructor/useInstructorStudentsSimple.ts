@@ -174,26 +174,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             }
           }
           
-          // Build moduleProgress for this student (from curriculum)
           const studentLevel = student.level || 'novice';
           const normalizedLevel = studentLevel.toLowerCase();
-          const studentSkills = progressSkillsByStudent[student.id] || new Set<string>();
-          const studentModules = allModules.filter((m) => m.level.toLowerCase() === normalizedLevel);
-          const moduleProgress: ModuleProgress[] = studentModules.map((mod) => {
-            const modLessons = lessonsByModule[mod.id] || [];
-            const lessons = modLessons.map((l) => ({
-              id: l.id,
-              title: l.title,
-              completed: studentSkills.has(`${mod.title} - ${l.title}`),
-            }));
-            const completedCount = lessons.filter((l) => l.completed).length;
-            return {
-              moduleId: mod.id,
-              moduleName: mod.title,
-              progress: modLessons.length ? Math.round((completedCount / modLessons.length) * 100) : 0,
-              lessons,
-            };
-          });
 
           // Build skillProgress from admin-defined progress_skills
           const levelSkills = allProgressSkills.filter((s: any) => s.level.toLowerCase() === normalizedLevel);
@@ -208,10 +190,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             };
           });
 
-          const moduleBasedProgress = moduleProgress.length
-            ? Math.round(moduleProgress.reduce((sum, m) => sum + m.progress, 0) / moduleProgress.length)
-            : 0;
-          const overallProgress = progressById[student.id] ?? moduleBasedProgress;
+          const overallProgress = progressById[student.id] ?? 0;
 
           return {
             id: student.id,
@@ -225,7 +204,6 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             lastActive: '',
             nextClass: '',
             notes: notesById[student.id] || [],
-            moduleProgress,
             skillProgress,
           };
         });
