@@ -758,7 +758,19 @@ const AdminInstructorPayments = () => {
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
-                      <TableCell className="text-right">${payment.totalAmount}</TableCell>
+                      <TableCell className="text-right">
+                        <span>${payment.totalAmount}</span>
+                        {payment.bonusAmount > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            + ${payment.bonusAmount} bonus
+                          </div>
+                        )}
+                        {payment.bonusAmount > 0 && (
+                          <div className="text-xs font-semibold">
+                            Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
                       </TableCell>
