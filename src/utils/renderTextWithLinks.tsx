@@ -37,7 +37,7 @@ export function renderTextWithLinks(
     if (URL_PART_REGEX.test(part)) {
       const { url, trailing } = cleanUrl(part);
       return (
-        <React.Fragment key={`${keyPrefix}${i}`}>
+        <span key={`${keyPrefix}${i}`}>
           <a
             href={url}
             target="_blank"
@@ -47,7 +47,7 @@ export function renderTextWithLinks(
             {url}
           </a>
           {trailing && <span>{trailing}</span>}
-        </React.Fragment>
+        </span>
       );
     }
     return <span key={`${keyPrefix}${i}`}>{part}</span>;
@@ -98,16 +98,16 @@ function renderNoteTextWithLinks(text: string, keyPrefix: string): React.ReactNo
       const { url, trailing } = cleanUrl(part);
       if (IMAGE_EXTENSIONS.test(url)) {
         return (
-          <React.Fragment key={`${keyPrefix}-${i}`}>
+          <span key={`${keyPrefix}-${i}`}>
             <a href={url} target="_blank" rel="noopener noreferrer" className="block my-2 cursor-pointer">
               <img src={url} alt="Attachment" className="rounded-lg max-w-full max-h-64 object-cover" />
             </a>
             {trailing && <span>{trailing}</span>}
-          </React.Fragment>
+          </span>
         );
       }
       return (
-        <React.Fragment key={`${keyPrefix}-${i}`}>
+        <span key={`${keyPrefix}-${i}`}>
           <a
             href={url}
             target="_blank"
@@ -117,7 +117,7 @@ function renderNoteTextWithLinks(text: string, keyPrefix: string): React.ReactNo
             {url}
           </a>
           {trailing && <span>{trailing}</span>}
-        </React.Fragment>
+        </span>
       );
     }
     return <span key={`${keyPrefix}-${i}`}>{part}</span>;
