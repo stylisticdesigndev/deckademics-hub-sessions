@@ -46,6 +46,8 @@ import AdminInstructorPayments from "./pages/admin/AdminInstructorPayments";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCurriculum from "./pages/admin/AdminCurriculum";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminMessages from "./pages/admin/AdminMessages";
 import StudentCurriculum from "./pages/student/StudentCurriculum";
 import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 
@@ -113,6 +115,8 @@ const App = () => (
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/instructor-payments" element={<AdminInstructorPayments />} />
             <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
           </Route>
         </Route>
