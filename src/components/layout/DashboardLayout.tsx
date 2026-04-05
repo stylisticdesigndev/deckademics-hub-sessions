@@ -1,5 +1,5 @@
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -12,11 +12,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
 import { useAuth } from '@/providers/AuthProvider';
-import { Bell, LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
+import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardLayoutProps {
   children: ReactNode;
