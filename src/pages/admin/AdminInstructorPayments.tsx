@@ -670,6 +670,35 @@ const AdminInstructorPayments = () => {
                   ))}
                 </TableBody>
               </Table>
+              {totalHistoryPages > 1 && (
+                <Pagination className="mt-4">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                        className={historyPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === historyPage}
+                          onClick={() => setHistoryPage(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
+                        className={historyPage >= totalHistoryPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No payment history found.</p>
             )}
