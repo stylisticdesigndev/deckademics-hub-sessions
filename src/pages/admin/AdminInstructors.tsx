@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useStudentAssignment, StudentForAssignment } from '@/hooks/useStudentAssignment';
 import {
@@ -50,7 +51,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
@@ -60,6 +62,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminInstructors = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewInstructorId, setViewInstructorId] = useState<string | null>(null);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<string | null>(null);
@@ -81,7 +84,8 @@ const AdminInstructors = () => {
   const [showStudentAssignment, setShowStudentAssignment] = useState(false);
   const [instructorToAssign, setInstructorToAssign] = useState<string | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
+  const [showBulkDeactivateInstructors, setShowBulkDeactivateInstructors] = useState(false);
   const {
     activeInstructors,
     pendingInstructors,
@@ -145,13 +149,31 @@ const AdminInstructors = () => {
     return !isAlreadyInstructor;
   });
 
-  // Log debugging information when data changes
-  useEffect(() => {
-    console.log("Debug - All users:", allUsers);
-    console.log("Debug - Active instructors:", activeInstructors);
-    console.log("Debug - Pending instructors:", pendingInstructors);
-    console.log("Debug - Inactive instructors:", inactiveInstructors);
-  }, [allUsers, activeInstructors, pendingInstructors, inactiveInstructors]);
+  // Bulk action helpers for instructors
+  const toggleInstructorSelectAll = () => {
+    if (selectedInstructorIds.length === filteredActiveInstructors.length) {
+      setSelectedInstructorIds([]);
+    } else {
+      setSelectedInstructorIds(filteredActiveInstructors.map(i => i.id));
+    }
+  };
+
+  const toggleInstructorSelect = (id: string) => {
+    setSelectedInstructorIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkDeactivateInstructors = async () => {
+    for (const id of selectedInstructorIds) {
+      await deactivateInstructor.mutateAsync(id);
+    }
+    setSelectedInstructorIds([]);
+    setShowBulkDeactivateInstructors(false);
+  };
+
+  const handleBulkMessageInstructors = () => {
+    const recipientIds = selectedInstructorIds.join(',');
+    navigate(`/admin/messages?recipients=${recipientIds}`);
+  };
 
   const handleApprove = (id: string) => {
     approveInstructor.mutate(id);
@@ -625,6 +647,22 @@ const AdminInstructors = () => {
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 pt-4">
+              {/* Bulk Action Toolbar */}
+              {selectedInstructorIds.length > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">{selectedInstructorIds.length} selected</span>
+                  <Button size="sm" variant="outline" onClick={handleBulkMessageInstructors}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Message
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateInstructors(true)}>
+                    Deactivate
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedInstructorIds([])}>
+                    Clear
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Active Instructors</CardTitle>
@@ -637,6 +675,12 @@ const AdminInstructors = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left w-10">
+                            <Checkbox
+                              checked={filteredActiveInstructors.length > 0 && selectedInstructorIds.length === filteredActiveInstructors.length}
+                              onCheckedChange={toggleInstructorSelectAll}
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left font-medium">Name</th>
                           <th className="px-4 py-3 text-left font-medium">Email</th>
                           <th className="px-4 py-3 text-center font-medium">Status</th>
@@ -646,7 +690,13 @@ const AdminInstructors = () => {
                       <tbody>
                         {filteredActiveInstructors && filteredActiveInstructors.length > 0 ? (
                           filteredActiveInstructors.map((instructor) => (
-                            <tr key={instructor.id} className="border-b last:border-0">
+                            <tr key={instructor.id} className={`border-b last:border-0 ${selectedInstructorIds.includes(instructor.id) ? 'bg-muted' : ''}`}>
+                              <td className="px-4 py-3">
+                                <Checkbox
+                                  checked={selectedInstructorIds.includes(instructor.id)}
+                                  onCheckedChange={() => toggleInstructorSelect(instructor.id)}
+                                />
+                              </td>
                               <td className="px-4 py-3 font-medium">
                                 {instructor.profile.first_name} {instructor.profile.last_name}
                               </td>
@@ -711,7 +761,7 @@ const AdminInstructors = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                           <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                               No active instructors found.
                             </td>
                           </tr>
@@ -908,6 +958,24 @@ const AdminInstructors = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Bulk Deactivate Instructors Dialog */}
+          <Dialog open={showBulkDeactivateInstructors} onOpenChange={setShowBulkDeactivateInstructors}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Deactivate {selectedInstructorIds.length} Instructors</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to deactivate all selected instructors?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkDeactivateInstructors(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleBulkDeactivateInstructors} disabled={deactivateInstructor.isPending}>
+                  Deactivate All
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </TooltipProvider>
     </>

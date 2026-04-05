@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import {
@@ -25,7 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -50,6 +52,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 
 const AdminStudents = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showViewStudentDialog, setShowViewStudentDialog] = useState(false);
@@ -59,6 +62,10 @@ const AdminStudents = () => {
   const [selectedTabValue, setSelectedTabValue] = useState('pending');
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkLevelDialog, setShowBulkLevelDialog] = useState(false);
+  const [bulkLevel, setBulkLevel] = useState('novice');
+  const [showBulkDeactivateDialog, setShowBulkDeactivateDialog] = useState(false);
   
   const {
     activeStudents,
@@ -72,11 +79,10 @@ const AdminStudents = () => {
     refetchData
   } = useAdminStudents();
 
-  // Add useEffect to log data whenever it changes
+  // Clear selection when tab changes
   useEffect(() => {
-    console.log("AdminStudents - Active Students Updated:", activeStudents);
-    console.log("AdminStudents - Pending Students Updated:", pendingStudents);
-  }, [activeStudents, pendingStudents]);
+    setSelectedIds([]);
+  }, [selectedTabValue]);
 
   // Refresh data on first load
 
@@ -272,13 +278,48 @@ const AdminStudents = () => {
     )
   ) || [];
 
+  // Bulk action helpers
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredActiveStudents.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredActiveStudents.map(s => s.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkLevelChange = async () => {
+    for (const id of selectedIds) {
+      await updateStudentLevel.mutateAsync({ studentId: id, level: bulkLevel });
+    }
+    setSelectedIds([]);
+    setShowBulkLevelDialog(false);
+    await refetchData();
+  };
+
+  const handleBulkDeactivate = async () => {
+    for (const id of selectedIds) {
+      await deactivateStudent.mutateAsync(id);
+    }
+    setSelectedIds([]);
+    setShowBulkDeactivateDialog(false);
+    await refetchData();
+  };
+
+  const handleBulkMessage = () => {
+    // Navigate to admin messages with pre-selected recipients
+    const recipientIds = selectedIds.join(',');
+    navigate(`/admin/messages?recipients=${recipientIds}`);
+  };
+
   if (isLoading) {
     return (
-      <>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </>
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
@@ -367,6 +408,25 @@ const AdminStudents = () => {
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 pt-4">
+              {/* Bulk Action Toolbar */}
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">{selectedIds.length} selected</span>
+                  <Button size="sm" variant="outline" onClick={() => setShowBulkLevelDialog(true)}>
+                    Change Level
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleBulkMessage}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Message
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateDialog(true)}>
+                    Deactivate
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
+                    Clear
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Active Students</CardTitle>
@@ -378,6 +438,12 @@ const AdminStudents = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={filteredActiveStudents.length > 0 && selectedIds.length === filteredActiveStudents.length}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Instructor</TableHead>
@@ -389,7 +455,13 @@ const AdminStudents = () => {
                     <TableBody>
                       {filteredActiveStudents.length > 0 ? (
                         filteredActiveStudents.map((student) => (
-                          <TableRow key={student.id}>
+                          <TableRow key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.includes(student.id)}
+                                onCheckedChange={() => toggleSelect(student.id)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">
                               {student.profile?.first_name} {student.profile?.last_name}
                             </TableCell>
@@ -505,7 +577,7 @@ const AdminStudents = () => {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                             {isRefreshing ? (
                               <div className="flex flex-col items-center justify-center space-y-2">
                                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -710,6 +782,54 @@ const AdminStudents = () => {
                   ) : (
                     'Deactivate'
                   )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bulk Change Level Dialog */}
+          <Dialog open={showBulkLevelDialog} onOpenChange={setShowBulkLevelDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Change Level for {selectedIds.length} Students</DialogTitle>
+                <DialogDescription>
+                  All selected students will be updated to the chosen level.
+                </DialogDescription>
+              </DialogHeader>
+              <Select value={bulkLevel} onValueChange={setBulkLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="novice">Novice</SelectItem>
+                  <SelectItem value="amateur">Amateur</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkLevelDialog(false)}>Cancel</Button>
+                <Button onClick={handleBulkLevelChange} disabled={updateStudentLevel.isPending}>
+                  {updateStudentLevel.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Apply
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bulk Deactivate Dialog */}
+          <Dialog open={showBulkDeactivateDialog} onOpenChange={setShowBulkDeactivateDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Deactivate {selectedIds.length} Students</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to deactivate all selected students?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBulkDeactivateDialog(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleBulkDeactivate} disabled={deactivateStudent.isPending}>
+                  Deactivate All
                 </Button>
               </DialogFooter>
             </DialogContent>
