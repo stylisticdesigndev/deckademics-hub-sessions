@@ -138,10 +138,11 @@ const AdminCurriculum = () => {
 
         <Alert>
           <Info className="h-4 w-4" />
-          <AlertTitle>How Curriculum Links to Student Progress</AlertTitle>
+          <AlertTitle>Curriculum vs. Skills</AlertTitle>
           <AlertDescription>
-            Lessons created here appear as trackable skills on instructor and student dashboards. 
-            Once a lesson exists, instructors can set proficiency percentages for each student from their Students tab.
+            This page is a <strong>reference overview</strong> of what's taught at each level. 
+            To manage the trackable skills that instructors assess and students see on their progress page, 
+            go to the <strong>Skills</strong> page in the sidebar.
           </AlertDescription>
         </Alert>
 
