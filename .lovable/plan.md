@@ -1,31 +1,48 @@
 
 
-# Fix Skill Breakdown Card: Cap at 6 + Use Real Data
+# Approval Gate for New Students and Instructors
 
-## Problems
+## Current behavior
+- **Students**: `enrollment_status` defaults to `'active'` — they get full dashboard access immediately after signup
+- **Instructors**: `status` defaults to `'pending'` — but the app doesn't block them; they still access the dashboard
 
-1. **SkillBreakdownChart** renders all skills with no limit — card grows unbounded
-2. **ProgressSection** has hardcoded skill names ("Beat Matching", "Scratching", etc.) instead of using admin-defined skills from `progress_skills`
+## What changes
 
-## Changes
+### 1. Database migration
+- Change `students.enrollment_status` default from `'active'` to `'pending'`
+- This ensures new student signups land in the admin Pending Approvals tab
 
-### 1. `src/components/student/dashboard/SkillBreakdownChart.tsx`
-- Slice the `skills` array to show only the **first 6** (most recently updated or highest proficiency — sorted before slicing)
-- If more than 6 skills exist, render a "View All" link pointing to `/student/progress`
+### 2. New "Awaiting Approval" page (`src/pages/PendingApproval.tsx`)
+- Simple centered page with the Deckademics logo, a message like "Your account is awaiting admin approval", and a sign-out button
+- Shared by both students and instructors
 
-### 2. `src/components/student/dashboard/ProgressSection.tsx`
-- Accept `skills` data as a prop (array of `{ skill_name, proficiency }`)
-- Replace the four hardcoded progress bars with dynamic bars from the passed-in skills data
-- Cap the displayed skills at 4 with a "View All" link if more exist
+### 3. Update `ProtectedRoute.tsx` to check approval status
+- After confirming the user has the correct role, fetch their status:
+  - **Students**: query `students` table for `enrollment_status`
+  - **Instructors**: query `instructors` table for `status`
+- If status is `'pending'`, render the PendingApproval page instead of `<Outlet />`
+- Admins are never gated
 
-### 3. `src/pages/student/StudentDashboard.tsx` (or wherever ProgressSection is rendered)
-- Pass the `progressData` from `useStudentDashboardCore` into `ProgressSection` as a prop
+### 4. Update `AuthProvider.tsx` redirect logic
+- After sign-in, if the user is a pending student/instructor, redirect to `/pending-approval` (or just let ProtectedRoute handle it inline — no new route needed)
+
+### 5. Add route for pending approval page
+- Add `/pending-approval` as a simple authenticated route in `App.tsx` (or handle it inline in ProtectedRoute without a separate route)
 
 ## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/components/student/dashboard/SkillBreakdownChart.tsx` | Limit to 6 skills, add "View All" link |
-| `src/components/student/dashboard/ProgressSection.tsx` | Accept skills prop, render dynamically, cap at 4 |
-| Parent that renders ProgressSection | Pass `progressData` prop |
+| **Migration SQL** | `ALTER TABLE students ALTER COLUMN enrollment_status SET DEFAULT 'pending'` |
+| `src/routes/ProtectedRoute.tsx` | After role check passes, fetch student/instructor status; if pending, render PendingApproval component |
+| `src/pages/PendingApproval.tsx` | New page: logo + "Awaiting Approval" message + sign-out button |
+| `src/providers/AuthProvider.tsx` | No redirect change needed — ProtectedRoute handles the gate |
+
+## How it works end to end
+
+1. New student signs up → `handle_new_user` trigger inserts into `students` with `enrollment_status = 'pending'`
+2. Student logs in → ProtectedRoute detects pending status → shows "Awaiting Approval" page
+3. Admin approves student in Pending tab → status becomes `'active'`
+4. Student refreshes or logs in again → ProtectedRoute sees active status → shows dashboard
+5. Same flow for instructors (already defaults to `'pending'`)
 
