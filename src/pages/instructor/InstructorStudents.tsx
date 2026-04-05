@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
+import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
 
 // --------- TYPES ---------
@@ -50,6 +51,7 @@ interface Student {
   enrollmentDate: string;
   notes?: StudentNote[];
   moduleProgress?: ModuleProgress[];
+  skillProgress?: SkillProgress[];
 }
 
 interface ModuleProgress {
@@ -121,58 +123,9 @@ const InstructorStudents = () => {
     setLoadingTasks(false);
   };
   
-  const curriculumModules = [
-    {
-      moduleId: '1',
-      moduleName: 'Introduction to DJ Equipment',
-      lessons: [
-        { id: '1-1', title: 'Turntables & CDJs' },
-        { id: '1-2', title: 'DJ Mixers & Controllers' },
-        { id: '1-3', title: 'Headphones & Monitors' },
-        { id: '1-4', title: 'Software Overview' },
-      ]
-    },
-    {
-      moduleId: '2',
-      moduleName: 'Beat Matching Fundamentals',
-      lessons: [
-        { id: '2-1', title: 'Understanding BPM' },
-        { id: '2-2', title: 'Manual Beat Matching' },
-        { id: '2-3', title: 'Beat Matching with Software' },
-        { id: '2-4', title: 'Troubleshooting Common Issues' },
-      ]
-    },
-    {
-      moduleId: '3',
-      moduleName: 'Basic Mixing Techniques',
-      lessons: [
-        { id: '3-1', title: 'EQ Mixing' },
-        { id: '3-2', title: 'Volume Fading' },
-        { id: '3-3', title: 'Filter Effects' },
-        { id: '3-4', title: 'Intro to Phrase Mixing' },
-      ]
-    },
-    {
-      moduleId: '4',
-      moduleName: 'Scratching Basics',
-      lessons: [
-        { id: '4-1', title: 'Proper Handling of Vinyl' },
-        { id: '4-2', title: 'Baby Scratch' },
-        { id: '4-3', title: 'Forward & Back Scratch' },
-        { id: '4-4', title: 'Scribble Scratch' },
-      ]
-    },
-    {
-      moduleId: '5',
-      moduleName: 'Music Theory for DJs',
-      lessons: [
-        { id: '5-1', title: 'Key Matching' },
-        { id: '5-2', title: 'Musical Phrasing' },
-        { id: '5-3', title: 'Song Structure' },
-        { id: '5-4', title: 'Harmonic Mixing' },
-      ]
-    },
-  ];
+  // Skill proficiency update state
+  const [updatingSkillId, setUpdatingSkillId] = useState<string | null>(null);
+  const [skillProficiency, setSkillProficiency] = useState(0);
   
   // Update students when fetched data changes
   useEffect(() => {
