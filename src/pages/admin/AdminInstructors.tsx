@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useStudentAssignment, StudentForAssignment } from '@/hooks/useStudentAssignment';
 import {
@@ -50,7 +51,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
