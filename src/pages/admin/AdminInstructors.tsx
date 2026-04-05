@@ -761,7 +761,7 @@ const AdminInstructors = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                           <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                               No active instructors found.
                             </td>
                           </tr>
