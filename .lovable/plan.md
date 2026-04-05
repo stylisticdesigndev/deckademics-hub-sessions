@@ -1,48 +1,47 @@
 
 
-# Approval Gate for New Students and Instructors
-
-## Current behavior
-- **Students**: `enrollment_status` defaults to `'active'` — they get full dashboard access immediately after signup
-- **Instructors**: `status` defaults to `'pending'` — but the app doesn't block them; they still access the dashboard
+# Unified Notification Dropdown for Students and Instructors
 
 ## What changes
 
-### 1. Database migration
-- Change `students.enrollment_status` default from `'active'` to `'pending'`
-- This ensures new student signups land in the admin Pending Approvals tab
+Replace the simple bell button (that navigates to messages) on student/instructor headers with a popover dropdown matching the admin's `NotificationDropdown` architecture. The dropdown will show both **unread messages** and **unread announcements** as individual notification items, sorted by time.
 
-### 2. New "Awaiting Approval" page (`src/pages/PendingApproval.tsx`)
-- Simple centered page with the Deckademics logo, a message like "Your account is awaiting admin approval", and a sign-out button
-- Shared by both students and instructors
+## 1. Create `src/hooks/useUserNotifications.ts`
 
-### 3. Update `ProtectedRoute.tsx` to check approval status
-- After confirming the user has the correct role, fetch their status:
-  - **Students**: query `students` table for `enrollment_status`
-  - **Instructors**: query `instructors` table for `status`
-- If status is `'pending'`, render the PendingApproval page instead of `<Outlet />`
-- Admins are never gated
+A new hook that combines two data sources into a unified notification list:
 
-### 4. Update `AuthProvider.tsx` redirect logic
-- After sign-in, if the user is a pending student/instructor, redirect to `/pending-approval` (or just let ProtectedRoute handle it inline — no new route needed)
+- **Unread messages**: Query `messages` where `receiver_id = userId` and `read_at IS NULL`. Each becomes a notification item with type `message`, title from sender name, message from content preview.
+- **Unread announcements**: Query `announcements` targeted at the user's role, left-joining `announcement_reads` to find ones the user hasn't read. Each becomes a notification item with type `announcement`.
 
-### 5. Add route for pending approval page
-- Add `/pending-approval` as a simple authenticated route in `App.tsx` (or handle it inline in ProtectedRoute without a separate route)
+Returns: `{ notifications, unreadCount, markAsRead, markAllAsRead }`
 
-## Files to edit
+- `markAsRead` for messages: updates `read_at` on the message row
+- `markAsRead` for announcements: inserts into `announcement_reads`
+- `markAllAsRead`: does both in parallel
+- Uses `useQuery` with 30s polling (matching admin pattern)
+- Needs sender profile names, so join `profiles` on `sender_id` for messages
+
+## 2. Create `src/components/notifications/UserNotificationDropdown.tsx`
+
+A near-copy of `NotificationDropdown.tsx` but using `useUserNotifications` instead of `useAdminNotifications`. Key differences:
+
+- Icon map: `message` type gets `MessageSquare` icon, `announcement` type gets `Bell` icon
+- Clicking a message notification navigates to the messages page
+- Clicking an announcement notification navigates to the announcements page
+- Same optimistic unread count pattern
+- Accepts `userType` prop (`'student' | 'instructor'`) for routing and role filtering
+
+## 3. Update `src/components/layout/DashboardLayout.tsx`
+
+- Replace the `{userType !== 'admin' && ...}` bell button block with `<UserNotificationDropdown userType={userType} />`
+- Remove the `unreadNotifications` state, the `useEffect` that fetches announcement counts, and `handleNotificationClick` — all replaced by the dropdown component
+- Keep the admin `NotificationDropdown` as-is
+
+## Files to create/edit
 
 | File | Change |
 |------|--------|
-| **Migration SQL** | `ALTER TABLE students ALTER COLUMN enrollment_status SET DEFAULT 'pending'` |
-| `src/routes/ProtectedRoute.tsx` | After role check passes, fetch student/instructor status; if pending, render PendingApproval component |
-| `src/pages/PendingApproval.tsx` | New page: logo + "Awaiting Approval" message + sign-out button |
-| `src/providers/AuthProvider.tsx` | No redirect change needed — ProtectedRoute handles the gate |
-
-## How it works end to end
-
-1. New student signs up → `handle_new_user` trigger inserts into `students` with `enrollment_status = 'pending'`
-2. Student logs in → ProtectedRoute detects pending status → shows "Awaiting Approval" page
-3. Admin approves student in Pending tab → status becomes `'active'`
-4. Student refreshes or logs in again → ProtectedRoute sees active status → shows dashboard
-5. Same flow for instructors (already defaults to `'pending'`)
+| `src/hooks/useUserNotifications.ts` | New hook combining messages + announcements |
+| `src/components/notifications/UserNotificationDropdown.tsx` | New dropdown component |
+| `src/components/layout/DashboardLayout.tsx` | Swap bell button for new dropdown, remove old notification logic |
 
