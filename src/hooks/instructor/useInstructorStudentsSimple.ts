@@ -88,7 +88,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
         const studentIds = assignedStudents.map(s => s.id);
 
         // Get progress data, notes, curriculum, and progress_skills in parallel
-        const [progressResult, notesResult, modulesResult, lessonsResult, skillsResult] = await Promise.all([
+        const [progressResult, notesResult, skillsResult] = await Promise.all([
           supabase
             .from('student_progress')
             .select('id, student_id, skill_name, proficiency')
@@ -99,14 +99,6 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .eq('instructor_id', instructorId)
             .in('student_id', studentIds)
             .order('created_at', { ascending: false }),
-          supabase
-            .from('curriculum_modules')
-            .select('id, title, level, order_index')
-            .order('order_index', { ascending: true }),
-          supabase
-            .from('curriculum_lessons')
-            .select('id, module_id, title, order_index')
-            .order('order_index', { ascending: true }),
           supabase
             .from('progress_skills' as any)
             .select('id, name, level, order_index')
@@ -120,16 +112,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           console.error('Error fetching notes:', notesResult.error);
         }
 
-        const allModules = modulesResult.data || [];
-        const allLessons = lessonsResult.data || [];
         const allProgressSkills = (skillsResult.data || []) as any[];
-
-        // Group lessons by module
-        const lessonsByModule: { [moduleId: string]: typeof allLessons } = {};
-        allLessons.forEach((lesson) => {
-          if (!lessonsByModule[lesson.module_id]) lessonsByModule[lesson.module_id] = [];
-          lessonsByModule[lesson.module_id].push(lesson);
-        });
 
         // Group non-aggregate student_progress skill_names by student
         const filteredProgressRows = (progressResult.data || []).filter(
