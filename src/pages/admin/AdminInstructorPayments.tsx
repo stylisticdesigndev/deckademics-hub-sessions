@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, Plus, Gift, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
+import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -53,8 +53,7 @@ const AdminInstructorPayments = () => {
   const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
   const [showEditHoursDialog, setShowEditHoursDialog] = useState(false);
   const [showSetRateDialog, setShowSetRateDialog] = useState(false);
-  const [showCreateClassDialog, setShowCreateClassDialog] = useState(false);
-  const [showCreateBonusDialog, setShowCreateBonusDialog] = useState(false);
+  const [selectedDetailPayment, setSelectedDetailPayment] = useState<InstructorPayment | null>(null);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [generateStep, setGenerateStep] = useState<'dates' | 'preview'>('dates');
   const [generateStartDate, setGenerateStartDate] = useState<Date>();
@@ -65,19 +64,6 @@ const AdminInstructorPayments = () => {
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
-  
-  // Create class payment form state
-  const [classInstructorId, setClassInstructorId] = useState('');
-  const [classPeriodStart, setClassPeriodStart] = useState<Date>();
-  const [classPeriodEnd, setClassPeriodEnd] = useState<Date>();
-  const [classHours, setClassHours] = useState('');
-  const [classAmountOverride, setClassAmountOverride] = useState('');
-  
-  // Create bonus payment form state
-  const [bonusInstructorId, setBonusInstructorId] = useState('');
-  const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusDescription, setBonusDescription] = useState('');
-  const [bonusDate, setBonusDate] = useState<Date>();
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
   
@@ -227,74 +213,6 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const handleCreateClassPayment = async () => {
-    if (!classInstructorId || !classPeriodStart || !classPeriodEnd || !classHours) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
-    const hours = parseFloat(classHours);
-    if (isNaN(hours) || hours <= 0) {
-      toast.error('Please enter valid hours');
-      return;
-    }
-
-    const instructor = instructorsList.find(i => i.id === classInstructorId);
-    if (!instructor) return;
-
-    const calculatedAmount = hours * instructor.hourlyRate;
-    const finalAmount = classAmountOverride ? parseFloat(classAmountOverride) : calculatedAmount;
-
-    await createPayment({
-      instructor_id: classInstructorId,
-      amount: finalAmount,
-      hours_worked: hours,
-      pay_period_start: format(classPeriodStart, 'yyyy-MM-dd'),
-      pay_period_end: format(classPeriodEnd, 'yyyy-MM-dd'),
-      payment_type: 'class',
-      description: null,
-    });
-
-    setShowCreateClassDialog(false);
-    resetClassForm();
-  };
-
-  const handleCreateBonusPayment = async () => {
-    if (!bonusInstructorId || !bonusAmount || !bonusDescription || !bonusDate) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    const amount = parseFloat(bonusAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    const dateStr = format(bonusDate, 'yyyy-MM-dd');
-
-    await createPayment({
-      instructor_id: bonusInstructorId,
-      amount,
-      hours_worked: null,
-      pay_period_start: dateStr,
-      pay_period_end: dateStr,
-      payment_type: 'bonus',
-      description: bonusDescription,
-    });
-
-    setShowCreateBonusDialog(false);
-    resetBonusForm();
-  };
-
-  const resetClassForm = () => {
-    setClassInstructorId('');
-    setClassPeriodStart(undefined);
-    setClassPeriodEnd(undefined);
-    setClassHours('');
-    setClassAmountOverride('');
-  };
-
   const openAddBonusToRow = (paymentId: string) => {
     setBonusRowPaymentId(paymentId);
     const payment = payments?.find(p => p.id === paymentId);
@@ -343,16 +261,8 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const resetBonusForm = () => {
-    setBonusInstructorId('');
-    setBonusAmount('');
-    setBonusDescription('');
-    setBonusDate(undefined);
-  };
-
   const openScheduleDialog = async (instructor: Instructor) => {
     setScheduleInstructor(instructor);
-    // Fetch existing schedule
     const { data } = await supabase
       .from('instructor_schedules')
       .select('day, hours')
@@ -413,7 +323,6 @@ const AdminInstructorPayments = () => {
     setIsGenerating(true);
 
     try {
-      // Fetch schedules for all active instructors
       const { data: schedulesData, error: schedError } = await supabase
         .from('instructor_schedules')
         .select('instructor_id, day, hours');
@@ -427,14 +336,12 @@ const AdminInstructorPayments = () => {
         schedulesByInstructor[id].push({ day: row.day, hours: row.hours });
       }
 
-      // Check for existing pending payments that overlap this period
       const startStr = format(generateStartDate, 'yyyy-MM-dd');
       const endStr = format(generateEndDate, 'yyyy-MM-dd');
 
       const preview: GeneratedPayment[] = [];
 
       for (const inst of instructorsList) {
-        // Skip if instructor already has a pending class payment overlapping this period
         const hasOverlap = pendingPayments.some(p => 
           p.instructorId === inst.id && 
           p.paymentType === 'class' &&
@@ -512,11 +419,6 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const selectedClassInstructor = instructorsList.find(i => i.id === classInstructorId);
-  const autoCalcAmount = selectedClassInstructor && classHours 
-    ? (parseFloat(classHours) * selectedClassInstructor.hourlyRate).toFixed(2)
-    : '';
-
   const formatDateToUS = (dateString: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -541,26 +443,13 @@ const AdminInstructorPayments = () => {
               Manage instructor compensation and payment records
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
-              <Zap className="mr-1 h-4 w-4" />
-              Generate Pay Period
-            </Button>
-            <Button variant="outline" onClick={() => setShowCreateClassDialog(true)}>
-              <Plus className="mr-1 h-4 w-4" />
-              Create Payment
-            </Button>
-            <Button variant="outline" onClick={() => setShowCreateBonusDialog(true)}>
-              <Gift className="mr-1 h-4 w-4" />
-              Add Bonus
-            </Button>
-          </div>
+          <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
+            <Zap className="mr-1 h-4 w-4" />
+            Generate Pay Period
+          </Button>
         </div>
 
-        <InstructorPaymentStatsCards
-          stats={stats}
-          instructors={instructorsList}
-        />
+        <InstructorPaymentStatsCards stats={stats} />
 
         <InstructorPaymentSearch
           searchQuery={searchQuery}
@@ -721,7 +610,7 @@ const AdminInstructorPayments = () => {
         <Card>
           <CardHeader>
             <CardTitle>Payment History</CardTitle>
-            <CardDescription>Previously completed payments</CardDescription>
+            <CardDescription>Click a row to see full payment details</CardDescription>
           </CardHeader>
           <CardContent>
             {filteredCompletedPayments.length > 0 ? (
@@ -731,15 +620,17 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCompletedPayments.map((payment) => (
-                    <TableRow key={payment.id}>
+                    <TableRow 
+                      key={payment.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedDetailPayment(payment)}
+                    >
                       <TableCell className="font-medium">{payment.instructorName}</TableCell>
                       <TableCell>
                         {payment.paymentType === 'bonus' ? (
@@ -747,30 +638,14 @@ const AdminInstructorPayments = () => {
                         ) : (
                           <Badge variant="outline">Class</Badge>
                         )}
-                        {payment.description && (
-                          <span className="ml-2 text-xs text-muted-foreground">{payment.description}</span>
-                        )}
                       </TableCell>
                       <TableCell>
                         {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {payment.paymentType === 'class' ? `$${payment.hourlyRate}/hr` : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span>${payment.totalAmount}</span>
+                        <span>${(payment.totalAmount + payment.bonusAmount).toFixed(2)}</span>
                         {payment.bonusAmount > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            + ${payment.bonusAmount} bonus
-                          </div>
-                        )}
-                        {payment.bonusAmount > 0 && (
-                          <div className="text-xs font-semibold">
-                            Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
-                          </div>
+                          <div className="text-xs text-muted-foreground">includes bonus</div>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
@@ -786,6 +661,76 @@ const AdminInstructorPayments = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payment Detail Dialog */}
+      <Dialog open={!!selectedDetailPayment} onOpenChange={(open) => { if (!open) setSelectedDetailPayment(null); }}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+            <DialogDescription>
+              {selectedDetailPayment?.instructorName} — {selectedDetailPayment && formatDateToUS(selectedDetailPayment.payPeriodStart)} to {selectedDetailPayment && formatDateToUS(selectedDetailPayment.payPeriodEnd)}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDetailPayment && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-y-3 text-sm">
+                <span className="text-muted-foreground">Instructor</span>
+                <span className="font-medium text-right">{selectedDetailPayment.instructorName}</span>
+                
+                <span className="text-muted-foreground">Payment Type</span>
+                <span className="text-right capitalize">{selectedDetailPayment.paymentType}</span>
+                
+                <span className="text-muted-foreground">Pay Period</span>
+                <span className="text-right">{formatDateToUS(selectedDetailPayment.payPeriodStart)} – {formatDateToUS(selectedDetailPayment.payPeriodEnd)}</span>
+                
+                {selectedDetailPayment.paymentType === 'class' && (
+                  <>
+                    <span className="text-muted-foreground">Hourly Rate</span>
+                    <span className="text-right">${selectedDetailPayment.hourlyRate}/hr</span>
+                    
+                    <span className="text-muted-foreground">Hours Worked</span>
+                    <span className="text-right">{selectedDetailPayment.hoursLogged}</span>
+                  </>
+                )}
+                
+                <span className="text-muted-foreground">Class Amount</span>
+                <span className="text-right">${selectedDetailPayment.totalAmount.toFixed(2)}</span>
+                
+                {selectedDetailPayment.bonusAmount > 0 && (
+                  <>
+                    <span className="text-muted-foreground">Bonus Amount</span>
+                    <span className="text-right text-primary">${selectedDetailPayment.bonusAmount.toFixed(2)}</span>
+                    
+                    {selectedDetailPayment.bonusDescription && (
+                      <>
+                        <span className="text-muted-foreground">Bonus Description</span>
+                        <span className="text-right italic">{selectedDetailPayment.bonusDescription}</span>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="border-t pt-3 flex justify-between items-center">
+                <span className="font-semibold">Grand Total</span>
+                <span className="text-lg font-bold">
+                  ${(selectedDetailPayment.totalAmount + selectedDetailPayment.bonusAmount).toFixed(2)}
+                </span>
+              </div>
+              
+              {selectedDetailPayment.description && (
+                <div className="text-sm text-muted-foreground border-t pt-3">
+                  <span className="font-medium">Notes:</span> {selectedDetailPayment.description}
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground">
+                Date Paid: {formatDateToUS(selectedDetailPayment.lastUpdated)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Generate Pay Period Dialog */}
       <Dialog open={showGenerateDialog} onOpenChange={(open) => { setShowGenerateDialog(open); if (!open) resetGenerateForm(); }}>
@@ -879,131 +824,6 @@ const AdminInstructorPayments = () => {
               </DialogFooter>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Class Payment Dialog */}
-      <Dialog open={showCreateClassDialog} onOpenChange={setShowCreateClassDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Create Class Payment</DialogTitle>
-            <DialogDescription>Create a new pay period payment for an instructor</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Instructor</Label>
-              <Select value={classInstructorId} onValueChange={setClassInstructorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructorsList.map(inst => (
-                    <SelectItem key={inst.id} value={inst.id}>
-                      {inst.name} (${inst.hourlyRate}/hr)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Pay Period Start</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("justify-start text-left font-normal", !classPeriodStart && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {classPeriodStart ? format(classPeriodStart, 'MM/dd/yyyy') : 'Pick date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={classPeriodStart} onSelect={setClassPeriodStart} className="p-3 pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid gap-2">
-                <Label>Pay Period End</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("justify-start text-left font-normal", !classPeriodEnd && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {classPeriodEnd ? format(classPeriodEnd, 'MM/dd/yyyy') : 'Pick date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={classPeriodEnd} onSelect={setClassPeriodEnd} className="p-3 pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label>Hours Worked</Label>
-              <Input type="number" step="0.5" min="0.5" placeholder="Enter hours" value={classHours} onChange={(e) => setClassHours(e.target.value)} />
-              {autoCalcAmount && (
-                <p className="text-sm text-muted-foreground">
-                  Auto-calculated: ${autoCalcAmount} ({classHours} hrs × ${selectedClassInstructor?.hourlyRate}/hr)
-                </p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label>Amount Override (optional)</Label>
-              <Input type="number" step="0.01" min="0" placeholder="Leave blank to use auto-calculated amount" value={classAmountOverride} onChange={(e) => setClassAmountOverride(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreateClassDialog(false); resetClassForm(); }}>Cancel</Button>
-            <Button onClick={handleCreateClassPayment} disabled={isCreating}>Create Payment</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Bonus Payment Dialog */}
-      <Dialog open={showCreateBonusDialog} onOpenChange={setShowCreateBonusDialog}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Add Bonus Payment</DialogTitle>
-            <DialogDescription>Add an extra payment for non-class work (events, extra classes, etc.)</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Instructor</Label>
-              <Select value={bonusInstructorId} onValueChange={setBonusInstructorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructorsList.map(inst => (
-                    <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Amount ($)</Label>
-              <Input type="number" step="0.01" min="1" placeholder="Enter amount" value={bonusAmount} onChange={(e) => setBonusAmount(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea placeholder="e.g., Event DJ, Extra class, Private lesson..." value={bonusDescription} onChange={(e) => setBonusDescription(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal", !bonusDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {bonusDate ? format(bonusDate, 'MM/dd/yyyy') : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={bonusDate} onSelect={setBonusDate} className="p-3 pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreateBonusDialog(false); resetBonusForm(); }}>Cancel</Button>
-            <Button onClick={handleCreateBonusPayment} disabled={isCreating}>Add Bonus</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

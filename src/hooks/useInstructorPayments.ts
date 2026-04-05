@@ -24,7 +24,7 @@ export interface InstructorPaymentStats {
   pendingPaymentsCount: number;
   totalPendingAmount: number;
   totalPaidThisMonth: number;
-  instructorRatesCount: number;
+  totalPaidAllTime: number;
 }
 
 export const useInstructorPayments = () => {
@@ -73,7 +73,6 @@ export const useInstructorPayments = () => {
           const paymentObj = payment as any;
           const instructors = paymentObj.instructors;
           
-          // Handle profiles as either object or array
           let firstName = '';
           let lastName = '';
           let hourlyRate = 0;
@@ -122,7 +121,7 @@ export const useInstructorPayments = () => {
         pendingPaymentsCount: 0,
         totalPendingAmount: 0,
         totalPaidThisMonth: 0,
-        instructorRatesCount: 0
+        totalPaidAllTime: 0
       };
     }
 
@@ -134,11 +133,13 @@ export const useInstructorPayments = () => {
       p.status === 'paid' && new Date(p.lastUpdated) >= monthStart
     );
 
+    const allPaid = payments.filter(p => p.status === 'paid');
+
     return {
       pendingPaymentsCount: pendingPayments.length,
       totalPendingAmount: pendingPayments.reduce((sum, payment) => sum + payment.totalAmount + payment.bonusAmount, 0),
       totalPaidThisMonth: paidThisMonth.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0),
-      instructorRatesCount: new Set(payments.map(p => p.hourlyRate)).size
+      totalPaidAllTime: allPaid.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0)
     };
   };
 
