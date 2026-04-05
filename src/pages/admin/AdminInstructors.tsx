@@ -62,6 +62,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminInstructors = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewInstructorId, setViewInstructorId] = useState<string | null>(null);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<string | null>(null);
