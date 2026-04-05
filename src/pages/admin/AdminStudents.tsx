@@ -34,6 +34,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, RefreshCcw, Edit2, MessageSquare } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -385,37 +391,52 @@ const AdminStudents = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <InstructorAssignmentDialog
-                                studentId={student.id}
-                                studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
-                                currentInstructorId={student.instructor_id}
-                              >
-                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
-                                  <UserRound className="h-4 w-4" />
-                                </Button>
-                              </InstructorAssignmentDialog>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setViewStudentId(student.id)}
-                                className="h-8 w-8"
-                                disabled={processingStudentId === student.id}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeactivate(student.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={processingStudentId === student.id}
-                              >
-                                {processingStudentId === student.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <X className="h-4 w-4" />
-                                )}
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <InstructorAssignmentDialog
+                                    studentId={student.id}
+                                    studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
+                                    currentInstructorId={student.instructor_id}
+                                  >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={processingStudentId === student.id}>
+                                      <UserRound className="h-4 w-4" />
+                                    </Button>
+                                  </InstructorAssignmentDialog>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Assign Instructor</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => setViewStudentId(student.id)}
+                                    className="h-8 w-8"
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>View Details</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDeactivate(student.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={processingStudentId === student.id}
+                                  >
+                                    {processingStudentId === student.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <X className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Deactivate Student</p></TooltipContent>
+                              </Tooltip>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -563,7 +584,7 @@ const AdminStudents = () => {
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Level</p>
                   <Select
-                    value={viewedStudent.level || 'novice'}
+                    value={viewedStudent.level === 'beginner' ? 'novice' : (viewedStudent.level || 'novice')}
                     onValueChange={(value) => handleLevelChange(viewedStudent.id, value)}
                     disabled={updateStudentLevel.isPending}
                   >
