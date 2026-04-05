@@ -29,20 +29,9 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: StudentNote[];
-  moduleProgress?: ModuleProgress[];
   skillProgress?: SkillProgress[];
 }
 
-interface ModuleProgress {
-  moduleId: string;
-  moduleName: string; 
-  progress: number;
-  lessons: {
-    id: string;
-    title: string;
-    completed: boolean;
-  }[];
-}
 
 interface StudentWithProfile {
   id: string;
