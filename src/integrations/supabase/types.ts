@@ -666,6 +666,36 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_skills: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          level: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_absences: {
         Row: {
           absence_date: string
