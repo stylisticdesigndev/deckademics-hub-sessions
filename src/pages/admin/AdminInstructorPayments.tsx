@@ -955,6 +955,42 @@ const AdminInstructorPayments = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Editor Dialog */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Schedule — {scheduleInstructor?.name}</DialogTitle>
+            <DialogDescription>
+              Configure weekly teaching hours. These are used to auto-generate pay period payments.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            {scheduleItems.map((item, index) => (
+              <ScheduleRowEditor
+                key={index}
+                item={item}
+                index={index}
+                onChangeDay={(i, day) => setScheduleItems(scheduleItems.map((s, idx) => idx === i ? { ...s, day } : s))}
+                onChangeHours={(i, hours) => setScheduleItems(scheduleItems.map((s, idx) => idx === i ? { ...s, hours } : s))}
+                onRemove={(i) => setScheduleItems(scheduleItems.filter((_, idx) => idx !== i))}
+              />
+            ))}
+            {scheduleItems.length === 0 && (
+              <p className="text-center py-4 text-muted-foreground">No teaching days added yet.</p>
+            )}
+            <Button variant="outline" className="w-full" onClick={() => setScheduleItems([...scheduleItems, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }])}>
+              Add Teaching Day
+            </Button>
+          </div>
+          <DialogFooter className="flex flex-row justify-between sm:justify-between">
+            <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveSchedule} disabled={isSavingSchedule}>
+              {isSavingSchedule ? 'Saving...' : 'Save Schedule'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
