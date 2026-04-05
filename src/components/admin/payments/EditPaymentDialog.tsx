@@ -47,7 +47,7 @@ const formSchema = z.object({
   payment_type: z.enum(["tuition", "materials", "other"], {
     required_error: "Please select a payment type",
   }),
-  status: z.enum(["pending", "completed", "failed", "refunded"], {
+  status: z.enum(["pending", "completed", "partial", "failed", "refunded"], {
     required_error: "Please select a status",
   }),
   description: z.string().optional(),
@@ -82,7 +82,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
       amount: payment.amount.toString(),
       payment_date: new Date(payment.dueDate),
       payment_type: payment.paymentType as "tuition" | "materials" | "other",
-      status: payment.status as "pending" | "completed" | "failed" | "refunded",
+      status: payment.status as "pending" | "completed" | "partial" | "failed" | "refunded",
       description: payment.description || "",
     },
   });
@@ -94,7 +94,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
         amount: payment.amount.toString(),
         payment_date: new Date(payment.dueDate),
         payment_type: payment.paymentType as "tuition" | "materials" | "other",
-        status: payment.status as "pending" | "completed" | "failed" | "refunded",
+        status: payment.status as "pending" | "completed" | "partial" | "failed" | "refunded",
         description: payment.description || "",
       });
     }
@@ -252,6 +252,7 @@ export function EditPaymentDialog({ payment, students }: EditPaymentDialogProps)
                     <SelectContent className="bg-background">
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="partial">Partial</SelectItem>
                       <SelectItem value="failed">Failed</SelectItem>
                       <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>

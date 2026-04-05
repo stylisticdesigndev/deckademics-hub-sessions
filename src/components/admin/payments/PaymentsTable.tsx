@@ -62,6 +62,7 @@ export const PaymentsTable = ({
                       variant={
                         payment.status === 'completed' ? 'default' :
                         payment.status === 'pending' ? 'secondary' :
+                        payment.status === 'partial' ? 'outline' :
                         payment.status === 'failed' ? 'destructive' : 'outline'
                       }
                     >

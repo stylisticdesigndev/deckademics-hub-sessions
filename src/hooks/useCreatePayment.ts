@@ -6,8 +6,8 @@ interface CreatePaymentData {
   student_id: string;
   amount: number;
   payment_date: string;
-  payment_type: "tuition" | "materials" | "other";
-  status: "pending" | "completed" | "failed" | "refunded";
+  payment_type: string;
+  status: "pending" | "completed" | "failed" | "refunded" | "partial";
   description: string | null;
 }
 
@@ -15,16 +15,17 @@ export const useCreatePayment = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (data: CreatePaymentData) => {
+    mutationFn: async (data: CreatePaymentData | CreatePaymentData[]) => {
+      const records = Array.isArray(data) ? data : [data];
       const { error } = await supabase
         .from("payments")
-        .insert([data]);
+        .insert(records);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminPayments"] });
-      toast.success("Payment created successfully");
+      toast.success("Payment(s) created successfully");
     },
     onError: (error) => {
       console.error("Error creating payment:", error);

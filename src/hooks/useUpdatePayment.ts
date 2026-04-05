@@ -8,7 +8,7 @@ interface UpdatePaymentData {
   amount?: number;
   payment_date?: string;
   payment_type?: "tuition" | "materials" | "other";
-  status?: "pending" | "completed" | "failed" | "refunded";
+  status?: "pending" | "completed" | "partial" | "failed" | "refunded";
   description?: string | null;
 }
 

@@ -1,55 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { CalendarIcon, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { format, addWeeks, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useCreatePayment } from "@/hooks/useCreatePayment";
 
+const COURSE_LEVELS = [
+  { value: "novice", label: "Novice", total: 330, weeks: 6, fullOnly: true },
+  { value: "amateur", label: "Amateur", total: 660, weeks: 12, fullOnly: false },
+  { value: "intermediate", label: "Intermediate", total: 660, weeks: 12, fullOnly: false },
+  { value: "advanced", label: "Advanced", total: 330, weeks: 6, fullOnly: false },
+  { value: "advanced_plus", label: "Advanced Plus", total: 0, weeks: 0, fullOnly: false },
+] as const;
+
 const formSchema = z.object({
   student_id: z.string().uuid({ message: "Please select a student" }),
+  course_level: z.string().min(1, { message: "Please select a course level" }),
+  payment_schedule: z.enum(["full", "biweekly", "weekly"]),
   amount: z.string().min(1, { message: "Amount is required" }),
-  payment_date: z.date({ required_error: "Payment date is required" }),
-  payment_type: z.enum(["tuition", "materials", "other"], {
-    required_error: "Please select a payment type",
-  }),
-  status: z.enum(["pending", "completed", "failed", "refunded"], {
-    required_error: "Please select a status",
-  }),
+  start_date: z.date({ required_error: "Start date is required" }),
+  status: z.enum(["pending", "completed", "partial", "failed", "refunded"]),
   description: z.string().optional(),
 });
 
@@ -67,21 +56,81 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: "pending",
-      payment_type: "tuition",
+      payment_schedule: "full",
       description: "",
+      amount: "",
     },
   });
 
+  const courseLevel = form.watch("course_level");
+  const paymentSchedule = form.watch("payment_schedule");
+
+  const selectedCourse = COURSE_LEVELS.find(c => c.value === courseLevel);
+
+  // Auto-set schedule for novice and calculate amount
+  useEffect(() => {
+    if (!selectedCourse) return;
+
+    if (selectedCourse.fullOnly) {
+      form.setValue("payment_schedule", "full");
+    }
+
+    if (selectedCourse.value === "advanced_plus") return;
+
+    const total = selectedCourse.total;
+    const weeks = selectedCourse.weeks;
+    let amount: number;
+
+    if (paymentSchedule === "full") {
+      amount = total;
+    } else if (paymentSchedule === "biweekly") {
+      amount = Math.round((total / (weeks / 2)) * 100) / 100;
+    } else {
+      amount = Math.round((total / weeks) * 100) / 100;
+    }
+
+    form.setValue("amount", amount.toString());
+  }, [courseLevel, paymentSchedule, selectedCourse, form]);
+
+  const getInstallmentCount = (): number => {
+    if (!selectedCourse || selectedCourse.value === "advanced_plus") return 1;
+    if (paymentSchedule === "full") return 1;
+    if (paymentSchedule === "biweekly") return selectedCourse.weeks / 2;
+    return selectedCourse.weeks; // weekly
+  };
+
   const onSubmit = async (data: FormValues) => {
-    await createPayment({
-      student_id: data.student_id,
-      amount: parseFloat(data.amount),
-      payment_date: data.payment_date.toISOString(),
-      payment_type: data.payment_type,
-      status: data.status,
-      description: data.description || null,
-    });
-    
+    const installments = getInstallmentCount();
+    const amount = parseFloat(data.amount);
+    const levelLabel = selectedCourse?.label || data.course_level;
+
+    if (installments === 1) {
+      await createPayment({
+        student_id: data.student_id,
+        amount,
+        payment_date: data.start_date.toISOString(),
+        payment_type: "tuition",
+        status: data.status,
+        description: data.description || `${levelLabel} - Pay in Full`,
+      });
+    } else {
+      const records = Array.from({ length: installments }, (_, i) => {
+        const dueDate = paymentSchedule === "biweekly"
+          ? addWeeks(data.start_date, i * 2)
+          : addWeeks(data.start_date, i);
+        const scheduleLabel = paymentSchedule === "biweekly" ? "Biweekly" : "Weekly";
+        return {
+          student_id: data.student_id,
+          amount,
+          payment_date: dueDate.toISOString(),
+          payment_type: "tuition",
+          status: "pending" as const,
+          description: data.description || `${levelLabel} - ${scheduleLabel} (${i + 1} of ${installments})`,
+        };
+      });
+      await createPayment(records);
+    }
+
     setOpen(false);
     form.reset();
   };
@@ -98,11 +147,12 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Payment</DialogTitle>
           <DialogDescription>
-            Add a new payment record for a student
+            Add a payment record based on course level and schedule
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Student */}
             <FormField
               control={form.control}
               name="student_id"
@@ -128,31 +178,90 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
               )}
             />
 
+            {/* Course Level */}
+            <FormField
+              control={form.control}
+              name="course_level"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Course Level</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background">
+                      {COURSE_LEVELS.map((course) => (
+                        <SelectItem key={course.value} value={course.value}>
+                          {course.label}
+                          {course.total > 0 && ` ($${course.total}/${course.weeks}wk)`}
+                          {course.value === "advanced_plus" && " (Custom)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Payment Schedule */}
+            {selectedCourse && !selectedCourse.fullOnly && (
+              <FormField
+                control={form.control}
+                name="payment_schedule"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Schedule</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background">
+                        <SelectItem value="full">Pay in Full</SelectItem>
+                        <SelectItem value="biweekly">Biweekly</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {paymentSchedule !== "full" && selectedCourse.total > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {getInstallmentCount()} payments will be generated
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Amount */}
             <FormField
               control={form.control}
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount ($)</FormLabel>
+                  <FormLabel>
+                    Amount ($)
+                    {paymentSchedule !== "full" && selectedCourse && selectedCourse.total > 0 && " per installment"}
+                  </FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="150.00"
-                      {...field}
-                    />
+                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Start Date */}
             <FormField
               control={form.control}
-              name="payment_date"
+              name="start_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Payment Date</FormLabel>
+                  <FormLabel>Start Date</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -163,11 +272,7 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
                             !field.value && "text-muted-foreground"
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
+                          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -187,29 +292,7 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="payment_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-background">
-                      <SelectItem value="tuition">Tuition</SelectItem>
-                      <SelectItem value="materials">Materials</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* Status */}
             <FormField
               control={form.control}
               name="status"
@@ -225,6 +308,7 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
                     <SelectContent className="bg-background">
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="partial">Partial</SelectItem>
                       <SelectItem value="failed">Failed</SelectItem>
                       <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>
@@ -234,6 +318,7 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
               )}
             />
 
+            {/* Description */}
             <FormField
               control={form.control}
               name="description"
@@ -242,7 +327,7 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter payment details..."
+                      placeholder="Auto-generated if left blank..."
                       className="resize-none"
                       {...field}
                     />
@@ -253,15 +338,13 @@ export function CreatePaymentDialog({ students }: CreatePaymentDialogProps) {
             />
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Creating..." : "Create Payment"}
+                {isPending ? "Creating..." : paymentSchedule !== "full" && selectedCourse && !selectedCourse.fullOnly && selectedCourse.total > 0
+                  ? `Create ${getInstallmentCount()} Payments`
+                  : "Create Payment"}
               </Button>
             </DialogFooter>
           </form>
