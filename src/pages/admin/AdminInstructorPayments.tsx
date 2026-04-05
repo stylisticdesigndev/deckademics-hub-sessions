@@ -309,12 +309,12 @@ const AdminInstructorPayments = () => {
   };
 
   const handleGeneratePreview = async () => {
-    if (!generateStartDate || !generateEndDate) {
+    if (!dateRange?.from || !dateRange?.to) {
       toast.error('Please select both start and end dates');
       return;
     }
 
-    if (generateEndDate <= generateStartDate) {
+    if (dateRange.to <= dateRange.from) {
       toast.error('End date must be after start date');
       return;
     }
@@ -335,8 +335,8 @@ const AdminInstructorPayments = () => {
         schedulesByInstructor[id].push({ day: row.day, hours: row.hours });
       }
 
-      const startStr = format(generateStartDate, 'yyyy-MM-dd');
-      const endStr = format(generateEndDate, 'yyyy-MM-dd');
+      const startStr = format(dateRange.from, 'yyyy-MM-dd');
+      const endStr = format(dateRange.to, 'yyyy-MM-dd');
 
       const preview: GeneratedPayment[] = [];
 
@@ -355,8 +355,8 @@ const AdminInstructorPayments = () => {
 
         const { totalHours, totalAmount } = calculateScheduledHours(
           schedules,
-          generateStartDate,
-          generateEndDate,
+          dateRange.from,
+          dateRange.to,
           inst.hourlyRate
         );
 
