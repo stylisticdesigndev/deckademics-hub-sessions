@@ -1,0 +1,2 @@
+ALTER TABLE public.instructor_payments DROP CONSTRAINT IF EXISTS instructor_payments_status_check;
+ALTER TABLE public.instructor_payments ADD CONSTRAINT instructor_payments_status_check CHECK (status IN ('pending', 'paid', 'failed', 'completed'));

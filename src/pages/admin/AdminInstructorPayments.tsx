@@ -592,14 +592,16 @@ const AdminInstructorPayments = () => {
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
                       <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => openScheduleDialog(instructor)}>
-                          <Clock className="mr-1 h-3 w-3" />
-                          Set Schedule
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                          Update Rate
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openScheduleDialog(instructor)}>
+                            <Clock className="mr-1 h-3 w-3" />
+                            Set Schedule
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
+                            Update Rate
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
