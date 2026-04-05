@@ -1,42 +1,47 @@
 
 
-# Streamlined Date Range Picker for Generate Pay Period
+# Redesign Schedule Editor as a Grid
 
 ## Problem
-The current implementation uses two separate `Popover` + `Calendar` combos for start and end dates. This causes:
-- Calendar positioning issues (flipping above/below unpredictably) due to Popover auto-placement
-- Navigation arrows disappearing at certain months
-- Too many clicks: open popover → pick start → close → open another popover → pick end → close
+The current schedule editor requires adding days one at a time via "Add Teaching Day" button, selecting the day from a dropdown, then checking slots. Too many steps.
 
 ## Solution
-Replace the two separate date pickers with a single inline date range calendar, similar to airline booking sites. The user clicks the start date, then clicks the end date, and sees the range highlighted -- all in one view, no popovers.
+Replace the entire schedule dialog content with a single grid/table showing all 7 days (Monday-Sunday) as rows and all 3 class slots as columns. Each cell is a checkbox. Admin just clicks the checkboxes for the slots that instructor teaches. One screen, no add/remove buttons needed.
 
-### How it works
-- Use `react-day-picker`'s built-in `mode="range"` which supports selecting a date range with visual highlighting of all days between start and end
-- Render the calendar **inline** inside the dialog (not in a popover), eliminating all positioning/arrow bugs
-- Show two months side-by-side so the user can see more context
-- Display the selected range as text labels above the calendar
+```text
+              3:30-5:00   5:30-7:00   7:30-9:00
+Monday          [x]         [x]         [ ]
+Tuesday         [ ]         [x]         [x]
+Wednesday       [x]         [ ]         [ ]
+Thursday        [ ]         [ ]         [ ]
+Friday          [x]         [x]         [x]
+Saturday        [ ]         [ ]         [ ]
+Sunday          [ ]         [ ]         [ ]
+```
 
-### Implementation
+## Implementation
 
-**File: `src/pages/admin/AdminInstructorPayments.tsx`**
+### File: `src/pages/admin/AdminInstructorPayments.tsx`
 
-Replace lines 749-777 (the two Popover/Calendar blocks) with:
-- A single `<Calendar mode="range" numberOfMonths={2} />` rendered inline
-- State change: replace `generateStartDate` and `generateEndDate` with a single `dateRange: DateRange | undefined` state (`{ from: Date, to: Date }`)
-- Show selected dates as formatted text above the calendar
-- Update `handleGeneratePreview` to read from `dateRange.from` and `dateRange.to`
-- Widen the dialog to `sm:max-w-[650px]` to fit two months side-by-side
+**Schedule state change**: Replace `scheduleItems` array with a simpler grid state, or keep the same data format but render it differently. On dialog open, convert existing `scheduleItems` (array of `{day, hours}`) into a lookup map. On save, convert the grid back to the array format for the database.
 
-**File: `src/components/ui/calendar.tsx`**
-- No changes needed -- `DayPicker` already supports `mode="range"` since react-day-picker v8
+**Replace the schedule dialog body** (lines 879-896): Remove the `ScheduleRowEditor` loop and "Add Teaching Day" button. Replace with a compact table:
+- 7 rows (Mon-Sun), 3 columns (the 3 slots)
+- Each cell is a `Checkbox`
+- Toggling a checkbox updates the internal state
+- Widen dialog slightly to fit the grid
 
-### User experience
-1. Admin clicks "Generate Pay Period"
-2. Dialog opens with an inline two-month calendar
-3. Admin clicks a start date → it highlights
-4. Admin clicks an end date → the full range highlights in between
-5. Click "Preview Payments" to proceed
+**Save logic** stays the same -- `handleSaveSchedule` already deletes all rows and re-inserts. We just need to convert the grid state back to `{day, hours}[]` format (only include days that have at least one slot checked).
 
-One view, two clicks, no popovers, no positioning bugs.
+### File: `src/components/instructor/ScheduleRowEditor.tsx`
+No changes needed -- it won't be used in the admin dialog anymore. It can remain for the instructor's own profile editor if desired.
+
+### File: `src/utils/scheduleHours.ts`
+No changes -- it already parses comma-separated time ranges.
+
+## Summary
+
+| File | Change |
+|------|--------|
+| `AdminInstructorPayments.tsx` | Replace schedule dialog body with a 7-day x 3-slot checkbox grid |
 
