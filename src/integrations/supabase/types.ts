@@ -405,7 +405,10 @@ export type Database = {
           hours_worked: number | null
           id: string
           instructor_id: string
+          pay_period_end: string
+          pay_period_start: string
           payment_date: string | null
+          payment_type: string
           status: string | null
         }
         Insert: {
@@ -415,7 +418,10 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           instructor_id: string
+          pay_period_end?: string
+          pay_period_start?: string
           payment_date?: string | null
+          payment_type?: string
           status?: string | null
         }
         Update: {
@@ -425,7 +431,10 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           instructor_id?: string
+          pay_period_end?: string
+          pay_period_start?: string
           payment_date?: string | null
+          payment_type?: string
           status?: string | null
         }
         Relationships: [
