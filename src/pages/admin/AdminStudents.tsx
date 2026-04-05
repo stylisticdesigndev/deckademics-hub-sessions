@@ -739,6 +739,7 @@ const AdminStudents = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 };
 
