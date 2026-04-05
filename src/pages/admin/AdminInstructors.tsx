@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useStudentAssignment } from '@/hooks/useStudentAssignment';
 import {
@@ -51,7 +53,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, UserRound, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award, Separator } from 'lucide-react';
+import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
@@ -194,8 +197,37 @@ const AdminInstructors = () => {
     activateInstructor.mutate(id);
   };
 
-  const confirmDeactivate = () => {
+  // Fetch students assigned to instructor being deactivated
+  const { data: deactivateAssignedStudents = [], isLoading: isLoadingDeactivateStudents } = useQuery({
+    queryKey: ['admin', 'deactivate-assigned-students', instructorToDeactivate],
+    queryFn: async () => {
+      if (!instructorToDeactivate) return [];
+      const { data, error } = await supabase
+        .from('students')
+        .select(`id, level, enrollment_status, instructor_id, profiles ( first_name, last_name, email )`)
+        .eq('enrollment_status', 'active' as any)
+        .eq('instructor_id', instructorToDeactivate as any);
+      if (error) return [];
+      return (data || []).map((s: any) => ({
+        id: s.id,
+        first_name: s.profiles?.first_name || '',
+        last_name: s.profiles?.last_name || '',
+      }));
+    },
+    enabled: !!instructorToDeactivate && showDeactivateDialog,
+  });
+
+  const confirmDeactivate = async () => {
     if (!instructorToDeactivate) return;
+    // Unassign all students first
+    if (deactivateAssignedStudents.length > 0) {
+      for (const student of deactivateAssignedStudents) {
+        await supabase
+          .from('students')
+          .update({ instructor_id: null } as any)
+          .eq('id', student.id as any);
+      }
+    }
     deactivateInstructor.mutate(instructorToDeactivate);
     setShowDeactivateDialog(false);
     setInstructorToDeactivate(null);
@@ -309,26 +341,70 @@ const AdminInstructors = () => {
   };
 
   // Add deactivate instructor dialog
-  const DeactivateInstructorDialog = () => (
-    <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Deactivate Instructor</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to deactivate this instructor? They will no longer be able to access the system.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={confirmDeactivate}>
-            Deactivate
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  // View Details Sheet data
+  const viewedInstructor = viewInstructorId ? getInstructorById(viewInstructorId) : null;
+  const { data: viewAssignedStudents = [], isLoading: isLoadingViewStudents } = useQuery({
+    queryKey: ['admin', 'view-assigned-students', viewInstructorId],
+    queryFn: async () => {
+      if (!viewInstructorId) return [];
+      const { data, error } = await supabase
+        .from('students')
+        .select(`id, level, enrollment_status, instructor_id, profiles ( first_name, last_name, email )`)
+        .eq('instructor_id', viewInstructorId as any);
+      if (error) return [];
+      return (data || []).map((s: any) => ({
+        id: s.id,
+        first_name: s.profiles?.first_name || '',
+        last_name: s.profiles?.last_name || '',
+        email: s.profiles?.email || '',
+        level: s.level || 'beginner',
+        enrollment_status: s.enrollment_status,
+      }));
+    },
+    enabled: !!viewInstructorId,
+  });
+
+  const DeactivateInstructorDialog = () => {
+    const deactivatingInstructor = instructorToDeactivate ? getInstructorById(instructorToDeactivate) : null;
+    return (
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate Instructor</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate{' '}
+              {deactivatingInstructor ? `${deactivatingInstructor.profile.first_name} ${deactivatingInstructor.profile.last_name}` : 'this instructor'}?
+              They will no longer be able to access the system.
+            </DialogDescription>
+          </DialogHeader>
+          {isLoadingDeactivateStudents ? (
+            <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : deactivateAssignedStudents.length > 0 ? (
+            <Alert variant="destructive" className="my-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>This instructor has {deactivateAssignedStudents.length} assigned student{deactivateAssignedStudents.length !== 1 ? 's' : ''}</AlertTitle>
+              <AlertDescription>
+                The following students will become unassigned:
+                <ul className="mt-2 list-disc list-inside text-sm">
+                  {deactivateAssignedStudents.map(s => (
+                    <li key={s.id}>{s.first_name} {s.last_name}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeactivate} disabled={isLoadingDeactivateStudents}>
+              {deactivateAssignedStudents.length > 0 ? 'Unassign Students & Deactivate' : 'Deactivate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
   
   if (isLoading) {
     return (
@@ -665,6 +741,119 @@ const AdminInstructors = () => {
           </div>
 
           <DeactivateInstructorDialog />
+
+          {/* Instructor View Details Sheet */}
+          <Sheet open={!!viewInstructorId} onOpenChange={(open) => !open && closeViewInstructor()}>
+            <SheetContent className="sm:max-w-lg overflow-auto">
+              <SheetHeader>
+                <SheetTitle>
+                  {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
+                </SheetTitle>
+                <SheetDescription>
+                  {viewedInstructor?.profile.email}
+                </SheetDescription>
+              </SheetHeader>
+              {viewedInstructor && (
+                <div className="space-y-6 mt-6">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={
+                      viewedInstructor.status === 'active' ? 'bg-green-500/10 text-green-500' :
+                      viewedInstructor.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                      'bg-red-500/10 text-red-500'
+                    }>
+                      {viewedInstructor.status}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Hourly Rate</p>
+                      <p className="text-sm font-medium">${viewedInstructor.hourly_rate || 0}/hr</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Experience</p>
+                      <p className="text-sm font-medium">{viewedInstructor.years_experience || 0} years</p>
+                    </div>
+                  </div>
+
+                  {viewedInstructor.specialties && viewedInstructor.specialties.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Specialties</p>
+                      <div className="flex flex-wrap gap-1">
+                        {viewedInstructor.specialties.map((s, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewedInstructor.bio && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Bio</p>
+                      <p className="text-sm">{viewedInstructor.bio}</p>
+                    </div>
+                  )}
+
+                  <SeparatorUI />
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Assigned Students ({viewAssignedStudents.length})</h4>
+                    {isLoadingViewStudents ? (
+                      <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                    ) : viewAssignedStudents.length > 0 ? (
+                      <div className="space-y-2">
+                        {viewAssignedStudents.map(student => (
+                          <div key={student.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                            <div>
+                              <p className="text-sm font-medium">{student.first_name} {student.last_name}</p>
+                              <p className="text-xs text-muted-foreground">{student.email}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs capitalize">{student.level}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No students assigned.</p>
+                    )}
+                  </div>
+
+                  <SeparatorUI />
+
+                  <div className="flex flex-col gap-2">
+                    {viewedInstructor.status === 'active' && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); handleOpenAssignStudents(viewInstructorId!); }}>
+                          <UserRound className="h-4 w-4 mr-2" /> Assign Students
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); navigate(`/admin/messages?recipient=${viewInstructorId}`); }}>
+                          <MessageSquare className="h-4 w-4 mr-2" /> Send Message
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => { closeViewInstructor(); handleDeactivate(viewInstructorId!); }}>
+                          <X className="h-4 w-4 mr-2" /> Deactivate
+                        </Button>
+                      </>
+                    )}
+                    {viewedInstructor.status === 'inactive' && (
+                      <Button size="sm" onClick={() => { closeViewInstructor(); handleActivate(viewInstructorId!); }}>
+                        <Check className="h-4 w-4 mr-2" /> Reactivate
+                      </Button>
+                    )}
+                    {viewedInstructor.status === 'pending' && (
+                      <>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { closeViewInstructor(); handleApprove(viewInstructorId!); }}>
+                          <Check className="h-4 w-4 mr-2" /> Approve
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => { closeViewInstructor(); handleDecline(viewInstructorId!); }}>
+                          <X className="h-4 w-4 mr-2" /> Decline
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </SheetContent>
+          </Sheet>
+
           
           <Tabs defaultValue="active">
             <TabsList>

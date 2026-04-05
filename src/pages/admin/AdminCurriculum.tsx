@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { Book, Edit, Plus, Trash } from 'lucide-react';
+import { Book, Edit, Plus, Trash, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useCurriculumModules } from '@/hooks/useCurriculumModules';
@@ -133,6 +134,18 @@ const AdminCurriculum = () => {
             <h1 className="text-2xl font-bold">Curriculum Management</h1>
             <p className="text-muted-foreground">Manage modules and lessons for different experience levels</p>
           </div>
+        </div>
+
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>How Curriculum Links to Student Progress</AlertTitle>
+          <AlertDescription>
+            Lessons created here appear as trackable skills on instructor and student dashboards. 
+            Once a lesson exists, instructors can set proficiency percentages for each student from their Students tab.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex justify-end">
           
           <Dialog open={isAddModuleOpen} onOpenChange={setIsAddModuleOpen}>
             <DialogTrigger asChild>
