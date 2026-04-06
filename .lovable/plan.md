@@ -1,31 +1,36 @@
 
 
-# Remove Success Toasts on Login/Signup/Logout (Keep Warnings and Errors)
+# Update Curriculum Data to Match PDF Rubrics
 
-## Problem
-After logging in (from any role), success toasts pop up like "Welcome back!", "Login successful", "Account created!", "Logged out", etc. User wants to remove these informational/success toasts and only keep warning and error toasts.
+## Summary
+Replace all existing curriculum modules and lessons with the actual Deckademics rubric content from the four uploaded PDFs.
 
-## Toasts to remove
+## Data Structure
 
-### `src/providers/AuthProvider.tsx`
-- **Line ~342**: `toast({ title: 'Welcome back!', description: 'You have successfully logged in.' })` — sign-in success
-- **Line ~396**: `toast({ title: 'Account created!', description: 'Your account has been created successfully.' })` — sign-up success
-- **Line ~467**: `toast({ title: 'Logged out', description: 'You have been successfully logged out.' })` — sign-out success
-- **Line ~502**: `toast({ title: 'Profile updated', ... })` — profile update success
-- **Line ~78**: `toast({ title: 'Local Storage Cleared', ... })` — storage clear success
+Each level will be organized as follows:
+- **Module 1**: "General Course Overview" — overview bullet points become lessons
+- **Modules 2+**: One module per week (Week 1, Week 2, etc.) — each bullet point becomes a lesson
+- **Final Module**: "Course Completion Requirements" — each requirement becomes a lesson
+- For Novice: also a "Capstone Event Requirements" module
 
-### `src/components/auth/AuthForm.tsx`
-- **Line ~76**: `toast({ title: 'Login successful', description: 'You have been logged in as ${userType}.' })` — login success
-- **Line ~165**: `toast({ title: 'Account created!', description: 'Please check your email...' })` — keep this one (it's instructional, user needs to know to check email)
-- **Line ~170**: `toast({ title: 'Account created!', description: 'Your account has been created and you are now logged in.' })` — signup success
+| Level | Weeks | Modules | Approx Lessons |
+|-------|-------|---------|----------------|
+| Novice | 6 | 8 (overview + 6 weeks + completion + capstone) | ~45 |
+| Amateur | 12 | 14 (overview + 12 weeks + completion) | ~55 |
+| Intermediate | 12 | 14 (overview + 12 weeks + completion) | ~45 |
+| Advanced | — | 1 (overview only, open curriculum) | ~1 |
 
-## Toasts to keep (errors/warnings)
-All toasts with `variant: 'destructive'` or containing error/failure messages remain untouched.
+## Steps
 
-## Files to edit
+1. **Delete existing data** — Remove all current `curriculum_lessons` first (foreign key dependency on modules), then all `curriculum_modules`. Uses the Supabase insert tool for DELETE operations.
 
-| File | Change |
-|------|--------|
-| `src/providers/AuthProvider.tsx` | Remove ~4 success toasts (sign-in, sign-up, sign-out, profile update, storage clear) |
-| `src/components/auth/AuthForm.tsx` | Remove login success toast and auto-login signup toast; keep the "check your email" toast |
+2. **Insert new modules** — Insert all ~37 modules across all four levels with correct `level`, `title`, `description`, and `order_index`.
+
+3. **Insert new lessons** — Insert all ~146 lessons linked to their parent modules, with the bullet point content as descriptions and proper `order_index` ordering.
+
+## Technical Notes
+- All operations are data mutations (DELETE/INSERT), so they use the Supabase insert tool, not migrations
+- Module descriptions will contain the course duration info (e.g., "6 week class, 90 minutes per class")
+- Lesson titles will be concise summaries; full bullet text goes in the `description` field
+- No schema changes needed — existing `curriculum_modules` and `curriculum_lessons` tables already have the right columns
 
