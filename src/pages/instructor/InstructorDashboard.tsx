@@ -8,7 +8,7 @@ import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
 import { useInstructorDashboard } from '@/hooks/instructor/useInstructorDashboard';
 import { mockInstructorDashboard } from '@/data/mockInstructorData';
-import { Skeleton } from '@/components/ui/skeleton';
+import VinylLoader from '@/components/ui/VinylLoader';
 
 const InstructorDashboard = () => {
   const [demoMode, setDemoMode] = useState(false);
@@ -25,7 +25,11 @@ const InstructorDashboard = () => {
   const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : todayClasses;
   const activeAverageProgress = demoMode ? mockInstructorDashboard.averageProgress : averageProgress;
   const activeTotalStudents = demoMode ? mockInstructorDashboard.totalStudents : totalStudents;
-  const isLoading = !demoMode && loading;
+
+  // Show full-page VinylLoader until all data is ready (unless in demo mode)
+  if (loading && !demoMode) {
+    return <VinylLoader message="Loading dashboard..." />;
+  }
   
   return (
     <div className="space-y-6">
@@ -60,7 +64,7 @@ const InstructorDashboard = () => {
         </Alert>
       )}
 
-      {!demoMode && !loading && students.length === 0 && (
+      {!demoMode && students.length === 0 && (
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertTitle>Getting Started</AlertTitle>
@@ -70,27 +74,15 @@ const InstructorDashboard = () => {
         </Alert>
       )}
 
-      {isLoading ? (
-        <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-[120px] rounded-lg" />
-          ))}
-        </section>
-      ) : (
-        <DashboardStats
-          todayClasses={activeTodayClasses}
-          averageProgress={activeAverageProgress}
-          totalStudents={activeTotalStudents}
-        />
-      )}
+      <DashboardStats
+        todayClasses={activeTodayClasses}
+        averageProgress={activeAverageProgress}
+        totalStudents={activeTotalStudents}
+      />
 
-      {isLoading ? (
-        <Skeleton className="h-[300px] rounded-lg" />
-      ) : (
-        <section>
-          <StudentTable students={activeStudents} />
-        </section>
-      )}
+      <section>
+        <StudentTable students={activeStudents} />
+      </section>
     </div>
   );
 };
