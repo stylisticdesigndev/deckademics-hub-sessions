@@ -1,47 +1,31 @@
 
 
-# Unified Notification Dropdown for Students and Instructors
+# Remove Success Toasts on Login/Signup/Logout (Keep Warnings and Errors)
 
-## What changes
+## Problem
+After logging in (from any role), success toasts pop up like "Welcome back!", "Login successful", "Account created!", "Logged out", etc. User wants to remove these informational/success toasts and only keep warning and error toasts.
 
-Replace the simple bell button (that navigates to messages) on student/instructor headers with a popover dropdown matching the admin's `NotificationDropdown` architecture. The dropdown will show both **unread messages** and **unread announcements** as individual notification items, sorted by time.
+## Toasts to remove
 
-## 1. Create `src/hooks/useUserNotifications.ts`
+### `src/providers/AuthProvider.tsx`
+- **Line ~342**: `toast({ title: 'Welcome back!', description: 'You have successfully logged in.' })` — sign-in success
+- **Line ~396**: `toast({ title: 'Account created!', description: 'Your account has been created successfully.' })` — sign-up success
+- **Line ~467**: `toast({ title: 'Logged out', description: 'You have been successfully logged out.' })` — sign-out success
+- **Line ~502**: `toast({ title: 'Profile updated', ... })` — profile update success
+- **Line ~78**: `toast({ title: 'Local Storage Cleared', ... })` — storage clear success
 
-A new hook that combines two data sources into a unified notification list:
+### `src/components/auth/AuthForm.tsx`
+- **Line ~76**: `toast({ title: 'Login successful', description: 'You have been logged in as ${userType}.' })` — login success
+- **Line ~165**: `toast({ title: 'Account created!', description: 'Please check your email...' })` — keep this one (it's instructional, user needs to know to check email)
+- **Line ~170**: `toast({ title: 'Account created!', description: 'Your account has been created and you are now logged in.' })` — signup success
 
-- **Unread messages**: Query `messages` where `receiver_id = userId` and `read_at IS NULL`. Each becomes a notification item with type `message`, title from sender name, message from content preview.
-- **Unread announcements**: Query `announcements` targeted at the user's role, left-joining `announcement_reads` to find ones the user hasn't read. Each becomes a notification item with type `announcement`.
+## Toasts to keep (errors/warnings)
+All toasts with `variant: 'destructive'` or containing error/failure messages remain untouched.
 
-Returns: `{ notifications, unreadCount, markAsRead, markAllAsRead }`
-
-- `markAsRead` for messages: updates `read_at` on the message row
-- `markAsRead` for announcements: inserts into `announcement_reads`
-- `markAllAsRead`: does both in parallel
-- Uses `useQuery` with 30s polling (matching admin pattern)
-- Needs sender profile names, so join `profiles` on `sender_id` for messages
-
-## 2. Create `src/components/notifications/UserNotificationDropdown.tsx`
-
-A near-copy of `NotificationDropdown.tsx` but using `useUserNotifications` instead of `useAdminNotifications`. Key differences:
-
-- Icon map: `message` type gets `MessageSquare` icon, `announcement` type gets `Bell` icon
-- Clicking a message notification navigates to the messages page
-- Clicking an announcement notification navigates to the announcements page
-- Same optimistic unread count pattern
-- Accepts `userType` prop (`'student' | 'instructor'`) for routing and role filtering
-
-## 3. Update `src/components/layout/DashboardLayout.tsx`
-
-- Replace the `{userType !== 'admin' && ...}` bell button block with `<UserNotificationDropdown userType={userType} />`
-- Remove the `unreadNotifications` state, the `useEffect` that fetches announcement counts, and `handleNotificationClick` — all replaced by the dropdown component
-- Keep the admin `NotificationDropdown` as-is
-
-## Files to create/edit
+## Files to edit
 
 | File | Change |
 |------|--------|
-| `src/hooks/useUserNotifications.ts` | New hook combining messages + announcements |
-| `src/components/notifications/UserNotificationDropdown.tsx` | New dropdown component |
-| `src/components/layout/DashboardLayout.tsx` | Swap bell button for new dropdown, remove old notification logic |
+| `src/providers/AuthProvider.tsx` | Remove ~4 success toasts (sign-in, sign-up, sign-out, profile update, storage clear) |
+| `src/components/auth/AuthForm.tsx` | Remove login success toast and auto-login signup toast; keep the "check your email" toast |
 
