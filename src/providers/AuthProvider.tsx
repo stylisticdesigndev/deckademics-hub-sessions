@@ -385,8 +385,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (import.meta.env.DEV) console.log("Sign up response:", data);
       
-      toast({
-        title: 'Account created!',
       // If we have a session, explicitly create the profile
       if (data.session && data.user) {
         try {
