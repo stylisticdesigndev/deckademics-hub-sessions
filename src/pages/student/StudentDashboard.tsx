@@ -98,6 +98,11 @@ const StudentDashboard = () => {
   const activeUpcomingClasses = demoMode ? mockUpcomingClasses : upcomingClasses;
   const activeAnnouncements = demoMode ? mockAnnouncements : announcements;
 
+  // Show full-page VinylLoader until all data is ready (unless in demo mode)
+  if ((loading || attendanceLoading) && !demoMode) {
+    return <VinylLoader message="Loading dashboard..." />;
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -138,9 +143,7 @@ const StudentDashboard = () => {
           </Alert>
         )}
 
-        {loading && !demoMode ? (
-          <DashboardSkeleton />
-        ) : (
+        {/* All data is loaded at this point */}
           <>
             <StudentStatsSection
               level={activeStudentData.level}
@@ -178,7 +181,7 @@ const StudentDashboard = () => {
               />
             </section>
           </>
-        )}
+
       </div>
     </>
   );

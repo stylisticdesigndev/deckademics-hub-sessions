@@ -51,8 +51,6 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   
   const fetchDashboardData = useCallback(async () => {
     if (!instructorId || requestInProgress.current) {
-      console.log("No instructor ID or request already in progress");
-      setLoading(false);
       return;
     }
 
@@ -221,10 +219,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   
   useEffect(() => {
     if (instructorId) {
-      console.log("useEffect triggered, fetching data for instructor:", instructorId);
       fetchDashboardData();
-    } else {
-      console.log("No instructor ID, setting loading to false");
+    } else if (userData?.role === 'instructor') {
+      // Role is confirmed but no instructor record — stop loading
       setLoading(false);
     }
     
