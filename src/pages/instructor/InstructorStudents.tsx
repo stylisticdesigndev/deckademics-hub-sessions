@@ -268,11 +268,22 @@ const InstructorStudents = () => {
           return;
         }
       } else {
+        // Look up an available course for this student
+        const { data: courseData } = await supabase
+          .from('courses')
+          .select('id')
+          .limit(1)
+          .single();
+        const courseId = courseData?.id;
+        if (!courseId) {
+          toast({ title: "Error", description: "No course found. Please create a course first.", variant: "destructive" });
+          return;
+        }
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: studentId,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b',
+            course_id: courseId,
             skill_name: skillName,
             proficiency,
             assessment_date: new Date().toISOString(),
