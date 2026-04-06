@@ -167,11 +167,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           description: 'Please check your email to verify your account before signing in.',
         });
       } else if (result.session) {
-        toast({
-          title: 'Account created!',
-          description: 'Your account has been created and you are now logged in.',
-        });
-        
         // Add a slight delay before redirecting
         setTimeout(() => {
           if (userType === 'student') {
