@@ -15,7 +15,7 @@ export interface StudentData {
 }
 
 export function useStudentDashboardCore() {
-  const { session } = useAuth();
+  const { session, userData } = useAuth();
   const [studentLoading, setStudentLoading] = useState(true);
   const [studentLevel, setStudentLevel] = useState('Novice');
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
@@ -25,7 +25,8 @@ export function useStudentDashboardCore() {
   const isMountedRef = useRef(true);
   const dataFetchedRef = useRef(false);
 
-  const userId = session?.user?.id;
+  // Only resolve userId once role is confirmed to prevent flicker
+  const userId = userData?.role === 'student' ? session?.user?.id : undefined;
 
   const { upcomingClasses, loading: classesLoading } = useUpcomingClasses();
   const { progress: progressData, loading: progressLoading } = useStudentProgress(userId);

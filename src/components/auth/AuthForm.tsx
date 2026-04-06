@@ -5,8 +5,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { UserRole } from '@/providers/AuthProvider';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
-import { SocialAuthButton } from './SocialAuthButton';
-import { AuthFormDivider } from './AuthFormDivider';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle } from 'lucide-react';
@@ -185,35 +183,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
   };
 
-  const handleGoogleAuth = async () => {
-    try {
-      // Add role to the query params to be extracted after redirect
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            role: userType // Add role as a query param
-          },
-        },
-      });
 
-      if (error) {
-        throw error;
-      }
-      
-      console.log(`Google auth initiated for ${userType}:`, data);
-    } catch (error: any) {
-      console.error("Google sign-in error:", error);
-      toast({
-        title: 'Google authentication failed',
-        description: error.message || 'Unable to sign in with Google.',
-        variant: 'destructive',
-      });
-    }
-  };
+
 
   // Helper function to toggle debug mode (double-click on card header)
   const toggleDebugMode = () => {
@@ -311,14 +282,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           </TabsContent>
         </Tabs>
         
-        <AuthFormDivider />
-        
-        <SocialAuthButton
-          provider="google"
-          userType={userType}
-          isLoading={isLoading}
-          onClick={handleGoogleAuth}
-        />
       </CardContent>
       <CardFooter className="flex flex-col space-y-2 text-center text-sm">
         <p className="text-muted-foreground">
