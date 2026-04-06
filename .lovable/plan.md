@@ -1,52 +1,34 @@
 
+# Fix Dashboard Flickering — Show VinylLoader Until All Data Is Ready
 
-# Spinning Vinyl Record Loading State
+## Problem
 
-## Summary
+Both the Instructor and Student dashboards render the page shell (welcome header, demo button) immediately while showing inline skeletons for data sections. This causes visible flickering as the layout shifts between partial content → skeletons → real data.
 
-Replace all full-page loading states (skeleton screens, spinner icons) with a centered spinning vinyl record animation using the uploaded record image. This creates a branded, on-theme loading experience that eliminates dashboard flickering.
+## Fix
 
-## What Changes
+Show the full-page `VinylLoader` (spinning record) until **all** dashboard data has finished loading. Only then render the entire dashboard at once — no partial renders, no skeletons, no flicker.
 
-### 1. New Component: `VinylLoader`
+## Changes
 
-Create `src/components/ui/VinylLoader.tsx` — a reusable full-page loader that displays the vinyl record image spinning with a CSS animation, plus an optional "Loading..." label beneath it.
+### 1. `src/pages/instructor/InstructorDashboard.tsx`
+- Add a full-page `VinylLoader` return when `loading` is true (and not in demo mode)
+- Remove the inline `Skeleton` imports and conditional skeleton sections
+- The entire dashboard (welcome, stats, student table) only renders once data is ready
 
-- Copy the uploaded record PNG to `src/assets/vinyl-record.png`
-- CSS `@keyframes spin` animation (smooth infinite rotation)
-- Centered on screen with the app's dark background
+### 2. `src/pages/student/StudentDashboard.tsx`
+- When `loading` is true and not in demo mode, return `VinylLoader` for the whole page
+- Remove the inline `DashboardSkeleton` conditional at line 141-142
+- The entire dashboard renders at once after all data (including attendance) is fetched
 
-### 2. Replace Full-Page Loading States
+### 3. `src/hooks/instructor/useInstructorDashboard.ts`
+- Keep `loading` initialized to `true` — it only becomes `false` after fetch completes
+- Remove the early `setLoading(false)` at line 55 when instructorId is missing during initial auth settling — instead, only set `false` once we're certain there's no instructorId (i.e., role is confirmed as instructor but no ID exists)
 
-These locations currently show skeletons or a spinner for the entire page and will be replaced with the `VinylLoader`:
+## Files
 
-| File | Current Loading | Change |
-|------|----------------|--------|
-| `src/routes/ProtectedRoute.tsx` | Skeleton blocks (lines 118-126, used at lines 130, 160) | Replace with `<VinylLoader />` |
-| `src/pages/admin/AdminDashboard.tsx` | `<Loader2>` spinner (lines 51-58) | Replace with `<VinylLoader />` |
-| `src/pages/student/StudentDashboard.tsx` | `<DashboardSkeleton />` at line 71 (auth loading) | Replace with `<VinylLoader />` |
-| `src/pages/auth/StudentAuth.tsx` | Full-page skeleton (lines 63-73) | Replace with `<VinylLoader />` |
-| `src/pages/auth/InstructorAuth.tsx` | Full-page skeleton (lines 41-51) | Replace with `<VinylLoader />` |
-
-### 3. Keep Section-Level Skeletons As-Is
-
-The following are **not** full-page loaders — they show inline skeletons within an already-loaded page layout. These stay unchanged:
-
-- `StudentDashboard.tsx` line 144 (`DashboardSkeleton` within page content)
-- `InstructorDashboard.tsx` lines 73-88 (section skeletons within dashboard shell)
-- `StudentNotes.tsx` card skeletons
-- `AdminProfile.tsx` / `InstructorProfile.tsx` section skeletons
-
-## Files to Change
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `src/assets/vinyl-record.png` | Copy uploaded image here |
-| `src/components/ui/VinylLoader.tsx` | Create — spinning record component |
-| `src/index.css` | Add `@keyframes spin-vinyl` if not using Tailwind's `animate-spin` |
-| `src/routes/ProtectedRoute.tsx` | Replace skeleton loader with `<VinylLoader />` |
-| `src/pages/admin/AdminDashboard.tsx` | Replace Loader2 spinner with `<VinylLoader />` |
-| `src/pages/student/StudentDashboard.tsx` | Replace DashboardSkeleton (auth loading) with `<VinylLoader />` |
-| `src/pages/auth/StudentAuth.tsx` | Replace skeleton with `<VinylLoader />` |
-| `src/pages/auth/InstructorAuth.tsx` | Replace skeleton with `<VinylLoader />` |
-
+| `src/pages/instructor/InstructorDashboard.tsx` | Return `<VinylLoader />` when loading, remove inline skeletons |
+| `src/pages/student/StudentDashboard.tsx` | Return `<VinylLoader />` when loading, remove `DashboardSkeleton` inline usage |
+| `src/hooks/instructor/useInstructorDashboard.ts` | Fix early `setLoading(false)` that causes brief flash of empty state |
