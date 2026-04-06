@@ -86,10 +86,20 @@ const App = () => (
           <Route path="/admin/profile-setup" element={<AdminProfileSetup />} />
         </Route>
         
+        {/* Dashboard routes — gated: VinylLoader until all data is ready, then layout + content */}
+        <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+          <Route path="/student/dashboard" element={<StudentDashboardGate />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+          <Route path="/instructor/dashboard" element={<InstructorDashboardGate />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardGate />} />
+        </Route>
+
         {/* Student routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route element={<StudentLayoutRoute />}>
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route path="/student/progress" element={<StudentProgress />} />
             <Route path="/student/curriculum" element={<StudentCurriculum />} />
             <Route path="/student/notes" element={<StudentNotes />} />
@@ -102,7 +112,6 @@ const App = () => (
         {/* Instructor routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
           <Route element={<InstructorLayoutRoute />}>
-            <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
             <Route path="/instructor/students" element={<InstructorStudents />} />
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
             <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
@@ -115,7 +124,6 @@ const App = () => (
         {/* Admin routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route element={<AdminLayoutRoute />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/instructors" element={<AdminInstructors />} />
             <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/curriculum" element={<AdminCurriculum />} />
