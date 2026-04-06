@@ -34,6 +34,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Search, Check, X, Eye, UserRound, Loader2, MessageSquare, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import VinylLoader from '@/components/ui/VinylLoader';
 import {
   Tooltip,
   TooltipContent,
@@ -242,11 +243,7 @@ const AdminStudents = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <VinylLoader message="Loading students..." />;
   }
 
   const viewedStudent = viewStudentId ? getStudentById(viewStudentId) : null;

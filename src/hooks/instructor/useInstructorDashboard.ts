@@ -59,7 +59,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       setLoading(true);
       setFetchError(null);
       
-      console.log("Fetching dashboard data for instructor:", instructorId);
+      if (import.meta.env.DEV) console.log("Fetching dashboard data for instructor:", instructorId);
       
       // Fetch students directly assigned to this instructor
       const { data: assignedStudents, error: studentsError } = await supabase
@@ -77,7 +77,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         throw studentsError;
       }
       
-      console.log("Assigned students raw data:", assignedStudents);
+      if (import.meta.env.DEV) console.log("Assigned students raw data:", assignedStudents);
       
       if (assignedStudents && Array.isArray(assignedStudents) && assignedStudents.length > 0) {
         // Get progress data for these students
@@ -89,7 +89,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           .map(student => student.id as string)
           .filter(Boolean);
         
-        console.log("Student IDs to fetch progress for:", studentIds);
+        if (import.meta.env.DEV) console.log("Student IDs to fetch progress for:", studentIds);
         
         let progressData: any[] = [];
         if (studentIds.length > 0) {
@@ -117,7 +117,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           skillsByLevel.set(s.level, existing);
         });
         
-        console.log("Progress data:", progressData);
+        if (import.meta.env.DEV) console.log("Progress data:", progressData);
         
         // Process and format student data
         const formattedStudents = assignedStudents
@@ -165,7 +165,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           })
           .filter(Boolean) as Student[];
         
-        console.log("Formatted students:", formattedStudents);
+        if (import.meta.env.DEV) console.log("Formatted students:", formattedStudents);
         
         setStudents(formattedStudents);
         setTotalStudents(formattedStudents.length);
@@ -177,7 +177,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           setAverageProgress(0);
         }
       } else {
-        console.log("No students assigned to this instructor");
+        if (import.meta.env.DEV) console.log("No students assigned to this instructor");
         setStudents([]);
         setTotalStudents(0);
         setAverageProgress(0);
@@ -197,7 +197,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         // Don't throw here, just log and continue
       } else {
         setTodayClasses(count || 0);
-        console.log("Today's classes count:", count);
+        if (import.meta.env.DEV) console.log("Today's classes count:", count);
       }
       
     } catch (error: any) {

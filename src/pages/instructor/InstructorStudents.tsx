@@ -149,7 +149,7 @@ const InstructorStudents = () => {
       // Map display value to database value - simplified
       const dbLevel = newLevel.toLowerCase();
       
-      console.log('Updating level:', { studentId, newLevel, dbLevel });
+      if (import.meta.env.DEV) console.log('Updating level:', { studentId, newLevel, dbLevel });
       
       // Update in database first
       const { error } = await supabase
@@ -199,7 +199,7 @@ const InstructorStudents = () => {
     if (!selectedStudent || !noteText.trim() || !instructorId) return;
     
     setIsAddingNote(true);
-    console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
+    if (import.meta.env.DEV) console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
     
     try {
       const { error } = await supabase
@@ -221,7 +221,7 @@ const InstructorStudents = () => {
         return;
       }
 
-      console.log('Note saved successfully to student_notes table');
+      if (import.meta.env.DEV) console.log('Note saved successfully to student_notes table');
       
       setShowNoteDialog(false);
       setSelectedStudent(null);
@@ -268,11 +268,22 @@ const InstructorStudents = () => {
           return;
         }
       } else {
+        // Look up an available course for this student
+        const { data: courseData } = await supabase
+          .from('courses')
+          .select('id')
+          .limit(1)
+          .single();
+        const courseId = courseData?.id;
+        if (!courseId) {
+          toast({ title: "Error", description: "No course found. Please create a course first.", variant: "destructive" });
+          return;
+        }
         const { error } = await supabase
           .from('student_progress')
           .insert({
             student_id: studentId,
-            course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b',
+            course_id: courseId,
             skill_name: skillName,
             proficiency,
             assessment_date: new Date().toISOString(),

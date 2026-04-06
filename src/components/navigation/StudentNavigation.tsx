@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -14,17 +14,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
-  const [studentId, setStudentId] = useState<string | undefined>();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setStudentId(user.id);
-    });
-  }, []);
+  const { userData } = useAuth();
+  const studentId = userData.user?.id;
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
