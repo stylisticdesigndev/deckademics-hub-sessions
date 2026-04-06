@@ -5,8 +5,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { UserRole } from '@/providers/AuthProvider';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
-import { SocialAuthButton } from './SocialAuthButton';
-import { AuthFormDivider } from './AuthFormDivider';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle } from 'lucide-react';
@@ -311,14 +309,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           </TabsContent>
         </Tabs>
         
-        <AuthFormDivider />
-        
-        <SocialAuthButton
-          provider="google"
-          userType={userType}
-          isLoading={isLoading}
-          onClick={handleGoogleAuth}
-        />
       </CardContent>
       <CardFooter className="flex flex-col space-y-2 text-center text-sm">
         <p className="text-muted-foreground">

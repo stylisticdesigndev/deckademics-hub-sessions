@@ -772,6 +772,7 @@ const InstructorStudents = () => {
                                   max={100}
                                   step={5}
                                   onValueChange={([v]) => setSkillProficiency(v)}
+                                  className="[&_[role=slider]]:bg-green-500 [&_[role=slider]]:border-green-500 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&>span:first-child]:bg-gray-200 [&>span:first-child]:dark:bg-gray-700 [&>span:first-child>span]:bg-green-500"
                                 />
                                 <div className="flex justify-end gap-2">
                                   <Button variant="outline" size="sm" onClick={() => setUpdatingSkillId(null)}>

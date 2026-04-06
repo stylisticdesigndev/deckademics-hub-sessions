@@ -43,10 +43,11 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   // Use ref to track if request is in progress to prevent multiple simultaneous requests
   const requestInProgress = useRef(false);
   
-  // Memoize instructor ID to prevent unnecessary re-renders
+  // Only resolve instructor ID once role is confirmed to prevent flicker
   const instructorId = useMemo(() => {
+    if (userData?.role !== 'instructor') return null;
     return userData?.user?.id || userData?.profile?.id;
-  }, [userData?.user?.id, userData?.profile?.id]);
+  }, [userData?.role, userData?.user?.id, userData?.profile?.id]);
   
   const fetchDashboardData = useCallback(async () => {
     if (!instructorId || requestInProgress.current) {
