@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Camera } from 'lucide-react';
 
 const StudentPhotoUpload = () => {
-  const { session, userData, refreshProfile } = useAuth();
+  const { session, userData } = useAuth();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(userData?.profile?.avatar_url || null);
   const [saving, setSaving] = useState(false);
@@ -26,17 +26,9 @@ const StudentPhotoUpload = () => {
     }
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!avatarUrl) return;
-    setSaving(true);
-    try {
-      if (refreshProfile) await refreshProfile();
-      navigate('/student/dashboard', { replace: true });
-    } catch {
-      navigate('/student/dashboard', { replace: true });
-    } finally {
-      setSaving(false);
-    }
+    navigate('/student/dashboard', { replace: true });
   };
 
   return (
