@@ -1,60 +1,52 @@
 
 
-# Add Confirm Password, Forgot Password, and Strong Password Requirements
+# Spinning Vinyl Record Loading State
 
 ## Summary
 
-Three changes across the signup and login flows for all user types (student, instructor, admin):
+Replace all full-page loading states (skeleton screens, spinner icons) with a centered spinning vinyl record animation using the uploaded record image. This creates a branded, on-theme loading experience that eliminates dashboard flickering.
 
-1. **Confirm Password field** on signup forms
-2. **Forgot Password link** on login forms with a password reset page
-3. **Strong password requirements** (min 8 chars, uppercase, lowercase, number, special character)
+## What Changes
 
----
+### 1. New Component: `VinylLoader`
 
-## 1. Strengthen Password Validation (SignupForm.tsx)
+Create `src/components/ui/VinylLoader.tsx` — a reusable full-page loader that displays the vinyl record image spinning with a CSS animation, plus an optional "Loading..." label beneath it.
 
-Update `validatePassword` to require:
-- Minimum 8 characters
-- At least 1 uppercase letter
-- At least 1 lowercase letter
-- At least 1 number
-- At least 1 special character (!@#$%^&*...)
+- Copy the uploaded record PNG to `src/assets/vinyl-record.png`
+- CSS `@keyframes spin` animation (smooth infinite rotation)
+- Centered on screen with the app's dark background
 
-Show a multi-step strength bar (weak/fair/good/strong) with individual requirement checks listed below it.
+### 2. Replace Full-Page Loading States
 
-## 2. Add Confirm Password Field (SignupForm.tsx + AuthForm.tsx)
+These locations currently show skeletons or a spinner for the entire page and will be replaced with the `VinylLoader`:
 
-- Add `confirmPassword` field to `SignupForm` component state
-- Add a matching input field below the password field
-- Validate that passwords match before allowing submission
-- Update `AuthForm.tsx` password length check to 8 characters and add the stronger validation there too
+| File | Current Loading | Change |
+|------|----------------|--------|
+| `src/routes/ProtectedRoute.tsx` | Skeleton blocks (lines 118-126, used at lines 130, 160) | Replace with `<VinylLoader />` |
+| `src/pages/admin/AdminDashboard.tsx` | `<Loader2>` spinner (lines 51-58) | Replace with `<VinylLoader />` |
+| `src/pages/student/StudentDashboard.tsx` | `<DashboardSkeleton />` at line 71 (auth loading) | Replace with `<VinylLoader />` |
+| `src/pages/auth/StudentAuth.tsx` | Full-page skeleton (lines 63-73) | Replace with `<VinylLoader />` |
+| `src/pages/auth/InstructorAuth.tsx` | Full-page skeleton (lines 41-51) | Replace with `<VinylLoader />` |
 
-## 3. Add Forgot Password Link (LoginForm.tsx)
+### 3. Keep Section-Level Skeletons As-Is
 
-- Add a "Forgot password?" link below the password field
-- Clicking it opens a dialog/inline form asking for email
-- Calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
-- Show success toast
+The following are **not** full-page loaders — they show inline skeletons within an already-loaded page layout. These stay unchanged:
 
-## 4. Create Reset Password Page
-
-- New file: `src/pages/auth/ResetPassword.tsx`
-- Checks for `type=recovery` in URL hash
-- Shows form with new password + confirm password fields (with same strong validation)
-- Calls `supabase.auth.updateUser({ password })` on submit
-- Redirects to login on success
-- Add route `/reset-password` in `App.tsx` as a public route
-
----
+- `StudentDashboard.tsx` line 144 (`DashboardSkeleton` within page content)
+- `InstructorDashboard.tsx` lines 73-88 (section skeletons within dashboard shell)
+- `StudentNotes.tsx` card skeletons
+- `AdminProfile.tsx` / `InstructorProfile.tsx` section skeletons
 
 ## Files to Change
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/components/auth/SignupForm.tsx` | Add confirm password field, strengthen password validation (8+ chars, uppercase, lowercase, number, special char) |
-| `src/components/auth/AuthForm.tsx` | Update password length check from 6 to 8, pass through confirm password validation |
-| `src/components/auth/LoginForm.tsx` | Add "Forgot password?" link with email dialog using `resetPasswordForEmail` |
-| `src/pages/auth/ResetPassword.tsx` | New — password reset page with strong validation and confirm password |
-| `src/App.tsx` | Add `/reset-password` public route |
+| `src/assets/vinyl-record.png` | Copy uploaded image here |
+| `src/components/ui/VinylLoader.tsx` | Create — spinning record component |
+| `src/index.css` | Add `@keyframes spin-vinyl` if not using Tailwind's `animate-spin` |
+| `src/routes/ProtectedRoute.tsx` | Replace skeleton loader with `<VinylLoader />` |
+| `src/pages/admin/AdminDashboard.tsx` | Replace Loader2 spinner with `<VinylLoader />` |
+| `src/pages/student/StudentDashboard.tsx` | Replace DashboardSkeleton (auth loading) with `<VinylLoader />` |
+| `src/pages/auth/StudentAuth.tsx` | Replace skeleton with `<VinylLoader />` |
+| `src/pages/auth/InstructorAuth.tsx` | Replace skeleton with `<VinylLoader />` |
 
