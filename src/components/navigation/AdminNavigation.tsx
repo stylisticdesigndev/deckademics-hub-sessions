@@ -25,8 +25,8 @@ import {
 
 export const AdminNavigation = () => {
   const { pathname } = useLocation();
-  const { user } = useAuth();
-  const userId = user?.id;
+  const { userData } = useAuth();
+  const userId = userData.user?.id;
 
   const { data: studentCounts } = useQuery({
     queryKey: ['admin-student-counts-nav'],

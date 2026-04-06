@@ -18,8 +18,8 @@ import { useAuth } from '@/providers/AuthProvider';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
-  const { user } = useAuth();
-  const studentId = user?.id;
+  const { userData } = useAuth();
+  const studentId = userData.user?.id;
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);

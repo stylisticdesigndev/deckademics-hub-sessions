@@ -17,8 +17,8 @@ import { useAuth } from '@/providers/AuthProvider';
 
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
-  const { user } = useAuth();
-  const userId = user?.id;
+  const { userData } = useAuth();
+  const userId = userData.user?.id;
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
 import { PaymentStatsCards } from '@/components/admin/payments/PaymentStatsCards';
 import { PaymentSearch } from '@/components/admin/payments/PaymentSearch';
