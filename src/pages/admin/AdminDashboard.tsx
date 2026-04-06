@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: dashboardData, isLoading, error } = useAdminDashboard();
   const { 
     pendingInstructors, 
@@ -157,7 +159,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex gap-2">
                               <Button size="sm" variant="outline" onClick={() => {
-                                window.location.href = '/admin/students';
+                                navigate('/admin/students?tab=pending');
                               }}>
                                 View Details
                               </Button>
@@ -190,7 +192,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex gap-2">
                               <Button size="sm" variant="outline" onClick={() => {
-                                window.location.href = '/admin/instructors';
+                                navigate('/admin/instructors?tab=pending');
                               }}>
                                 View Details
                               </Button>

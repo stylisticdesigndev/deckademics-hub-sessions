@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import {
@@ -67,7 +67,9 @@ const AdminStudents = () => {
   const [viewStudentId, setViewStudentId] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [studentToDeactivate, setStudentToDeactivate] = useState<string | null>(null);
-  const [selectedTabValue, setSelectedTabValue] = useState('active');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'pending' ? 'pending' : searchParams.get('tab') === 'inactive' ? 'inactive' : 'active';
+  const [selectedTabValue, setSelectedTabValue] = useState(initialTab);
   const [processingStudentId, setProcessingStudentId] = useState<string | null>(null);
   const [editingLevelStudentId, setEditingLevelStudentId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
