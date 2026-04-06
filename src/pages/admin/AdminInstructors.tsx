@@ -64,6 +64,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminInstructors = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialInstructorTab = searchParams.get('tab') === 'pending' ? 'pending' : 'active';
   const [searchQuery, setSearchQuery] = useState('');
   const [viewInstructorId, setViewInstructorId] = useState<string | null>(null);
   const [instructorToDeactivate, setInstructorToDeactivate] = useState<string | null>(null);
@@ -629,7 +631,7 @@ const AdminInstructors = () => {
           </Sheet>
 
           
-          <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') === 'pending' ? 'pending' : 'active'}>
+          <Tabs defaultValue={initialInstructorTab}>
             <TabsList>
               <TabsTrigger value="active">
                 Active Instructors ({filteredActiveInstructors?.length || 0})
