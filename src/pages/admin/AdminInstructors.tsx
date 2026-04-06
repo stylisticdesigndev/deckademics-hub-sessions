@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
@@ -629,7 +629,7 @@ const AdminInstructors = () => {
           </Sheet>
 
           
-          <Tabs defaultValue="active">
+          <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') === 'pending' ? 'pending' : 'active'}>
             <TabsList>
               <TabsTrigger value="active">
                 Active Instructors ({filteredActiveInstructors?.length || 0})
