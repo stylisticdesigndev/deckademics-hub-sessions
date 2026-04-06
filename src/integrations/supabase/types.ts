@@ -1032,6 +1032,10 @@ export type Database = {
           years_experience: number
         }[]
       }
+      get_profile_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_student_counts: {
         Args: never
         Returns: {
