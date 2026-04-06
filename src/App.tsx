@@ -12,6 +12,7 @@ import AdminAuth from "./pages/auth/AdminAuth";
 
 // Profile setup pages
 import StudentProfileSetup from "./pages/student/StudentProfileSetup";
+import StudentPhotoUpload from "./pages/student/StudentPhotoUpload";
 import InstructorProfileSetup from "./pages/instructor/InstructorProfileSetup";
 import AdminProfileSetup from "./pages/admin/AdminProfileSetup";
 
@@ -72,6 +73,7 @@ const App = () => (
         {/* Profile Setup Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/profile-setup" element={<StudentProfileSetup />} />
+          <Route path="/student/photo-upload" element={<StudentPhotoUpload />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
           <Route path="/instructor/profile-setup" element={<InstructorProfileSetup />} />
