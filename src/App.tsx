@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
 import AdminAuth from "./pages/auth/AdminAuth";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Profile setup pages
 import StudentProfileSetup from "./pages/student/StudentProfileSetup";
@@ -71,6 +72,7 @@ const App = () => (
           <Route path="instructor" element={<InstructorAuth />} />
           <Route path="admin" element={<AdminAuth />} />
         </Route>
+        <Route path="/reset-password" element={<ResetPassword />} />
         
         {/* Profile Setup Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>

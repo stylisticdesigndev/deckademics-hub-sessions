@@ -123,14 +123,18 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         return;
       }
 
-      // Simplified password validation - only check length
-      if (formData.password.length < 6) {
-        toast({
-          title: 'Password too short',
-          description: 'Password must be at least 6 characters long.',
-          variant: 'destructive',
-        });
-        setSignupError('Password must be at least 6 characters long.');
+      // Strong password validation
+      const pwd = formData.password;
+      if (
+        pwd.length < 8 ||
+        !/[A-Z]/.test(pwd) ||
+        !/[a-z]/.test(pwd) ||
+        !/[0-9]/.test(pwd) ||
+        !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd)
+      ) {
+        const msg = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.';
+        toast({ title: 'Weak password', description: msg, variant: 'destructive' });
+        setSignupError(msg);
         setSignupLoading(false);
         return;
       }
