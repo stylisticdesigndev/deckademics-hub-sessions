@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, LockKeyhole, EyeIcon, EyeOffIcon, User, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, LockKeyhole, EyeIcon, EyeOffIcon, User, Check, X } from 'lucide-react';
 
 interface SignupFormProps {
   formData: {
@@ -18,6 +17,14 @@ interface SignupFormProps {
   handleSubmit: (e: React.FormEvent) => void;
 }
 
+const PASSWORD_REQUIREMENTS = [
+  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+  { label: 'One uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter', test: (p: string) => /[a-z]/.test(p) },
+  { label: 'One number', test: (p: string) => /[0-9]/.test(p) },
+  { label: 'One special character (!@#$%^&*...)', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(p) },
+];
+
 export const SignupForm = ({ 
   formData, 
   isLoading, 
@@ -25,59 +32,38 @@ export const SignupForm = ({
   handleSubmit 
 }: SignupFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({
-    score: 0,
-    message: ''
-  });
-  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const validatePassword = (password: string) => {
-    if (!password) {
-      setPasswordStrength({ score: 0, message: '' });
-      setPasswordErrors([]);
-      return;
-    }
+  const passedCount = PASSWORD_REQUIREMENTS.filter(r => r.test(formData.password)).length;
+  const allPassed = passedCount === PASSWORD_REQUIREMENTS.length;
+  const passwordsMatch = formData.password === confirmPassword && confirmPassword.length > 0;
+  const canSubmit = allPassed && passwordsMatch && !isLoading;
 
-    let score = 0;
-    let message = '';
-    const errors: string[] = [];
-
-    // Only check for minimum length (simplified validation)
-    if (password.length >= 6) {
-      score = 5; // Maximum score for meeting minimum length
-    } else {
-      errors.push("Password must be at least 6 characters long");
-    }
-
-    // Set message based on score
-    if (score === 0) {
-      message = 'Too short';
-    } else {
-      message = 'Password acceptable';
-    }
-
-    setPasswordStrength({ score, message });
-    setPasswordErrors(errors);
+  const getStrengthLabel = () => {
+    if (passedCount <= 1) return { label: 'Weak', color: 'text-red-500' };
+    if (passedCount <= 2) return { label: 'Fair', color: 'text-orange-500' };
+    if (passedCount <= 4) return { label: 'Good', color: 'text-yellow-500' };
+    return { label: 'Strong', color: 'text-green-500' };
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleChange(e);
-    validatePassword(e.target.value);
-  };
-
-  // Calculate the width of the strength bar
-  const getStrengthBarWidth = () => {
-    return `${(passwordStrength.score / 5) * 100}%`;
-  };
-
-  // Get the color of the strength bar
-  const getStrengthBarColor = () => {
-    if (passwordStrength.score === 0) return 'bg-red-500';
+  const getBarColor = () => {
+    if (passedCount <= 1) return 'bg-red-500';
+    if (passedCount <= 2) return 'bg-orange-500';
+    if (passedCount <= 4) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
+  const strength = getStrengthLabel();
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    handleSubmit(e);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -138,13 +124,13 @@ export const SignupForm = ({
           <Input 
             id="signup-password" 
             name="password"
-            placeholder="••••••" 
+            placeholder="••••••••" 
             type={showPassword ? "text" : "password"} 
             autoComplete="new-password"
             required
             className="pl-10 pr-10"
             value={formData.password}
-            onChange={handlePasswordChange}
+            onChange={handleChange}
           />
           <Button 
             type="button"
@@ -158,55 +144,69 @@ export const SignupForm = ({
         </div>
         
         {formData.password && (
-          <div className="mt-2">
-            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+          <div className="mt-2 space-y-2">
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
               <div 
-                className={`h-full ${getStrengthBarColor()} transition-all duration-300`}
-                style={{ width: getStrengthBarWidth() }}
+                className={`h-full ${getBarColor()} transition-all duration-300`}
+                style={{ width: `${(passedCount / PASSWORD_REQUIREMENTS.length) * 100}%` }}
               />
             </div>
-            <p className={`text-xs mt-1 ${
-              passwordStrength.score === 0 ? 'text-red-500' : 'text-green-500'
-            }`}>
-              {passwordStrength.message}
-            </p>
+            <p className={`text-xs ${strength.color}`}>{strength.label}</p>
             
-            {passwordErrors.length > 0 && (
-              <Alert variant="destructive" className="mt-2 py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <ul className="text-xs pl-4 list-disc">
-                    {passwordErrors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <p className="text-xs mt-2 text-gray-500">
-              Password must be at least 6 characters long
-            </p>
+            <ul className="space-y-1">
+              {PASSWORD_REQUIREMENTS.map((req, i) => {
+                const passed = req.test(formData.password);
+                return (
+                  <li key={i} className={`flex items-center gap-1.5 text-xs ${passed ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {passed ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                    {req.label}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="confirm-password">Confirm Password</Label>
+        <div className="relative">
+          <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input 
+            id="confirm-password" 
+            placeholder="••••••••" 
+            type={showConfirm ? "text" : "password"} 
+            autoComplete="new-password"
+            required
+            className="pl-10 pr-10"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="icon"
+            className="absolute right-0 top-0 h-full px-3 py-0 text-muted-foreground"
+            onClick={() => setShowConfirm(!showConfirm)}
+          >
+            {showConfirm ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+          </Button>
+        </div>
+        {confirmPassword && !passwordsMatch && (
+          <p className="text-xs text-red-500">Passwords do not match</p>
+        )}
+        {passwordsMatch && (
+          <p className="text-xs text-green-600 flex items-center gap-1"><Check className="h-3 w-3" /> Passwords match</p>
         )}
       </div>
       
       <Button 
         type="submit" 
         className="w-full" 
-        disabled={isLoading || passwordErrors.length > 0}
+        disabled={!canSubmit}
       >
         {isLoading ? "Creating account..." : "Create Account"}
       </Button>
-      
-      {formData.password && passwordErrors.length > 0 && (
-        <Alert className="mt-2 bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-800" />
-          <AlertDescription className="text-amber-800">
-            Please use a password that is at least 6 characters long
-          </AlertDescription>
-        </Alert>
-      )}
     </form>
   );
 }
