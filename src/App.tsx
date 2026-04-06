@@ -24,7 +24,7 @@ import InstructorLayoutRoute from "./routes/InstructorLayoutRoute";
 import AdminLayoutRoute from "./routes/AdminLayoutRoute";
 
 // Student pages
-import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentDashboardGate from "./pages/student/StudentDashboardGate";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentClasses from "./pages/student/StudentClasses";
 import StudentMessages from "./pages/student/StudentMessages";
@@ -32,7 +32,7 @@ import StudentProfile from "./pages/student/StudentProfile";
 import StudentNotes from "./pages/student/StudentNotes";
 
 // Instructor pages
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+import InstructorDashboardGate from "./pages/instructor/InstructorDashboardGate";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
@@ -40,7 +40,7 @@ import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorMessages from "./pages/instructor/InstructorMessages";
 
 // Admin pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDashboardGate from "./pages/admin/AdminDashboardGate";
 import AdminInstructors from "./pages/admin/AdminInstructors";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminAttendance from "./pages/admin/AdminAttendance";
