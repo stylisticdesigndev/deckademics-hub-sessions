@@ -23,7 +23,7 @@ const StudentPhotoUpload = () => {
     setSaving(true);
     try {
       // Update profile via AuthProvider so userData.profile.avatar_url gets refreshed
-      await updateProfile({ avatar_url: avatarUrl } as any);
+      await updateProfile({ avatar_url: avatarUrl });
       navigate('/student/dashboard', { replace: true });
     } catch {
       setSaving(false);

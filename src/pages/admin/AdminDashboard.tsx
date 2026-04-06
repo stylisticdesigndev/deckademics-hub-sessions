@@ -128,104 +128,81 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="pending">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
-            <TabsTrigger value="recent">Recent Activity</TabsTrigger>
-          </TabsList>
-          <TabsContent value="pending" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Approvals</CardTitle>
-                <CardDescription>
-                  Students and instructors waiting for account approval.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-md border">
-                  <div className="p-4">
-                    <h3 className="font-medium">New Student Registrations</h3>
-                    <div className="mt-2 divide-y">
-                      {pendingStudents && pendingStudents.length > 0 ? (
-                        pendingStudents.map((student) => (
-                          <div key={student.id} className="py-3 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {student.first_name} {student.last_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {student.email}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" onClick={() => {
-                                navigate('/admin/students?tab=pending');
-                              }}>
-                                View Details
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-4 text-center text-muted-foreground">
-                          No pending student approvals
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Approvals</CardTitle>
+            <CardDescription>
+              Students and instructors waiting for account approval.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border">
+              <div className="p-4">
+                <h3 className="font-medium">New Student Registrations</h3>
+                <div className="mt-2 divide-y">
+                  {pendingStudents && pendingStudents.length > 0 ? (
+                    pendingStudents.map((student) => (
+                      <div key={student.id} className="py-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">
+                            {student.first_name} {student.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {student.email}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="rounded-md border">
-                  <div className="p-4">
-                    <h3 className="font-medium">New Instructor Registrations</h3>
-                    <div className="mt-2 divide-y">
-                      {pendingInstructors && pendingInstructors.length > 0 ? (
-                        pendingInstructors.map((instructor) => (
-                          <div key={instructor.id} className="py-3 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {instructor.profile.email}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" onClick={() => {
-                                navigate('/admin/instructors?tab=pending');
-                              }}>
-                                View Details
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-4 text-center text-muted-foreground">
-                          No pending instructor approvals
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            navigate('/admin/students?tab=pending');
+                          }}>
+                            View Details
+                          </Button>
                         </div>
-                      )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-4 text-center text-muted-foreground">
+                      No pending student approvals
                     </div>
-                  </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="recent" className="space-y-4 pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  Latest actions in the DJ School platform.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="py-4 text-center text-muted-foreground">
-                  No recent activities to display
+              </div>
+            </div>
+            
+            <div className="rounded-md border">
+              <div className="p-4">
+                <h3 className="font-medium">New Instructor Registrations</h3>
+                <div className="mt-2 divide-y">
+                  {pendingInstructors && pendingInstructors.length > 0 ? (
+                    pendingInstructors.map((instructor) => (
+                      <div key={instructor.id} className="py-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">
+                            {instructor.profile.first_name} {instructor.profile.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {instructor.profile.email}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            navigate('/admin/instructors?tab=pending');
+                          }}>
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-4 text-center text-muted-foreground">
+                      No pending instructor approvals
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );
