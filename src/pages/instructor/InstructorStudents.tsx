@@ -264,7 +264,7 @@ const InstructorStudents = () => {
           })
           .eq('id', existingRecordId);
         if (error) {
-          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          toast({ title: "Error updating skill", description: "Something went wrong. Please try again.", variant: "destructive" });
           return;
         }
       } else {
@@ -279,7 +279,7 @@ const InstructorStudents = () => {
             assessor_id: instructorId
           });
         if (error) {
-          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          toast({ title: "Error updating skill", description: "Something went wrong. Please try again.", variant: "destructive" });
           return;
         }
       }

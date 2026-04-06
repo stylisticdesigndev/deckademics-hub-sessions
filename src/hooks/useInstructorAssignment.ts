@@ -68,7 +68,7 @@ export const useInstructorAssignment = () => {
       }
     },
     onError: (error: Error) => {
-      toast.error(`Failed to assign instructor: ${error.message}`);
+      toast.error('Failed to assign instructor. Please try again.');
     }
   });
 

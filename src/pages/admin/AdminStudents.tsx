@@ -110,7 +110,7 @@ const AdminStudents = () => {
         setTimeout(async () => { await refetchData(); }, 1000);
       }, 500);
     } catch (error: any) {
-      toast.error(`Failed to approve student: ${error.message || 'Unknown error'}`);
+      toast.error('Failed to approve student. Please try again.');
     } finally {
       setProcessingStudentId(null);
     }
@@ -123,7 +123,7 @@ const AdminStudents = () => {
       await refetchData();
       setTimeout(async () => { await refetchData(); }, 1000);
     } catch (error: any) {
-      toast.error(`Failed to decline student: ${error.message || 'Unknown error'}`);
+      toast.error('Failed to decline student. Please try again.');
     } finally {
       setProcessingStudentId(null);
     }
@@ -142,7 +142,7 @@ const AdminStudents = () => {
       await refetchData();
       setTimeout(async () => { await refetchData(); }, 1000);
     } catch (error: any) {
-      toast.error(`Failed to deactivate student: ${error.message || 'Unknown error'}`);
+      toast.error('Failed to deactivate student. Please try again.');
     } finally {
       setProcessingStudentId(null);
       setShowDeactivateDialog(false);
@@ -157,7 +157,7 @@ const AdminStudents = () => {
       await refetchData();
       setTimeout(async () => { await refetchData(); }, 1000);
     } catch (error: any) {
-      toast.error(`Failed to reactivate student: ${error.message || 'Unknown error'}`);
+      toast.error('Failed to reactivate student. Please try again.');
     } finally {
       setProcessingStudentId(null);
     }

@@ -56,7 +56,7 @@ export const useUpdateStudentLevel = () => {
     },
     onError: (error: Error) => {
       console.error('Failed to update student level:', error);
-      toast.error(`Failed to update student level: ${error.message}`);
+      toast.error('Failed to update student level. Please try again.');
     }
   });
 };

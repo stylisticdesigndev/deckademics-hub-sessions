@@ -202,12 +202,11 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       
     } catch (error: any) {
       console.error('Error fetching instructor dashboard data:', error);
-      setFetchError(error.message || 'Failed to load dashboard data');
-      // Toast error without including it in dependencies
+      setFetchError('Failed to load dashboard data');
       setTimeout(() => {
         toast({
           title: 'Error fetching data',
-          description: error.message || 'An error occurred while fetching dashboard data',
+          description: 'Something went wrong. Please try again.',
           variant: 'destructive',
         });
       }, 0);
