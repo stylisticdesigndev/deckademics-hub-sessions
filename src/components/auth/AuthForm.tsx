@@ -73,11 +73,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Login successful with result:", result);
       
-      toast({
-        title: 'Login successful',
-        description: `You have been logged in as ${userType}.`,
-      });
-      
       // Add a slight delay before redirecting to ensure state is updated
       setTimeout(() => {
         // Redirect based on role
@@ -167,11 +162,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
           description: 'Please check your email to verify your account before signing in.',
         });
       } else if (result.session) {
-        toast({
-          title: 'Account created!',
-          description: 'Your account has been created and you are now logged in.',
-        });
-        
         // Add a slight delay before redirecting
         setTimeout(() => {
           if (userType === 'student') {

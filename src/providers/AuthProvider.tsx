@@ -75,10 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null
       });
       
-      toast({
-        title: 'Local Storage Cleared',
-        description: 'Browser local storage has been cleared successfully.',
-      });
+      if (import.meta.env.DEV) console.log('Local storage cleared successfully');
     } catch (error) {
       console.error('Error clearing local storage:', error);
       toast({
@@ -339,11 +336,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (import.meta.env.DEV) console.log("Sign in successful:", data.user?.email);
       
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-      
       return { user: data.user, session: data.session };
     } catch (error: any) {
       console.error("Sign in error:", error);
@@ -392,11 +384,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (import.meta.env.DEV) console.log("Sign up response:", data);
-      
-      toast({
-        title: 'Account created!',
-        description: 'Your account has been created successfully.',
-      });
       
       // If we have a session, explicitly create the profile
       if (data.session && data.user) {
@@ -463,11 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         navigate('/', { replace: true });
         
-        // Show success toast after navigation
-        toast({
-          title: 'Logged out',
-          description: 'You have been successfully logged out.',
-        });
+        if (import.meta.env.DEV) console.log('Logged out successfully');
       }, 100);
       
     } catch (error: any) {
@@ -499,10 +482,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Refetch user profile to update state
       await fetchUserProfile(userData.user.id);
       
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been updated successfully.',
-      });
+      if (import.meta.env.DEV) console.log('Profile updated successfully');
     } catch (error: any) {
       toast({
         title: 'Error updating profile',
