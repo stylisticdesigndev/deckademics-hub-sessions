@@ -4,31 +4,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
-import { Camera } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 const StudentPhotoUpload = () => {
-  const { session, userData } = useAuth();
+  const { userData, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(userData?.profile?.avatar_url || null);
-  
+  const [saving, setSaving] = useState(false);
 
   const initials = `${userData?.profile?.first_name?.[0] || ''}${userData?.profile?.last_name?.[0] || ''}`.toUpperCase() || '?';
 
-  const handleUpload = async (url: string) => {
+  const handleUpload = (url: string) => {
     setAvatarUrl(url);
-    // Also save to profile immediately
-    if (session?.user?.id) {
-      await supabase
-        .from('profiles')
-        .update({ avatar_url: url } as any)
-        .eq('id', session.user.id);
-    }
   };
 
-  const handleContinue = () => {
-    if (!avatarUrl) return;
-    navigate('/student/dashboard', { replace: true });
+  const handleContinue = async () => {
+    if (!avatarUrl || saving) return;
+    setSaving(true);
+    try {
+      // Update profile via AuthProvider so userData.profile.avatar_url gets refreshed
+      await updateProfile({ avatar_url: avatarUrl } as any);
+      navigate('/student/dashboard', { replace: true });
+    } catch {
+      setSaving(false);
+    }
   };
 
   return (
@@ -55,10 +54,10 @@ const StudentPhotoUpload = () => {
           <Button
             className="w-full"
             size="lg"
-            disabled={!avatarUrl}
+            disabled={!avatarUrl || saving}
             onClick={handleContinue}
           >
-            Continue to Dashboard
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : 'Continue to Dashboard'}
           </Button>
         </CardContent>
       </Card>
