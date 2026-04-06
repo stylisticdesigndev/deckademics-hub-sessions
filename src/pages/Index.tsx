@@ -14,15 +14,11 @@ const Index = () => {
   
   // Clear any potential authentication errors on load
   useEffect(() => {
-    console.log("Index: Page loaded, clearing any auth errors");
     localStorage.removeItem('auth-error');
   }, []);
   
   // Load background video
   useEffect(() => {
-    console.log("Index: Setting up background video");
-    
-    // Set video URL immediately without blocking
     const videoPath = '/background-video.mp4';
     setBackgroundVideoUrl(videoPath);
     setIsLoading(false);
@@ -33,15 +29,7 @@ const Index = () => {
     if (isLoading) return;
     
     const handleInitialLoad = () => {
-      console.log("Index: Checking auth state", { 
-        sessionExists: !!session, 
-        userDataExists: !!userData, 
-        userRole: userData?.role 
-      });
-      
-      // If we have a session but userData is inconsistent, clear local storage
       if (session && (!userData || !userData.role)) {
-        console.log("Index: Found inconsistent auth state, clearing local storage");
         clearLocalStorage();
       }
     };
@@ -53,15 +41,8 @@ const Index = () => {
   const checkAndRedirect = useCallback(() => {
     if (isLoading) return;
     
-    console.log("Index: Session check for redirection", { 
-      sessionExists: !!session, 
-      userRole: userData?.role
-    });
-    
     if (session && userData?.role) {
-      console.log("Index: User already logged in, redirecting to dashboard");
       const role = userData.role;
-      
       switch (role) {
         case 'student':
           navigate('/student/dashboard');
@@ -72,8 +53,6 @@ const Index = () => {
         case 'admin':
           navigate('/admin/dashboard');
           break;
-        default:
-          console.error("Index: Unknown user role", role);
       }
     }
   }, [session, userData, navigate, isLoading]);
@@ -119,11 +98,10 @@ const Index = () => {
                 src="/lovable-uploads/22a8ecc1-e830-4e13-9ae9-a41f938c8809.png" 
                 alt="Deckademics Logo" 
                 className="h-28 w-auto"
-                onLoad={() => console.log("Index: Logo loaded successfully")}
                 onError={(e) => {
-                  console.error("Index: Failed to load logo image");
                   e.currentTarget.src = "/placeholder.svg";
                 }}
+              />
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
