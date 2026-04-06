@@ -170,6 +170,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     
     initializeAuth();
+
+    // Cleanup: unsubscribe auth listener to prevent duplicates in StrictMode
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {
