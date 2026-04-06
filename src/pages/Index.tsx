@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VideoBackground } from '@/components/background/VideoBackground';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 
 const Index = () => {
@@ -83,15 +83,10 @@ const Index = () => {
     checkAndRedirect();
   }, [checkAndRedirect]);
 
-  // Ensure clean auth state before navigation
+  // Only clear auth if session is stale/inconsistent
   const ensureCleanAuthState = () => {
-    console.log("Index: Ensuring clean auth state before navigation");
-    
-    if (session) {
+    if (session && (!userData || !userData.role)) {
       clearLocalStorage();
-      toast({
-        title: "Starting fresh login session"
-      });
     }
   };
 
