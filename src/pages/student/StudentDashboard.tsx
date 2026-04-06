@@ -12,7 +12,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +26,7 @@ import {
 
 const StudentDashboard = () => {
   const { userData, session, isLoading } = useAuth();
-  const navigate = useNavigate();
+  
   const [studentId, setStudentId] = useState<string | undefined>();
   const [demoMode, setDemoMode] = useState(false);
   
@@ -50,18 +50,7 @@ const StudentDashboard = () => {
 
   const { data: attendance, isLoading: attendanceLoading } = useStudentAttendance(studentId);
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!session) {
-        navigate('/auth/student', { replace: true });
-        return;
-      }
-      if (userData.role && userData.role !== 'student') {
-        if (userData.role === 'instructor') navigate('/instructor/dashboard', { replace: true });
-        else if (userData.role === 'admin') navigate('/admin/dashboard', { replace: true });
-      }
-    }
-  }, [session, userData.role, isLoading, navigate]);
+  // Auth checks are handled by ProtectedRoute — no need to duplicate here
 
   const getStudentName = () => {
     if (userData.profile && userData.profile.first_name) {
