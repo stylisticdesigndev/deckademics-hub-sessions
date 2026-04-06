@@ -73,11 +73,6 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       console.log("Login successful with result:", result);
       
-      toast({
-        title: 'Login successful',
-        description: `You have been logged in as ${userType}.`,
-      });
-      
       // Add a slight delay before redirecting to ensure state is updated
       setTimeout(() => {
         // Redirect based on role

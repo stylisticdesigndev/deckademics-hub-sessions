@@ -387,9 +387,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       toast({
         title: 'Account created!',
-        description: 'Your account has been created successfully.',
-      });
-      
       // If we have a session, explicitly create the profile
       if (data.session && data.user) {
         try {
