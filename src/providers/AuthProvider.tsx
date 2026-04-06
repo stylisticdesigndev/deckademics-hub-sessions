@@ -139,7 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // We're not unsubscribing to avoid multiple subscriptions issue
     authChangeSubscription = data.subscription;
 
     // Check for existing session
