@@ -8,6 +8,7 @@ import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingC
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { DashboardSkeleton } from '@/components/student/dashboard/DashboardSkeleton';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { useAuth } from '@/providers/AuthProvider';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -66,11 +67,7 @@ const StudentDashboard = () => {
   const studentName = getStudentName();
 
   if (isLoading) {
-    return (
-      <>
-        <DashboardSkeleton />
-      </>
-    );
+    return <VinylLoader />;
   }
 
   if (!session) {

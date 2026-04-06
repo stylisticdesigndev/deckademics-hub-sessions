@@ -76,6 +76,15 @@
   }
 }
 
+@keyframes spin-vinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-vinyl {
+  animation: spin-vinyl 2s linear infinite;
+}
+
 @layer components {
   .dj-card {
     @apply bg-card rounded-lg p-5 border border-border hover:border-deckademics-primary/40 transition-colors;

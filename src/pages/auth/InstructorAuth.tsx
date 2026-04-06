@@ -4,7 +4,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { Skeleton } from '@/components/ui/skeleton';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { VideoBackground } from '@/components/background/VideoBackground';
 
 const InstructorAuth = () => {
@@ -28,34 +28,7 @@ const InstructorAuth = () => {
   }, [session, userData, navigate, isLoading]);
 
   if (isLoading || isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex flex-col relative">
-        <VideoBackground 
-          videoSrc="/background-video.mp4" 
-          fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
-        />
-        <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        </header>
-        
-        <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">
-          <div className="w-full max-w-md space-y-6 bg-black/70 p-6 rounded-xl backdrop-blur-sm">
-            <div className="text-center flex flex-col items-center space-y-4">
-              <Skeleton className="h-28 w-28 rounded-full" />
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-        </main>
-        
-        <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
-          © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
-        </footer>
-      </div>
-    );
+    return <VinylLoader />;
   }
 
   return (

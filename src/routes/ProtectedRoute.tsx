@@ -1,7 +1,7 @@
 
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth, UserRole } from '@/providers/AuthProvider';
-import { Skeleton } from '@/components/ui/skeleton';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,16 +114,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     checkApproval();
   }, [session?.user?.id, effectiveRole]);
 
-  // Loading skeleton
-  const loadingSkeleton = (
-    <div className="flex h-screen items-center justify-center bg-deckademics-dark">
-      <div className="w-full max-w-md space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    </div>
-  );
+  const loadingSkeleton = <VinylLoader />;
 
   // Show loading state but with a maximum wait time
   if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000 && !isMockAdmin) {
