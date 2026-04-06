@@ -131,6 +131,8 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-student-counts-nav'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Student approved successfully');
     },
     onError: (error: Error) => {
@@ -148,6 +150,8 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-student-counts-nav'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Student declined successfully');
     },
     onError: (error: Error) => {
@@ -165,6 +169,8 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-student-counts-nav'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Student deactivated successfully');
     },
     onError: (error: Error) => {
@@ -182,6 +188,8 @@ export const useAdminStudents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-student-counts-nav'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Student reactivated successfully');
     },
     onError: (error: Error) => {
