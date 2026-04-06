@@ -102,7 +102,6 @@ const Index = () => {
                   e.currentTarget.src = "/placeholder.svg";
                 }}
               />
-              />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">
               Welcome to Deckademics DJ School
