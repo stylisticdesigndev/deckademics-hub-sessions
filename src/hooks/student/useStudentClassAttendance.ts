@@ -165,7 +165,7 @@ export function useStudentClassAttendance() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to mark absence.',
+        description: 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {

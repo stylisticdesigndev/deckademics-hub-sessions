@@ -190,7 +190,7 @@ export const useAdminAttendance = () => {
       toast.success('Attendance updated successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update attendance: ${error.message}`);
+      toast.error('Failed to update attendance. Please try again.');
     }
   });
 
@@ -221,7 +221,7 @@ export const useAdminAttendance = () => {
       toast.success('Attendance record deleted');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete attendance: ${error.message}`);
+      toast.error('Failed to delete attendance. Please try again.');
     }
   });
 
@@ -251,7 +251,7 @@ export const useAdminAttendance = () => {
       toast.success('Attendance record created');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create attendance: ${error.message}`);
+      toast.error('Failed to create attendance. Please try again.');
     }
   });
 

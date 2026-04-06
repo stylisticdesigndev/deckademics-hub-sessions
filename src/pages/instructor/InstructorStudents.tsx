@@ -215,7 +215,7 @@ const InstructorStudents = () => {
         console.error('Error saving note to student_notes:', error);
         toast({
           title: "Error saving note",
-          description: `Failed to save note: ${error.message}`,
+          description: "Something went wrong. Please try again.",
           variant: "destructive",
         });
         return;
@@ -264,7 +264,7 @@ const InstructorStudents = () => {
           })
           .eq('id', existingRecordId);
         if (error) {
-          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          toast({ title: "Error updating skill", description: "Something went wrong. Please try again.", variant: "destructive" });
           return;
         }
       } else {
@@ -279,7 +279,7 @@ const InstructorStudents = () => {
             assessor_id: instructorId
           });
         if (error) {
-          toast({ title: "Error updating skill", description: error.message, variant: "destructive" });
+          toast({ title: "Error updating skill", description: "Something went wrong. Please try again.", variant: "destructive" });
           return;
         }
       }
