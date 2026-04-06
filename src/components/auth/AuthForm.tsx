@@ -183,35 +183,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     }
   };
 
-  const handleGoogleAuth = async () => {
-    try {
-      // Add role to the query params to be extracted after redirect
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            role: userType // Add role as a query param
-          },
-        },
-      });
 
-      if (error) {
-        throw error;
-      }
-      
-      console.log(`Google auth initiated for ${userType}:`, data);
-    } catch (error: any) {
-      console.error("Google sign-in error:", error);
-      toast({
-        title: 'Google authentication failed',
-        description: error.message || 'Unable to sign in with Google.',
-        variant: 'destructive',
-      });
-    }
-  };
+
 
   // Helper function to toggle debug mode (double-click on card header)
   const toggleDebugMode = () => {
