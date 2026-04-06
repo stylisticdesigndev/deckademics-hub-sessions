@@ -1,39 +1,44 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
 import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats';
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
-import { useInstructorDashboard } from '@/hooks/instructor/useInstructorDashboard';
 import { mockInstructorDashboard } from '@/data/mockInstructorData';
-import VinylLoader from '@/components/ui/VinylLoader';
 
-const InstructorDashboard = () => {
-  const [demoMode, setDemoMode] = useState(false);
-  const {
-    students,
-    todayClasses,
-    averageProgress,
-    totalStudents,
-    loading,
-    fetchError
-  } = useInstructorDashboard();
+interface Student {
+  id: string;
+  name: string;
+  progress: number;
+  level: string;
+  hasNotes: boolean;
+}
+
+interface InstructorDashboardProps {
+  dashboardData: {
+    students: Student[];
+    todayClasses: number;
+    averageProgress: number;
+    totalStudents: number;
+    loading: boolean;
+    fetchError: string | null;
+  };
+  demoMode: boolean;
+  setDemoMode: (val: boolean) => void;
+}
+
+const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: InstructorDashboardProps) => {
+  const { students, todayClasses, averageProgress, totalStudents, fetchError } = dashboardData;
 
   const activeStudents = demoMode ? mockInstructorDashboard.students : students;
   const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : todayClasses;
   const activeAverageProgress = demoMode ? mockInstructorDashboard.averageProgress : averageProgress;
   const activeTotalStudents = demoMode ? mockInstructorDashboard.totalStudents : totalStudents;
 
-  // Show full-page VinylLoader until all data is ready (unless in demo mode)
-  if (loading && !demoMode) {
-    return <VinylLoader message="Loading dashboard..." />;
-  }
-  
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
       {demoMode && (
         <Alert className="bg-warning/10 border-warning/30">
           <Eye className="h-4 w-4 text-warning" />

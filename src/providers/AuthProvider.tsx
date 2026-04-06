@@ -139,7 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // We're not unsubscribing to avoid multiple subscriptions issue
     authChangeSubscription = data.subscription;
 
     // Check for existing session
@@ -171,6 +170,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     
     initializeAuth();
+
+    // Cleanup: unsubscribe auth listener to prevent duplicates in StrictMode
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {

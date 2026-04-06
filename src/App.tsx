@@ -24,7 +24,7 @@ import InstructorLayoutRoute from "./routes/InstructorLayoutRoute";
 import AdminLayoutRoute from "./routes/AdminLayoutRoute";
 
 // Student pages
-import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentDashboardGate from "./pages/student/StudentDashboardGate";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentClasses from "./pages/student/StudentClasses";
 import StudentMessages from "./pages/student/StudentMessages";
@@ -32,7 +32,7 @@ import StudentProfile from "./pages/student/StudentProfile";
 import StudentNotes from "./pages/student/StudentNotes";
 
 // Instructor pages
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+import InstructorDashboardGate from "./pages/instructor/InstructorDashboardGate";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
@@ -40,7 +40,7 @@ import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorMessages from "./pages/instructor/InstructorMessages";
 
 // Admin pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDashboardGate from "./pages/admin/AdminDashboardGate";
 import AdminInstructors from "./pages/admin/AdminInstructors";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminAttendance from "./pages/admin/AdminAttendance";
@@ -86,10 +86,20 @@ const App = () => (
           <Route path="/admin/profile-setup" element={<AdminProfileSetup />} />
         </Route>
         
+        {/* Dashboard routes — gated: VinylLoader until all data is ready, then layout + content */}
+        <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+          <Route path="/student/dashboard" element={<StudentDashboardGate />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+          <Route path="/instructor/dashboard" element={<InstructorDashboardGate />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardGate />} />
+        </Route>
+
         {/* Student routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route element={<StudentLayoutRoute />}>
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route path="/student/progress" element={<StudentProgress />} />
             <Route path="/student/curriculum" element={<StudentCurriculum />} />
             <Route path="/student/notes" element={<StudentNotes />} />
@@ -102,7 +112,6 @@ const App = () => (
         {/* Instructor routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
           <Route element={<InstructorLayoutRoute />}>
-            <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
             <Route path="/instructor/students" element={<InstructorStudents />} />
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
             <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
@@ -115,7 +124,6 @@ const App = () => (
         {/* Admin routes - persistent layout */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route element={<AdminLayoutRoute />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/instructors" element={<AdminInstructors />} />
             <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/curriculum" element={<AdminCurriculum />} />

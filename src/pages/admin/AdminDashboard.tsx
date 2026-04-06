@@ -4,53 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminDashboard } from '@/hooks/useAdminDashboard';
-import VinylLoader from '@/components/ui/VinylLoader';
-import { useAdminInstructors } from '@/hooks/useAdminInstructors';
-import { useAdminPayments } from '@/hooks/useAdminPayments';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
-const AdminDashboard = () => {
+interface AdminDashboardProps {
+  dashboardData: any;
+  pendingInstructors: any[];
+  paymentStats: any;
+  pendingStudents: any[];
+}
+
+const AdminDashboard = ({ dashboardData, pendingInstructors, paymentStats, pendingStudents }: AdminDashboardProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { data: dashboardData, isLoading, error } = useAdminDashboard();
-  const { 
-    pendingInstructors, 
-    isLoading: isLoadingInstructors 
-  } = useAdminInstructors();
-  const { stats: paymentStats, isLoading: isLoadingPayments } = useAdminPayments();
-  
-  const { data: pendingStudents } = useQuery({
-    queryKey: ['pending-students-dashboard'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('students')
-        .select('id, enrollment_status, profiles!inner(first_name, last_name, email)')
-        .eq('enrollment_status', 'pending');
-      if (error) throw error;
-      return (data || []).map((s: any) => ({
-        id: s.id,
-        first_name: s.profiles?.first_name,
-        last_name: s.profiles?.last_name,
-        email: s.profiles?.email,
-      }));
-    },
-  });
-
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load dashboard data',
-        variant: 'destructive',
-      });
-    }
-  }, [error, toast]);
-
-  if (isLoading || isLoadingInstructors) {
-    return <VinylLoader />;
-  }
 
   return (
     <>
