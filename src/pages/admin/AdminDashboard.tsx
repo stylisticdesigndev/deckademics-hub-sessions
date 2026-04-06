@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
-import { Loader2 } from 'lucide-react';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
 import { useQuery } from '@tanstack/react-query';
@@ -49,13 +49,7 @@ const AdminDashboard = () => {
   }, [error, toast]);
 
   if (isLoading || isLoadingInstructors) {
-    return (
-      <>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </>
-    );
+    return <VinylLoader />;
   }
 
   return (
