@@ -215,7 +215,7 @@ const InstructorStudents = () => {
         console.error('Error saving note to student_notes:', error);
         toast({
           title: "Error saving note",
-          description: `Failed to save note: ${error.message}`,
+          description: "Something went wrong. Please try again.",
           variant: "destructive",
         });
         return;
