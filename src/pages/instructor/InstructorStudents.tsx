@@ -149,7 +149,7 @@ const InstructorStudents = () => {
       // Map display value to database value - simplified
       const dbLevel = newLevel.toLowerCase();
       
-      console.log('Updating level:', { studentId, newLevel, dbLevel });
+      if (import.meta.env.DEV) console.log('Updating level:', { studentId, newLevel, dbLevel });
       
       // Update in database first
       const { error } = await supabase
@@ -199,7 +199,7 @@ const InstructorStudents = () => {
     if (!selectedStudent || !noteText.trim() || !instructorId) return;
     
     setIsAddingNote(true);
-    console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
+    if (import.meta.env.DEV) console.log('Adding note for student:', selectedStudent, 'by instructor:', instructorId, 'Note:', noteText);
     
     try {
       const { error } = await supabase
@@ -221,7 +221,7 @@ const InstructorStudents = () => {
         return;
       }
 
-      console.log('Note saved successfully to student_notes table');
+      if (import.meta.env.DEV) console.log('Note saved successfully to student_notes table');
       
       setShowNoteDialog(false);
       setSelectedStudent(null);
