@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, X, Clock, Calendar as CalendarIcon, Loader2, UserCheck, UserX, Clock3 } from 'lucide-react';
+import { Check, X, Clock, Calendar as CalendarIcon, UserCheck, UserX, Clock3 } from 'lucide-react';
+import VinylLoader from '@/components/ui/VinylLoader';
 import { Badge } from '@/components/ui/badge';
 import { useAdminAttendance } from '@/hooks/useAdminAttendance';
 import { StatsCard } from '@/components/cards/StatsCard';
@@ -24,13 +25,7 @@ const AdminAttendance = () => {
 
 
   if (isLoading) {
-    return (
-      <>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </>
-    );
+    return <VinylLoader message="Loading attendance..." />;
   }
 
   return (

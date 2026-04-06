@@ -1,11 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
+import { useAuth } from '@/providers/AuthProvider';
 import {
   LayoutDashboard,
   Users,
@@ -24,13 +25,8 @@ import {
 
 export const AdminNavigation = () => {
   const { pathname } = useLocation();
-  const [userId, setUserId] = useState<string | undefined>();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
-  }, []);
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: studentCounts } = useQuery({
     queryKey: ['admin-student-counts-nav'],
