@@ -1,62 +1,52 @@
-# Extract Curriculum Skills into Progress Skills
 
-## Summary
 
-Delete existing placeholder progress_skills and replace them with meaningful skills extracted from each level's curriculum (General Course Overview + Course Completion Requirements).
+# Four Changes: Dashboard Flicker, Slider Style, Remove Google Auth, Photo Requirement
 
-## Skills to Create
+## 1. Fix Dashboard Flickering (Instructor + Student)
 
-### Novice (10 skills)
+**Root cause**: The instructor dashboard shows a loading skeleton that flashes because `useInstructorDashboard` sets `loading: true` on mount, then the component re-renders multiple times as auth state settles (userData changes trigger refetch). The `instructorId` memo depends on `userData` which updates multiple times during auth initialization.
 
-1. Equipment Knowledge — Identify turntable/mixer components
-2. BPM Counting — Count BPMs and understand song structure
-3. Baby Scratch — Perform baby scratch on time
-4. Chop Scratch — Perform chop scratch on time
-5. 2-2-6 Pattern — Complete the 2-2-6 pattern at appropriate tempo
-6. Dropping on the 1 — Start a record on time
-7. 8-Count Recognition — Recognize the 8-count loop and identify the "1"
-8. Basic Mixing — Mix songs together on beat without major complications
-9. 2-Handed Approach — Use the push & pull method of adjustment
-10. Equipment Setup — Set up turntables/CDJs, mixer, speakers
+**Fix**:
+- In `useInstructorDashboard.ts`: Don't start fetching until `userData.role` is confirmed as `'instructor'`. Gate the `useEffect` on role being set, not just having a user ID. This prevents the fetch-cancel-refetch cycle.
+- In `InstructorDashboard.tsx`: Keep showing skeletons until data is truly ready, but prevent the flash between skeleton→content→skeleton by ensuring a single fetch cycle.
+- In `useStudentDashboardCore.ts`: Apply the same pattern — don't fetch student info until role is confirmed, preventing multiple loading state transitions.
 
-### Amateur (11 skills)
+**Files**: `src/hooks/instructor/useInstructorDashboard.ts`, `src/hooks/student/useStudentDashboardCore.ts`
 
-1. Chirp Scratch — Clean, consistent chirp from open and closed fader
-2. Transformer Scratch — Forward/backward transformer clicks
-3. Stab Scratch — Stab scratch technique
-4. Drag Scratch — Drag scratch technique
-5. Tear Scratch — Tear the sound in 2s and 4s
-6. Scratch Combinations — 2-3 scratch combos in succession
-7. Song Structure — Identify intro/verse/hook/outro by ear
-8. Mixing Proficiency — Cleanly blend two records and hit the breaks
-9. Manual Adjustments — 2-handed push & pull during live mixing
-10. Backspinning — Manual looping, break down 16 to 8, 8 to 4, etc.
-11. 8-Count Mastery — Identify 4/8/16/32 count intros/hooks by ear
+## 2. Restyle Skill Proficiency Slider to Green Progress Bar
 
-### Intermediate (10 skills)
+**Current**: Uses the default shadcn `Slider` component with purple (`bg-primary`) track and range.
 
-1. 7 Scratches Mastery — All 7 scratches at various tempos with combos
-2. Pick Up Scratch — Swing note scratch and Philly-Jersey combo
-3. Military Scratch — Military scratch pattern with fader control
-4. EQ Techniques — Use 3-band EQ effectively while mixing
-5. Digital Effects — Echo, flanger, phaser with correct parameters
-6. Manual Transitions — Manual echo, power downs, scratch-outs
-7. Digital Loops — Set auto/manual loops, implement in live sets
-8. Acapella Blending — Live remixes using acapellas over instrumentals
-9. Serato Platform — Cue points, loops, SP-6, troubleshooting
-10. Manual Looping Mastery — Backspin breakdowns 16→8→4→2→1
+**Fix**: Override the slider's classes inline in `InstructorStudents.tsx` where it's used for skill proficiency. Change the range fill to green (`bg-green-500`) and the track to gray (`bg-gray-200 dark:bg-gray-700`). Change the thumb to a smaller green circle. This makes it look like a draggable progress bar rather than a purple slider.
 
-### Advanced (1 skill)
+**File**: `src/pages/instructor/InstructorStudents.tsx` (lines ~769-775)
 
-1. Open Proficiency — Instructor-determined skill mastery focus. Instruct instructors to add the skill for each student in the Task section
+## 3. Remove Google Sign-In from All Auth Pages
 
-## Steps
+Remove the Google OAuth button, divider ("or"), and the `handleGoogleAuth` function from `AuthForm.tsx`. Delete the `SocialAuthButton` component file entirely.
 
-1. **Delete existing progress_skills** — Remove the 6 current placeholder records (using Supabase insert tool for DELETE)
-2. **Insert 32 new skills** — One INSERT with all skills, proper `level`, `order_index`, `name`, and `description` fields
+**Files to edit**: `src/components/auth/AuthForm.tsx` (remove `SocialAuthButton` import, `handleGoogleAuth` function, `AuthFormDivider`, and the button render)
+**Files to delete**: `src/components/auth/SocialAuthButton.tsx`, `src/components/auth/AuthFormDivider.tsx`
 
-## Technical Details
+## 4. Require Photo Upload Before Dashboard Access (After Approval)
 
-- Uses Supabase insert tool (data mutation, not schema change)
-- No code changes needed — the AdminSkills page and instructor assessment views already dynamically fetch from `progress_skills`
-- Skills will immediately appear in the Skills management page and instructor student assessments
+Add a gate in `ProtectedRoute.tsx`: after confirming the user is approved (not pending), check if the student's profile has an `avatar_url`. If not, redirect to a new `/student/photo-upload` page that requires them to upload a profile photo before proceeding.
+
+**New file**: `src/pages/student/StudentPhotoUpload.tsx` — a simple page with the existing `AvatarUpload` component and a "Continue to Dashboard" button that only enables after upload.
+**Edit**: `src/routes/ProtectedRoute.tsx` — after approval check passes for students, check `avatar_url` on profile; if null, render redirect to photo upload page.
+**Edit**: `src/App.tsx` — add the `/student/photo-upload` route (protected, student role, but outside the layout route so it renders standalone).
+
+## Files Summary
+
+| File | Action |
+|------|--------|
+| `src/hooks/instructor/useInstructorDashboard.ts` | Gate fetch on confirmed role |
+| `src/hooks/student/useStudentDashboardCore.ts` | Gate fetch on confirmed role |
+| `src/pages/instructor/InstructorStudents.tsx` | Restyle slider to green progress bar |
+| `src/components/auth/AuthForm.tsx` | Remove Google auth button, divider, handler |
+| `src/components/auth/SocialAuthButton.tsx` | Delete file |
+| `src/components/auth/AuthFormDivider.tsx` | Delete file |
+| `src/pages/student/StudentPhotoUpload.tsx` | New — mandatory photo upload page |
+| `src/routes/ProtectedRoute.tsx` | Add avatar_url check for students post-approval |
+| `src/App.tsx` | Add `/student/photo-upload` route |
+
