@@ -11,7 +11,7 @@ const StudentPhotoUpload = () => {
   const { session, userData } = useAuth();
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(userData?.profile?.avatar_url || null);
-  const [saving, setSaving] = useState(false);
+  
 
   const initials = `${userData?.profile?.first_name?.[0] || ''}${userData?.profile?.last_name?.[0] || ''}`.toUpperCase() || '?';
 
@@ -55,10 +55,10 @@ const StudentPhotoUpload = () => {
           <Button
             className="w-full"
             size="lg"
-            disabled={!avatarUrl || saving}
+            disabled={!avatarUrl}
             onClick={handleContinue}
           >
-            {saving ? 'Loading...' : 'Continue to Dashboard'}
+            Continue to Dashboard
           </Button>
         </CardContent>
       </Card>
