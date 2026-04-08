@@ -29,6 +29,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
+import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 
 // --------- TYPES ---------
 interface StudentNote {
