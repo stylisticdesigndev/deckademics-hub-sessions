@@ -95,7 +95,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                             <span className="text-xs">{student.progress}%</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">{student.level}</TableCell>
+                        <TableCell className="text-center capitalize">{student.level}</TableCell>
                         <TableCell className="text-center">
                           {student.hasNotes ? (
                             <span className="h-2 w-2 rounded-full bg-green-500 inline-block"/>
@@ -127,7 +127,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-sm">{student.name}</span>
-                      <span className="text-xs text-muted-foreground">{student.level}</span>
+                      <span className="text-xs text-muted-foreground capitalize">{student.level}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <ProgressBar value={student.progress} max={100} showPercentage={false} size="sm" />

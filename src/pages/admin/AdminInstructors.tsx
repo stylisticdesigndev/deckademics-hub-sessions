@@ -419,7 +419,7 @@ const AdminInstructors = () => {
                                   <div className="text-sm text-muted-foreground">{student.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>{student.level}</TableCell>
+                              <TableCell className="capitalize">{student.level}</TableCell>
                               <TableCell className="text-right">
                                 <Button
                                   variant="ghost"
@@ -469,7 +469,7 @@ const AdminInstructors = () => {
                                   <div className="text-sm text-muted-foreground">{student.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>{student.level}</TableCell>
+                              <TableCell className="capitalize">{student.level}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
