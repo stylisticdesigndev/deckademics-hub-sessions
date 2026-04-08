@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { ScheduleEditor } from '@/components/instructor/ScheduleEditor';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
+import { DAY_ORDER, sanitizeScheduleItems } from '@/utils/instructorSchedule';
 
 type TeachingScheduleItem = {
   day: string;
@@ -55,7 +56,7 @@ const InstructorProfile = () => {
         startDate: '',
         expertiseAreas: mockInstructorProfile.expertiseAreas,
       });
-      setTeachingSchedule(mockInstructorProfile.schedule);
+      setTeachingSchedule(sanitizeScheduleItems(mockInstructorProfile.schedule));
       setLoading(false);
       return;
     }
@@ -75,10 +76,9 @@ const InstructorProfile = () => {
           const { data: scheduleRows } = await supabase
             .from('instructor_schedules').select('day,hours').eq('instructor_id', session.user.id);
           if (scheduleRows && Array.isArray(scheduleRows) && scheduleRows.length > 0) {
-            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            const sorted = scheduleRows
-              .map(s => ({ day: s.day, hours: s.hours }))
-              .sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+            const sorted = sanitizeScheduleItems(
+              scheduleRows.map(s => ({ day: s.day, hours: s.hours }))
+            );
             setTeachingSchedule(sorted);
           } else {
             setTeachingSchedule(fallbackSchedule);
@@ -286,8 +286,7 @@ const InstructorProfile = () => {
           scheduleItems={teachingSchedule}
           instructorId={session?.user?.id || ''}
           onScheduleUpdated={(newSchedule) => {
-            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            setTeachingSchedule([...newSchedule].sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)));
+            setTeachingSchedule(sanitizeScheduleItems(newSchedule));
           }}
         />
       )}

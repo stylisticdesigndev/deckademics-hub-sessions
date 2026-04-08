@@ -43,7 +43,7 @@ import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorP
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
-import { ScheduleRowEditor } from '@/components/instructor/ScheduleRowEditor';
+import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
 
 interface Instructor {
   id: string;
@@ -272,7 +272,7 @@ const AdminInstructorPayments = () => {
       .from('instructor_schedules')
       .select('day, hours')
       .eq('instructor_id', instructor.id as any);
-    setScheduleItems((data as any[] || []).map((r: any) => ({ day: r.day, hours: r.hours })));
+    setScheduleItems(sanitizeScheduleItems((data as any[] || []).map((r: any) => ({ day: r.day, hours: r.hours }))));
     setShowScheduleDialog(true);
   };
 
@@ -285,8 +285,10 @@ const AdminInstructorPayments = () => {
         .delete()
         .eq('instructor_id', scheduleInstructor.id as any);
 
-      if (scheduleItems.length > 0) {
-        const rows = scheduleItems.map(item => ({
+      const sanitizedItems = sanitizeScheduleItems(scheduleItems);
+
+      if (sanitizedItems.length > 0) {
+        const rows = sanitizedItems.map(item => ({
           instructor_id: scheduleInstructor.id,
           day: item.day,
           hours: item.hours,
@@ -929,14 +931,13 @@ const AdminInstructorPayments = () => {
           </DialogHeader>
           <div className="py-4">
             {(() => {
-              const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-              const SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+              const DAYS = [...DAY_ORDER];
+              const SLOTS = [...CLASS_SLOTS];
               const SLOT_LABELS = ['3:30–5:00', '5:30–7:00', '7:30–9:00'];
 
-              // Build lookup from scheduleItems
               const selected = new Set<string>();
               scheduleItems.forEach(item => {
-                const slots = item.hours.split(', ').map(s => s.trim());
+                const slots = sanitizeScheduleHours(item.hours).split(', ').map(s => s.trim()).filter(Boolean);
                 slots.forEach(slot => selected.add(`${item.day}|${slot}`));
               });
 

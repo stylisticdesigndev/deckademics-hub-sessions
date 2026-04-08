@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
 
+import { CLASS_SLOTS } from '@/utils/instructorSchedule';
+
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-const CLASS_SLOTS = [
-  { label: '3:30 PM - 5:00 PM', value: '3:30 PM - 5:00 PM' },
-  { label: '5:30 PM - 7:00 PM', value: '5:30 PM - 7:00 PM' },
-  { label: '7:30 PM - 9:00 PM', value: '7:30 PM - 9:00 PM' },
-];
+const CLASS_SLOT_OPTIONS = CLASS_SLOTS.map((slot) => ({ label: slot, value: slot }));
 
 type TeachingScheduleItem = {
   id?: string;
@@ -45,8 +43,8 @@ export const ScheduleRowEditor = ({
       updated = [...selectedSlots, slot];
       // Sort by the order in CLASS_SLOTS
       updated.sort((a, b) => {
-        const ai = CLASS_SLOTS.findIndex(c => c.value === a);
-        const bi = CLASS_SLOTS.findIndex(c => c.value === b);
+        const ai = CLASS_SLOTS.indexOf(a as (typeof CLASS_SLOTS)[number]);
+        const bi = CLASS_SLOTS.indexOf(b as (typeof CLASS_SLOTS)[number]);
         return ai - bi;
       });
     }
@@ -86,7 +84,7 @@ export const ScheduleRowEditor = ({
       <div>
         <Label>Class Slots</Label>
         <div className="space-y-2 mt-1">
-          {CLASS_SLOTS.map((slot) => (
+          {CLASS_SLOT_OPTIONS.map((slot) => (
             <div key={slot.value} className="flex items-center space-x-2">
               <Checkbox
                 id={`slot-${index}-${slot.value}`}

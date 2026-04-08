@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { ScheduleRowEditor } from './ScheduleRowEditor';
 import { useScheduleActions } from './useScheduleActions';
+import { DAY_ORDER, sanitizeScheduleItems } from '@/utils/instructorSchedule';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -19,7 +20,7 @@ interface ScheduleEditorProps {
   onScheduleUpdated: (newSchedule: TeachingScheduleItem[]) => void;
 }
 
-const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const weekdays = [...DAY_ORDER];
 
 export const ScheduleEditorDialog = ({
   open, onOpenChange, scheduleItems, instructorId, onScheduleUpdated
@@ -30,14 +31,12 @@ export const ScheduleEditorDialog = ({
 
   useEffect(() => {
     if (open) {
-      const sorted = [...scheduleItems].sort(
-        (a, b) => weekdays.indexOf(a.day) - weekdays.indexOf(b.day)
-      );
+      const sorted = sanitizeScheduleItems([...scheduleItems]);
       setSchedule(sorted);
     }
   }, [open, scheduleItems]);
 
-  const handleAddDay = () => setSchedule([...schedule, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }]);
+  const handleAddDay = () => setSchedule([...schedule, { day: 'Monday', hours: '' }]);
   const handleRemoveDay = (index: number) => setSchedule(schedule.filter((_, i) => i !== index));
   const handleChangeDay = (index: number, day: string) => setSchedule(
     schedule.map((item, i) => i === index ? { ...item, day } : item)
