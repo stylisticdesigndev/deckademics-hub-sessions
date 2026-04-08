@@ -1,0 +1,1 @@
+ALTER TABLE public.bug_reports ADD COLUMN seen_by_admin boolean NOT NULL DEFAULT false;

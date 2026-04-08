@@ -211,6 +211,7 @@ export type Database = {
           id: string
           reporter_id: string
           reporter_role: string
+          seen_by_admin: boolean
           status: string
           title: string
           updated_at: string
@@ -222,6 +223,7 @@ export type Database = {
           id?: string
           reporter_id: string
           reporter_role: string
+          seen_by_admin?: boolean
           status?: string
           title: string
           updated_at?: string
@@ -233,6 +235,7 @@ export type Database = {
           id?: string
           reporter_id?: string
           reporter_role?: string
+          seen_by_admin?: boolean
           status?: string
           title?: string
           updated_at?: string

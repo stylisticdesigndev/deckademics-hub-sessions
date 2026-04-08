@@ -55,7 +55,7 @@ export const AdminNavigation = () => {
       const { count, error } = await supabase
         .from('bug_reports' as any)
         .select('*', { count: 'exact', head: true })
-        .in('status', ['open', 'in_progress']);
+        .eq('seen_by_admin', false);
       if (error) throw error;
       return count || 0;
     },
