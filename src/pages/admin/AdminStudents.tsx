@@ -298,7 +298,7 @@ const AdminStudents = () => {
       </div>
 
       <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="active">
             Active ({filteredActiveStudents.length})
           </TabsTrigger>
@@ -307,6 +307,14 @@ const AdminStudents = () => {
           </TabsTrigger>
           <TabsTrigger value="inactive">
             Inactive ({filteredInactiveStudents.length})
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="relative">
+            Schedule Requests
+            {pendingRequests.length > 0 && (
+              <Badge variant="destructive" className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                {pendingRequests.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
