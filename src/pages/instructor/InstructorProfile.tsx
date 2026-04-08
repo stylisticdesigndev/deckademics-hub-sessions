@@ -285,7 +285,10 @@ const InstructorProfile = () => {
           onOpenChange={setIsScheduleEditorOpen}
           scheduleItems={teachingSchedule}
           instructorId={session?.user?.id || ''}
-          onScheduleUpdated={(newSchedule) => setTeachingSchedule(newSchedule)}
+          onScheduleUpdated={(newSchedule) => {
+            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            setTeachingSchedule([...newSchedule].sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)));
+          }}
         />
       )}
     </div>
