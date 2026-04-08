@@ -3,6 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 
+/** Parse "3:30 PM" → hours (0-23) */
+function parseTimeToHours(timeStr: string): number {
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return 12;
+  let h = parseInt(match[1], 10);
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h;
+}
+
+/** Parse "3:30 PM" → minutes */
+function parseTimeToMinutes(timeStr: string): number {
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return 0;
+  return parseInt(match[2], 10);
+}
+
 export interface AttendanceRecord {
   date: string;
   status: 'present' | 'absent';
