@@ -1072,6 +1072,75 @@ const InstructorStudents = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Schedule Change Request Dialog */}
+        <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Request Schedule Change</DialogTitle>
+              <DialogDescription>
+                Submit a schedule change request for {detailedStudent?.name}. An admin will review and approve it.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Day</label>
+                <Select value={scheduleNewDay} onValueChange={setScheduleNewDay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS.map(day => (
+                      <SelectItem key={day} value={day}>{day}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Time Slot</label>
+                <Select value={scheduleNewTime} onValueChange={setScheduleNewTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map(slot => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason</label>
+                <Textarea
+                  value={scheduleReason}
+                  onChange={(e) => setScheduleReason(e.target.value)}
+                  placeholder="Why does the schedule need to change?"
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
+              <Button
+                disabled={!scheduleNewDay || !scheduleNewTime || createRequest.isPending}
+                onClick={async () => {
+                  if (!detailedStudent) return;
+                  await createRequest.mutateAsync({
+                    student_id: detailedStudent.id,
+                    prev_day: null,
+                    prev_time: null,
+                    new_day: scheduleNewDay,
+                    new_time: scheduleNewTime,
+                    reason: scheduleReason,
+                  });
+                  setShowScheduleDialog(false);
+                }}
+              >
+                {createRequest.isPending ? 'Submitting...' : 'Submit Request'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </>
   );
 };
