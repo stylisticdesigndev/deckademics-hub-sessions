@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Bug, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { capitalizeLevel } from '@/lib/utils';
+import { useEffect } from 'react';
 
 interface BugReport {
   id: string;
