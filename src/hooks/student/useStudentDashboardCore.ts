@@ -72,7 +72,8 @@ export function useStudentDashboardCore() {
           setFetchError(studentError.message);
         }
       } else if (studentInfo && typeof studentInfo === 'object') {
-        setStudentLevel(studentInfo.level || 'Novice');
+        const rawLevel = studentInfo.level || 'Novice';
+        setStudentLevel(rawLevel.charAt(0).toUpperCase() + rawLevel.slice(1));
         setClassDay(studentInfo.class_day || null);
         setClassTime(studentInfo.class_time || null);
         // Fetch assigned instructor name
