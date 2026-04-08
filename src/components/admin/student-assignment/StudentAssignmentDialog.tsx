@@ -148,7 +148,7 @@ export const StudentAssignmentDialog: React.FC<StudentAssignmentDialogProps> = (
                       <TableCell className="text-muted-foreground">
                         {student.email}
                       </TableCell>
-                      <TableCell>{student.level}</TableCell>
+                      <TableCell className="capitalize">{student.level}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-green-500/10 text-green-500">
                           {student.enrollment_status}
