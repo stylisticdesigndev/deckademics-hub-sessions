@@ -29,7 +29,12 @@ export const ScheduleEditorDialog = ({
   const { saveSchedule } = useScheduleActions(schedule, instructorId, onScheduleUpdated, onOpenChange);
 
   useEffect(() => {
-    if (open) setSchedule([...scheduleItems]);
+    if (open) {
+      const sorted = [...scheduleItems].sort(
+        (a, b) => weekdays.indexOf(a.day) - weekdays.indexOf(b.day)
+      );
+      setSchedule(sorted);
+    }
   }, [open, scheduleItems]);
 
   const handleAddDay = () => setSchedule([...schedule, { day: 'Monday', hours: '2:00 PM - 5:00 PM' }]);

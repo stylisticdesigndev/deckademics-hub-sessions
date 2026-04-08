@@ -79,7 +79,11 @@ const InstructorProfile = () => {
           const { data: scheduleRows } = await supabase
             .from('instructor_schedules').select('day,hours').eq('instructor_id', session.user.id);
           if (scheduleRows && Array.isArray(scheduleRows) && scheduleRows.length > 0) {
-            setTeachingSchedule(scheduleRows.map(s => ({ day: s.day, hours: s.hours })));
+            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const sorted = scheduleRows
+              .map(s => ({ day: s.day, hours: s.hours }))
+              .sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+            setTeachingSchedule(sorted);
           } else {
             setTeachingSchedule(fallbackSchedule);
           }
@@ -281,7 +285,10 @@ const InstructorProfile = () => {
           onOpenChange={setIsScheduleEditorOpen}
           scheduleItems={teachingSchedule}
           instructorId={session?.user?.id || ''}
-          onScheduleUpdated={(newSchedule) => setTeachingSchedule(newSchedule)}
+          onScheduleUpdated={(newSchedule) => {
+            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            setTeachingSchedule([...newSchedule].sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)));
+          }}
         />
       )}
     </div>
