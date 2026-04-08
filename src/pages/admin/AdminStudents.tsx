@@ -2,8 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
-import {
-  Card,
+import ScheduleRequestsList from '@/components/admin/schedule-requests/ScheduleRequestsList';
+import { useScheduleChangeRequests } from '@/hooks/useScheduleChangeRequests';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { CalendarIcon } from 'lucide-react';
   CardContent,
   CardDescription,
   CardHeader,
