@@ -49,6 +49,19 @@ export const AdminNavigation = () => {
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
+  const { data: openBugCount = 0 } = useQuery({
+    queryKey: ['admin-open-bug-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('bug_reports' as any)
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['open', 'in_progress']);
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 30000,
+  });
+
   const pendingStudentsCount = studentCounts?.pending || 0;
   const pendingInstructorsCount = instructorCounts?.pending || 0;
 
@@ -64,7 +77,7 @@ export const AdminNavigation = () => {
     { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
     { title: "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/admin/announcements" },
-    { title: "Bug Reports", icon: BugIcon, href: "/admin/bug-reports" },
+    { title: "Bug Reports", icon: BugIcon, href: "/admin/bug-reports", badge: openBugCount },
     { title: "Profile", icon: UserCog, href: "/admin/profile" },
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];
