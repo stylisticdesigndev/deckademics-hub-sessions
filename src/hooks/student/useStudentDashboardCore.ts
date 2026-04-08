@@ -73,7 +73,8 @@ export function useStudentDashboardCore() {
         }
       } else if (studentInfo && typeof studentInfo === 'object') {
         setStudentLevel(studentInfo.level || 'Novice');
-        
+        setClassDay(studentInfo.class_day || null);
+        setClassTime(studentInfo.class_time || null);
         // Fetch assigned instructor name
         if (studentInfo.instructor_id) {
           const { data: instructorProfile } = await supabase
