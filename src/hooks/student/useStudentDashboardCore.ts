@@ -22,6 +22,8 @@ export function useStudentDashboardCore() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [assignedInstructor, setAssignedInstructor] = useState<string | null>(null);
+  const [classDay, setClassDay] = useState<string | null>(null);
+  const [classTime, setClassTime] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
   const dataFetchedRef = useRef(false);
