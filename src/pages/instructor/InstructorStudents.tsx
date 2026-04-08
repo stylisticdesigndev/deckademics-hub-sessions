@@ -86,6 +86,16 @@ const InstructorStudents = () => {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
 
+  // Schedule change request state
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleNewDay, setScheduleNewDay] = useState('');
+  const [scheduleNewTime, setScheduleNewTime] = useState('');
+  const [scheduleReason, setScheduleReason] = useState('');
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+
+  const { createRequest, pendingRequests } = useScheduleChangeRequests('instructor');
+
   const fetchStudentTasks = async (studentId: string) => {
     setLoadingTasks(true);
     try {
