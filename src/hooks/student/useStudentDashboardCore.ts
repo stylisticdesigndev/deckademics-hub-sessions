@@ -53,7 +53,7 @@ export function useStudentDashboardCore() {
 
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
-        .select('level, enrollment_status, notes, instructor_id')
+        .select('level, enrollment_status, notes, instructor_id, class_day, class_time')
         .eq('id', userId as any)
         .maybeSingle();
 
