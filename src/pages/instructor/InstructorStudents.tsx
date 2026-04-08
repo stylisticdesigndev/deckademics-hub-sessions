@@ -744,7 +744,7 @@ const InstructorStudents = () => {
                       )}
                     </div>
                     
-                    <div className="border-t pt-4">
+                    <div className="border-t pt-4 space-y-3">
                       <h3 className="font-medium mb-2">Overall Progress</h3>
                       <div className="flex items-center gap-2">
                         <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
@@ -752,6 +752,26 @@ const InstructorStudents = () => {
                           {detailedStudent.progress}%
                         </span>
                       </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setScheduleNewDay('');
+                          setScheduleNewTime('');
+                          setScheduleReason('');
+                          setShowScheduleDialog(true);
+                        }}
+                        disabled={pendingRequests.some(r => r.student_id === detailedStudent.id)}
+                      >
+                        <CalendarClock className="h-4 w-4 mr-2" />
+                        {pendingRequests.some(r => r.student_id === detailedStudent.id)
+                          ? 'Schedule Change Pending'
+                          : 'Request Schedule Change'}
+                      </Button>
                     </div>
                   </TabsContent>
                   
