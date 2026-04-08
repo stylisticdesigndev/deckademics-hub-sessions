@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { addDays, getDay, startOfDay, format } from 'date-fns';
 import { useAuth } from '@/providers/AuthProvider';
 import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
 import { useStudentProgress } from './dashboard/useStudentProgress';
