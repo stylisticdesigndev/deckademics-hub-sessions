@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
+import { sanitizeScheduleItems } from '@/utils/instructorSchedule';
 
 type TeachingScheduleItem = {
   id?: string;
@@ -56,9 +57,10 @@ export function useScheduleActions(
         throw deleteError;
       }
 
-      if (schedule.length > 0) {
-        // Create properly typed schedule data
-        const scheduleData = schedule.map(item => ({
+      const sanitizedSchedule = sanitizeScheduleItems(schedule);
+
+      if (sanitizedSchedule.length > 0) {
+        const scheduleData = sanitizedSchedule.map(item => ({
           instructor_id: instructorId,
           day: item.day,
           hours: item.hours
@@ -85,7 +87,7 @@ export function useScheduleActions(
         title: "Schedule updated",
         description: "Your teaching schedule has been saved successfully."
       });
-      onScheduleUpdated(schedule);
+      onScheduleUpdated(sanitizedSchedule);
       closeDialog(false);
       return true;
     } catch (error) {
