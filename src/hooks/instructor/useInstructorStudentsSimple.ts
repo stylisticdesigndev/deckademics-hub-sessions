@@ -30,6 +30,8 @@ interface Student {
   enrollmentDate: string;
   notes?: StudentNote[];
   skillProgress?: SkillProgress[];
+  classDay?: string;
+  classTime?: string;
 }
 
 
