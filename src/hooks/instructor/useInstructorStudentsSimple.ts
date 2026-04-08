@@ -40,6 +40,8 @@ interface StudentWithProfile {
   level: string;
   start_date: string;
   notes: string | null;
+  class_day: string | null;
+  class_time: string | null;
   profiles: {
     first_name: string;
     last_name: string;
