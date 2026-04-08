@@ -27,6 +27,9 @@ interface StudentWithProfile {
   level: string;
   enrollment_status: string;
   instructor_id?: string;
+  start_date?: string | null;
+  class_day?: string | null;
+  class_time?: string | null;
   profile: {
     first_name: string | null;
     last_name: string | null;
@@ -40,6 +43,9 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
   const level = studentObj.level || 'novice';
   const enrollment_status = studentObj.enrollment_status;
   const instructor_id = studentObj.instructor_id;
+  const start_date = studentObj.start_date;
+  const class_day = studentObj.class_day;
+  const class_time = studentObj.class_time;
   const profiles = studentObj.profiles;
   const instructors = studentObj.instructors;
 
@@ -50,6 +56,9 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
     level,
     enrollment_status,
     instructor_id,
+    start_date,
+    class_day,
+    class_time,
     profile: {
       first_name: profiles.first_name,
       last_name: profiles.last_name,
@@ -74,8 +83,8 @@ export const useAdminStudents = () => {
   const fetchStudentsByStatus = async (statuses: string[], includeInstructor = false): Promise<StudentWithProfile[]> => {
     try {
       const selectQuery = includeInstructor
-        ? `id, level, enrollment_status, instructor_id, profiles (first_name, last_name, email), instructors (id, status, profiles (first_name, last_name, email))`
-        : `id, level, enrollment_status, instructor_id, profiles (first_name, last_name, email)`;
+        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email), instructors (id, status, profiles (first_name, last_name, email))`
+        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email)`;
 
       let query = supabase.from('students').select(selectQuery);
 
@@ -214,6 +223,33 @@ export const useAdminStudents = () => {
     }
   });
 
+  const updateStudentSchedule = useMutation({
+    mutationFn: async ({ studentId, start_date, class_day, class_time }: {
+      studentId: string;
+      start_date?: string | null;
+      class_day?: string | null;
+      class_time?: string | null;
+    }) => {
+      const updates: any = {};
+      if (start_date !== undefined) updates.start_date = start_date;
+      if (class_day !== undefined) updates.class_day = class_day;
+      if (class_time !== undefined) updates.class_time = class_time;
+
+      const { error } = await supabase
+        .from('students')
+        .update(updates as any)
+        .eq('id', studentId as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      toast.success('Student schedule updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update schedule: ${error.message}`);
+    }
+  });
+
   const refetchData = async () => {
     await Promise.all([refetchActive(), refetchPending(), refetchInactive()]);
   };
@@ -228,6 +264,7 @@ export const useAdminStudents = () => {
     deactivateStudent,
     reactivateStudent,
     updateStudentLevel,
+    updateStudentSchedule,
     refetchData
   };
 };

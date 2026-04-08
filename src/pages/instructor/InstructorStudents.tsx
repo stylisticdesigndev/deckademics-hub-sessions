@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +29,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
+import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -84,6 +85,16 @@ const InstructorStudents = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
+
+  // Schedule change request state
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleNewDay, setScheduleNewDay] = useState('');
+  const [scheduleNewTime, setScheduleNewTime] = useState('');
+  const [scheduleReason, setScheduleReason] = useState('');
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+
+  const { createRequest, pendingRequests } = useScheduleChangeRequests('instructor');
 
   const fetchStudentTasks = async (studentId: string) => {
     setLoadingTasks(true);
@@ -733,7 +744,7 @@ const InstructorStudents = () => {
                       )}
                     </div>
                     
-                    <div className="border-t pt-4">
+                    <div className="border-t pt-4 space-y-3">
                       <h3 className="font-medium mb-2">Overall Progress</h3>
                       <div className="flex items-center gap-2">
                         <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
@@ -741,6 +752,26 @@ const InstructorStudents = () => {
                           {detailedStudent.progress}%
                         </span>
                       </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setScheduleNewDay('');
+                          setScheduleNewTime('');
+                          setScheduleReason('');
+                          setShowScheduleDialog(true);
+                        }}
+                        disabled={pendingRequests.some(r => r.student_id === detailedStudent.id)}
+                      >
+                        <CalendarClock className="h-4 w-4 mr-2" />
+                        {pendingRequests.some(r => r.student_id === detailedStudent.id)
+                          ? 'Schedule Change Pending'
+                          : 'Request Schedule Change'}
+                      </Button>
                     </div>
                   </TabsContent>
                   
@@ -1038,6 +1069,75 @@ const InstructorStudents = () => {
                   toast({ title: "Error", description: "Failed to update note.", variant: "destructive" });
                 }
               }}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Schedule Change Request Dialog */}
+        <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Request Schedule Change</DialogTitle>
+              <DialogDescription>
+                Submit a schedule change request for {detailedStudent?.name}. An admin will review and approve it.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Day</label>
+                <Select value={scheduleNewDay} onValueChange={setScheduleNewDay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS.map(day => (
+                      <SelectItem key={day} value={day}>{day}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Time Slot</label>
+                <Select value={scheduleNewTime} onValueChange={setScheduleNewTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map(slot => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason</label>
+                <Textarea
+                  value={scheduleReason}
+                  onChange={(e) => setScheduleReason(e.target.value)}
+                  placeholder="Why does the schedule need to change?"
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
+              <Button
+                disabled={!scheduleNewDay || !scheduleNewTime || createRequest.isPending}
+                onClick={async () => {
+                  if (!detailedStudent) return;
+                  await createRequest.mutateAsync({
+                    student_id: detailedStudent.id,
+                    prev_day: null,
+                    prev_time: null,
+                    new_day: scheduleNewDay,
+                    new_time: scheduleNewTime,
+                    reason: scheduleReason,
+                  });
+                  setShowScheduleDialog(false);
+                }}
+              >
+                {createRequest.isPending ? 'Submitting...' : 'Submit Request'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

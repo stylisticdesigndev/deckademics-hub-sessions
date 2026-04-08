@@ -2,6 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
+import ScheduleRequestsList from '@/components/admin/schedule-requests/ScheduleRequestsList';
+import { useScheduleChangeRequests } from '@/hooks/useScheduleChangeRequests';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { CalendarIcon } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -89,8 +96,14 @@ const AdminStudents = () => {
     deactivateStudent,
     reactivateStudent,
     updateStudentLevel,
+    updateStudentSchedule,
     refetchData
   } = useAdminStudents();
+
+  const { pendingRequests } = useScheduleChangeRequests('admin');
+
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
 
   useEffect(() => {
     setSelectedIds([]);
@@ -285,7 +298,7 @@ const AdminStudents = () => {
       </div>
 
       <Tabs value={selectedTabValue} onValueChange={setSelectedTabValue}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="active">
             Active ({filteredActiveStudents.length})
           </TabsTrigger>
@@ -294,6 +307,14 @@ const AdminStudents = () => {
           </TabsTrigger>
           <TabsTrigger value="inactive">
             Inactive ({filteredInactiveStudents.length})
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="relative">
+            Schedule Requests
+            {pendingRequests.length > 0 && (
+              <Badge variant="destructive" className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                {pendingRequests.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -336,6 +357,8 @@ const AdminStudents = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>Instructor</TableHead>
                       <TableHead>Level</TableHead>
+                      <TableHead>Day</TableHead>
+                      <TableHead>Time</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -363,6 +386,12 @@ const AdminStudents = () => {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">{student.level}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(student as any).class_day || '—'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(student as any).class_time || '—'}
                           </TableCell>
                           <TableCell className="text-center">
                             {getStatusBadge('active')}
@@ -423,7 +452,7 @@ const AdminStudents = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           No active students found.
                         </TableCell>
                       </TableRow>
@@ -648,6 +677,11 @@ const AdminStudents = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Schedule Requests Tab */}
+        <TabsContent value="requests" className="space-y-4 pt-4">
+          <ScheduleRequestsList />
+        </TabsContent>
       </Tabs>
 
       {/* Student Detail Sheet */}
@@ -689,7 +723,63 @@ const AdminStudents = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Start Date</p>
-                  <p className="text-sm font-medium">{(viewedStudent as any).start_date || 'Not set'}</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !(viewedStudent as any).start_date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {(viewedStudent as any).start_date ? format(new Date((viewedStudent as any).start_date), 'PPP') : 'Pick a date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={(viewedStudent as any).start_date ? new Date((viewedStudent as any).start_date) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            updateStudentSchedule.mutate({
+                              studentId: viewedStudent.id,
+                              start_date: format(date, 'yyyy-MM-dd'),
+                            });
+                          }
+                        }}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Class Day</p>
+                  <Select
+                    value={(viewedStudent as any).class_day || ''}
+                    onValueChange={(value) => updateStudentSchedule.mutate({ studentId: viewedStudent.id, class_day: value })}
+                    disabled={updateStudentSchedule.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAYS.map(day => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Class Time</p>
+                  <Select
+                    value={(viewedStudent as any).class_time || ''}
+                    onValueChange={(value) => updateStudentSchedule.mutate({ studentId: viewedStudent.id, class_time: value })}
+                    disabled={updateStudentSchedule.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_SLOTS.map(slot => (
+                        <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Instructor</p>

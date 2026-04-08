@@ -711,6 +711,73 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_change_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          new_day: string
+          new_time: string
+          prev_day: string | null
+          prev_time: string | null
+          reason: string | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          new_day: string
+          new_time: string
+          prev_day?: string | null
+          prev_time?: string | null
+          reason?: string | null
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          new_day?: string
+          new_time?: string
+          prev_day?: string | null
+          prev_time?: string | null
+          reason?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_absences: {
         Row: {
           absence_date: string
@@ -914,6 +981,8 @@ export type Database = {
       }
       students: {
         Row: {
+          class_day: string | null
+          class_time: string | null
           enrollment_status: string | null
           id: string
           instructor_id: string | null
@@ -922,6 +991,8 @@ export type Database = {
           start_date: string | null
         }
         Insert: {
+          class_day?: string | null
+          class_time?: string | null
           enrollment_status?: string | null
           id: string
           instructor_id?: string | null
@@ -930,6 +1001,8 @@ export type Database = {
           start_date?: string | null
         }
         Update: {
+          class_day?: string | null
+          class_time?: string | null
           enrollment_status?: string | null
           id?: string
           instructor_id?: string | null
