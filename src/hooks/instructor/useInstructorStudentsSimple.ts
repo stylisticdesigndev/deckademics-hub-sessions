@@ -30,6 +30,8 @@ interface Student {
   enrollmentDate: string;
   notes?: StudentNote[];
   skillProgress?: SkillProgress[];
+  classDay?: string;
+  classTime?: string;
 }
 
 
@@ -38,6 +40,8 @@ interface StudentWithProfile {
   level: string;
   start_date: string;
   notes: string | null;
+  class_day: string | null;
+  class_time: string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -67,6 +71,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             level,
             start_date,
             notes,
+            class_day,
+            class_time,
             profiles!inner(first_name, last_name, email, avatar_url)
           `)
           .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
@@ -190,6 +196,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             nextClass: '',
             notes: notesById[student.id] || [],
             skillProgress,
+            classDay: student.class_day || undefined,
+            classTime: student.class_time || undefined,
           };
         });
 
