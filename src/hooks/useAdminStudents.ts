@@ -27,6 +27,9 @@ interface StudentWithProfile {
   level: string;
   enrollment_status: string;
   instructor_id?: string;
+  start_date?: string | null;
+  class_day?: string | null;
+  class_time?: string | null;
   profile: {
     first_name: string | null;
     last_name: string | null;
