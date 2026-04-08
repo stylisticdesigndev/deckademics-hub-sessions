@@ -1,260 +1,105 @@
 
 
-# Full QA Audit and Security Report — Deckademics DJ School
+# Production-Ready Audit Plan — Deckademics DJ School
 
-## Current Security Scan: 11 Findings (5 Critical, 6 Warnings)
+## Overview
 
----
-
-## SECTION A: SECURITY ISSUES
-
-### CRITICAL — Must Fix
-
-**S1. Instructors can view ALL user profiles (emails, names, bios)**
-- Policy `"Instructors can view student profiles"` on `profiles` uses `USING (has_role(auth.uid(), 'instructor'))` with no row filter
-- Any instructor sees every user's profile, including other instructors and admins
-- Fix: Restrict to `WHERE profiles.id IN (SELECT s.id FROM students s WHERE s.instructor_id = auth.uid())`
-
-**S2. Instructors can view ALL student records (notes, enrollment status, assigned instructor)**
-- Policy `"Instructors can view student records"` on `students` uses `get_user_role(auth.uid()) = 'instructor'` with no row filter
-- Any instructor can read every student's data, not just their assigned students
-- Fix: Change to `WHERE instructor_id = auth.uid()`
-
-**S3. Users may escalate their own role via profile update**
-- Policy `"Users can update their own profile"` checks `role = get_profile_role(auth.uid())` in WITH CHECK
-- Due to Postgres transaction timing, this may not reliably prevent role changes
-- Fix: Use a BEFORE UPDATE trigger that prevents changing the `role` column, or use a column-specific grant
-
-**S4. Private student notes broadcast to all Realtime subscribers**
-- `student_notes` is published to Supabase Realtime but has no policies on `realtime.messages`
-- Any authenticated user can subscribe and receive all note changes
-- Fix: Either remove `student_notes` from Realtime publication, or add authorization policies on `realtime.messages`
-
-**S5. Private message attachments are publicly readable**
-- The `message-attachments` bucket is public and the SELECT policy allows unauthenticated access
-- Fix: Make bucket private, or restrict SELECT to authenticated users who are the sender/receiver of the related message
-
-### WARNINGS — Should Fix
-
-**S6. Several student table policies apply to `{public}` instead of `{authenticated}`**
-- 9 policies on `students` table use `{public}` role (INSERT, DELETE, UPDATE, SELECT)
-- While they use `is_admin()` or `auth.uid()`, applying to `{public}` is incorrect practice
-- Fix: Change all to `{authenticated}`
-
-**S7. Any authenticated user can upload background videos**
-- Multiple overlapping INSERT policies on `background-videos` bucket
-- Fix: Restrict uploads to admin users only; deduplicate overlapping policies
-
-**S8. Instructor schedule self-management policy applies to `{public}`**
-- `"Instructors can manage their own schedules"` uses `{public}` instead of `{authenticated}`
-- Fix: Change to `{authenticated}`
-
-**S9. No Realtime channel authorization**
-- No RLS policies on `realtime.messages` — any authenticated user can subscribe to any topic
-- Fix: Add policies on `realtime.messages` scoping by `auth.uid()`
-
-**S10. Leaked password protection disabled** — Must enable in Supabase Dashboard > Auth > Settings
-
-**S11. Postgres version needs security patches** — Must upgrade in Supabase Dashboard > Settings > Infrastructure
-
-### PREVIOUSLY FIXED (confirmed resolved)
-- Blanket storage policy dropped
-- Instructor public exposure restricted to authenticated
-- Public admin notification insert removed
-- Blanket profile insert removed
-- Error messages sanitized in toasts
+This plan covers five areas: code documentation, security cleanup, ungated console.log cleanup, UI polish, and dead code removal. All demo logic is explicitly preserved and labeled.
 
 ---
 
-## SECTION B: FUNCTIONAL QA FINDINGS
+## 1. Code Documentation
 
-### B1. Duplicate/Overlapping Policies (technical debt)
-- `students` table has both `"Admins can view all student records"` (ALL) and `"Admins can view any student record"` (SELECT) — redundant
-- `"Instructors can update assigned students"` exists twice (one `{authenticated}`, one `{public}`)
-- `background-videos` has 3 SELECT, 2 INSERT, 2 DELETE, 2 UPDATE policies — should consolidate
+Add JSDoc-style block comments to the following core files explaining architecture and data flow:
 
-### B2. `Instructors can update their own information` on `instructors` table still uses `{public}`
-- Line 602-607 in schema: `Applies to: {public}`, `USING: auth.uid() = id`
-- Should be `{authenticated}`
+**Files to document:**
+- `src/providers/AuthProvider.tsx` — Top-of-file summary explaining the auth lifecycle (session init, profile fetch via `get_user_role` RPC, role-based redirect, sign-up with metadata, sign-out cleanup). Mark `createProfileFromMetadata` as a fallback path.
+- `src/integrations/supabase/client.ts` — Explain env-var sourcing and the typed client.
+- `src/routes/ProtectedRoute.tsx` — Explain the multi-stage gate: auth loading → profile wait → approval check → photo gate → render.
+- `src/hooks/student/useStudentDashboard.ts` — Explain the data orchestration pattern.
+- `src/hooks/instructor/useInstructorDashboard.ts` — Same.
+- `src/hooks/useAdminDashboard.ts` — Same.
 
-### B3. `as any` casts throughout codebase
-- `progress_skills` and `student_tasks` are cast as `any` in multiple hooks because they're not in the generated Supabase types
-- Fix: Regenerate `src/integrations/supabase/types.ts` to include these tables, then remove casts
-
-### B4. `console.log` statements in production
-- Extensive debug logging throughout `AuthProvider.tsx`, `useInstructorDashboard.ts`, `InstructorStudents.tsx`
-- All guarded by `import.meta.env.DEV` in AuthProvider (good), but NOT guarded in hooks/pages
-- Fix: Gate remaining console.logs behind `import.meta.env.DEV`
-
-### B5. Navigation components call `supabase.auth.getUser()` separately
-- `StudentNavigation`, `InstructorNavigation`, `AdminNavigation` each make a redundant `getUser()` call
-- Should derive userId from `useAuth()` context instead
-
-### B6. Hardcoded course_id in InstructorStudents.tsx
-- Line 275: `course_id: '04e2bb7f-e11c-44e0-8153-399b93923e3b'` — hardcoded UUID
-- Should be dynamic or configurable
-
-### B7. AdminStudents loading state uses Loader2 spinner, not VinylLoader
-- Line 244-249: Uses `<Loader2 className="h-8 w-8 animate-spin" />` instead of `<VinylLoader />`
-- Same issue in `AdminAttendance.tsx` (line 27-33) and `AdminPayments.tsx`
-
-### B8. Announcements SELECT policy allows unauthenticated access
-- `"Announcements are viewable by everyone"` uses `{public}` with `USING (true)`
-- Same for `courses` and `classes` tables
-- Low risk since these are semi-public data, but should be restricted to `{authenticated}` for consistency
+**Demo-section labels** — Add `// ===== DEMO MODE START =====` / `// ===== DEMO MODE END =====` markers in:
+- `src/pages/student/StudentDashboard.tsx` (lines 74-88, the `active*` variable block)
+- `src/pages/student/StudentDashboardGate.tsx` (demoMode state)
+- `src/pages/instructor/InstructorDashboard.tsx` (lines 35-38)
+- `src/pages/instructor/InstructorDashboardGate.tsx` (demoMode state)
+- `src/data/mockDashboardData.ts` — Add top-of-file comment: "DEMO DATA — remove this entire file when demo mode is no longer needed"
+- `src/data/mockInstructorData.ts` — Same
 
 ---
 
-## SECTION C: IMPLEMENTATION PLAN
+## 2. Security: Remove Hardcoded Fallback Keys
 
-### Database Migration (single migration file)
+**File:** `src/integrations/supabase/client.ts`
 
-```sql
--- S1: Restrict instructor profile access to assigned students only
-DROP POLICY IF EXISTS "Instructors can view student profiles" ON public.profiles;
-CREATE POLICY "Instructors can view assigned student profiles" ON public.profiles
-  FOR SELECT TO authenticated
-  USING (
-    has_role(auth.uid(), 'instructor'::app_role)
-    AND id IN (SELECT s.id FROM public.students s WHERE s.instructor_id = auth.uid())
-  );
+Remove the fallback URL/key constants (lines 10-11) and the `||` fallbacks (lines 14-15). The `.env` file always provides these values in the Lovable environment, so the fallbacks are unnecessary and constitute hardcoded credentials in the source.
 
--- S2: Restrict instructor student record access
-DROP POLICY IF EXISTS "Instructors can view student records" ON public.students;
-CREATE POLICY "Instructors can view assigned student records" ON public.students
-  FOR SELECT TO authenticated
-  USING (instructor_id = auth.uid());
-
--- S3: Prevent role escalation via profile update
--- Replace the WITH CHECK to explicitly prevent role changes
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
-CREATE POLICY "Users can update their own profile" ON public.profiles
-  FOR UPDATE TO authenticated
-  USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id AND role = get_profile_role(auth.uid()));
-
--- S4: Remove student_notes from Realtime publication
-ALTER PUBLICATION supabase_realtime DROP TABLE public.student_notes;
-
--- S5: Restrict message-attachments to authenticated users
-DROP POLICY IF EXISTS "Anyone can view message attachments" ON storage.objects;
-CREATE POLICY "Authenticated users can view message attachments" ON storage.objects
-  FOR SELECT TO authenticated
-  USING (bucket_id = 'message-attachments');
-
--- S6: Fix student table policies from {public} to {authenticated}
-DROP POLICY IF EXISTS "Admins can create student records" ON public.students;
-CREATE POLICY "Admins can create student records" ON public.students
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
-
-DROP POLICY IF EXISTS "Admins can delete any student record" ON public.students;
-CREATE POLICY "Admins can delete any student record" ON public.students
-  FOR DELETE TO authenticated USING (is_admin());
-
-DROP POLICY IF EXISTS "Admins can update any student record" ON public.students;
-CREATE POLICY "Admins can update any student record" ON public.students
-  FOR UPDATE TO authenticated USING (is_admin());
-
-DROP POLICY IF EXISTS "Admins can view all student records" ON public.students;
--- This ALL policy is redundant with the specific ones, drop it
-
-DROP POLICY IF EXISTS "Admins can view any student record" ON public.students;
-CREATE POLICY "Admins can view any student record" ON public.students
-  FOR SELECT TO authenticated USING (is_admin());
-
--- Remove duplicate instructor update policy
-DROP POLICY IF EXISTS "Instructors can update their assigned students" ON public.students;
-
-DROP POLICY IF EXISTS "Students can update their own information" ON public.students;
-CREATE POLICY "Students can update their own information" ON public.students
-  FOR UPDATE TO authenticated USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can view their own student record" ON public.students;
-CREATE POLICY "Users can view their own student record" ON public.students
-  FOR SELECT TO authenticated USING (auth.uid() = id);
-
--- S7: Restrict background video uploads to admins
-DROP POLICY IF EXISTS "Anyone can upload background videos" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload videos" ON storage.objects;
-CREATE POLICY "Admins can upload background videos" ON storage.objects
-  FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'background-videos' AND has_role(auth.uid(), 'admin'::app_role));
-
--- Deduplicate SELECT policies on background-videos
-DROP POLICY IF EXISTS "Anyone can view background videos" ON storage.objects;
-DROP POLICY IF EXISTS "Public Access" ON storage.objects;
--- Keep only "Public read for background videos"
-
--- Deduplicate DELETE/UPDATE policies
-DROP POLICY IF EXISTS "Users can delete their own background videos" ON storage.objects;
-DROP POLICY IF EXISTS "Users can update their own background videos" ON storage.objects;
--- Keep "Authenticated users can delete/update their own videos"
-
--- S8: Fix instructor schedule policy
-DROP POLICY IF EXISTS "Instructors can manage their own schedules" ON public.instructor_schedules;
-CREATE POLICY "Instructors can manage their own schedules" ON public.instructor_schedules
-  FOR ALL TO authenticated
-  USING (instructor_id = auth.uid())
-  WITH CHECK (instructor_id = auth.uid());
-
--- B2: Fix instructor self-update policy
-DROP POLICY IF EXISTS "Instructors can update their own information" ON public.instructors;
-CREATE POLICY "Instructors can update their own information" ON public.instructors
-  FOR UPDATE TO authenticated USING (auth.uid() = id);
-
--- B8: Restrict announcements/courses/classes to authenticated
-DROP POLICY IF EXISTS "Announcements are viewable by everyone" ON public.announcements;
-CREATE POLICY "Announcements viewable by authenticated" ON public.announcements
-  FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Courses are viewable by everyone" ON public.courses;
-CREATE POLICY "Courses viewable by authenticated" ON public.courses
-  FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Classes are viewable by everyone" ON public.classes;
-CREATE POLICY "Classes viewable by authenticated" ON public.classes
-  FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Instructors can update their own classes" ON public.classes;
-CREATE POLICY "Instructors can update their own classes" ON public.classes
-  FOR UPDATE TO authenticated USING (instructor_id = auth.uid());
-
--- Fix remaining {public} policies on other tables
-DROP POLICY IF EXISTS "Users can send messages" ON public.messages;
-CREATE POLICY "Users can send messages" ON public.messages
-  FOR INSERT TO authenticated WITH CHECK (sender_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can view messages they sent or received" ON public.messages;
-CREATE POLICY "Users can view messages they sent or received" ON public.messages
-  FOR SELECT TO authenticated USING (sender_id = auth.uid() OR receiver_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can insert their own profiles" ON public.profiles;
-CREATE POLICY "Users can insert their own profiles" ON public.profiles
-  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
-CREATE POLICY "Users can view their own profile" ON public.profiles
-  FOR SELECT TO authenticated USING (auth.uid() = id);
+Replace with a simple guard:
+```typescript
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 ```
 
-### Code Changes
+**Note:** The anon key is a *publishable* key (not secret), but removing hardcoded fallbacks is still best practice for a production handoff — it ensures the app always reads from environment configuration.
 
-| File | Change |
-|------|--------|
-| `src/components/navigation/StudentNavigation.tsx` | Use `useAuth()` instead of `supabase.auth.getUser()` |
-| `src/components/navigation/InstructorNavigation.tsx` | Same |
-| `src/components/navigation/AdminNavigation.tsx` | Same |
-| `src/pages/admin/AdminStudents.tsx` | Replace `Loader2` with `VinylLoader` |
-| `src/pages/admin/AdminAttendance.tsx` | Replace `Loader2` with `VinylLoader` |
-| `src/pages/admin/AdminPayments.tsx` | Replace `Loader2` with `VinylLoader` |
-| `src/hooks/instructor/useInstructorDashboard.ts` | Gate console.logs behind `import.meta.env.DEV` |
-| `src/pages/instructor/InstructorStudents.tsx` | Gate console.logs; remove hardcoded course_id (use a lookup) |
+---
 
-### Security Findings to Update After Fix
-- Delete resolved findings from the security scanner
-- Mark S10/S11 as requiring manual user action in Supabase Dashboard
+## 3. Console.log Cleanup
 
-### User Action Required (cannot fix via code)
-1. Enable leaked password protection: Supabase Dashboard > Authentication > Settings
-2. Upgrade Postgres version: Supabase Dashboard > Settings > Infrastructure
+Gate all ungated `console.log` calls behind `import.meta.env.DEV`. Files with ungated logs:
+
+| File | Issue |
+|---|---|
+| `src/pages/auth/StudentAuth.tsx` | 5 ungated console.logs (lines 11, 23, 32, 36) |
+| `src/hooks/use-toast.ts` | 4 console.logs in toast/toast.success/toast.info (lines 32, 56, 63) |
+| `src/hooks/useUpdateStudentLevel.ts` | 2 ungated (lines 32, 46) |
+| `src/hooks/useInstructorAssignment.ts` | 3 ungated (lines 27, 39, 50) |
+| `src/hooks/useAdminInstructors.ts` | 6 ungated (lines 28, 40, 53, 65, 78, 90) |
+| `src/hooks/useAdminAttendance.ts` | 2 ungated (lines 260, 265) |
+| `src/hooks/useAdminDashboard.ts` | 3 ungated (lines 26, 38, 49) |
+| `src/hooks/student/useNotesNotifications.ts` | 1 ungated (line 23) |
+| `src/hooks/student/useStudentDashboardActions.ts` | 1 ungated (line 106) |
+
+All will be wrapped with `if (import.meta.env.DEV)` so they are stripped from production builds.
+
+---
+
+## 4. UI Refinement
+
+Quick consistency pass:
+- Ensure all dashboard pages use consistent `space-y-6` vertical rhythm
+- Verify the `ResetPassword.tsx` page uses the same dark theme/background as auth pages (currently plain `bg-background` — update to match the video background + card overlay pattern used on login pages)
+- Ensure mobile responsiveness: the demo toggle button in dashboard headers should wrap gracefully on small screens (use `flex-wrap` if needed)
+
+---
+
+## 5. Dead Code / Placeholder Cleanup
+
+- `public/placeholder.svg` — Check if referenced anywhere; if only as an `onError` fallback in Index.tsx, keep it. Otherwise remove.
+- Remove the empty `{/* Header logo removed */}` and `{/* Header content */}` comments from `StudentAuth.tsx` (line 61) and `Index.tsx` (line 90)
+- The `isMockAdmin = false` constant in `ProtectedRoute.tsx` (line 30) is dead code — remove it and all branches that check it
+
+---
+
+## 6. Stakeholder Summary Document
+
+Generate a `STAKEHOLDER_SUMMARY.md` file at the project root containing:
+- Tech stack overview (React 18, Vite 5, Tailwind v3, TypeScript 5, Supabase, TanStack Query)
+- Auth flow walkthrough (signup → profile creation trigger → approval gate → dashboard)
+- Role system explanation (student/instructor/admin via `user_roles` table + `has_role()` function)
+- Password reset flow
+- Demo mode locations (files and how to find/remove them)
+- Security measures in place (RLS, role-based access, env-only credentials)
+- Manual Supabase dashboard items still pending (leaked password protection, Postgres upgrade)
+
+---
+
+## Files Modified (estimated: ~15 files)
+
+No database changes required. No demo logic removed.
 
