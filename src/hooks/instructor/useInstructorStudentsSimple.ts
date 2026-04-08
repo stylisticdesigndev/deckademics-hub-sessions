@@ -71,6 +71,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             level,
             start_date,
             notes,
+            class_day,
+            class_time,
             profiles!inner(first_name, last_name, email, avatar_url)
           `)
           .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
