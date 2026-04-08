@@ -51,8 +51,9 @@ interface Student {
   email: string;
   enrollmentDate: string;
   notes?: StudentNote[];
-  
   skillProgress?: SkillProgress[];
+  classDay?: string;
+  classTime?: string;
 }
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -733,8 +734,12 @@ const InstructorStudents = () => {
                         </Badge>
                       </div>
                       <div>
-                        <h3 className="font-medium text-muted-foreground">Last Active</h3>
-                        <p>{detailedStudent.lastActive}</p>
+                        <h3 className="font-medium text-muted-foreground">Class Day</h3>
+                        <p>{detailedStudent.classDay || 'Not assigned'}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-muted-foreground">Class Time</h3>
+                        <p>{detailedStudent.classTime || 'Not assigned'}</p>
                       </div>
                       {detailedStudent.nextClass && (
                         <div>
