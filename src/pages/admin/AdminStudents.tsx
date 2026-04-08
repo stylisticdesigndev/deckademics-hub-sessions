@@ -387,6 +387,12 @@ const AdminStudents = () => {
                           <TableCell>
                             <Badge variant="outline" className="capitalize">{student.level}</Badge>
                           </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(student as any).class_day || '—'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(student as any).class_time || '—'}
+                          </TableCell>
                           <TableCell className="text-center">
                             {getStatusBadge('active')}
                           </TableCell>
