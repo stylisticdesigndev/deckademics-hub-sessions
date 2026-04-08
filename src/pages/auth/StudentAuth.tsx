@@ -8,7 +8,7 @@ import VinylLoader from '@/components/ui/VinylLoader';
 import { VideoBackground } from '@/components/background/VideoBackground';
 
 const StudentAuth = () => {
-  console.log("Rendering StudentAuth page");
+  if (import.meta.env.DEV) console.log("Rendering StudentAuth page");
   const navigate = useNavigate();
   const { session, userData, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -20,7 +20,7 @@ const StudentAuth = () => {
       return;
     }
     
-    console.log("StudentAuth - Auth check complete:", { 
+    if (import.meta.env.DEV) console.log("StudentAuth - Auth check complete:", { 
       sessionExists: !!session, 
       userId: session?.user?.id,
       userRole: userData.role,
@@ -29,11 +29,11 @@ const StudentAuth = () => {
     
     // Only proceed with redirects if we have session and role info
     if (session && session.user) {
-      console.log("Session detected on student auth page:", session.user.email);
+      if (import.meta.env.DEV) console.log("Session detected on student auth page:", session.user.email);
       const role = userData.role || session.user.user_metadata?.role;
       
       if (role) {
-        console.log(`User has ${role} role, redirecting appropriately`);
+        if (import.meta.env.DEV) console.log(`User has ${role} role, redirecting appropriately`);
         if (role === 'student') {
           navigate('/student/dashboard', { replace: true });
         } else if (role === 'instructor') {
@@ -58,7 +58,7 @@ const StudentAuth = () => {
         fallbackSrc="/lovable-uploads/5b45c1a0-05de-4bcc-9876-74d76c697871.png" 
       />
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        {/* Header logo removed */}
+        
       </header>
       
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">

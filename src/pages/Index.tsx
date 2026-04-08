@@ -87,7 +87,7 @@ const Index = () => {
       )}
       
       <header className="container flex h-16 items-center px-4 sm:px-6 lg:px-8 z-10 relative">
-        {/* Header content */}
+        
       </header>
       
       <main className="flex-1 flex items-center justify-center px-4 py-12 z-10 relative">

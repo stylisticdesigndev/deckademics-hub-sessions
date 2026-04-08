@@ -24,7 +24,7 @@ export const useInstructorAssignment = () => {
     queryKey: ['active-instructors-for-assignment'],
     queryFn: async () => {
       try {
-        console.log('Fetching active instructors for assignment...');
+        if (import.meta.env.DEV) console.log('Fetching active instructors for assignment...');
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
@@ -36,7 +36,7 @@ export const useInstructorAssignment = () => {
           return [];
         }
 
-        console.log('Active instructors for assignment:', data);
+        if (import.meta.env.DEV) console.log('Active instructors for assignment:', data);
         return data as InstructorWithProfile[] || [];
       } catch (error) {
         console.error('Error in activeInstructors query:', error);
@@ -47,7 +47,7 @@ export const useInstructorAssignment = () => {
 
   const assignInstructorToStudent = useMutation({
     mutationFn: async ({ studentId, instructorId }: { studentId: string; instructorId: string | null }) => {
-      console.log(`Assigning instructor ${instructorId} to student ${studentId}`);
+      if (import.meta.env.DEV) console.log(`Assigning instructor ${instructorId} to student ${studentId}`);
       
       const { error } = await supabase
         .from('students')

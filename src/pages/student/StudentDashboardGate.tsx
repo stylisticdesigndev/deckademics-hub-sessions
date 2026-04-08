@@ -9,7 +9,9 @@ import StudentDashboard from './StudentDashboard';
 
 const StudentDashboardGate = () => {
   const { userData, session, isLoading: authLoading } = useAuth();
+  // ===== DEMO MODE START =====
   const [demoMode, setDemoMode] = useState(false);
+  // ===== DEMO MODE END =====
 
   // Derive studentId directly from auth — no secondary getUser() call
   const studentId = session?.user?.id;

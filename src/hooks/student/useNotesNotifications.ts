@@ -20,7 +20,7 @@ export const useNotesNotifications = (studentId: string | undefined) => {
           filter: `student_id=eq.${studentId}`
         },
         (payload) => {
-          console.log('New note received:', payload);
+          if (import.meta.env.DEV) console.log('New note received:', payload);
           
           // Show notification
           toast({

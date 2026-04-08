@@ -25,7 +25,7 @@ export const useAdminInstructors = () => {
     queryKey: ['admin', 'instructors', 'active'],
     queryFn: async () => {
       try {
-        console.log('Fetching active instructors...');
+        if (import.meta.env.DEV) console.log('Fetching active instructors...');
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
@@ -37,7 +37,7 @@ export const useAdminInstructors = () => {
           return [];
         }
 
-        console.log('Active instructors data:', data);
+        if (import.meta.env.DEV) console.log('Active instructors data:', data);
         return data as InstructorWithProfile[] || [];
       } catch (error) {
         console.error('Error in activeInstructors query:', error);
@@ -50,7 +50,7 @@ export const useAdminInstructors = () => {
     queryKey: ['admin', 'instructors', 'pending'],
     queryFn: async () => {
       try {
-        console.log('Fetching pending instructors...');
+        if (import.meta.env.DEV) console.log('Fetching pending instructors...');
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
@@ -62,7 +62,7 @@ export const useAdminInstructors = () => {
           return [];
         }
 
-        console.log('Pending instructors data:', data);
+        if (import.meta.env.DEV) console.log('Pending instructors data:', data);
         return data as InstructorWithProfile[] || [];
       } catch (error) {
         console.error('Error in pendingInstructors query:', error);
@@ -75,7 +75,7 @@ export const useAdminInstructors = () => {
     queryKey: ['admin', 'instructors', 'inactive'],
     queryFn: async () => {
       try {
-        console.log('Fetching inactive instructors...');
+        if (import.meta.env.DEV) console.log('Fetching inactive instructors...');
         
         const { data, error } = await supabase.rpc(
           'get_instructors_with_profiles',
@@ -87,7 +87,7 @@ export const useAdminInstructors = () => {
           return [];
         }
 
-        console.log('Inactive instructors data:', data);
+        if (import.meta.env.DEV) console.log('Inactive instructors data:', data);
         return data as InstructorWithProfile[] || [];
       } catch (error) {
         console.error('Error in inactiveInstructors query:', error);
