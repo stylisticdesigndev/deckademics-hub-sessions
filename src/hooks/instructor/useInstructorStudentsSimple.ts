@@ -196,6 +196,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             nextClass: '',
             notes: notesById[student.id] || [],
             skillProgress,
+            classDay: student.class_day || undefined,
+            classTime: student.class_time || undefined,
           };
         });
 
