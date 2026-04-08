@@ -1,6 +1,7 @@
 
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BugReportDialog } from '@/components/bugs/BugReportDialog';
 import {
   Sidebar,
   SidebarContent,
@@ -111,7 +112,8 @@ export const DashboardLayout = ({
               <SidebarTrigger />
               <h1 className="text-xl font-semibold">Deckademics DJ School</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
               {userType === 'admin' && <NotificationDropdown />}
               {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
               <Button variant="outline" size="sm" onClick={handleLogout}>

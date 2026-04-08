@@ -20,7 +20,8 @@ import {
   MessageSquare,
   UserCog,
   TrendingUp,
-  Target
+  Target,
+  Bug as BugIcon
 } from 'lucide-react';
 
 export const AdminNavigation = () => {
@@ -63,6 +64,7 @@ export const AdminNavigation = () => {
     { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
     { title: "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/admin/announcements" },
+    { title: "Bug Reports", icon: BugIcon, href: "/admin/bug-reports" },
     { title: "Profile", icon: UserCog, href: "/admin/profile" },
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];
