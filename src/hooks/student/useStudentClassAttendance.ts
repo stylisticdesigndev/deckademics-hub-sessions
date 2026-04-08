@@ -185,28 +185,8 @@ export function useStudentClassAttendance() {
       setLoading(false);
     }
   }, [studentId]);
-      // Get attendance records
-      const { data: attendance } = await supabase
-        .from('attendance')
-        .select('date, status, class_id')
-        .eq('student_id', studentId)
-        .in('class_id', classIds);
 
-      if (attendance) {
-        setAttendanceRecords(
-          attendance.map(a => ({
-            date: a.date,
-            status: (a.status as 'present' | 'absent') || 'present',
-            classId: a.class_id,
-          }))
-        );
-      }
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Error fetching attendance data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [studentId]);
+
 
   useEffect(() => {
     fetchData();
