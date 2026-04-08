@@ -96,8 +96,14 @@ const AdminStudents = () => {
     deactivateStudent,
     reactivateStudent,
     updateStudentLevel,
+    updateStudentSchedule,
     refetchData
   } = useAdminStudents();
+
+  const { pendingRequests } = useScheduleChangeRequests('admin');
+
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
 
   useEffect(() => {
     setSelectedIds([]);
