@@ -357,6 +357,8 @@ const AdminStudents = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>Instructor</TableHead>
                       <TableHead>Level</TableHead>
+                      <TableHead>Day</TableHead>
+                      <TableHead>Time</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
