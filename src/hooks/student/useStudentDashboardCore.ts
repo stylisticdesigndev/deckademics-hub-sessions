@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { addDays, getDay, startOfDay, format } from 'date-fns';
 import { useAuth } from '@/providers/AuthProvider';
 import { useUpcomingClasses } from './dashboard/useUpcomingClasses';
 import { useStudentProgress } from './dashboard/useStudentProgress';
@@ -21,6 +22,8 @@ export function useStudentDashboardCore() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [assignedInstructor, setAssignedInstructor] = useState<string | null>(null);
+  const [classDay, setClassDay] = useState<string | null>(null);
+  const [classTime, setClassTime] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
   const dataFetchedRef = useRef(false);
@@ -50,7 +53,7 @@ export function useStudentDashboardCore() {
 
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
-        .select('level, enrollment_status, notes, instructor_id')
+        .select('level, enrollment_status, notes, instructor_id, class_day, class_time')
         .eq('id', userId as any)
         .maybeSingle();
 
@@ -70,7 +73,8 @@ export function useStudentDashboardCore() {
         }
       } else if (studentInfo && typeof studentInfo === 'object') {
         setStudentLevel(studentInfo.level || 'Novice');
-        
+        setClassDay(studentInfo.class_day || null);
+        setClassTime(studentInfo.class_time || null);
         // Fetch assigned instructor name
         if (studentInfo.instructor_id) {
           const { data: instructorProfile } = await supabase
@@ -116,16 +120,36 @@ export function useStudentDashboardCore() {
     return Math.round(total / progressData.length);
   }, [progressData]);
 
-  // Derive nextClass and instructor reactively from upcomingClasses
+  // Derive nextClass from student's assigned schedule (class_day/class_time)
   const nextClassInfo = useMemo(() => {
+    if (classDay && classTime) {
+      // Calculate the next occurrence of classDay
+      const dayNameToNumber: Record<string, number> = {
+        'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+        'Thursday': 4, 'Friday': 5, 'Saturday': 6,
+      };
+      const targetDay = dayNameToNumber[classDay] ?? -1;
+      if (targetDay >= 0) {
+        const today = startOfDay(new Date());
+        const todayDow = getDay(today);
+        let diff = targetDay - todayDow;
+        if (diff <= 0) diff += 7; // next week if today or past
+        const nextDate = addDays(today, diff);
+        const dateStr = format(nextDate, 'M/d/yyyy');
+        return {
+          nextClass: `${classDay}, ${dateStr} at ${classTime.split(' - ')[0]}`,
+          instructor: assignedInstructor || 'Not assigned',
+        };
+      }
+    }
     if (upcomingClasses.length > 0) {
       return {
         nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
-        instructor: assignedInstructor || upcomingClasses[0].instructor
+        instructor: assignedInstructor || upcomingClasses[0].instructor,
       };
     }
     return { nextClass: 'Not scheduled', instructor: assignedInstructor || 'Not assigned' };
-  }, [upcomingClasses, assignedInstructor]);
+  }, [classDay, classTime, upcomingClasses, assignedInstructor]);
 
   // Derive first-time user status
   useEffect(() => {
