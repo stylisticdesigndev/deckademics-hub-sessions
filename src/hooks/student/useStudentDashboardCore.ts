@@ -120,16 +120,36 @@ export function useStudentDashboardCore() {
     return Math.round(total / progressData.length);
   }, [progressData]);
 
-  // Derive nextClass and instructor reactively from upcomingClasses
+  // Derive nextClass from student's assigned schedule (class_day/class_time)
   const nextClassInfo = useMemo(() => {
+    if (classDay && classTime) {
+      // Calculate the next occurrence of classDay
+      const dayNameToNumber: Record<string, number> = {
+        'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+        'Thursday': 4, 'Friday': 5, 'Saturday': 6,
+      };
+      const targetDay = dayNameToNumber[classDay] ?? -1;
+      if (targetDay >= 0) {
+        const today = startOfDay(new Date());
+        const todayDow = getDay(today);
+        let diff = targetDay - todayDow;
+        if (diff <= 0) diff += 7; // next week if today or past
+        const nextDate = addDays(today, diff);
+        const dateStr = format(nextDate, 'M/d/yyyy');
+        return {
+          nextClass: `${classDay}, ${dateStr} at ${classTime.split(' - ')[0]}`,
+          instructor: assignedInstructor || 'Not assigned',
+        };
+      }
+    }
     if (upcomingClasses.length > 0) {
       return {
         nextClass: `${upcomingClasses[0].date} at ${upcomingClasses[0].time}`,
-        instructor: assignedInstructor || upcomingClasses[0].instructor
+        instructor: assignedInstructor || upcomingClasses[0].instructor,
       };
     }
     return { nextClass: 'Not scheduled', instructor: assignedInstructor || 'Not assigned' };
-  }, [upcomingClasses, assignedInstructor]);
+  }, [classDay, classTime, upcomingClasses, assignedInstructor]);
 
   // Derive first-time user status
   useEffect(() => {
