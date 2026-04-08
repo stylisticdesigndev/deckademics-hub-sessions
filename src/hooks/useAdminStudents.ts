@@ -223,6 +223,33 @@ export const useAdminStudents = () => {
     }
   });
 
+  const updateStudentSchedule = useMutation({
+    mutationFn: async ({ studentId, start_date, class_day, class_time }: {
+      studentId: string;
+      start_date?: string | null;
+      class_day?: string | null;
+      class_time?: string | null;
+    }) => {
+      const updates: any = {};
+      if (start_date !== undefined) updates.start_date = start_date;
+      if (class_day !== undefined) updates.class_day = class_day;
+      if (class_time !== undefined) updates.class_time = class_time;
+
+      const { error } = await supabase
+        .from('students')
+        .update(updates as any)
+        .eq('id', studentId as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      toast.success('Student schedule updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update schedule: ${error.message}`);
+    }
+  });
+
   const refetchData = async () => {
     await Promise.all([refetchActive(), refetchPending(), refetchInactive()]);
   };
@@ -237,6 +264,7 @@ export const useAdminStudents = () => {
     deactivateStudent,
     reactivateStudent,
     updateStudentLevel,
+    updateStudentSchedule,
     refetchData
   };
 };
