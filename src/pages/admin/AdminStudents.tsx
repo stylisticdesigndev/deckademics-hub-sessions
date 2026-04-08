@@ -677,6 +677,11 @@ const AdminStudents = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Schedule Requests Tab */}
+        <TabsContent value="requests" className="space-y-4 pt-4">
+          <ScheduleRequestsList />
+        </TabsContent>
       </Tabs>
 
       {/* Student Detail Sheet */}
@@ -718,7 +723,63 @@ const AdminStudents = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Start Date</p>
-                  <p className="text-sm font-medium">{(viewedStudent as any).start_date || 'Not set'}</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !(viewedStudent as any).start_date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {(viewedStudent as any).start_date ? format(new Date((viewedStudent as any).start_date), 'PPP') : 'Pick a date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={(viewedStudent as any).start_date ? new Date((viewedStudent as any).start_date) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            updateStudentSchedule.mutate({
+                              studentId: viewedStudent.id,
+                              start_date: format(date, 'yyyy-MM-dd'),
+                            });
+                          }
+                        }}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Class Day</p>
+                  <Select
+                    value={(viewedStudent as any).class_day || ''}
+                    onValueChange={(value) => updateStudentSchedule.mutate({ studentId: viewedStudent.id, class_day: value })}
+                    disabled={updateStudentSchedule.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAYS.map(day => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Class Time</p>
+                  <Select
+                    value={(viewedStudent as any).class_time || ''}
+                    onValueChange={(value) => updateStudentSchedule.mutate({ studentId: viewedStudent.id, class_time: value })}
+                    disabled={updateStudentSchedule.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_SLOTS.map(slot => (
+                        <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Instructor</p>
