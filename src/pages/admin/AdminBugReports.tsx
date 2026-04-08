@@ -13,7 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Bug, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { capitalizeLevel } from '@/lib/utils';
-import { useEffect } from 'react';
 
 interface BugReport {
   id: string;
@@ -53,19 +52,8 @@ const AdminBugReports = () => {
     },
   });
 
-  // Mark all unseen reports as seen when admin visits this page
-  useEffect(() => {
-    const markAsSeen = async () => {
-      await supabase
-        .from('bug_reports' as any)
-        .update({ seen_by_admin: true } as any)
-        .eq('seen_by_admin', false);
-      queryClient.invalidateQueries({ queryKey: ['admin-open-bug-count'] });
-    };
-    if (reports.length > 0) {
-      markAsSeen();
-    }
-  }, [reports, queryClient]);
+
+
 
   // Fetch reporter profiles
   const reporterIds = [...new Set(reports.map(r => r.reporter_id))];
