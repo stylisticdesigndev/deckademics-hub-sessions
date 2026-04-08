@@ -335,10 +335,9 @@ export const mockInstructorProfile = {
   bio: 'Professional DJ and music producer with over 10 years of experience. Specializing in hip-hop, house, and electronic music. Passionate about teaching the next generation of DJs.',
   expertiseAreas: 'Beat Matching, Scratching, Music Production, Live Performance',
   schedule: [
-    { day: 'Monday', hours: '2:00 PM - 8:00 PM' },
-    { day: 'Wednesday', hours: '2:00 PM - 8:00 PM' },
-    { day: 'Friday', hours: '3:00 PM - 9:00 PM' },
-    { day: 'Saturday', hours: '10:00 AM - 4:00 PM' },
+    { day: 'Monday', hours: '3:30 PM - 5:00 PM, 5:30 PM - 7:00 PM' },
+    { day: 'Wednesday', hours: '3:30 PM - 5:00 PM, 7:30 PM - 9:00 PM' },
+    { day: 'Friday', hours: '5:30 PM - 7:00 PM, 7:30 PM - 9:00 PM' },
   ],
 };
 

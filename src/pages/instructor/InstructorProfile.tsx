@@ -20,11 +20,7 @@ type TeachingScheduleItem = {
   hours: string;
 };
 
-const fallbackSchedule: TeachingScheduleItem[] = [
-  { day: 'Monday', hours: '2:00 PM - 8:00 PM' },
-  { day: 'Wednesday', hours: '2:00 PM - 8:00 PM' },
-  { day: 'Friday', hours: '3:00 PM - 9:00 PM' },
-];
+const fallbackSchedule: TeachingScheduleItem[] = [];
 
 const InstructorProfile = () => {
   const { toast } = useToast();
