@@ -83,8 +83,8 @@ export const useAdminStudents = () => {
   const fetchStudentsByStatus = async (statuses: string[], includeInstructor = false): Promise<StudentWithProfile[]> => {
     try {
       const selectQuery = includeInstructor
-        ? `id, level, enrollment_status, instructor_id, profiles (first_name, last_name, email), instructors (id, status, profiles (first_name, last_name, email))`
-        : `id, level, enrollment_status, instructor_id, profiles (first_name, last_name, email)`;
+        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email), instructors (id, status, profiles (first_name, last_name, email))`
+        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email)`;
 
       let query = supabase.from('students').select(selectQuery);
 
