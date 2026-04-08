@@ -1,4 +1,18 @@
-
+/**
+ * ProtectedRoute — Multi-stage access gate for authenticated pages.
+ *
+ * Gate stages (in order):
+ * 1. Auth loading — shows VinylLoader while Supabase session initialises.
+ * 2. Profile wait — if session exists but profile/role hasn't loaded yet, waits
+ *    up to 2 s (8 s hard timeout triggers sign-out with an error toast).
+ * 3. Authentication check — redirects to the role-appropriate auth page if no session.
+ * 4. Role check — redirects to the user's own dashboard if their role doesn't match
+ *    the `allowedRoles` for this route.
+ * 5. Approval check — queries students/instructors table for enrollment/status;
+ *    renders <PendingApproval /> for users still awaiting admin approval.
+ * 6. Photo gate (students only) — redirects to /student/photo-upload if no avatar_url.
+ * 7. Render — passes through to <Outlet />.
+ */
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth, UserRole } from '@/providers/AuthProvider';
 import VinylLoader from '@/components/ui/VinylLoader';
@@ -26,16 +40,10 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     console.log("Protected route - User role:", userData?.role);
     console.log("Protected route - Allowed roles:", allowedRoles);
   }
-
-  const isMockAdmin = false;
   
   useEffect(() => {
     if (!isLoading) {
       if (!session) {
-        setIsWaitingForProfile(false);
-        return;
-      }
-      if (isMockAdmin) {
         setIsWaitingForProfile(false);
         return;
       }
@@ -48,7 +56,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, session, userData.role, isMockAdmin]);
+  }, [isLoading, session, userData.role]);
   
   useEffect(() => {
     if (userData.role) {
@@ -57,7 +65,6 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }, [userData.role]);
 
   useEffect(() => {
-    if (isMockAdmin) return;
     const needsRole = session && !userData.profile && !userData.role;
     if (!isLoading && needsRole) {
       const interval = window.setInterval(() => {
@@ -77,7 +84,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
       }, 500);
       return () => clearInterval(interval);
     }
-  }, [isLoading, session, userData, signOut, isMockAdmin]);
+  }, [isLoading, session, userData, signOut]);
 
   // Check approval status for students and instructors
   const effectiveRole = userData.role;
@@ -117,7 +124,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const loadingSkeleton = <VinylLoader />;
 
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000 && !isMockAdmin) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000) {
     return loadingSkeleton;
   }
   

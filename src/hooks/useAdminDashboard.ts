@@ -1,4 +1,10 @@
-
+/**
+ * useAdminDashboard — Fetches aggregate stats for the admin dashboard.
+ *
+ * Uses security-definer RPCs (`get_student_counts`, `get_instructor_counts`)
+ * to retrieve totals and pending counts without exposing raw table access.
+ * Data is cached for 1 minute via TanStack Query.
+ */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,7 +29,7 @@ export const useAdminDashboard = () => {
   return useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: async (): Promise<DashboardStats> => {
-      console.log("Fetching admin dashboard data");
+      if (import.meta.env.DEV) console.log("Fetching admin dashboard data");
       
       try {
         // Get counts using aggregate functions to avoid RLS issues
@@ -35,7 +41,7 @@ export const useAdminDashboard = () => {
           throw new Error('Failed to fetch student data');
         }
         
-        console.log("Student counts data:", studentCounts);
+        if (import.meta.env.DEV) console.log("Student counts data:", studentCounts);
 
         // Get instructor counts
         const { data: instructorCounts, error: instructorsError } = await supabase
@@ -46,7 +52,7 @@ export const useAdminDashboard = () => {
           throw new Error('Failed to fetch instructor data');
         }
         
-        console.log("Instructor counts data:", instructorCounts);
+        if (import.meta.env.DEV) console.log("Instructor counts data:", instructorCounts);
 
         if (!studentCounts || !instructorCounts) {
           throw new Error('Failed to fetch counts data');

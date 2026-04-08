@@ -1,4 +1,14 @@
-
+/**
+ * useInstructorDashboard — Fetches all dashboard data for an instructor.
+ *
+ * Data flow:
+ * 1. Resolves `instructorId` from AuthProvider (only when role === 'instructor').
+ * 2. Queries `students` table (with inner join to `profiles`) for assigned students.
+ * 3. Fetches `student_progress` for those students and cross-references against
+ *    admin-defined `progress_skills` to compute per-student average proficiency.
+ * 4. Counts today's classes from the `classes` table.
+ * 5. Returns formatted student list, stats, and loading/error state.
+ */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';

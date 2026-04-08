@@ -1,3 +1,24 @@
+/**
+ * AuthProvider — Central authentication context for Deckademics.
+ *
+ * Lifecycle:
+ * 1. On mount, subscribes to `supabase.auth.onAuthStateChange` and calls `getSession()`
+ *    to detect an existing session.
+ * 2. When a session is found (or SIGNED_IN fires), `fetchUserProfile` is called:
+ *    - First resolves the role via `get_user_role` RPC (security-definer, avoids RLS recursion).
+ *    - Then fetches the full profile row from `profiles`.
+ *    - If no profile exists, falls back to `createProfileFromMetadata` which builds one
+ *      from `user_metadata` supplied during sign-up (fallback path — the DB trigger
+ *      `handle_new_user` normally handles this server-side).
+ * 3. Role-based redirect sends authenticated users to the correct dashboard when they
+ *    land on an /auth/* page.
+ * 4. `signUp` attaches role + name metadata; the DB trigger creates profile + student/
+ *    instructor rows automatically.
+ * 5. `signOut` clears React state, localStorage token, and Supabase session, then
+ *    navigates to the landing page.
+ *
+ * Exported via `useAuth()` hook.
+ */
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';

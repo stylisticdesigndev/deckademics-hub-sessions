@@ -1,3 +1,13 @@
+/**
+ * useStudentDashboard — Orchestrates all data for the student dashboard.
+ *
+ * Composes two sub-hooks:
+ * - `useStudentDashboardCore`: fetches student profile, progress skills, and upcoming classes.
+ * - `useStudentDashboardActions`: fetches announcements and provides action handlers
+ *   (acknowledge, dismiss, add-to-calendar).
+ *
+ * Returns a single flat object consumed by <StudentDashboard />.
+ */
 import { useCallback } from 'react';
 import { useStudentDashboardCore } from './useStudentDashboardCore';
 import { useStudentDashboardActions } from './useStudentDashboardActions';
