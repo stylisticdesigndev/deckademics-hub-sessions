@@ -3,72 +3,34 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, X, Eye, EyeOff, Calendar, CalendarDays, CalendarRange } from 'lucide-react';
+import { Search, X, Eye, EyeOff } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDateUS } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { mockInstructorClasses } from '@/data/mockInstructorData';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, parse } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-interface Student {
+interface StudentSchedule {
   id: string;
   name: string;
   initials: string;
+  level: string;
+  classDay: string;
+  classTime: string;
 }
-
-interface ClassSession {
-  id: string;
-  week: string;
-  title: string;
-  date: string;
-  time: string;
-  duration: string;
-  room: string;
-  student: Student;
-  _rawDate?: Date;
-}
-
-type ViewMode = 'day' | 'week' | 'month';
-
-const parseClassDate = (dateStr: string): Date => {
-  // Try parsing as a locale date string or ISO
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) return parsed;
-  // Fallback: try common US format
-  try {
-    return parse(dateStr, 'M/d/yyyy', new Date());
-  } catch {
-    return new Date();
-  }
-};
-
-const getDateRange = (mode: ViewMode): { start: Date; end: Date } => {
-  const now = new Date();
-  switch (mode) {
-    case 'day':
-      return { start: startOfDay(now), end: endOfDay(now) };
-    case 'week':
-      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    case 'month':
-      return { start: startOfMonth(now), end: endOfMonth(now) };
-  }
-};
 
 const InstructorClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [classes, setClasses] = useState<ClassSession[]>([]);
+  const [schedules, setSchedules] = useState<StudentSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
   const { session } = useAuth();
@@ -78,126 +40,91 @@ const InstructorClasses = () => {
   useEffect(() => {
     if (demoMode) return;
 
-    const fetchClasses = async () => {
+    const fetchSchedules = async () => {
       if (!instructorId) return;
       
       try {
         setLoading(true);
         
-        const { data: classesData, error: classesError } = await supabase
-          .from('classes')
-          .select('id, title, start_time, end_time, location')
+        // Fetch students assigned to this instructor with schedule info
+        const { data: students, error } = await supabase
+          .from('students')
+          .select(`
+            id,
+            level,
+            class_day,
+            class_time,
+            profiles!inner(first_name, last_name, email)
+          `)
           .eq('instructor_id', instructorId)
-          .order('start_time', { ascending: true });
+          .eq('enrollment_status', 'active');
           
-        if (classesError) {
-          console.error("Error fetching classes:", classesError);
+        if (error) {
+          console.error("Error fetching student schedules:", error);
           return;
         }
         
-        if (!classesData || classesData.length === 0) {
-          setClasses([]);
+        if (!students || students.length === 0) {
+          setSchedules([]);
           return;
         }
         
-        const classIds = classesData.map(cls => cls.id);
-        
-        const { data: enrollmentsData, error: enrollmentsError } = await supabase
-          .from('enrollments')
-          .select('student_id, class_id')
-          .in('class_id', classIds);
-          
-        if (enrollmentsError) {
-          console.error("Error fetching enrollments:", enrollmentsError);
-          return;
-        }
-        
-        const studentIds = enrollmentsData?.map(e => e.student_id) || [];
-        
-        let studentMap = new Map();
-        if (studentIds.length > 0) {
-          const { data: studentProfiles } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name')
-            .in('id', studentIds);
-            
-          studentProfiles?.forEach(profile => {
-            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-            let initials = '';
-            if (profile.first_name) initials += profile.first_name[0];
-            if (profile.last_name) initials += profile.last_name[0];
-            studentMap.set(profile.id, { id: profile.id, name: fullName || 'Unknown Student', initials: initials || 'US' });
+        const formatted: StudentSchedule[] = (students as any[])
+          .filter(s => s.class_day && s.class_time)
+          .map(s => {
+            const profile = s.profiles;
+            const firstName = profile?.first_name || '';
+            const lastName = profile?.last_name || '';
+            return {
+              id: s.id,
+              name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
+              initials: (firstName[0] || '') + (lastName[0] || ''),
+              level: s.level || 'novice',
+              classDay: s.class_day,
+              classTime: s.class_time,
+            };
           });
-        }
+
+        // Sort by day of week
+        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        formatted.sort((a, b) => dayOrder.indexOf(a.classDay) - dayOrder.indexOf(b.classDay));
         
-        const classStudentMap = new Map();
-        enrollmentsData?.forEach(enrollment => {
-          if (!classStudentMap.has(enrollment.class_id)) {
-            classStudentMap.set(enrollment.class_id, []);
-          }
-          const studentInfo = studentMap.get(enrollment.student_id);
-          if (studentInfo) {
-            classStudentMap.get(enrollment.class_id).push(studentInfo);
-          }
-        });
-        
-        const formattedClasses: ClassSession[] = [];
-        classesData.forEach(cls => {
-          const startTime = new Date(cls.start_time);
-          const endTime = new Date(cls.end_time);
-          const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-          const weekNumber = Math.floor(Math.random() * 12) + 1;
-          const students = classStudentMap.get(cls.id) || [];
-          
-          if (students.length === 0) {
-            formattedClasses.push({
-              id: cls.id, week: `Week ${weekNumber}`, title: cls.title,
-              date: formatDateUS(startTime),
-              time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              duration: `${durationMinutes} min`, room: cls.location || 'Main Studio',
-              student: { id: 'none', name: 'No students enrolled', initials: 'NS' },
-              _rawDate: startTime
-            });
-          } else {
-            students.forEach((student: Student) => {
-              formattedClasses.push({
-                id: `${cls.id}-${student.id}`, week: `Week ${weekNumber}`, title: cls.title,
-                date: formatDateUS(startTime),
-                time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                duration: `${durationMinutes} min`, room: cls.location || 'Main Studio', student,
-                _rawDate: startTime
-              });
-            });
-          }
-        });
-        
-        setClasses(formattedClasses);
+        setSchedules(formatted);
       } catch (error) {
-        console.error("Error in fetchClasses:", error);
+        console.error("Error in fetchSchedules:", error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchClasses();
+    fetchSchedules();
   }, [instructorId, demoMode]);
 
-  const activeClasses = demoMode ? mockInstructorClasses : classes;
+  // Demo data
+  const demoSchedules: StudentSchedule[] = [
+    { id: '1', name: 'Goku Son', initials: 'GS', level: 'intermediate', classDay: 'Monday', classTime: '3:30 PM - 5:00 PM' },
+    { id: '2', name: 'Vegeta Prince', initials: 'VP', level: 'advanced', classDay: 'Wednesday', classTime: '5:30 PM - 7:00 PM' },
+    { id: '3', name: 'Gohan Son', initials: 'GS', level: 'novice', classDay: 'Friday', classTime: '3:30 PM - 5:00 PM' },
+  ];
+
+  const activeSchedules = demoMode ? demoSchedules : schedules;
   const isLoading = !demoMode && loading;
 
-  const { start, end } = getDateRange(viewMode);
-
-  const filteredClasses = activeClasses.filter(cls => {
-    const classDate = (cls as ClassSession)._rawDate || parseClassDate(cls.date);
-    return isWithinInterval(classDate, { start, end });
-  }).filter(cls =>
-    cls.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.week.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.student.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSchedules = activeSchedules.filter(s =>
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.classDay.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.classTime.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const viewLabel = viewMode === 'day' ? "Today's" : viewMode === 'week' ? "This Week's" : "This Month's";
+  // Group by day
+  const schedulesByDay = filteredSchedules.reduce((acc, s) => {
+    if (!acc[s.classDay]) acc[s.classDay] = [];
+    acc[s.classDay].push(s);
+    return acc;
+  }, {} as Record<string, StudentSchedule[]>);
+
+  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const sortedDays = Object.keys(schedulesByDay).sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
 
   return (
     <TooltipProvider>
@@ -213,7 +140,7 @@ const InstructorClasses = () => {
         <section className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Class Schedule</h1>
-            <p className="text-muted-foreground mt-2">Manage your upcoming DJ classes</p>
+            <p className="text-muted-foreground mt-2">Your student class assignments</p>
           </div>
           <Button
             variant={demoMode ? "default" : "outline"} size="sm"
@@ -224,92 +151,82 @@ const InstructorClasses = () => {
           </Button>
         </section>
 
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <div className="relative w-full sm:w-auto flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Search classes..." className="pl-10 pr-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            {searchTerm && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3 py-0" onClick={() => setSearchTerm('')}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Clear Search</p></TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
-            className="border rounded-md"
-          >
-            <ToggleGroupItem value="day" aria-label="Day view" className="px-3 gap-1.5">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Day</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="week" aria-label="Week view" className="px-3 gap-1.5">
-              <CalendarDays className="h-4 w-4" />
-              <span className="hidden sm:inline">Week</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="month" aria-label="Month view" className="px-3 gap-1.5">
-              <CalendarRange className="h-4 w-4" />
-              <span className="hidden sm:inline">Month</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input placeholder="Search by student, day, or time..." className="pl-10 pr-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          {searchTerm && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3 py-0" onClick={() => setSearchTerm('')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Clear Search</p></TooltipContent>
+            </Tooltip>
+          )}
         </div>
         
-        <Card>
-          <CardHeader><CardTitle>{viewLabel} Classes</CardTitle></CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead className="hidden sm:table-cell">Class Room</TableHead>
-                      <TableHead className="hidden md:table-cell">Class Week</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClasses.length > 0 ? (
-                      filteredClasses.map((cls) => (
-                        <TableRow key={cls.id} className="py-4">
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs bg-muted">{cls.student.initials}</AvatarFallback>
-                              </Avatar>
-                              <span className="truncate max-w-[120px] sm:max-w-none">{cls.student.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">{cls.date}</TableCell>
-                          <TableCell className="py-4">{cls.time} ({cls.duration})</TableCell>
-                          <TableCell className="py-4 hidden sm:table-cell">{cls.room}</TableCell>
-                          <TableCell className="py-4 hidden md:table-cell">{cls.week}</TableCell>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        ) : sortedDays.length > 0 ? (
+          <div className="space-y-6">
+            {sortedDays.map(day => (
+              <Card key={day}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{day}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Level</TableHead>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
-                          {activeClasses.length === 0 ? "No classes found. Schedule a class to get started." : `No classes found for this ${viewMode}.`}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {schedulesByDay[day].map(s => (
+                          <TableRow key={s.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="text-xs bg-muted">{s.initials}</AvatarFallback>
+                                </Avatar>
+                                <span>{s.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{s.classTime}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={cn(
+                                s.level === 'novice' && "border-green-500/50 text-green-500",
+                                s.level === 'amateur' && "border-yellow-500/50 text-yellow-500",
+                                s.level === 'intermediate' && "border-blue-500/50 text-blue-500",
+                                s.level === 'advanced' && "border-purple-500/50 text-purple-500"
+                              )}>
+                                {s.level.charAt(0).toUpperCase() + s.level.slice(1)}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              {activeSchedules.length === 0
+                ? "No students have been assigned class days and times yet."
+                : "No schedules match your search."}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </TooltipProvider>
   );
