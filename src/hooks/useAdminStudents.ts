@@ -43,6 +43,9 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
   const level = studentObj.level || 'novice';
   const enrollment_status = studentObj.enrollment_status;
   const instructor_id = studentObj.instructor_id;
+  const start_date = studentObj.start_date;
+  const class_day = studentObj.class_day;
+  const class_time = studentObj.class_time;
   const profiles = studentObj.profiles;
   const instructors = studentObj.instructors;
 
@@ -53,6 +56,9 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
     level,
     enrollment_status,
     instructor_id,
+    start_date,
+    class_day,
+    class_time,
     profile: {
       first_name: profiles.first_name,
       last_name: profiles.last_name,
