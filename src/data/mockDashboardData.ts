@@ -1,3 +1,12 @@
+/**
+ * DEMO DATA — Remove this entire file when demo mode is no longer needed.
+ *
+ * This file provides static mock data used by the Student Dashboard when
+ * "Demo Mode" is toggled on. It lets stakeholders see a fully populated
+ * dashboard without requiring real database records.
+ *
+ * Search for "===== DEMO MODE" across the codebase to find all usage sites.
+ */
 // Mock data for demo mode - remove this file when no longer needed
 
 export const mockStudentData = {

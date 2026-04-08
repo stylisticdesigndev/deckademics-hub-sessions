@@ -257,12 +257,12 @@ export const useAdminAttendance = () => {
 
   // Add missing functions that AdminAttendance.tsx expects
   const updateStatus = async (studentId: string, recordId: string, status: 'attended' | 'made-up') => {
-    console.log(`Updating status for student ${studentId}, record ${recordId} to ${status}`);
+    if (import.meta.env.DEV) console.log(`Updating status for student ${studentId}, record ${recordId} to ${status}`);
     toast.success(`Status updated to ${status}`);
   };
 
   const scheduleMakeup = async (studentId: string, date: Date, recordId: string) => {
-    console.log(`Scheduling makeup for student ${studentId} on ${date} for record ${recordId}`);
+    if (import.meta.env.DEV) console.log(`Scheduling makeup for student ${studentId} on ${date} for record ${recordId}`);
     toast.success('Makeup session scheduled');
   };
 

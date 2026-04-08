@@ -32,10 +32,14 @@ interface InstructorDashboardProps {
 const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: InstructorDashboardProps) => {
   const { students, todayClasses, averageProgress, totalStudents, fetchError } = dashboardData;
 
+  // ===== DEMO MODE START =====
+  // Swap live data for mock data when demoMode is active.
+  // To remove demo mode, delete this block and the mockInstructorData import.
   const activeStudents = demoMode ? mockInstructorDashboard.students : students;
   const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : todayClasses;
   const activeAverageProgress = demoMode ? mockInstructorDashboard.averageProgress : averageProgress;
   const activeTotalStudents = demoMode ? mockInstructorDashboard.totalStudents : totalStudents;
+  // ===== DEMO MODE END =====
 
   return (
     <div className="space-y-6">

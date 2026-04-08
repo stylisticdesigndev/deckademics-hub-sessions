@@ -7,7 +7,9 @@ import InstructorDashboard from './InstructorDashboard';
 
 const InstructorDashboardGate = () => {
   const dashboardData = useInstructorDashboard();
+  // ===== DEMO MODE START =====
   const [demoMode, setDemoMode] = useState(false);
+  // ===== DEMO MODE END =====
 
   // Show full-page loader until all data is ready (unless demo mode)
   if (dashboardData.loading && !demoMode) {

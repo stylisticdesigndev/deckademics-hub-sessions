@@ -71,6 +71,10 @@ const StudentDashboard = ({
 
   const studentName = getStudentName();
 
+  // ===== DEMO MODE START =====
+  // When demoMode is true, substitute live Supabase data with static mock data
+  // so stakeholders can see a fully populated dashboard without real records.
+  // To remove demo mode, delete this block and the mockDashboardData import.
   const activeStudentData = demoMode ? mockStudentData : studentData;
   const activeSkills = demoMode
     ? mockSkills
@@ -85,6 +89,7 @@ const StudentDashboard = ({
     : attendance;
   const activeUpcomingClasses = demoMode ? mockUpcomingClasses : upcomingClasses;
   const activeAnnouncements = demoMode ? mockAnnouncements : announcements;
+  // ===== DEMO MODE END =====
 
   return (
     <div className="space-y-6">

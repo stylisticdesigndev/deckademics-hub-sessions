@@ -1,3 +1,11 @@
+/**
+ * DEMO DATA — Remove this entire file when demo mode is no longer needed.
+ *
+ * Provides static mock data for the Instructor Dashboard, Classes, Students,
+ * Messages, and Profile pages when "Demo Mode" is toggled on.
+ *
+ * Search for "===== DEMO MODE" across the codebase to find all usage sites.
+ */
 // Mock data for instructor demo mode
 import { formatDateUS } from '@/lib/utils';
 

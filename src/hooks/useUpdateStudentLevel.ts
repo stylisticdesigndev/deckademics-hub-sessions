@@ -29,7 +29,7 @@ export const useUpdateStudentLevel = () => {
 
   return useMutation({
     mutationFn: async ({ studentId, level }: { studentId: string; level: StudentLevel }) => {
-      console.log('Updating student level:', { studentId, level });
+      if (import.meta.env.DEV) console.log('Updating student level:', { studentId, level });
 
       const { data, error } = await supabase
         .from('students')
@@ -43,7 +43,7 @@ export const useUpdateStudentLevel = () => {
         throw error;
       }
 
-      console.log('Student level updated successfully:', data);
+      if (import.meta.env.DEV) console.log('Student level updated successfully:', data);
       return data;
     },
     onSuccess: (data, variables) => {

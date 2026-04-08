@@ -29,7 +29,7 @@ export const useToast = () => {
 
 // Create a direct export for the toast function
 export const toast = (props: ToastOptions) => {
-  console.log("Toast called with props:", props);
+  if (import.meta.env.DEV) console.log("Toast called with props:", props);
   
   if (props.variant === "destructive") {
     return sonnerToast.error(props.description as string, {
@@ -46,28 +46,28 @@ export const toast = (props: ToastOptions) => {
 
 // Add helper methods for different toast variants
 toast.error = (message: string) => {
-  console.error("Toast Error:", message);
+  if (import.meta.env.DEV) console.error("Toast Error:", message);
   return sonnerToast.error("Error", {
     description: message
   });
 };
 
 toast.success = (message: string) => {
-  console.log("Toast Success:", message);
+  if (import.meta.env.DEV) console.log("Toast Success:", message);
   return sonnerToast.success("Success", {
     description: message
   });
 };
 
 toast.info = (message: string) => {
-  console.log("Toast Info:", message);
+  if (import.meta.env.DEV) console.log("Toast Info:", message);
   return sonnerToast.info("Info", {
     description: message
   });
 };
 
 toast.warning = (message: string) => {
-  console.warn("Toast Warning:", message);
+  if (import.meta.env.DEV) console.warn("Toast Warning:", message);
   return sonnerToast.warning("Warning", {
     description: message
   });

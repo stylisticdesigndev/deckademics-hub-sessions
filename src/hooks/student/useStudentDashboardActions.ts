@@ -103,7 +103,7 @@ export function useStudentDashboardActions(fetchStudentInfo: () => void) {
   }, [toast]);
 
   const refreshData = useCallback(() => {
-    console.log("Refreshing student dashboard data");
+    if (import.meta.env.DEV) console.log("Refreshing student dashboard data");
     fetchStudentInfo();
   }, [fetchStudentInfo]);
 
