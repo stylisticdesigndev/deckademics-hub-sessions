@@ -252,13 +252,17 @@ const InstructorProfile = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {teachingSchedule.length > 0 ? (
-                    teachingSchedule.map((slot, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                  {teachingSchedule.filter(s => s.hours && s.hours.trim() !== '').length > 0 ? (
+                    teachingSchedule
+                      .filter(s => s.hours && s.hours.trim() !== '')
+                      .map((slot, index) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="font-medium">{slot.day}</p>
-                          <p className="text-sm text-muted-foreground">{slot.hours}</p>
+                          {slot.hours.split(', ').filter(Boolean).map((time, i) => (
+                            <p key={i} className="text-sm text-muted-foreground">{time}</p>
+                          ))}
                         </div>
                       </div>
                     ))
