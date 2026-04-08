@@ -53,6 +53,20 @@ const AdminBugReports = () => {
     },
   });
 
+  // Mark all unseen reports as seen when admin visits this page
+  useEffect(() => {
+    const markAsSeen = async () => {
+      await supabase
+        .from('bug_reports' as any)
+        .update({ seen_by_admin: true } as any)
+        .eq('seen_by_admin', false);
+      queryClient.invalidateQueries({ queryKey: ['admin-open-bug-count'] });
+    };
+    if (reports.length > 0) {
+      markAsSeen();
+    }
+  }, [reports, queryClient]);
+
   // Fetch reporter profiles
   const reporterIds = [...new Set(reports.map(r => r.reporter_id))];
   const { data: profiles = [] } = useQuery({
