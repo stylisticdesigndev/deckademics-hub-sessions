@@ -1,83 +1,39 @@
 
 
-# Production-Ready Audit & PWA Setup
+# Fix Realtime Auth, Personal Notes Privacy & OG Image
 
-## 1. PWA Setup (Installable Web App — No Service Worker)
+## 1. Realtime Channel Authorization
 
-Since this is for stakeholder handoff and "Add to Home Screen" installability, we use a simple manifest + meta tags approach (no `vite-plugin-pwa`, no service worker). This avoids preview/iframe issues.
+**Problem**: `student_notes` is published to Supabase Realtime, meaning any authenticated user who subscribes with the right filter can receive events. Realtime doesn't enforce RLS on subscriptions by default unless you enable **Realtime RLS** (Row Level Security for Realtime).
 
-### Files to create/modify:
+**Fix**: Remove `student_notes` from the Realtime publication. The app already uses `queryClient.invalidateQueries()` to refresh data — the Realtime channel in `useNotesNotifications.ts` is a convenience but creates an authorization gap. We'll remove the Realtime subscription and instead rely on polling or query invalidation.
 
-**Copy uploaded icon to project:**
-- Copy `user-uploads://Untitled_design_1.png` → `public/app-icon.png`
+- **Migration**: `ALTER PUBLICATION supabase_realtime DROP TABLE public.student_notes;`
+- **Code**: Remove the Realtime channel subscription from `useNotesNotifications.ts`. Replace with a periodic polling approach (refetchInterval on the notes query) so students still get timely updates without the security gap.
+- Similarly, `student_progress` is subscribed via Realtime in `useStudentProgress.ts` but is NOT in the publication — so it silently does nothing. We'll clean up that dead subscription too.
 
-**Create `public/manifest.json`:**
-- `name`: "Deckademics Hub"
-- `short_name`: "Deckademics"
-- `display`: "standalone"
-- `start_url`: "/"
-- `background_color`: "#222730" (dark background — generates Android splash)
-- `theme_color`: "#41A55B" (green primary)
-- `icons`: 192x192 and 512x512 entries pointing to `/app-icon.png`
+## 2. Instructor Access to Student Personal Notes
 
-**Update `index.html`:**
-- Add `<link rel="manifest" href="/manifest.json">`
-- Add `<meta name="theme-color" content="#41A55B">`
-- Add `<meta name="apple-mobile-web-app-capable" content="yes">`
-- Add `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`
-- Add `<link rel="apple-touch-icon" href="/app-icon.png">`
-- Add `<link rel="apple-touch-startup-image" href="/app-icon.png">` (basic; see iOS splash note below)
-- Add `<link rel="icon" type="image/png" href="/app-icon.png">`
-- Remove old `favicon.ico` reference if any
+**Problem**: The `student_personal_notes` table has an RLS SELECT policy allowing instructors to read their assigned students' personal notes. Personal notes should be private to the student only.
 
-**iOS Splash Screen Logic (`src/components/pwa/IOSSplashScreen.tsx`):**
-- A React component that shows `app-icon.png` centered on `#222730` background during initial load
-- Only renders in standalone mode (`window.matchMedia('(display-mode: standalone)')`)
-- Auto-hides after app mounts (1.5s fade-out)
-- Mounted in `main.tsx` before the root app
+**Fix**: Drop the instructor SELECT policy on `student_personal_notes`.
 
-## 2. Code Documentation
+- **Migration**: `DROP POLICY "Instructors can view assigned student personal notes" ON public.student_personal_notes;`
 
-**`src/providers/AuthProvider.tsx`** — already has a JSDoc header; will add inline comments to `signIn`, `signUp`, `signOut`, and `createProfileFromMetadata` methods.
+## 3. OG Image — Replace Lovable Default with Branded Image
 
-**`src/integrations/supabase/client.ts`** — already documented; no changes needed.
+**Problem**: `index.html` lines 24 and 28 point to `https://lovable.dev/opengraph-image-p98pqg.png` (the default Lovable placeholder).
 
-**Demo sections** — verify all demo code blocks have `// ===== DEMO MODE START =====` / `// ===== DEMO MODE END =====` markers. Files to check:
-- `StudentDashboardGate.tsx`
-- `StudentDashboard.tsx`
-- `InstructorDashboardGate.tsx`
-- `InstructorDashboard.tsx`
-- `mockDashboardData.ts`
-- `mockInstructorData.ts`
+**Fix**: Use the app icon as the OG image. Update both `og:image` and `twitter:image` meta tags to point to `/app-icon.png`. Since OG images need an absolute URL to work when shared, we'll use a relative path that works in production (the published domain will resolve it). Alternatively, if the user has a hosted URL we can use that.
 
-## 3. Security & UI Audit
-
-**Environment variables** — already verified: `supabase/client.ts` uses `import.meta.env.VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with a guard. No hardcoded credentials.
-
-**Route guards** — all `/student/*`, `/instructor/*`, `/admin/*` routes wrapped in `<ProtectedRoute allowedRoles={[...]} />`. Verified in `App.tsx`.
-
-**Responsive check** — visual pass on layouts (no code changes unless issues found).
-
-## 4. Updated Stakeholder Summary
-
-Update `STAKEHOLDER_SUMMARY.md` with:
-- PWA / installability section
-- Student Setup Guide: how to "install" the app from Safari (iOS) and Chrome (Android)
-- What to expect: the icon, the splash screen, standalone mode
-- Existing sections preserved
+- Update `index.html` lines 24 and 28: change the image URLs to `/app-icon.png`
 
 ## Files Changed
 
-| File | Action |
+| File | Change |
 |---|---|
-| `public/app-icon.png` | Copy from upload |
-| `public/manifest.json` | Create |
-| `index.html` | Add PWA meta tags |
-| `src/components/pwa/IOSSplashScreen.tsx` | Create — iOS splash component |
-| `src/main.tsx` | Mount iOS splash component |
-| `src/providers/AuthProvider.tsx` | Add inline code comments |
-| `STAKEHOLDER_SUMMARY.md` | Add PWA + Student Setup Guide sections |
-| Demo files (4 files) | Verify/add demo markers if missing |
-
-No demo code will be removed or altered.
+| Migration SQL | Drop `student_notes` from Realtime publication; drop instructor policy on `student_personal_notes` |
+| `src/hooks/student/useNotesNotifications.ts` | Remove Realtime channel, add polling interval note |
+| `src/hooks/student/dashboard/useStudentProgress.ts` | Remove dead Realtime subscription |
+| `index.html` | Update `og:image` and `twitter:image` to `/app-icon.png` |
 
