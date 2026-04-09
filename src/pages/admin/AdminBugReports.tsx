@@ -80,6 +80,7 @@ const AdminBugReports = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bug-reports'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-open-bug-count'] });
       toast({ title: 'Bug report updated' });
       setEditingId(null);
     },
