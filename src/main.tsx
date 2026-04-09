@@ -6,6 +6,7 @@ import App from './App';
 import './index.css';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './providers/AuthProvider';
+import IOSSplashScreen from './components/pwa/IOSSplashScreen';
 
 // Ensure Supabase is properly initialized before rendering the app
 import { supabase } from './integrations/supabase/client';
@@ -23,6 +24,8 @@ createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        {/* PWA splash screen — only visible in standalone (installed) mode */}
+        <IOSSplashScreen />
         <App />
         <Toaster />
       </AuthProvider>

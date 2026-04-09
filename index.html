@@ -8,6 +8,16 @@
     <meta name="description" content="Digital hub for Deckademics DJ School" />
     <meta name="author" content="Deckademics" />
 
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#41A55B" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/app-icon.png" />
+    <link rel="apple-touch-startup-image" href="/app-icon.png" />
+    <link rel="icon" type="image/png" href="/app-icon.png" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="Deckademics Hub" />
     <meta property="og:description" content="Digital hub for Deckademics DJ School" />
     <meta property="og:type" content="website" />
@@ -21,7 +31,6 @@
   <body>
     <div id="root"></div>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <!-- Use a relative path that will be correctly resolved in production -->
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
