@@ -1,42 +1,19 @@
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+/**
+ * useNotesNotifications
+ * ---------------------
+ * Previously used a Supabase Realtime channel to listen for new instructor
+ * notes. That channel was removed because Realtime does not enforce RLS by
+ * default, creating an authorization gap where any authenticated user could
+ * subscribe to another student's note events.
+ *
+ * Notes are now refreshed via react-query's refetchInterval on the notes
+ * query itself (see useStudentNotes / useStudentDashboard), so this hook
+ * is intentionally a no-op. It is kept as a stub so existing imports don't
+ * break.
+ */
 
-export const useNotesNotifications = (studentId: string | undefined) => {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (!studentId) return;
-
-    const channel = supabase
-      .channel('student-notes-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'student_notes',
-          filter: `student_id=eq.${studentId}`
-        },
-        (payload) => {
-          if (import.meta.env.DEV) console.log('New note received:', payload);
-          
-          // Show notification
-          toast({
-            title: 'New Note from Instructor',
-            description: payload.new.title || 'You have a new note',
-          });
-
-          // Invalidate queries to refresh data
-          queryClient.invalidateQueries({ queryKey: ['student-notes', studentId] });
-          queryClient.invalidateQueries({ queryKey: ['unread-notes-count', studentId] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [studentId, queryClient]);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const useNotesNotifications = (_studentId: string | undefined) => {
+  // No-op — Realtime subscription removed for security.
+  // Notes data is refreshed via react-query polling.
 };
