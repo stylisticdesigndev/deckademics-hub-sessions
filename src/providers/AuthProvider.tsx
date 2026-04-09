@@ -256,7 +256,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Create a profile from user metadata if it doesn't exist
+  /**
+   * createProfileFromMetadata — Fallback profile creator.
+   * Normally the DB trigger `handle_new_user` creates the profile server-side.
+   * This only fires when the trigger hasn't run yet (e.g. race condition).
+   * Role is hardcoded to 'student' — elevated roles are assigned server-side only.
+   */
   const createProfileFromMetadata = async (userId: string) => {
     if (!session?.user) return null;
     
@@ -342,6 +347,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * signIn — Authenticates a user with email + password via Supabase Auth.
+   * On success the auth state listener fires SIGNED_IN, which triggers
+   * profile fetch and role-based redirect automatically.
+   */
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
     setIsLoading(true);
     
@@ -375,6 +385,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * signUp — Registers a new user via Supabase Auth.
+   * Role + name are passed as user_metadata; the DB trigger `handle_new_user`
+   * creates the profile, user_roles, and student/instructor rows server-side.
+   */
   const signUp = async (
     email: string, 
     password: string, 
@@ -433,7 +448,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Modified signOut method with better session clearing
+  /**
+   * signOut — Clears React state, removes the Supabase auth token from
+   * localStorage, signs out via Supabase, then navigates to the landing page.
+   */
   const signOut = async () => {
     if (import.meta.env.DEV) console.log("Signing out user");
     try {
