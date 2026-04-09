@@ -74,27 +74,10 @@ export function useStudentProgress(userId?: string) {
 
     fetchProgress();
 
-    // Set up real-time subscription for progress updates
-    const channel = supabase
-      .channel('student_progress_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'student_progress',
-          filter: `student_id=eq.${userId}`
-        },
-        () => {
-          console.log('Progress data changed, refetching...');
-          fetchProgress();
-        }
-      )
-      .subscribe();
+    // Realtime subscription was removed — student_progress was never in
+    // supabase_realtime publication so the channel silently did nothing.
+    // Progress refreshes when the student navigates back to the dashboard.
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [userId]);
 
   return { progress, loading };
