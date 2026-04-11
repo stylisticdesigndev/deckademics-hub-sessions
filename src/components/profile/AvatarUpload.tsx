@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Loader2, Camera } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface AvatarUploadProps {
   currentUrl?: string | null;
@@ -45,10 +46,12 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
+      toast({ title: 'Invalid file type', description: 'Please upload a JPEG, PNG, or WebP image.', variant: 'destructive' });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Image must be under 5MB.', variant: 'destructive' });
       return;
     }
 
@@ -68,8 +71,9 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         .getPublicUrl(filePath);
 
       onUpload(publicUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading avatar:', error);
+      toast({ title: 'Upload failed', description: error?.message || 'Could not upload photo. Please try again.', variant: 'destructive' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
