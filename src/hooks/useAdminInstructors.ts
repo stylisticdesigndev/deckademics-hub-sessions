@@ -14,6 +14,7 @@ interface InstructorWithProfile {
     first_name: string | null;
     last_name: string | null;
     email: string;
+    avatar_url?: string | null;
   };
 }
 
