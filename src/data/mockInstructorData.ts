@@ -11,10 +11,10 @@ import { formatDateUS } from '@/lib/utils';
 
 export const mockInstructorDashboard = {
   students: [
-    { id: 'demo-s1', name: 'Marcus Chen', progress: 78, level: 'Intermediate', hasNotes: true },
-    { id: 'demo-s2', name: 'Sarah Williams', progress: 45, level: 'Beginner', hasNotes: false },
-    { id: 'demo-s3', name: 'Jordan Davis', progress: 92, level: 'Advanced', hasNotes: true },
-    { id: 'demo-s4', name: 'Emily Rodriguez', progress: 60, level: 'Intermediate', hasNotes: true },
+    { id: 'demo-s1', name: 'Marcus Chen', progress: 78, level: 'Intermediate', hasNotes: true, initials: 'MC' },
+    { id: 'demo-s2', name: 'Sarah Williams', progress: 45, level: 'Beginner', hasNotes: false, initials: 'SW' },
+    { id: 'demo-s3', name: 'Jordan Davis', progress: 92, level: 'Advanced', hasNotes: true, initials: 'JD' },
+    { id: 'demo-s4', name: 'Emily Rodriguez', progress: 60, level: 'Intermediate', hasNotes: true, initials: 'ER' },
   ],
   todayClasses: 3,
   averageProgress: 69,
