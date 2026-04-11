@@ -697,7 +697,15 @@ const AdminInstructors = () => {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
@@ -797,7 +805,15 @@ const AdminInstructors = () => {
                           filteredPendingInstructors.map((instructor) => (
                             <tr key={instructor.id} className="border-b last:border-0">
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
@@ -897,7 +913,15 @@ const AdminInstructors = () => {
                           filteredInactiveInstructors.map((instructor) => (
                             <tr key={instructor.id} className="border-b last:border-0">
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
