@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -691,10 +691,13 @@ const InstructorStudents = () => {
             {detailedStudent && (
               <div className="space-y-6">
                 <DialogHeader>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
+                    <div className="flex items-center gap-4">
+                    <Avatar
+                      className={cn("h-12 w-12", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
+                      onClick={() => detailedStudent.avatar && setEnlargedPhoto(detailedStudent.avatar)}
+                    >
                       {detailedStudent.avatar ? (
-                        <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                        <AvatarImage src={detailedStudent.avatar} alt={detailedStudent.name} />
                       ) : (
                         <AvatarFallback className="text-lg">
                           {detailedStudent.initials}
