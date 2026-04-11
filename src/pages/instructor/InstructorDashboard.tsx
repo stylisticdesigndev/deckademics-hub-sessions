@@ -14,6 +14,8 @@ interface Student {
   progress: number;
   level: string;
   hasNotes: boolean;
+  avatar?: string;
+  initials: string;
 }
 
 interface InstructorDashboardProps {
