@@ -41,6 +41,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Search, Check, X, Eye, UserRound, Loader2, MessageSquare, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VinylLoader from '@/components/ui/VinylLoader';
 import {
   Tooltip,
@@ -373,8 +374,16 @@ const AdminStudents = () => {
                               onCheckedChange={() => toggleSelect(student.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
@@ -512,8 +521,16 @@ const AdminStudents = () => {
                     {filteredPendingStudents.length > 0 ? (
                       filteredPendingStudents.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
@@ -614,8 +631,16 @@ const AdminStudents = () => {
                     {filteredInactiveStudents.length > 0 ? (
                       filteredInactiveStudents.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
@@ -688,12 +713,22 @@ const AdminStudents = () => {
       <Sheet open={!!viewStudentId} onOpenChange={(open) => !open && setViewStudentId(null)}>
         <SheetContent className="sm:max-w-lg overflow-auto">
           <SheetHeader>
-            <SheetTitle>
-              {viewedStudent ? `${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}` : 'Student Details'}
-            </SheetTitle>
-            <SheetDescription>
-              {viewedStudent?.profile?.email}
-            </SheetDescription>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                {viewedStudent?.profile?.avatar_url && <AvatarImage src={viewedStudent.profile.avatar_url} alt={`${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}`} />}
+                <AvatarFallback className="text-lg">
+                  {(viewedStudent?.profile?.first_name?.[0] || '')}{(viewedStudent?.profile?.last_name?.[0] || '')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <SheetTitle>
+                  {viewedStudent ? `${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}` : 'Student Details'}
+                </SheetTitle>
+                <SheetDescription>
+                  {viewedStudent?.profile?.email}
+                </SheetDescription>
+              </div>
+            </div>
           </SheetHeader>
           {viewedStudent && (
             <div className="space-y-6 mt-6">

@@ -52,6 +52,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, Check, X, Eye, Users, Loader2, AlertCircle, Info, MessageSquare, DollarSign, Clock, Award } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -522,12 +523,22 @@ const AdminInstructors = () => {
           <Sheet open={!!viewInstructorId} onOpenChange={(open) => !open && closeViewInstructor()}>
             <SheetContent className="sm:max-w-lg overflow-auto">
               <SheetHeader>
-                <SheetTitle>
-                  {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
-                </SheetTitle>
-                <SheetDescription>
-                  {viewedInstructor?.profile.email}
-                </SheetDescription>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    {viewedInstructor?.profile.avatar_url && <AvatarImage src={viewedInstructor.profile.avatar_url} alt={`${viewedInstructor?.profile.first_name} ${viewedInstructor?.profile.last_name}`} />}
+                    <AvatarFallback className="text-lg">
+                      {(viewedInstructor?.profile.first_name?.[0] || '')}{(viewedInstructor?.profile.last_name?.[0] || '')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <SheetTitle>
+                      {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
+                    </SheetTitle>
+                    <SheetDescription>
+                      {viewedInstructor?.profile.email}
+                    </SheetDescription>
+                  </div>
+                </div>
               </SheetHeader>
               {viewedInstructor && (
                 <div className="space-y-6 mt-6">
@@ -696,7 +707,15 @@ const AdminInstructors = () => {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
@@ -796,7 +815,15 @@ const AdminInstructors = () => {
                           filteredPendingInstructors.map((instructor) => (
                             <tr key={instructor.id} className="border-b last:border-0">
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
@@ -896,7 +923,15 @@ const AdminInstructors = () => {
                           filteredInactiveInstructors.map((instructor) => (
                             <tr key={instructor.id} className="border-b last:border-0">
                               <td className="px-4 py-3 font-medium">
-                                {instructor.profile.first_name} {instructor.profile.last_name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                                    <AvatarFallback className="text-xs">
+                                      {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
                                 {instructor.profile.email}
@@ -992,6 +1027,7 @@ interface InstructorWithProfile {
     first_name: string | null;
     last_name: string | null;
     email: string;
+    avatar_url?: string | null;
   };
 }
 
