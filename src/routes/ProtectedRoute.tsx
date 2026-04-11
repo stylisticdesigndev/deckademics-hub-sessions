@@ -165,9 +165,15 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
   // Gate students without a profile photo
   if (effectiveRole === 'student' && userData.profile && !userData.profile.avatar_url) {
-    // Allow access to photo-upload page itself
     if (window.location.pathname !== '/student/photo-upload') {
       return <Navigate to="/student/photo-upload" replace />;
+    }
+  }
+
+  // Gate instructors without a profile photo
+  if (effectiveRole === 'instructor' && userData.profile && !userData.profile.avatar_url) {
+    if (window.location.pathname !== '/instructor/photo-upload') {
+      return <Navigate to="/instructor/photo-upload" replace />;
     }
   }
 

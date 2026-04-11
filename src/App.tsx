@@ -16,6 +16,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import StudentProfileSetup from "./pages/student/StudentProfileSetup";
 import StudentPhotoUpload from "./pages/student/StudentPhotoUpload";
 import InstructorProfileSetup from "./pages/instructor/InstructorProfileSetup";
+import InstructorPhotoUpload from "./pages/instructor/InstructorPhotoUpload";
 import AdminProfileSetup from "./pages/admin/AdminProfileSetup";
 
 // Layout routes
@@ -82,6 +83,7 @@ const App = () => (
         </Route>
         <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
           <Route path="/instructor/profile-setup" element={<InstructorProfileSetup />} />
+          <Route path="/instructor/photo-upload" element={<InstructorPhotoUpload />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin/profile-setup" element={<AdminProfileSetup />} />
