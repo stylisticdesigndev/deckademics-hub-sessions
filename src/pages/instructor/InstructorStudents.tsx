@@ -1150,6 +1150,18 @@ const InstructorStudents = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* Enlarged photo dialog */}
+        <Dialog open={!!enlargedPhoto} onOpenChange={() => setEnlargedPhoto(null)}>
+          <DialogContent className="max-w-md flex items-center justify-center p-2">
+            {enlargedPhoto && (
+              <img
+                src={enlargedPhoto}
+                alt="Student profile"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
     </>
   );
 };
