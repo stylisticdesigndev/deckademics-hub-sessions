@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -75,12 +75,11 @@ export const AnnouncementCard = ({
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             {announcement.instructor.avatar ? (
-              <img src={announcement.instructor.avatar} alt={announcement.instructor.name} />
-            ) : (
+              <AvatarImage src={announcement.instructor.avatar} alt={announcement.instructor.name} />
+            ) : null}
               <AvatarFallback className="text-xs bg-deckademics-accent/20 text-deckademics-accent">
                 {announcement.instructor.initials}
               </AvatarFallback>
-            )}
           </Avatar>
           <span className="text-xs text-muted-foreground">
             {announcement.instructor.name}
