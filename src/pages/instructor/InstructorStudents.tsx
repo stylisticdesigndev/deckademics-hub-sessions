@@ -86,6 +86,7 @@ const InstructorStudents = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
 
   // Schedule change request state
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
