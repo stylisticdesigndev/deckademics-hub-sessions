@@ -28,6 +28,37 @@ const textSizeClasses = {
   lg: 'text-3xl',
 };
 
+/** Convert any image file to a JPEG Blob via an off-screen canvas.
+ *  This normalises HEIC, BMP, TIFF, large PNGs, etc. into a
+ *  consistently uploadable format and also down-sizes to max 1024px. */
+const normaliseImage = (file: File, maxDim = 1024, quality = 0.85): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not supported')); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Image conversion failed'))),
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image file')); };
+    img.src = url;
+  });
+
 export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   currentUrl,
   onUpload,
@@ -44,25 +75,33 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
     const file = e.target.files?.[0];
     if (!file || !session?.user?.id) return;
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      toast({ title: 'Invalid file type', description: 'Please upload a JPEG, PNG, or WebP image.', variant: 'destructive' });
+    // Accept any image/* the browser can render
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file type', description: 'Please upload an image file (JPEG, PNG, WebP, etc.).', variant: 'destructive' });
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Image must be under 5MB.', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Image must be under 10 MB.', variant: 'destructive' });
       return;
     }
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const filePath = `${session.user.id}/${Date.now()}.${ext}`;
+      // Normalise to JPEG for consistency
+      const blob = await normaliseImage(file);
+      const filePath = `${session.user.id}/${Date.now()}.jpg`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
+      // Upload with one automatic retry
+      let uploadError: Error | null = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+        if (!error) { uploadError = null; break; }
+        uploadError = error;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 1000)); // wait 1s before retry
+      }
 
       if (uploadError) throw uploadError;
 
@@ -101,7 +140,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         className="hidden"
         onChange={handleFileSelect}
       />
