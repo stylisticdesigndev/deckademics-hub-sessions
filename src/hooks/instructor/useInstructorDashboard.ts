@@ -178,7 +178,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
               progress: averageStudentProgress,
               level: studentData?.level || 'Novice',
-              hasNotes: !!studentData?.notes
+              hasNotes: !!studentData?.notes,
+              avatar: studentProfile?.avatar_url || undefined,
+              initials: `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase(),
             };
           })
           .filter(Boolean) as Student[];
