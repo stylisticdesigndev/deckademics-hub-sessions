@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,7 @@ const InstructorStudents = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
 
   // Schedule change request state
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -691,10 +692,13 @@ const InstructorStudents = () => {
             {detailedStudent && (
               <div className="space-y-6">
                 <DialogHeader>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
+                    <div className="flex items-center gap-4">
+                    <Avatar
+                      className={cn("h-12 w-12", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
+                      onClick={() => detailedStudent.avatar && setEnlargedPhoto(detailedStudent.avatar)}
+                    >
                       {detailedStudent.avatar ? (
-                        <img src={detailedStudent.avatar} alt={detailedStudent.name} />
+                        <AvatarImage src={detailedStudent.avatar} alt={detailedStudent.name} />
                       ) : (
                         <AvatarFallback className="text-lg">
                           {detailedStudent.initials}
@@ -1144,6 +1148,18 @@ const InstructorStudents = () => {
                 {createRequest.isPending ? 'Submitting...' : 'Submit Request'}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {/* Enlarged photo dialog */}
+        <Dialog open={!!enlargedPhoto} onOpenChange={() => setEnlargedPhoto(null)}>
+          <DialogContent className="max-w-md flex items-center justify-center p-2">
+            {enlargedPhoto && (
+              <img
+                src={enlargedPhoto}
+                alt="Student profile"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+            )}
           </DialogContent>
         </Dialog>
     </>
