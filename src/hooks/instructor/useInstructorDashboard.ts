@@ -71,16 +71,22 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       
       if (import.meta.env.DEV) console.log("Fetching dashboard data for instructor:", instructorId);
       
-      // Fetch students directly assigned to this instructor
+      // Determine today's day name for filtering
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayDayName = dayNames[new Date().getDay()];
+
+      // Fetch only students whose class_day matches today
       const { data: assignedStudents, error: studentsError } = await supabase
         .from('students')
         .select(`
           id,
           level,
           notes,
+          class_day,
           profiles!inner(first_name, last_name)
         `)
-        .eq('instructor_id', instructorId);
+        .eq('instructor_id', instructorId)
+        .eq('class_day', todayDayName);
         
       if (studentsError) {
         console.error("Error fetching assigned students:", studentsError);
@@ -178,7 +184,6 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         if (import.meta.env.DEV) console.log("Formatted students:", formattedStudents);
         
         setStudents(formattedStudents);
-        setTotalStudents(formattedStudents.length);
         
         if (formattedStudents.length > 0) {
           const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
@@ -187,11 +192,21 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           setAverageProgress(0);
         }
       } else {
-        if (import.meta.env.DEV) console.log("No students assigned to this instructor");
+        if (import.meta.env.DEV) console.log("No students scheduled for today");
         setStudents([]);
-        setTotalStudents(0);
         setAverageProgress(0);
       }
+
+      // Fetch total student count (all days) separately for the stats card
+      const { count: allStudentCount, error: countError } = await supabase
+        .from('students')
+        .select('id', { count: 'exact', head: true })
+        .eq('instructor_id', instructorId);
+
+      if (countError) {
+        console.error("Error counting total students:", countError);
+      }
+      setTotalStudents(allStudentCount || 0);
       
       // Count today's classes for this instructor
       const today = new Date().toISOString().split('T')[0];
