@@ -41,6 +41,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Search, Check, X, Eye, UserRound, Loader2, MessageSquare, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VinylLoader from '@/components/ui/VinylLoader';
 import {
   Tooltip,
