@@ -374,8 +374,16 @@ const AdminStudents = () => {
                               onCheckedChange={() => toggleSelect(student.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
@@ -513,8 +521,16 @@ const AdminStudents = () => {
                     {filteredPendingStudents.length > 0 ? (
                       filteredPendingStudents.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
@@ -615,8 +631,16 @@ const AdminStudents = () => {
                     {filteredInactiveStudents.length > 0 ? (
                       filteredInactiveStudents.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">
-                            {student.profile?.first_name} {student.profile?.last_name}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                                <AvatarFallback className="text-xs">
+                                  {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {student.profile?.email}
