@@ -729,7 +729,6 @@ const AdminStudents = () => {
                 </SheetDescription>
               </div>
             </div>
-            </SheetDescription>
           </SheetHeader>
           {viewedStudent && (
             <div className="space-y-6 mt-6">
