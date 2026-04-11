@@ -423,7 +423,7 @@ const InstructorStudents = () => {
                           >
                             <Avatar className="h-8 w-8">
                               {student.avatar ? (
-                                <img src={student.avatar} alt={student.name} />
+                                <AvatarImage src={student.avatar} alt={student.name} />
                               ) : (
                                 <AvatarFallback className="text-xs">
                                   {student.initials}
@@ -524,7 +524,7 @@ const InstructorStudents = () => {
                           >
                             <Avatar className="h-10 w-10">
                               {student.avatar ? (
-                                <img src={student.avatar} alt={student.name} />
+                                <AvatarImage src={student.avatar} alt={student.name} />
                               ) : (
                                 <AvatarFallback className="text-sm">
                                   {student.initials}
@@ -611,7 +611,7 @@ const InstructorStudents = () => {
                                 >
                                   <Avatar className="h-8 w-8">
                                     {student.avatar ? (
-                                      <img src={student.avatar} alt={student.name} />
+                                      <AvatarImage src={student.avatar} alt={student.name} />
                                     ) : (
                                       <AvatarFallback className="text-xs">
                                         {student.initials}
