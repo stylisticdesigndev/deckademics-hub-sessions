@@ -34,6 +34,7 @@ interface StudentWithProfile {
     first_name: string | null;
     last_name: string | null;
     email: string;
+    avatar_url?: string | null;
   };
   instructor?: InstructorWithProfile;
 }
@@ -62,7 +63,8 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
     profile: {
       first_name: profiles.first_name,
       last_name: profiles.last_name,
-      email: profiles.email || ''
+      email: profiles.email || '',
+      avatar_url: profiles.avatar_url || null,
     },
     instructor: instructors ? {
       id: instructors.id,
@@ -83,8 +85,8 @@ export const useAdminStudents = () => {
   const fetchStudentsByStatus = async (statuses: string[], includeInstructor = false): Promise<StudentWithProfile[]> => {
     try {
       const selectQuery = includeInstructor
-        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email), instructors (id, status, profiles (first_name, last_name, email))`
-        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email)`;
+        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email, avatar_url), instructors (id, status, profiles (first_name, last_name, email))`
+        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email, avatar_url)`;
 
       let query = supabase.from('students').select(selectQuery);
 

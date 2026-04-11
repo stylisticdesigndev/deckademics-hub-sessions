@@ -21,13 +21,15 @@ interface Student {
   progress: number;
   level: string;
   hasNotes: boolean;
+  avatar?: string;
+  initials: string;
 }
 
 interface StudentData {
   id: string;
   level?: string;
   notes?: string;
-  profiles?: { first_name?: string; last_name?: string };
+  profiles?: { first_name?: string; last_name?: string; avatar_url?: string };
 }
 
 interface InstructorDashboardData {
@@ -83,7 +85,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           level,
           notes,
           class_day,
-          profiles!inner(first_name, last_name)
+          profiles!inner(first_name, last_name, avatar_url)
         `)
         .eq('instructor_id', instructorId)
         .eq('class_day', todayDayName);
@@ -176,7 +178,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
               progress: averageStudentProgress,
               level: studentData?.level || 'Novice',
-              hasNotes: !!studentData?.notes
+              hasNotes: !!studentData?.notes,
+              avatar: studentProfile?.avatar_url || undefined,
+              initials: `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase(),
             };
           })
           .filter(Boolean) as Student[];
