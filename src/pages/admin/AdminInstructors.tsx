@@ -523,12 +523,22 @@ const AdminInstructors = () => {
           <Sheet open={!!viewInstructorId} onOpenChange={(open) => !open && closeViewInstructor()}>
             <SheetContent className="sm:max-w-lg overflow-auto">
               <SheetHeader>
-                <SheetTitle>
-                  {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
-                </SheetTitle>
-                <SheetDescription>
-                  {viewedInstructor?.profile.email}
-                </SheetDescription>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    {viewedInstructor?.profile.avatar_url && <AvatarImage src={viewedInstructor.profile.avatar_url} alt={`${viewedInstructor?.profile.first_name} ${viewedInstructor?.profile.last_name}`} />}
+                    <AvatarFallback className="text-lg">
+                      {(viewedInstructor?.profile.first_name?.[0] || '')}{(viewedInstructor?.profile.last_name?.[0] || '')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <SheetTitle>
+                      {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
+                    </SheetTitle>
+                    <SheetDescription>
+                      {viewedInstructor?.profile.email}
+                    </SheetDescription>
+                  </div>
+                </div>
               </SheetHeader>
               {viewedInstructor && (
                 <div className="space-y-6 mt-6">

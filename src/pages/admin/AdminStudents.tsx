@@ -713,11 +713,22 @@ const AdminStudents = () => {
       <Sheet open={!!viewStudentId} onOpenChange={(open) => !open && setViewStudentId(null)}>
         <SheetContent className="sm:max-w-lg overflow-auto">
           <SheetHeader>
-            <SheetTitle>
-              {viewedStudent ? `${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}` : 'Student Details'}
-            </SheetTitle>
-            <SheetDescription>
-              {viewedStudent?.profile?.email}
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                {viewedStudent?.profile?.avatar_url && <AvatarImage src={viewedStudent.profile.avatar_url} alt={`${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}`} />}
+                <AvatarFallback className="text-lg">
+                  {(viewedStudent?.profile?.first_name?.[0] || '')}{(viewedStudent?.profile?.last_name?.[0] || '')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <SheetTitle>
+                  {viewedStudent ? `${viewedStudent.profile?.first_name} ${viewedStudent.profile?.last_name}` : 'Student Details'}
+                </SheetTitle>
+                <SheetDescription>
+                  {viewedStudent?.profile?.email}
+                </SheetDescription>
+              </div>
+            </div>
             </SheetDescription>
           </SheetHeader>
           {viewedStudent && (
