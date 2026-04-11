@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -21,6 +22,8 @@ interface Student {
   progress: number;
   level: string;
   hasNotes: boolean;
+  avatar?: string;
+  initials: string;
 }
 
 interface StudentTableProps {
@@ -84,7 +87,17 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                         className="cursor-pointer hover:bg-muted/60"
                         onClick={() => navigate('/instructor/students')}
                       >
-                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              {student.avatar && <AvatarImage src={student.avatar} alt={student.name} />}
+                              <AvatarFallback className="text-xs">
+                                {student.initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{student.name}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <ProgressBar 
@@ -126,7 +139,15 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                     onClick={() => navigate('/instructor/students')}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{student.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-7 w-7">
+                          {student.avatar && <AvatarImage src={student.avatar} alt={student.name} />}
+                          <AvatarFallback className="text-xs">
+                            {student.initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-sm">{student.name}</span>
+                      </div>
                       <span className="text-xs text-muted-foreground capitalize">{student.level}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -144,7 +165,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
           </>
         ) : (
           <div className="p-6 text-center text-muted-foreground">
-            No students assigned to you yet.
+            No students scheduled for today.
           </div>
         )}
         
