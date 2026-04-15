@@ -32,6 +32,7 @@ export const StudentNavigation = () => {
     { title: "Classes", icon: Calendar, href: "/student/classes" },
     { title: "Notes", icon: StickyNote, href: "/student/notes", badge: unreadNotesCount },
     { title: "Messages", icon: MessageSquare, href: "/student/messages", badge: unreadMsgCount },
+    { title: "Sunday Practice", icon: Music, href: "https://deckademics.com/sunday-practice", external: true },
     { title: "Profile", icon: User, href: "/student/profile" },
   ];
 
