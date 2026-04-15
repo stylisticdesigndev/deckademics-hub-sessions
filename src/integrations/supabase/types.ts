@@ -992,6 +992,7 @@ export type Database = {
           description: string | null
           id: string
           instructor_id: string
+          order_index: number
           student_id: string
           title: string
           updated_at: string
@@ -1002,6 +1003,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructor_id: string
+          order_index?: number
           student_id: string
           title: string
           updated_at?: string
@@ -1012,6 +1014,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructor_id?: string
+          order_index?: number
           student_id?: string
           title?: string
           updated_at?: string
