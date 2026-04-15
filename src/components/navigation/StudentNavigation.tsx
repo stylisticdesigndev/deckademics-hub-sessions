@@ -25,7 +25,7 @@ export const StudentNavigation = () => {
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
 
-  const navItems = [
+  const navItems: { title: string; icon: any; href: string; badge?: number; external?: boolean }[] = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
     { title: "Skills", icon: BarChart, href: "/student/progress" },
     { title: "Curriculum", icon: BookOpen, href: "/student/curriculum" },
@@ -34,6 +34,7 @@ export const StudentNavigation = () => {
     { title: "Messages", icon: MessageSquare, href: "/student/messages", badge: unreadMsgCount },
     { title: "Sunday Practice", icon: Music, href: "https://deckademics.com/sunday-practice", external: true },
     { title: "Profile", icon: User, href: "/student/profile" },
+  ];
   ];
 
   return (
