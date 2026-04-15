@@ -23,12 +23,14 @@ interface Student {
   hasNotes: boolean;
   avatar?: string;
   initials: string;
+  classTime?: string;
 }
 
 interface StudentData {
   id: string;
   level?: string;
   notes?: string;
+  class_time?: string;
   profiles?: { first_name?: string; last_name?: string; avatar_url?: string };
 }
 
@@ -85,6 +87,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           level,
           notes,
           class_day,
+          class_time,
           profiles!inner(first_name, last_name, avatar_url)
         `)
         .eq('instructor_id', instructorId)
@@ -181,9 +184,18 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               hasNotes: !!studentData?.notes,
               avatar: studentProfile?.avatar_url || undefined,
               initials: `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase(),
+              classTime: (student as any).class_time || undefined,
             };
           })
           .filter(Boolean) as Student[];
+
+        // Sort by class time
+        const timeOrder = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+        formattedStudents.sort((a, b) => {
+          const aIdx = timeOrder.indexOf(a.classTime || '');
+          const bIdx = timeOrder.indexOf(b.classTime || '');
+          return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+        });
         
         if (import.meta.env.DEV) console.log("Formatted students:", formattedStudents);
         
