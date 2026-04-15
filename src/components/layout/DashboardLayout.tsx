@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
 import { useAuth } from '@/providers/AuthProvider';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, ShieldAlert } from 'lucide-react';
 import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +32,7 @@ export const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { signOut, userData } = useAuth();
+  const isAdminMode = userType === 'admin';
 
   const handleLogout = () => {
     signOut();
@@ -64,7 +65,7 @@ export const DashboardLayout = ({
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <Sidebar>
+        <Sidebar className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}>
           <SidebarHeader className="min-h-16 border-b border-sidebar-border justify-center px-4 py-3">
             <Logo size="header" className="shrink-0" />
           </SidebarHeader>
@@ -107,6 +108,23 @@ export const DashboardLayout = ({
           </SidebarFooter>
         </Sidebar>
         <div className="flex-1 overflow-auto">
+          {/* Admin Mode Banner */}
+          {isAdminMode && (
+            <div className="bg-red-900/80 text-red-100 px-4 py-2 flex items-center justify-between text-sm font-semibold">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4" />
+                ADMINISTRATION MODE
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-100 hover:text-white hover:bg-red-800/50"
+                onClick={() => navigate('/instructor/dashboard')}
+              >
+                Return to Teaching View
+              </Button>
+            </div>
+          )}
           <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border">
             <div className="flex items-center gap-2">
               <SidebarTrigger />

@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
+import { canAccessPayroll } from '@/constants/adminPermissions';
 import {
   LayoutDashboard,
   Users,
@@ -21,13 +23,17 @@ import {
   UserCog,
   TrendingUp,
   Target,
-  Bug as BugIcon
+  Bug as BugIcon,
+  ArrowLeft
 } from 'lucide-react';
 
 export const AdminNavigation = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { userData } = useAuth();
   const userId = userData.user?.id;
+  const userEmail = userData.profile?.email;
+  const showPayroll = canAccessPayroll(userEmail);
 
   const { data: studentCounts } = useQuery({
     queryKey: ['admin-student-counts-nav'],
@@ -73,8 +79,11 @@ export const AdminNavigation = () => {
     { title: "Skills", icon: Target, href: "/admin/skills" },
     { title: "Progress Overview", icon: TrendingUp, href: "/admin/progress" },
     { title: "Attendance", icon: ClipboardCheck, href: "/admin/attendance" },
-    { title: "Student Payments", icon: CreditCard, href: "/admin/payments" },
-    { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
+    // Payroll items — only visible for owner
+    ...(showPayroll ? [
+      { title: "Student Payments", icon: CreditCard, href: "/admin/payments" },
+      { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
+    ] : []),
     { title: "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/admin/announcements" },
     { title: "Bug Reports", icon: BugIcon, href: "/admin/bug-reports", badge: openBugCount },
@@ -84,6 +93,18 @@ export const AdminNavigation = () => {
 
   return (
     <div className="space-y-1.5">
+      {/* Return to Teaching View button */}
+      <div className="pb-3 mb-3 border-b border-sidebar-border">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+          onClick={() => navigate('/instructor/dashboard')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Return to Teaching View
+        </Button>
+      </div>
+
       {navItems.map((item) => (
         <Link
           key={item.href}

@@ -38,6 +38,7 @@ const Index = () => {
   }, [session, userData, clearLocalStorage, isLoading]);
   
   // Handle redirection if user is already logged in
+  // Admins always route to instructor dashboard first
   const checkAndRedirect = useCallback(() => {
     if (isLoading) return;
     
@@ -48,10 +49,8 @@ const Index = () => {
           navigate('/student/dashboard');
           break;
         case 'instructor':
-          navigate('/instructor/dashboard');
-          break;
         case 'admin':
-          navigate('/admin/dashboard');
+          navigate('/instructor/dashboard');
           break;
       }
     }
@@ -145,15 +144,6 @@ const Index = () => {
       
       <footer className="py-6 text-center text-sm text-muted-foreground z-10 relative bg-black/50 backdrop-blur-sm">
         © {new Date().getFullYear()} Deckademics DJ School. All rights reserved.
-        <div className="mt-4">
-          <Link 
-            to="/auth/admin" 
-            className="text-xs text-muted-foreground hover:text-deckademics-primary transition-colors"
-            onClick={ensureCleanAuthState}
-          >
-            Administrator Access
-          </Link>
-        </div>
       </footer>
     </div>
   );

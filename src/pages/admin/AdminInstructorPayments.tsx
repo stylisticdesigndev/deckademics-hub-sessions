@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
+import { canAccessPayroll } from '@/constants/adminPermissions';
 import type { DateRange } from 'react-day-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -54,6 +56,10 @@ interface Instructor {
 }
 
 const AdminInstructorPayments = () => {
+  const { userData } = useAuth();
+  const userEmail = userData.profile?.email;
+  const hasAccess = canAccessPayroll(userEmail);
+
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
@@ -90,7 +96,7 @@ const AdminInstructorPayments = () => {
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
-  
+
   React.useEffect(() => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
@@ -115,6 +121,22 @@ const AdminInstructorPayments = () => {
     };
     fetchInstructors();
   }, []);
+
+  // Payroll security gate — owner only (after all hooks)
+  if (!hasAccess) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
   const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];

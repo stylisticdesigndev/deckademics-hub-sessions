@@ -1,0 +1,54 @@
+# Project Memory
+
+## Core
+- Use 'Classrooms' instead of 'Studios' for facility terminology.
+- Display student proficiency level (Novice, Amateur, Intermediate, Advanced) instead of full course title.
+- Navigation menus display only icon and title, no hover tooltips.
+- External links must use native `<a>` tags with `target="_blank"` and `rel="noopener noreferrer"`.
+- Curriculum levels are novice, amateur, intermediate, advanced (lowercase in DB). Legacy "beginner" maps to "novice".
+- Use 'Skills' globally, not 'Progress' for trackable assessments.
+- Standardized American dates (MM/DD/YYYY) via `formatDateUS` and `formatDateTimeUS`.
+- No manual 'Refresh' buttons. Use React Query cache invalidation.
+- Parse Supabase Edge Function JSON body for error strings to avoid generic non-2xx messages.
+- Disable success toasts for auth/profile flows to reduce UI noise.
+- Capitalize proficiency levels globally using `capitalizeLevel` utility.
+- Unified login: no separate admin auth page. Admins login via instructor auth, land on teaching view first.
+- Admin access gated by hardcoded emails in `src/constants/adminPermissions.ts`. Payroll owner-only.
+
+## Memories
+- [Video Background](mem://design/video-background) — Unified full-screen muted video background on home screen and all auth pages
+- [Admin Payment Management](mem://features/admin-payment-management) — Batch installment plans, tiered pricing, and two-step data fetch
+- [Student Notes System](mem://features/student-notes-system) — Instructor and student personal notes, unified feed, inline image/hyperlink, full CRUD
+- [Visual Dashboard Design](mem://style/visual-dashboard-design) — Visual-first 3-item rows (grid-cols-1 md:grid-cols-3) with thin-stroke circular charts
+- [Attendance Management System](mem://features/attendance-management-system) — Once-a-week schedule in Classrooms 1, 2, 3. Present (green), Absent (red)
+- [Categorized Announcements](mem://features/categorized-announcements) — Mark as Read/Dismiss per user via announcement_reads
+- [Notification Preferences](mem://features/notification-preferences) — Granular Email/SMS control for students stored in notification_preferences
+- [Profile Management](mem://features/profile-management) — Mandatory avatar upload gate blocks dashboard access until photo is provided
+- [Page Layout Standard](mem://style/page-layout-standard) — space-y-6 wrapper, gap-6 full width grid, flex start header, 2xl bold title, muted subtitle
+- [Security Hardening](mem://security/hardening) — Strict RLS, HIBP password checks, security definer block for role escalation
+- [Demo Mode System](mem://features/demo-mode-system) — Global role-specific mock data accessed via persistent Eye/EyeOff toggle
+- [Instructor Class Filtering](mem://features/instructor-class-filtering) — Multi-view interval filtering by Day, Week (default), or Month
+- [Save to Notes](mem://features/save-to-notes) — Students can bookmark instructor messages/images to personal notes
+- [Messaging Conversational Threads](mem://features/messaging-conversational-threads) — Unified chat interface. Students reply within 7 days of last instructor message
+- [Student Tasks](mem://features/student-tasks) — Ad-hoc instructor-assigned items for students managed in student_tasks table
+- [Messaging UI Contrast](mem://style/messaging-ui-contrast) — Links in sent messages use primary-foreground, received use primary
+- [Admin Notification System](mem://features/admin-notification-system) — Optimistic unread badges, tracking critical signups and overdue payments
+- [Admin Instructor Management](mem://features/admin-instructor-management) — Sheet interface, self-registration, safe deactivation unassigns students
+- [Admin Student Management](mem://features/admin-student-management) — Sheet interface, self-registration, Active/Pending/Inactive tabs
+- [Student Proficiency Tracking](mem://features/student-proficiency-tracking) — Averages all progress_skills percentages. Missing defaults to 0%
+- [Admin Curriculum Management](mem://features/admin-curriculum-management) — Strict separation of curriculum rubrics from trackable Skills assessments
+- [Progress Skills System](mem://features/progress-skills-system) — 32 curriculum-extracted skills (0-100 scale). Advanced is single open proficiency
+- [Admin Instructor Payment System](mem://features/admin-instructor-payment-system) — Payroll history (10 items/page), paid terminal status, automated grids
+- [Instructor Scheduling Standard](mem://features/instructor-scheduling-standard) — Chronological by day, displaying only explicitly selected class slots
+- [Date Range Picker Behavior](mem://ux/date-range-picker-behavior) — Inline two-month 'airline-style' calendar view
+- [Student Dashboard Skill Display](mem://ux/student-dashboard-skill-display) — Cap displayed skills (top 6 for breakdown, max 4 for progress)
+- [User Approval Gate](mem://ux/user-approval-gate) — Blocked pending state until administrator approval
+- [User Notification System](mem://features/user-notification-system) — Consolidated 30s polling feed for unread messages and announcements
+- [Dashboard Loading Animation](mem://style/dashboard-loading-animation) — 'VinylLoader' gate components block layout until data resolves
+- [Skill Proficiency Slider](mem://style/skill-proficiency-slider) — Green progress bar style (bg-green-500 range, bg-gray-200 track)
+- [Supabase Auth Redirect](mem://arch/supabase-auth-redirect-configuration) — Password reset hardcoded to redirect to /reset-password for Lovable preview
+- [Student Scheduling System](mem://features/student-scheduling-system) — Fixed class blocks power 'Next Class' display and instructor roster filtering
+- [Bug Reporting System](mem://features/bug-reporting-system) — bug_reports table with RLS and admin notification badge logic
+- [PWA Mobile Setup](mem://features/pwa-mobile-setup) — Standalone PWA, web manifest, custom iOS splash screen
+- [Resilient Avatar Uploads](mem://ux/resilient-avatar-uploads) — Off-screen JPEG conversion, max 1024px, 1s retry logic for reliability
+- [Admin RBAC & Mode Switcher](mem://features/admin-rbac-mode-switcher) — Unified login, hardcoded admin emails, admin mode visual state, payroll owner-only gate

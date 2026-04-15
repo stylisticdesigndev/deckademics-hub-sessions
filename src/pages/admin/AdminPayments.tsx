@@ -9,12 +9,35 @@ import { CreatePaymentDialog } from '@/components/admin/payments/CreatePaymentDi
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { useUpdatePayment } from '@/hooks/useUpdatePayment';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/providers/AuthProvider';
+import { canAccessPayroll } from '@/constants/adminPermissions';
 
 const AdminPayments = () => {
+  const { userData } = useAuth();
+  const userEmail = userData.profile?.email;
+  const hasAccess = canAccessPayroll(userEmail);
+
   const { missedPayments, upcomingPayments, allPayments, isLoading, stats } = useAdminPayments();
   const { activeStudents } = useAdminStudents();
   const { updatePayment } = useUpdatePayment();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Payroll security gate — owner only (after all hooks)
+  if (!hasAccess) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to view the Student Payments section. Only the account owner can access payroll data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const students = activeStudents.map(student => ({
     id: student.id,
