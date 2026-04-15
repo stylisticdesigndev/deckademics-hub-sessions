@@ -34,6 +34,16 @@ export const DashboardLayout = ({
   const { signOut, userData } = useAuth();
   const isAdminMode = userType === 'admin';
 
+  const MobileMenuButton = () => {
+    const { toggleSidebar } = useSidebar();
+    return (
+      <Button variant="ghost" size="icon" className="md:hidden h-7 w-7" onClick={toggleSidebar}>
+        <Menu className="h-5 w-5" />
+        <span className="sr-only">Toggle Sidebar</span>
+      </Button>
+    );
+  };
+
   const handleLogout = () => {
     signOut();
   };
