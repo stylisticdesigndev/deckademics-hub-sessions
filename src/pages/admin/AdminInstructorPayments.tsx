@@ -58,22 +58,7 @@ interface Instructor {
 const AdminInstructorPayments = () => {
   const { userData } = useAuth();
   const userEmail = userData.profile?.email;
-
-  // Payroll security gate — owner only
-  if (!canAccessPayroll(userEmail)) {
-    return (
-      <div className="space-y-6">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Access Denied</CardTitle>
-            <CardDescription>
-              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const hasAccess = canAccessPayroll(userEmail);
 
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
@@ -111,6 +96,22 @@ const AdminInstructorPayments = () => {
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+
+  // Payroll security gate — owner only (after all hooks)
+  if (!hasAccess) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
   
   React.useEffect(() => {
     const fetchInstructors = async () => {
