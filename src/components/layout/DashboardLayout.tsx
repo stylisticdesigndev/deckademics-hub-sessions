@@ -9,6 +9,7 @@ import {
   SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
@@ -24,6 +25,16 @@ interface DashboardLayoutProps {
   sidebarContent: ReactNode;
   userType: 'student' | 'instructor' | 'admin';
 }
+
+const MobileMenuButton = () => {
+  const { toggleSidebar } = useSidebar();
+  return (
+    <Button variant="ghost" size="icon" className="md:hidden h-7 w-7" onClick={toggleSidebar}>
+      <Menu className="h-5 w-5" />
+      <span className="sr-only">Toggle Sidebar</span>
+    </Button>
+  );
+};
 
 export const DashboardLayout = ({ 
   children, 
@@ -128,9 +139,7 @@ export const DashboardLayout = ({
           <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="hidden md:flex" />
-              <SidebarTrigger className="md:hidden [&>svg]:hidden">
-                <Menu className="h-5 w-5" />
-              </SidebarTrigger>
+              <MobileMenuButton />
             </div>
             <div className="flex items-center gap-2">
               {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
