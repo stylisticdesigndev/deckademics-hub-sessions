@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
 import { useAuth } from '@/providers/AuthProvider';
-import { LogOut, Settings, User, ShieldAlert } from 'lucide-react';
+import { LogOut, Settings, User, ShieldAlert, Menu } from 'lucide-react';
 import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -127,8 +127,10 @@ export const DashboardLayout = ({
           )}
           <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border">
             <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Deckademics DJ School</h1>
+              <SidebarTrigger className="hidden md:flex" />
+              <SidebarTrigger className="md:hidden [&>svg]:hidden">
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
             </div>
             <div className="flex items-center gap-2">
               {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
