@@ -929,6 +929,7 @@ const InstructorStudents = () => {
                                   instructor_id: instructorId,
                                   title: newTaskTitle.trim(),
                                   description: newTaskDescription.trim() || null,
+                                  order_index: studentTasks.length,
                                 } as any);
                               if (error) {
                                 toast({ title: "Error adding task", description: error.message, variant: "destructive" });
