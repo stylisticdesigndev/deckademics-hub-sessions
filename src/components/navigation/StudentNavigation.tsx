@@ -9,7 +9,8 @@ import {
   BarChart,
   StickyNote,
   BookOpen,
-  Calendar
+  Calendar,
+  Music
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
