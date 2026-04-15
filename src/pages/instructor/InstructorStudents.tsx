@@ -87,6 +87,7 @@ const InstructorStudents = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<{id: string; title: string; description: string} | null>(null);
   const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
 
   // Schedule change request state
