@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
-import AdminAuth from "./pages/auth/AdminAuth";
 import ResetPassword from "./pages/auth/ResetPassword";
 
 // Profile setup pages
@@ -72,7 +71,7 @@ const App = () => (
           <Route index element={<Navigate to="/auth/student" replace />} />
           <Route path="student" element={<StudentAuth />} />
           <Route path="instructor" element={<InstructorAuth />} />
-          <Route path="admin" element={<AdminAuth />} />
+          {/* /auth/admin removed — all users use unified login */}
         </Route>
         <Route path="/reset-password" element={<ResetPassword />} />
         
@@ -81,7 +80,7 @@ const App = () => (
           <Route path="/student/profile-setup" element={<StudentProfileSetup />} />
           <Route path="/student/photo-upload" element={<StudentPhotoUpload />} />
         </Route>
-        <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
           <Route path="/instructor/profile-setup" element={<InstructorProfileSetup />} />
           <Route path="/instructor/photo-upload" element={<InstructorPhotoUpload />} />
         </Route>
@@ -93,7 +92,7 @@ const App = () => (
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/dashboard" element={<StudentDashboardGate />} />
         </Route>
-        <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
           <Route path="/instructor/dashboard" element={<InstructorDashboardGate />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
@@ -112,8 +111,8 @@ const App = () => (
           </Route>
         </Route>
         
-        {/* Instructor routes - persistent layout */}
-        <Route element={<ProtectedRoute allowedRoles={['instructor']} />}>
+        {/* Instructor routes - persistent layout (admin users can also access) */}
+        <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
           <Route element={<InstructorLayoutRoute />}>
             <Route path="/instructor/students" element={<InstructorStudents />} />
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -9,16 +9,21 @@ import {
   MessageSquare,
   UserCog,
   Bell,
-  BookOpen
+  BookOpen,
+  ShieldCheck
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
+import { isAdminUser } from '@/constants/adminPermissions';
 
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { userData } = useAuth();
   const userId = userData.user?.id;
+  const userEmail = userData.profile?.email;
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
@@ -54,6 +59,20 @@ export const InstructorNavigation = () => {
           )}
         </Link>
       ))}
+
+      {/* Admin Portal button — only visible for authorized admin users */}
+      {isAdminUser(userEmail) && (
+        <div className="pt-4 mt-4 border-t border-sidebar-border">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            onClick={() => navigate('/admin/dashboard')}
+          >
+            <ShieldCheck className="h-5 w-5" />
+            Admin Portal
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
