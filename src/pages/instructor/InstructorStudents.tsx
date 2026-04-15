@@ -956,71 +956,183 @@ const InstructorStudents = () => {
                         {[1, 2].map(i => <Skeleton key={i} className="h-12 w-full" />)}
                       </div>
                     ) : studentTasks.length > 0 ? (
-                      <div className="space-y-2">
-                        {[...studentTasks]
-                          .sort((a, b) => {
-                            if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                            const dateA = new Date(a.created_at).getTime() || 0;
-                            const dateB = new Date(b.created_at).getTime() || 0;
-                            return dateB - dateA;
-                          })
-                          .map((task) => (
-                          <div key={task.id} className="flex items-start gap-3 border rounded-md p-3 group">
-                            <Checkbox
-                              checked={task.completed}
-                              onCheckedChange={async () => {
-                                try {
-                                  const { error } = await supabase
-                                    .from('student_tasks' as any)
-                                    .update({ completed: !task.completed } as any)
-                                    .eq('id', task.id);
-                                  if (error) {
-                                    toast({ title: "Error", description: error.message, variant: "destructive" });
-                                    return;
-                                  }
-                                  setStudentTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
-                                } catch (err) {
-                                  console.error('Error toggling task:', err);
-                                }
-                              }}
-                              className="mt-0.5"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className={cn("text-sm font-medium", task.completed && "line-through text-muted-foreground")}>
-                                {task.title}
-                              </p>
-                              {task.description && (
-                                <p className={cn("text-xs text-muted-foreground mt-1", task.completed && "line-through")}>
-                                  {task.description}
-                                </p>
-                              )}
+                      <DragDropContext onDragEnd={async (result: DropResult) => {
+                        if (!result.destination) return;
+                        const srcIdx = result.source.index;
+                        const destIdx = result.destination.index;
+                        if (srcIdx === destIdx) return;
+
+                        // Separate incomplete and completed
+                        const incomplete = studentTasks.filter(t => !t.completed);
+                        const completed = studentTasks.filter(t => t.completed);
+
+                        // Reorder incomplete
+                        const reordered = Array.from(incomplete);
+                        const [moved] = reordered.splice(srcIdx, 1);
+                        reordered.splice(destIdx, 0, moved);
+
+                        // Assign new order_index values
+                        const updatedIncomplete = reordered.map((t, i) => ({ ...t, order_index: i }));
+                        const updatedAll = [...updatedIncomplete, ...completed.map((t, i) => ({ ...t, order_index: updatedIncomplete.length + i }))];
+                        setStudentTasks(updatedAll);
+
+                        // Persist to DB
+                        try {
+                          await Promise.all(
+                            updatedAll.map(t =>
+                              supabase
+                                .from('student_tasks' as any)
+                                .update({ order_index: t.order_index } as any)
+                                .eq('id', t.id)
+                            )
+                          );
+                        } catch (err) {
+                          console.error('Error saving task order:', err);
+                        }
+                      }}>
+                        <div className="space-y-1">
+                          {/* Incomplete tasks - draggable */}
+                          <Droppable droppableId="tasks">
+                            {(provided) => (
+                              <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                                {studentTasks
+                                  .filter(t => !t.completed)
+                                  .sort((a, b) => a.order_index - b.order_index)
+                                  .map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={cn(
+                                          "flex items-start gap-2 border rounded-md p-3 group bg-background",
+                                          snapshot.isDragging && "shadow-lg ring-2 ring-primary/20"
+                                        )}
+                                      >
+                                        <div {...provided.dragHandleProps} className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                                          <GripVertical className="h-4 w-4" />
+                                        </div>
+                                        <Checkbox
+                                          checked={task.completed}
+                                          onCheckedChange={async () => {
+                                            try {
+                                              const { error } = await supabase
+                                                .from('student_tasks' as any)
+                                                .update({ completed: !task.completed } as any)
+                                                .eq('id', task.id);
+                                              if (error) {
+                                                toast({ title: "Error", description: error.message, variant: "destructive" });
+                                                return;
+                                              }
+                                              setStudentTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+                                            } catch (err) {
+                                              console.error('Error toggling task:', err);
+                                            }
+                                          }}
+                                          className="mt-0.5"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium">{task.title}</p>
+                                          {task.description && (
+                                            <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                                          )}
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                          onClick={async () => {
+                                            try {
+                                              const { error } = await supabase
+                                                .from('student_tasks' as any)
+                                                .delete()
+                                                .eq('id', task.id);
+                                              if (error) {
+                                                toast({ title: "Error", description: error.message, variant: "destructive" });
+                                                return;
+                                              }
+                                              setStudentTasks(prev => prev.filter(t => t.id !== task.id));
+                                              toast({ title: "Task deleted" });
+                                            } catch (err) {
+                                              console.error('Error deleting task:', err);
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+
+                          {/* Completed tasks - not draggable */}
+                          {studentTasks.filter(t => t.completed).length > 0 && (
+                            <div className="space-y-2 pt-2 border-t mt-3">
+                              <p className="text-xs text-muted-foreground font-medium">Completed</p>
+                              {studentTasks
+                                .filter(t => t.completed)
+                                .sort((a, b) => a.order_index - b.order_index)
+                                .map((task) => (
+                                <div key={task.id} className="flex items-start gap-2 border rounded-md p-3 group opacity-60">
+                                  <div className="w-4" />
+                                  <Checkbox
+                                    checked={task.completed}
+                                    onCheckedChange={async () => {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('student_tasks' as any)
+                                          .update({ completed: !task.completed } as any)
+                                          .eq('id', task.id);
+                                        if (error) {
+                                          toast({ title: "Error", description: error.message, variant: "destructive" });
+                                          return;
+                                        }
+                                        setStudentTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+                                      } catch (err) {
+                                        console.error('Error toggling task:', err);
+                                      }
+                                    }}
+                                    className="mt-0.5"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium line-through text-muted-foreground">{task.title}</p>
+                                    {task.description && (
+                                      <p className="text-xs text-muted-foreground mt-1 line-through">{task.description}</p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('student_tasks' as any)
+                                          .delete()
+                                          .eq('id', task.id);
+                                        if (error) {
+                                          toast({ title: "Error", description: error.message, variant: "destructive" });
+                                          return;
+                                        }
+                                        setStudentTasks(prev => prev.filter(t => t.id !== task.id));
+                                        toast({ title: "Task deleted" });
+                                      } catch (err) {
+                                        console.error('Error deleting task:', err);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                              onClick={async () => {
-                                try {
-                                  const { error } = await supabase
-                                    .from('student_tasks' as any)
-                                    .delete()
-                                    .eq('id', task.id);
-                                  if (error) {
-                                    toast({ title: "Error", description: error.message, variant: "destructive" });
-                                    return;
-                                  }
-                                  setStudentTasks(prev => prev.filter(t => t.id !== task.id));
-                                  toast({ title: "Task deleted" });
-                                } catch (err) {
-                                  console.error('Error deleting task:', err);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                          )}
+                        </div>
+                      </DragDropContext>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         No tasks assigned to this student yet.
