@@ -16,6 +16,7 @@ interface Student {
   hasNotes: boolean;
   avatar?: string;
   initials: string;
+  classTime?: string;
 }
 
 interface InstructorDashboardProps {

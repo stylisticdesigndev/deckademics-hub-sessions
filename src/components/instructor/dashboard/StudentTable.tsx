@@ -24,6 +24,7 @@ interface Student {
   hasNotes: boolean;
   avatar?: string;
   initials: string;
+  classTime?: string;
 }
 
 interface StudentTableProps {
@@ -73,10 +74,10 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[40%]">Student</TableHead>
+                    <TableHead className="w-[35%]">Student</TableHead>
                     <TableHead className="w-[30%]">Progress</TableHead>
                     <TableHead className="w-[15%] text-center">Level</TableHead>
-                    <TableHead className="w-[15%] text-center">Notes</TableHead>
+                    <TableHead className="w-[20%] text-center">Class Time</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -109,12 +110,8 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                           </div>
                         </TableCell>
                         <TableCell className="text-center capitalize">{student.level}</TableCell>
-                        <TableCell className="text-center">
-                          {student.hasNotes ? (
-                            <span className="h-2 w-2 rounded-full bg-green-500 inline-block"/>
-                          ) : (
-                            <span className="h-2 w-2 rounded-full bg-muted-foreground/30 inline-block"/>
-                          )}
+                        <TableCell className="text-center text-sm text-muted-foreground">
+                          {student.classTime || '—'}
                         </TableCell>
                       </TableRow>
                     ))
