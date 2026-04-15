@@ -1032,35 +1032,86 @@ const InstructorStudents = () => {
                                           }}
                                           className="mt-0.5"
                                         />
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium">{task.title}</p>
-                                          {task.description && (
-                                            <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
-                                          )}
-                                        </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                                          onClick={async () => {
-                                            try {
-                                              const { error } = await supabase
-                                                .from('student_tasks' as any)
-                                                .delete()
-                                                .eq('id', task.id);
-                                              if (error) {
-                                                toast({ title: "Error", description: error.message, variant: "destructive" });
-                                                return;
-                                              }
-                                              setStudentTasks(prev => prev.filter(t => t.id !== task.id));
-                                              toast({ title: "Task deleted" });
-                                            } catch (err) {
-                                              console.error('Error deleting task:', err);
-                                            }
-                                          }}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
+                                        {editingTask?.id === task.id ? (
+                                          <div className="flex-1 min-w-0 space-y-2">
+                                            <Input
+                                              value={editingTask.title}
+                                              onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                                              placeholder="Task title..."
+                                              className="h-8 text-sm"
+                                            />
+                                            <Textarea
+                                              value={editingTask.description}
+                                              onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                                              placeholder="Description (optional)..."
+                                              className="min-h-[50px] text-sm"
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditingTask(null)}>
+                                                Cancel
+                                              </Button>
+                                              <Button size="sm" className="h-7 text-xs" disabled={!editingTask.title.trim()} onClick={async () => {
+                                                try {
+                                                  const { error } = await supabase
+                                                    .from('student_tasks' as any)
+                                                    .update({ title: editingTask.title.trim(), description: editingTask.description.trim() || null } as any)
+                                                    .eq('id', editingTask.id);
+                                                  if (error) {
+                                                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                                                    return;
+                                                  }
+                                                  setStudentTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, title: editingTask.title.trim(), description: editingTask.description.trim() || null } : t));
+                                                  setEditingTask(null);
+                                                  toast({ title: "Task updated" });
+                                                } catch (err) {
+                                                  console.error('Error updating task:', err);
+                                                }
+                                              }}>
+                                                Save
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium">{task.title}</p>
+                                              {task.description && (
+                                                <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                                              )}
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                              onClick={() => setEditingTask({ id: task.id, title: task.title, description: task.description || '' })}
+                                            >
+                                              <Pencil className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                              onClick={async () => {
+                                                try {
+                                                  const { error } = await supabase
+                                                    .from('student_tasks' as any)
+                                                    .delete()
+                                                    .eq('id', task.id);
+                                                  if (error) {
+                                                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                                                    return;
+                                                  }
+                                                  setStudentTasks(prev => prev.filter(t => t.id !== task.id));
+                                                  toast({ title: "Task deleted" });
+                                                } catch (err) {
+                                                  console.error('Error deleting task:', err);
+                                                }
+                                              }}
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                   </Draggable>
