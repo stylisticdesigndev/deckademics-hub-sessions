@@ -128,7 +128,7 @@ export const DashboardLayout = ({
           <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="hidden md:flex" />
-              <SidebarTrigger className="md:hidden [&>svg]:hidden">
+              <SidebarTrigger className="md:hidden [&>svg:first-child]:hidden">
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
             </div>
