@@ -1,39 +1,67 @@
 
 
-# Fix Realtime Auth, Personal Notes Privacy & OG Image
+## Plan: Unified Login + Admin Mode Switcher + RBAC
 
-## 1. Realtime Channel Authorization
+This is a significant architectural change that consolidates authentication, adds a mode-switching system for admin users, and implements hardcoded permission gates.
 
-**Problem**: `student_notes` is published to Supabase Realtime, meaning any authenticated user who subscribes with the right filter can receive events. Realtime doesn't enforce RLS on subscriptions by default unless you enable **Realtime RLS** (Row Level Security for Realtime).
+### What Changes
 
-**Fix**: Remove `student_notes` from the Realtime publication. The app already uses `queryClient.invalidateQueries()` to refresh data — the Realtime channel in `useNotesNotifications.ts` is a convenience but creates an authorization gap. We'll remove the Realtime subscription and instead rely on polling or query invalidation.
+**1. Unified Login Flow**
+- Remove the separate `/auth/admin` page and the "Administrator Access" link from the landing page
+- Remove the separate `AdminAuth.tsx` page
+- All users (students, instructors, admins) log in through the existing Student or Instructor auth pages — admins who are also instructors use `/auth/instructor`
+- After login, ALL users (including admins) route to their instructor/student dashboard first — not to `/admin/dashboard`
+- Update `redirectBasedOnRole` in `AuthProvider.tsx`: admins redirect to `/instructor/dashboard` instead of `/admin/dashboard`
 
-- **Migration**: `ALTER PUBLICATION supabase_realtime DROP TABLE public.student_notes;`
-- **Code**: Remove the Realtime channel subscription from `useNotesNotifications.ts`. Replace with a periodic polling approach (refetchInterval on the notes query) so students still get timely updates without the security gap.
-- Similarly, `student_progress` is subscribed via Realtime in `useStudentProgress.ts` but is NOT in the publication — so it silently does nothing. We'll clean up that dead subscription too.
+**2. Hardcoded Admin Emails + Permission Constants**
+- Create `src/constants/adminPermissions.ts` with:
+  - `OWNER_EMAIL = 'nick@deckademics.com'` — full access including Payroll
+  - `DEVELOPER_EMAIL = 'djstylistic11@gmail.com'` — full admin except Payroll
+  - Helper functions: `isAdminUser(email)`, `isOwner(email)`, `canAccessPayroll(email)`
 
-## 2. Instructor Access to Student Personal Notes
+**3. Admin Mode Switcher**
+- For users whose email matches Nick or Evan, add an "Admin Portal" button in the `InstructorNavigation` sidebar (conditionally rendered)
+- Clicking it navigates to `/admin/dashboard`
+- In `DashboardLayout`, when `userType="admin"`:
+  - Change sidebar background color (e.g., dark red/maroon tint)
+  - Add a top banner: "ADMINISTRATION MODE" with a "Return to Teaching View" button that navigates back to `/instructor/dashboard`
+- Update `ProtectedRoute` to allow admin-role users to access both `/instructor/*` and `/admin/*` routes
 
-**Problem**: The `student_personal_notes` table has an RLS SELECT policy allowing instructors to read their assigned students' personal notes. Personal notes should be private to the student only.
+**4. Payroll Security Gate**
+- In `AdminInstructorPayments.tsx` and `AdminPayments.tsx` (student payments): wrap with an access check using `canAccessPayroll(email)`
+- If the user is not Nick, render an "Access Denied" card instead of the page content
+- Also hide Payroll nav items in `AdminNavigation` for non-owner admins
 
-**Fix**: Drop the instructor SELECT policy on `student_personal_notes`.
+**5. Admin Landing Page (Control Center)**
+- Redesign `AdminDashboard.tsx` as a split layout:
+  - Left side: "DJ School Operations" — links to Students, Instructors, Curriculum, Skills, Attendance, Payments, etc.
+  - Right side: "Music Production Operations" — placeholder card with "Coming Soon"
 
-- **Migration**: `DROP POLICY "Instructors can view assigned student personal notes" ON public.student_personal_notes;`
+**6. Future-Proofing Roles**
+- Add comments and structure in `adminPermissions.ts` for future `admin_dj` and `admin_prod` role types
+- The permission helpers will check email first (hardcoded), then fall back to Supabase role checks (for future DB-driven roles)
 
-## 3. OG Image — Replace Lovable Default with Branded Image
+### Routing Changes
+- Remove `/auth/admin` route from `App.tsx`
+- Update `ProtectedRoute` so `allowedRoles={['admin']}` routes also accept users with role `'instructor'` IF their email is in the admin list (or better: ensure these users have the `admin` role in the DB already)
+- Add `allowedRoles={['admin', 'instructor']}` flexibility for admin routes since Nick/Evan are both instructors and admins
 
-**Problem**: `index.html` lines 24 and 28 point to `https://lovable.dev/opengraph-image-p98pqg.png` (the default Lovable placeholder).
+### Files to Create
+- `src/constants/adminPermissions.ts`
 
-**Fix**: Use the app icon as the OG image. Update both `og:image` and `twitter:image` meta tags to point to `/app-icon.png`. Since OG images need an absolute URL to work when shared, we'll use a relative path that works in production (the published domain will resolve it). Alternatively, if the user has a hosted URL we can use that.
+### Files to Modify
+- `src/App.tsx` — remove `/auth/admin` route
+- `src/pages/Index.tsx` — remove "Administrator Access" link
+- `src/providers/AuthProvider.tsx` — redirect admins to instructor dashboard
+- `src/routes/ProtectedRoute.tsx` — allow admin users on instructor routes
+- `src/components/navigation/InstructorNavigation.tsx` — add "Admin Portal" button for admin users
+- `src/components/navigation/AdminNavigation.tsx` — hide payroll items for non-owner, add "Return to Teaching View" button
+- `src/components/layout/DashboardLayout.tsx` — admin mode visual styling (sidebar color, top banner)
+- `src/pages/admin/AdminDashboard.tsx` — split Control Center layout
+- `src/pages/admin/AdminInstructorPayments.tsx` — payroll access gate
+- `src/pages/admin/AdminPayments.tsx` — payroll access gate
+- Delete `src/pages/auth/AdminAuth.tsx`
 
-- Update `index.html` lines 24 and 28: change the image URLs to `/app-icon.png`
-
-## Files Changed
-
-| File | Change |
-|---|---|
-| Migration SQL | Drop `student_notes` from Realtime publication; drop instructor policy on `student_personal_notes` |
-| `src/hooks/student/useNotesNotifications.ts` | Remove Realtime channel, add polling interval note |
-| `src/hooks/student/dashboard/useStudentProgress.ts` | Remove dead Realtime subscription |
-| `index.html` | Update `og:image` and `twitter:image` to `/app-icon.png` |
+### No Database Changes Required
+Nick and Evan should already have the `admin` role in `user_roles`. The hardcoded email checks are an additional application-layer gate. No schema changes needed.
 
