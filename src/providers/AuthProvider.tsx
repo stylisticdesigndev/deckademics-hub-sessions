@@ -339,7 +339,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (import.meta.env.DEV) console.log("Redirecting based on role:", role);
     
     if (role === 'admin') {
-      navigate('/admin/dashboard');
+      // Admins always land on instructor/teaching view first
+      navigate('/instructor/dashboard');
     } else if (role === 'instructor') {
       navigate('/instructor/dashboard');
     } else {

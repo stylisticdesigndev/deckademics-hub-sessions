@@ -130,9 +130,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   
   // Check if user is authenticated
   if (!session) {
-    if (allowedRoles.includes('admin')) {
-      return <Navigate to="/auth/admin" replace />;
-    } else if (allowedRoles.includes('instructor')) {
+    if (allowedRoles.includes('admin') || allowedRoles.includes('instructor')) {
       return <Navigate to="/auth/instructor" replace />;
     } else {
       return <Navigate to="/auth/student" replace />;
