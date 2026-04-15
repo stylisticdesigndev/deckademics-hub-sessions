@@ -147,6 +147,9 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                       </div>
                       <span className="text-xs text-muted-foreground capitalize">{student.level}</span>
                     </div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {student.classTime || '—'}
+                    </div>
                     <div className="flex items-center gap-2">
                       <ProgressBar value={student.progress} max={100} showPercentage={false} size="sm" />
                       <span className="text-xs">{student.progress}%</span>
