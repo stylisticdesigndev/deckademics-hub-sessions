@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,7 +82,7 @@ const InstructorStudents = () => {
   const [editNoteText, setEditNoteText] = useState('');
   
   // Tasks state
-  const [studentTasks, setStudentTasks] = useState<{id: string; title: string; description: string | null; completed: boolean; created_at: string}[]>([]);
+  const [studentTasks, setStudentTasks] = useState<{id: string; title: string; description: string | null; completed: boolean; created_at: string; order_index: number}[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
