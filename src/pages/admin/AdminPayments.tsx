@@ -16,9 +16,15 @@ import { canAccessPayroll } from '@/constants/adminPermissions';
 const AdminPayments = () => {
   const { userData } = useAuth();
   const userEmail = userData.profile?.email;
+  const hasAccess = canAccessPayroll(userEmail);
 
-  // Payroll security gate — owner only
-  if (!canAccessPayroll(userEmail)) {
+  const { missedPayments, upcomingPayments, allPayments, isLoading, stats } = useAdminPayments();
+  const { activeStudents } = useAdminStudents();
+  const { updatePayment } = useUpdatePayment();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Payroll security gate — owner only (after all hooks)
+  if (!hasAccess) {
     return (
       <div className="space-y-6">
         <Card className="border-destructive">
@@ -32,11 +38,6 @@ const AdminPayments = () => {
       </div>
     );
   }
-
-  const { missedPayments, upcomingPayments, allPayments, isLoading, stats } = useAdminPayments();
-  const { activeStudents } = useAdminStudents();
-  const { updatePayment } = useUpdatePayment();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const students = activeStudents.map(student => ({
     id: student.id,
