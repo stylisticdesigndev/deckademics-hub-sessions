@@ -97,22 +97,6 @@ const AdminInstructorPayments = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
-  // Payroll security gate — owner only (after all hooks)
-  if (!hasAccess) {
-    return (
-      <div className="space-y-6">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Access Denied</CardTitle>
-            <CardDescription>
-              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-  
   React.useEffect(() => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
@@ -137,6 +121,22 @@ const AdminInstructorPayments = () => {
     };
     fetchInstructors();
   }, []);
+
+  // Payroll security gate — owner only (after all hooks)
+  if (!hasAccess) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
   const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
