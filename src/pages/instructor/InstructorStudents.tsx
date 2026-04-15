@@ -104,10 +104,10 @@ const InstructorStudents = () => {
     try {
       const { data, error } = await supabase
         .from('student_tasks' as any)
-        .select('id, title, description, completed, created_at')
+        .select('id, title, description, completed, created_at, order_index')
         .eq('instructor_id', instructorId)
         .eq('student_id', studentId)
-        .order('created_at', { ascending: false });
+        .order('order_index', { ascending: true });
       if (error) {
         console.error('Error fetching tasks:', error);
       } else {
