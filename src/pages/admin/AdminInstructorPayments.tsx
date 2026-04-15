@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
+import { canAccessPayroll } from '@/constants/adminPermissions';
 import type { DateRange } from 'react-day-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -54,6 +56,25 @@ interface Instructor {
 }
 
 const AdminInstructorPayments = () => {
+  const { userData } = useAuth();
+  const userEmail = userData.profile?.email;
+
+  // Payroll security gate — owner only
+  if (!canAccessPayroll(userEmail)) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to view the Instructor Payments section. Only the account owner can access payroll data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
