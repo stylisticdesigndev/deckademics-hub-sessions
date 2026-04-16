@@ -1,34 +1,20 @@
-## Bug Report Enhancement: Device Type, Screenshot Upload, and Copy Update
 
-### What's already done
 
-- Database columns `device_type` and `screenshot_url` added to `bug_reports` table
+## Fix: Copy Bug Report with Screenshot
 
-### What still needs to be done
+### Problem
+The `ClipboardItem` API with mixed MIME types (`text/plain` + `text/html` with embedded `<img>`) is unreliable across browsers. The `fetch` for the screenshot likely fails due to CORS restrictions on the Supabase storage URL, and the silent `catch` block swallows the error, falling back to text-only copy — but even the fallback may not clearly indicate the screenshot wasn't included.
 
-**1. Create `bug-screenshots` storage bucket (database migration)**
+### Solution
+Simplify the copy approach — instead of trying to embed the actual image blob into the clipboard (which has broad browser compatibility issues), always copy the text content including the screenshot URL, and use the `text/html` format to make the URL a clickable link. This is reliable and works everywhere.
 
-- Create the bucket with public access
-- Add RLS policies: authenticated users can upload, anyone authenticated can view
+### Changes
 
-**2. Update `BugReportDialog.tsx` — add device type selector and screenshot upload**
+**File: `src/pages/admin/AdminBugReports.tsx`** — Replace `handleCopy` function:
+- Build plain text with title, description, device type, and screenshot URL
+- Build HTML version with the screenshot URL as a clickable `<a>` tag and an inline `<img>` tag (so pasting into rich-text apps like Slack/email shows the image)
+- Use `navigator.clipboard.write()` with both `text/plain` and `text/html` blobs — no fetching the image blob, just reference it by URL
+- If `clipboard.write()` fails, fall back to `clipboard.writeText()` with plain text
 
-- Add a device type dropdown with options: iPhone, Android Phone, iPad/Tablet, Desktop (Mac), Desktop (Windows), Other
-- Add a file input for screenshot upload (accepts image types, max ~5MB)
-- On submit: upload image to `bug-screenshots` bucket, get public URL, then insert the bug report with `device_type` and `screenshot_url`
-- Reset new fields on close
+This avoids CORS issues entirely since we're not fetching the image — just referencing it in HTML.
 
-**3. Update `AdminBugReports.tsx` — display device type and screenshot, update copy**
-
-- Add `device_type` and `screenshot_url` to the `BugReport` interface
-- Show device type in the report metadata line (next to role and date)
-- Display screenshot as a clickable thumbnail that opens in a new tab
-- Update the copy button to include device type: `Title\n\nDescription\n\nDevice: iPhone` 
-- If you can copy the uploaded screenshot to the copy button add that as well if you can
-
-### Technical details
-
-- Storage bucket: `bug-screenshots`, public, with authenticated upload/view policies
-- File path pattern: `{user_id}/{timestamp}_{filename}` to avoid collisions
-- Image upload uses the same Supabase storage pattern as existing avatar uploads
-- Screenshot field is optional — users can submit without one
