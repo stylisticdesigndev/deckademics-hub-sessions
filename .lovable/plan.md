@@ -1,47 +1,20 @@
-## Bug Reports: Active / Archived Tabs
 
-### Approach
 
-Use a two-tab layout (Active / Archived) instead of the current flat list with a status filter dropdown.  
-  
-Also add a timestamp to the resolved and closed to know then it was
+## Fix PWA Title Bar Color on macOS Desktop
 
-**Archive logic — no database changes needed:**
+### Problem
+The `theme_color` in both `manifest.json` and the `<meta name="theme-color">` tag in `index.html` is set to `#41A55B` (green). macOS uses this color for the title bar area when the app is saved to the desktop, causing the green bar you see.
 
-- **Active tab** shows: `open` and `in_progress` reports
-- **Archived tab** shows: `resolved` and `closed` reports — no time delay needed
-
-**Why auto-archive resolved immediately:**
-Resolved means the fix is confirmed. There's no actionable reason to keep it in the active view. If it regresses, the user submits a new report. A time-based delay adds complexity without real benefit — the admin already made a deliberate decision by marking it resolved.
-
-The status filter dropdown moves inside each tab so you can still filter within archived (e.g. show only "resolved" or only "closed").
+### Solution
+Change the `theme_color` to match the app's dark background color `#222730` (the same value already used for `background_color` in the manifest).
 
 ### Changes
 
-**File: `src/pages/admin/AdminBugReports.tsx**`
+**File: `public/manifest.json`**
+- Change `theme_color` from `#41A55B` to `#222730`
 
-- Add `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` from existing UI components
-- Default tab: "Active" (open + in_progress)
-- Second tab: "Archived" (resolved + closed) with a count badge
-- Move the existing status filter dropdown inside each tab — Active tab filters between All/Open/In Progress; Archived tab filters between All/Resolved/Closed
-- Keep all existing card rendering, status change, notes, copy, screenshot functionality unchanged
-- When an admin changes status from open → resolved via the dropdown, it automatically moves to the Archived tab on next render
+**File: `index.html`**
+- Change `<meta name="theme-color" content="#41A55B">` to `<meta name="theme-color" content="#222730">`
 
-### Layout
+After this change, you'll need to re-add the app to your desktop for the new color to take effect (remove the old one first, then re-save it).
 
-```text
-┌─────────────────────────────────────┐
-│ 🐛 Bug Reports                     │
-│ Review and manage bug reports...    │
-├──────────────┬──────────────────────┤
-│ Active (3)   │ Archived (12)        │  ← tabs
-├──────────────┴──────────────────────┤
-│ Filter: [All ▾]                     │
-│                                     │
-│ ┌─ Bug Card ──────────────────────┐ │
-│ │ Title / metadata / status       │ │
-│ └─────────────────────────────────┘ │
-└─────────────────────────────────────┘
-```
-
-No database migration required — purely a UI reorganization using existing status values.
