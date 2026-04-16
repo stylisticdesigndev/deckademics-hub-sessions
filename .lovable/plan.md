@@ -1,20 +1,32 @@
 
 
-## Fix PWA Title Bar Color on macOS Desktop
+## Fix: Stop defaulting unrecorded past attendance to "Present"
 
 ### Problem
-The `theme_color` in both `manifest.json` and the `<meta name="theme-color">` tag in `index.html` is set to `#41A55B` (green). macOS uses this color for the title bar area when the app is saved to the desktop, causing the green bar you see.
+When there is no attendance record for a past class date, the code defaults the status to `'present'`. This makes it look like the instructor marked the student as present when no action was taken.
+
+**Root cause** — two lines in `StudentClasses.tsx`:
+- Line 126: `record || (isPast ? 'present' : 'upcoming')` in the calendar
+- Line 301: `record || 'present'` in the Past tab cards
 
 ### Solution
-Change the `theme_color` to match the app's dark background color `#222730` (the same value already used for `background_color` in the manifest).
+Add a new `'unmarked'` status that shows these dates as needing instructor action.
 
 ### Changes
 
-**File: `public/manifest.json`**
-- Change `theme_color` from `#41A55B` to `#222730`
+**`src/components/student/classes/AttendanceCalendar.tsx`**
+- Add `'unmarked'` to the `AttendanceDay` status type
+- Add a new modifier style — neutral gray dot (e.g. `bg-muted-foreground/40`)
+- Add "Unmarked" to the calendar legend
 
-**File: `index.html`**
-- Change `<meta name="theme-color" content="#41A55B">` to `<meta name="theme-color" content="#222730">`
+**`src/pages/student/StudentClasses.tsx`**
+- Line 126: change default from `'present'` to `'unmarked'` for past dates with no record
+- Line 301: change default from `'present'` to `'unmarked'`
 
-After this change, you'll need to re-add the app to your desktop for the new color to take effect (remove the old one first, then re-save it).
+**`src/components/student/classes/ClassAttendanceCard.tsx`**
+- Add visual treatment for `'unmarked'` status — a neutral badge saying "Not Recorded" or similar, distinct from present (green) and absent (red)
+
+### What the student will see
+- Past class dates where the instructor hasn't logged attendance will show as a **gray dot** on the calendar and a **"Not Recorded"** badge on the card, instead of falsely showing green/present.
+- No database changes needed — this is purely a frontend display fix.
 
