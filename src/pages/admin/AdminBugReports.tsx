@@ -206,19 +206,8 @@ const AdminBugReports = () => {
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            const lines = [
-                              `Bug Report: ${report.title}`,
-                              `Status: ${(statusConfig[report.status] || statusConfig.open).label}`,
-                              `Reporter: ${getReporterName(report.reporter_id)} (${report.reporter_role})`,
-                              `Date: ${new Date(report.created_at).toLocaleDateString()}`,
-                              ``,
-                              `Description:`,
-                              report.description,
-                            ];
-                            if (report.admin_notes) {
-                              lines.push(``, `Admin Notes:`, report.admin_notes);
-                            }
-                            navigator.clipboard.writeText(lines.join('\n'));
+                            const text = `${report.title}\n\n${report.description}`;
+                            navigator.clipboard.writeText(text);
                             sonnerToast.success('Bug report copied to clipboard');
                           }}
                         >
