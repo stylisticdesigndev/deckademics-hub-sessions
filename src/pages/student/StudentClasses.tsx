@@ -123,7 +123,7 @@ const StudentClasses = () => {
       const isPast = isBefore(d, today);
       return {
         date: d,
-        status: record || (isPast ? 'present' : 'upcoming') as 'present' | 'absent' | 'upcoming',
+        status: record || (isPast ? 'unmarked' : 'upcoming') as 'present' | 'absent' | 'upcoming' | 'unmarked',
       };
     });
   }, [allDates, attendanceMap, today]);
@@ -298,7 +298,7 @@ const StudentClasses = () => {
                             duration={classTime.duration}
                             location={activeClassInfo!.location}
                             instructor={activeClassInfo!.instructorName}
-                            status={record || 'present'}
+                            status={record || 'unmarked'}
                           />
                         );
                       })

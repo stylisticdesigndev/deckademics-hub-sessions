@@ -15,7 +15,7 @@ interface ClassAttendanceCardProps {
   location: string;
   instructor: string;
   isNext?: boolean;
-  status?: 'present' | 'absent' | 'upcoming';
+  status?: 'present' | 'absent' | 'upcoming' | 'unmarked';
   onMarkAbsent?: (date: Date, reason?: string) => void;
   marking?: boolean;
 }
@@ -46,6 +46,8 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
         return <Badge className="text-white" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}>Present</Badge>;
       case 'absent':
         return <Badge variant="destructive">Absent</Badge>;
+      case 'unmarked':
+        return <Badge variant="secondary" className="text-muted-foreground">Not Recorded</Badge>;
       case 'upcoming':
         return isNext
           ? <Badge className="bg-primary text-primary-foreground">Next Class</Badge>
