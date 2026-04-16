@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { canAccessPayroll } from '@/constants/adminPermissions';
 import type { DateRange } from 'react-day-picker';
@@ -27,7 +27,8 @@ import {
 } from '@/components/ui/select';
 
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign } from 'lucide-react';
+import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -63,6 +64,8 @@ const AdminInstructorPayments = () => {
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
   
+  const [showHelpVideo, setShowHelpVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_PER_PAGE = 10;
   const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
@@ -465,17 +468,50 @@ const AdminInstructorPayments = () => {
     <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Instructor Payments</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage instructor compensation and payment records
-            </p>
+          <div className="flex items-center gap-2">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Instructor Payments</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage instructor compensation and payment records
+              </p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowHelpVideo(true)}>
+                    <CircleHelp className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>How to use Payroll</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
             <Zap className="mr-1 h-4 w-4" />
             Generate Pay Period
           </Button>
         </div>
+
+        {/* Help Video Dialog */}
+        <Dialog open={showHelpVideo} onOpenChange={(open) => {
+          if (!open && videoRef.current) {
+            videoRef.current.pause();
+          }
+          setShowHelpVideo(open);
+        }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Payroll Tutorial</DialogTitle>
+              <DialogDescription>Learn how to use the instructor payroll system</DialogDescription>
+            </DialogHeader>
+            <video
+              ref={videoRef}
+              src="/videos/instructor-payroll-guide.mp4"
+              controls
+              className="w-full rounded-lg"
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* Total Payroll This Period */}
         <Card>
