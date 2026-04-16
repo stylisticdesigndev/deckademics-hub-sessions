@@ -24,11 +24,12 @@ export interface AttendanceEntry {
   status: 'present' | 'absent' | null; // null = unmarked
 }
 
-function getClassDateForWeek(dayOfWeek: number, referenceDate: Date): Date {
-  const refDay = getDay(referenceDate);
-  let diff = dayOfWeek - refDay;
-  if (diff < 0) diff += 7;
-  return addDays(startOfDay(referenceDate), diff);
+function getClassDateForCurrentWeek(dayOfWeek: number, weekStart: Date): Date {
+  // weekStart is Monday of the current week
+  // Monday=1, Tuesday=2, ..., Sunday=0
+  // Offset from Monday: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
+  const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  return addDays(weekStart, offset);
 }
 
 function getPastClassDates(dayOfWeek: number, weeksBack: number): Date[] {
@@ -160,24 +161,21 @@ export function useInstructorAttendance(instructorId: string | undefined) {
 
   // Group students by class day for the current week
   const today = startOfDay(new Date());
+  const startOfWeekDate = addDays(today, -(getDay(today) === 0 ? 6 : getDay(today) - 1)); // Monday
   const currentWeekStudents = students
     .filter(s => s.classDay)
     .map(s => {
       const dow = DAY_NAME_TO_NUMBER[s.classDay] ?? -1;
       if (dow === -1) return null;
-      const classDate = getClassDateForWeek(dow, today);
-      // Only include if class date is today or earlier in this week
-      // Adjust: show dates from Mon of this week through today
-      const startOfWeek = addDays(today, -(getDay(today) === 0 ? 6 : getDay(today) - 1)); // Monday
+      const classDate = getClassDateForCurrentWeek(dow, startOfWeekDate);
       const dateStr = format(classDate, 'yyyy-MM-dd');
       const isPast = isBefore(classDate, addDays(today, 1)); // today or before
-      const isThisWeek = !isBefore(classDate, startOfWeek);
       return {
         student: s,
         classDate,
         dateStr,
         isPast,
-        isThisWeek,
+        isThisWeek: true,
         status: attendanceMap[s.id]?.[dateStr] || null,
       };
     })
@@ -197,9 +195,8 @@ export function useInstructorAttendance(instructorId: string | undefined) {
       const dow = DAY_NAME_TO_NUMBER[s.classDay] ?? -1;
       if (dow === -1) return [];
       const dates = getPastClassDates(dow, 9); // get 9 to skip current
-      const startOfWeek = addDays(today, -(getDay(today) === 0 ? 6 : getDay(today) - 1));
       return dates
-        .filter(d => isBefore(d, startOfWeek)) // exclude current week
+        .filter(d => isBefore(d, startOfWeekDate)) // exclude current week
         .map(d => {
           const dateStr = format(d, 'yyyy-MM-dd');
           return {
