@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, X, Eye, EyeOff } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,6 +23,7 @@ interface StudentSchedule {
   id: string;
   name: string;
   initials: string;
+  avatarUrl?: string | null;
   level: string;
   classDay: string;
   classTime: string;
@@ -54,7 +55,7 @@ const InstructorClasses = () => {
             level,
             class_day,
             class_time,
-            profiles!inner(first_name, last_name, email)
+            profiles!inner(first_name, last_name, email, avatar_url)
           `)
           .eq('instructor_id', instructorId)
           .eq('enrollment_status', 'active');
@@ -79,6 +80,7 @@ const InstructorClasses = () => {
               id: s.id,
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
               initials: (firstName[0] || '') + (lastName[0] || ''),
+              avatarUrl: profile?.avatar_url || null,
               level: s.level || 'novice',
               classDay: s.class_day,
               classTime: s.class_time,
@@ -193,6 +195,7 @@ const InstructorClasses = () => {
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8">
+                                  {s.avatarUrl && <AvatarImage src={s.avatarUrl} alt={s.name} />}
                                   <AvatarFallback className="text-xs bg-muted">{s.initials}</AvatarFallback>
                                 </Avatar>
                                 <span>{s.name}</span>
