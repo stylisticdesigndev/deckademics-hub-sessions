@@ -57,9 +57,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   // Use ref to track if request is in progress to prevent multiple simultaneous requests
   const requestInProgress = useRef(false);
   
-  // Only resolve instructor ID once role is confirmed to prevent flicker
+  // Resolve instructor ID — allow admin users viewing instructor dashboard
   const instructorId = useMemo(() => {
-    if (userData?.role !== 'instructor') return null;
+    if (userData?.role !== 'instructor' && userData?.role !== 'admin') return null;
     return userData?.user?.id || userData?.profile?.id;
   }, [userData?.role, userData?.user?.id, userData?.profile?.id]);
   
@@ -260,7 +260,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
   useEffect(() => {
     if (instructorId) {
       fetchDashboardData();
-    } else if (userData?.role === 'instructor') {
+    } else if (userData?.role === 'instructor' || userData?.role === 'admin') {
       // Role is confirmed but no instructor record — stop loading
       setLoading(false);
     }
