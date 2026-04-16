@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
 import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats';
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
+import { TodayAttendanceSection } from '@/components/instructor/dashboard/TodayAttendanceSection';
 import { mockInstructorDashboard } from '@/data/mockInstructorData';
 
 interface Student {
@@ -91,6 +92,8 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
         averageProgress={activeAverageProgress}
         totalStudents={activeTotalStudents}
       />
+
+      <TodayAttendanceSection demoMode={demoMode} />
 
       <section>
         <StudentTable students={activeStudents} />
