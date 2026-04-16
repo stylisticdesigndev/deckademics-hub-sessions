@@ -11,9 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Bug, Clock, CheckCircle2, XCircle, AlertCircle, Copy } from 'lucide-react';
+import { Bug, Clock, CheckCircle2, XCircle, AlertCircle, Copy, Monitor, Smartphone, Tablet, ImageIcon } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
-import { capitalizeLevel } from '@/lib/utils';
 
 interface BugReport {
   id: string;
@@ -23,6 +22,8 @@ interface BugReport {
   description: string;
   status: string;
   admin_notes: string | null;
+  device_type: string | null;
+  screenshot_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +33,15 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; varia
   in_progress: { label: 'In Progress', icon: <Clock className="h-3 w-3" />, variant: 'default' },
   resolved: { label: 'Resolved', icon: <CheckCircle2 className="h-3 w-3" />, variant: 'secondary' },
   closed: { label: 'Closed', icon: <XCircle className="h-3 w-3" />, variant: 'outline' },
+};
+
+const getDeviceIcon = (deviceType: string | null) => {
+  if (!deviceType) return null;
+  if (deviceType.toLowerCase().includes('ipad') || deviceType.toLowerCase().includes('tablet'))
+    return <Tablet className="h-3 w-3" />;
+  if (deviceType.toLowerCase().includes('phone') || deviceType.toLowerCase().includes('iphone') || deviceType.toLowerCase().includes('android'))
+    return <Smartphone className="h-3 w-3" />;
+  return <Monitor className="h-3 w-3" />;
 };
 
 const AdminBugReports = () => {
@@ -45,7 +55,7 @@ const AdminBugReports = () => {
     queryKey: ['admin-bug-reports'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bug_reports' as any)
+        .from('bug_reports')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -53,10 +63,6 @@ const AdminBugReports = () => {
     },
   });
 
-
-
-
-  // Fetch reporter profiles
   const reporterIds = [...new Set(reports.map(r => r.reporter_id))];
   const { data: profiles = [] } = useQuery({
     queryKey: ['bug-reporter-profiles', reporterIds],
@@ -76,7 +82,7 @@ const AdminBugReports = () => {
       const updates: any = {};
       if (status) updates.status = status;
       if (admin_notes !== undefined) updates.admin_notes = admin_notes;
-      const { error } = await supabase.from('bug_reports' as any).update(updates).eq('id', id);
+      const { error } = await supabase.from('bug_reports').update(updates).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -94,6 +100,33 @@ const AdminBugReports = () => {
     const profile = profiles.find((p: any) => p.id === reporterId);
     if (!profile) return 'Unknown';
     return `${(profile as any).first_name || ''} ${(profile as any).last_name || ''}`.trim() || (profile as any).email;
+  };
+
+  const handleCopy = async (report: BugReport) => {
+    let text = `${report.title}\n\n${report.description}`;
+    if (report.device_type) text += `\n\nDevice: ${report.device_type}`;
+
+    const items: ClipboardItem[] = [];
+
+    if (report.screenshot_url) {
+      try {
+        const response = await fetch(report.screenshot_url);
+        const blob = await response.blob();
+        const htmlContent = `${text.replace(/\n/g, '<br>')}<br><br><img src="${report.screenshot_url}" />`;
+        items.push(new ClipboardItem({
+          'text/plain': new Blob([text + `\n\nScreenshot: ${report.screenshot_url}`], { type: 'text/plain' }),
+          'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        }));
+        await navigator.clipboard.write(items);
+        sonnerToast.success('Bug report with screenshot copied to clipboard');
+        return;
+      } catch {
+        // Fallback to text-only copy
+      }
+    }
+
+    navigator.clipboard.writeText(text + (report.screenshot_url ? `\n\nScreenshot: ${report.screenshot_url}` : ''));
+    sonnerToast.success('Bug report copied to clipboard');
   };
 
   const filteredReports = filter === 'all' ? reports : reports.filter(r => r.status === filter);
@@ -142,12 +175,21 @@ const AdminBugReports = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <CardTitle className="text-base">{report.title}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
                         <span>{getReporterName(report.reporter_id)}</span>
                         <span>•</span>
                         <span className="capitalize">{report.reporter_role}</span>
                         <span>•</span>
                         <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                        {report.device_type && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              {getDeviceIcon(report.device_type)}
+                              {report.device_type}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -174,7 +216,22 @@ const AdminBugReports = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm whitespace-pre-wrap">{report.description}</p>
-                  
+
+                  {report.screenshot_url && (
+                    <a href={report.screenshot_url} target="_blank" rel="noopener noreferrer" className="inline-block">
+                      <div className="relative group">
+                        <img
+                          src={report.screenshot_url}
+                          alt="Bug screenshot"
+                          className="max-h-40 rounded-md border hover:opacity-80 transition-opacity cursor-pointer"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ImageIcon className="h-6 w-6 text-foreground bg-background/80 rounded-full p-1" />
+                        </div>
+                      </div>
+                    </a>
+                  )}
+
                   {editingId === report.id ? (
                     <div className="space-y-2">
                       <Textarea
@@ -205,11 +262,7 @@ const AdminBugReports = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => {
-                            const text = `${report.title}\n\n${report.description}`;
-                            navigator.clipboard.writeText(text);
-                            sonnerToast.success('Bug report copied to clipboard');
-                          }}
+                          onClick={() => handleCopy(report)}
                         >
                           <Copy className="h-4 w-4 mr-1" />
                           Copy

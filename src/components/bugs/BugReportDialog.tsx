@@ -2,13 +2,14 @@
  * Bug Report Dialog — allows students and instructors to submit bug reports.
  * Reports are stored in the bug_reports table and visible to admins.
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Bug } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bug, ImagePlus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -17,15 +18,53 @@ interface BugReportDialogProps {
   triggerVariant?: 'icon' | 'button';
 }
 
+const DEVICE_OPTIONS = [
+  'iPhone',
+  'Android Phone',
+  'iPad/Tablet',
+  'Desktop (Mac)',
+  'Desktop (Windows)',
+  'Other',
+];
+
 export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [deviceType, setDeviceType] = useState('');
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { session, userData } = useAuth();
   const { toast } = useToast();
 
   const role = userData?.profile?.role || 'student';
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please select an image under 5MB.', variant: 'destructive' });
+      return;
+    }
+    setScreenshotFile(file);
+    setScreenshotPreview(URL.createObjectURL(file));
+  };
+
+  const clearScreenshot = () => {
+    setScreenshotFile(null);
+    if (screenshotPreview) URL.revokeObjectURL(screenshotPreview);
+    setScreenshotPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setDeviceType('');
+    clearScreenshot();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,18 +72,35 @@ export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogPr
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('bug_reports' as any).insert({
+      let screenshot_url: string | null = null;
+
+      if (screenshotFile) {
+        const timestamp = Date.now();
+        const filePath = `${session.user.id}/${timestamp}_${screenshotFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('bug-screenshots')
+          .upload(filePath, screenshotFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('bug-screenshots')
+          .getPublicUrl(filePath);
+        screenshot_url = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from('bug_reports').insert({
         reporter_id: session.user.id,
         reporter_role: role,
         title: title.trim(),
         description: description.trim(),
-      } as any);
+        device_type: deviceType || null,
+        screenshot_url,
+      });
 
       if (error) throw error;
 
       toast({ title: 'Bug report submitted', description: 'Thank you! An admin will review your report.' });
-      setTitle('');
-      setDescription('');
+      resetForm();
       setOpen(false);
     } catch (error) {
       console.error('Error submitting bug report:', error);
@@ -55,7 +111,7 @@ export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogPr
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         {triggerVariant === 'icon' ? (
           <Button variant="ghost" size="icon" title="Report a bug">
@@ -95,9 +151,57 @@ export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogPr
                 placeholder="What happened? What were you trying to do? Include any steps to reproduce the issue."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={5}
+                rows={4}
                 maxLength={2000}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Device Type</Label>
+              <Select value={deviceType} onValueChange={setDeviceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your device" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEVICE_OPTIONS.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Screenshot (optional)</Label>
+              {screenshotPreview ? (
+                <div className="relative inline-block">
+                  <img src={screenshotPreview} alt="Screenshot preview" className="max-h-32 rounded-md border" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={clearScreenshot}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Attach Screenshot
+                </Button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
               />
             </div>
           </div>
