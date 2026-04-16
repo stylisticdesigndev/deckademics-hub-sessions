@@ -102,29 +102,11 @@ const AdminBugReports = () => {
     return `${(profile as any).first_name || ''} ${(profile as any).last_name || ''}`.trim() || (profile as any).email;
   };
 
-  const handleCopy = async (report: BugReport) => {
-    let plainText = `${report.title}\n\n${report.description}`;
-    if (report.device_type) plainText += `\n\nDevice: ${report.device_type}`;
-    if (report.screenshot_url) plainText += `\n\nScreenshot: ${report.screenshot_url}`;
-
-    try {
-      let htmlText = `<p><strong>${report.title}</strong></p><p>${report.description.replace(/\n/g, '<br>')}</p>`;
-      if (report.device_type) htmlText += `<p>Device: ${report.device_type}</p>`;
-      if (report.screenshot_url) {
-        htmlText += `<p><a href="${report.screenshot_url}">Screenshot</a></p><img src="${report.screenshot_url}" style="max-width:400px;" />`;
-      }
-
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/plain': new Blob([plainText], { type: 'text/plain' }),
-          'text/html': new Blob([htmlText], { type: 'text/html' }),
-        }),
-      ]);
-      sonnerToast.success('Bug report copied to clipboard');
-    } catch {
-      await navigator.clipboard.writeText(plainText);
-      sonnerToast.success('Bug report copied to clipboard');
-    }
+  const handleCopy = (report: BugReport) => {
+    let text = `${report.title}\n\n${report.description}`;
+    if (report.device_type) text += `\n\nDevice: ${report.device_type}`;
+    navigator.clipboard.writeText(text);
+    sonnerToast.success('Bug report copied to clipboard');
   };
 
   const filteredReports = filter === 'all' ? reports : reports.filter(r => r.status === filter);
