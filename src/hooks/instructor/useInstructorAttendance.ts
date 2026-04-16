@@ -208,9 +208,14 @@ export function useInstructorAttendance(instructorId: string | undefined) {
         });
     });
 
+  // Today's students for dashboard widget
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const todayStudents = currentWeekStudents.filter(s => s.dateStr === todayStr);
+
   return {
     students,
     currentWeekStudents,
+    todayStudents,
     pastWeeksData,
     loading,
     saving,
