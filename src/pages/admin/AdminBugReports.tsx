@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Bug, Clock, CheckCircle2, XCircle, AlertCircle, Copy, Monitor, Smartphone, Tablet, ImageIcon } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
@@ -44,10 +45,16 @@ const getDeviceIcon = (deviceType: string | null) => {
   return <Monitor className="h-3 w-3" />;
 };
 
+const formatTimestamp = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
+};
+
 const AdminBugReports = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [archivedFilter, setArchivedFilter] = useState<string>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
 
@@ -109,159 +116,206 @@ const AdminBugReports = () => {
     sonnerToast.success('Bug report copied to clipboard');
   };
 
-  const filteredReports = filter === 'all' ? reports : reports.filter(r => r.status === filter);
+  const activeReports = reports.filter(r => ['open', 'in_progress'].includes(r.status));
+  const archivedReports = reports.filter(r => ['resolved', 'closed'].includes(r.status));
+
+  const filteredActive = activeFilter === 'all' ? activeReports : activeReports.filter(r => r.status === activeFilter);
+  const filteredArchived = archivedFilter === 'all' ? archivedReports : archivedReports.filter(r => r.status === archivedFilter);
+
+  const renderReportCard = (report: BugReport, isArchived: boolean) => {
+    const config = statusConfig[report.status] || statusConfig.open;
+    return (
+      <Card key={report.id}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <CardTitle className="text-base">{report.title}</CardTitle>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                <span>{getReporterName(report.reporter_id)}</span>
+                <span>•</span>
+                <span className="capitalize">{report.reporter_role}</span>
+                <span>•</span>
+                <span>{formatTimestamp(report.created_at)}</span>
+                {isArchived && (
+                  <>
+                    <span>•</span>
+                    <span className="text-xs">
+                      {report.status === 'resolved' ? 'Resolved' : 'Closed'}: {formatTimestamp(report.updated_at)}
+                    </span>
+                  </>
+                )}
+                {report.device_type && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      {getDeviceIcon(report.device_type)}
+                      {report.device_type}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={config.variant} className="flex items-center gap-1">
+                {config.icon}
+                {config.label}
+              </Badge>
+              <Select
+                value={report.status}
+                onValueChange={(status) => updateMutation.mutate({ id: report.id, status })}
+              >
+                <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm whitespace-pre-wrap">{report.description}</p>
+
+          {report.screenshot_url && (
+            <a href={report.screenshot_url} target="_blank" rel="noopener noreferrer" className="inline-block">
+              <div className="relative group">
+                <img
+                  src={report.screenshot_url}
+                  alt="Bug screenshot"
+                  className="max-h-40 rounded-md border hover:opacity-80 transition-opacity cursor-pointer"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ImageIcon className="h-6 w-6 text-foreground bg-background/80 rounded-full p-1" />
+                </div>
+              </div>
+            </a>
+          )}
+
+          {editingId === report.id ? (
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Add admin notes..."
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => updateMutation.mutate({ id: report.id, admin_notes: adminNotes })}
+                  disabled={updateMutation.isPending}
+                >
+                  Save Notes
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                {report.admin_notes ? (
+                  <p className="text-sm text-muted-foreground italic">Admin: {report.admin_notes}</p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleCopy(report)}
+                >
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setEditingId(report.id); setAdminNotes(report.admin_notes || ''); }}
+                >
+                  {report.admin_notes ? 'Edit Notes' : 'Add Notes'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderEmptyState = (message: string) => (
+    <Card>
+      <CardContent className="py-12 text-center text-muted-foreground">
+        {message}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Bug className="h-6 w-6" />
-            Bug Reports
-          </h1>
-          <p className="text-muted-foreground mt-1">Review and manage bug reports from students and instructors</p>
-        </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Reports</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
+      <section>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Bug className="h-6 w-6" />
+          Bug Reports
+        </h1>
+        <p className="text-muted-foreground mt-1">Review and manage bug reports from students and instructors</p>
       </section>
 
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
         </div>
-      ) : filteredReports.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            {filter === 'all' ? 'No bug reports have been submitted yet.' : `No ${filter.replace('_', ' ')} reports.`}
-          </CardContent>
-        </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredReports.map(report => {
-            const config = statusConfig[report.status] || statusConfig.open;
-            return (
-              <Card key={report.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <CardTitle className="text-base">{report.title}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
-                        <span>{getReporterName(report.reporter_id)}</span>
-                        <span>•</span>
-                        <span className="capitalize">{report.reporter_role}</span>
-                        <span>•</span>
-                        <span>{new Date(report.created_at).toLocaleDateString()}</span>
-                        {report.device_type && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              {getDeviceIcon(report.device_type)}
-                              {report.device_type}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={config.variant} className="flex items-center gap-1">
-                        {config.icon}
-                        {config.label}
-                      </Badge>
-                      <Select
-                        value={report.status}
-                        onValueChange={(status) => updateMutation.mutate({ id: report.id, status })}
-                      >
-                        <SelectTrigger className="w-[130px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="open">Open</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="resolved">Resolved</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm whitespace-pre-wrap">{report.description}</p>
+        <Tabs defaultValue="active">
+          <TabsList>
+            <TabsTrigger value="active">
+              Active{activeReports.length > 0 && ` (${activeReports.length})`}
+            </TabsTrigger>
+            <TabsTrigger value="archived">
+              Archived{archivedReports.length > 0 && ` (${archivedReports.length})`}
+            </TabsTrigger>
+          </TabsList>
 
-                  {report.screenshot_url && (
-                    <a href={report.screenshot_url} target="_blank" rel="noopener noreferrer" className="inline-block">
-                      <div className="relative group">
-                        <img
-                          src={report.screenshot_url}
-                          alt="Bug screenshot"
-                          className="max-h-40 rounded-md border hover:opacity-80 transition-opacity cursor-pointer"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ImageIcon className="h-6 w-6 text-foreground bg-background/80 rounded-full p-1" />
-                        </div>
-                      </div>
-                    </a>
-                  )}
+          <TabsContent value="active" className="space-y-4">
+            <div className="flex justify-end">
+              <Select value={activeFilter} onValueChange={setActiveFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Active</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {filteredActive.length === 0
+              ? renderEmptyState(activeFilter === 'all' ? 'No active bug reports.' : `No ${activeFilter.replace('_', ' ')} reports.`)
+              : filteredActive.map(r => renderReportCard(r, false))
+            }
+          </TabsContent>
 
-                  {editingId === report.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        placeholder="Add admin notes..."
-                        value={adminNotes}
-                        onChange={(e) => setAdminNotes(e.target.value)}
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => updateMutation.mutate({ id: report.id, admin_notes: adminNotes })}
-                          disabled={updateMutation.isPending}
-                        >
-                          Save Notes
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {report.admin_notes ? (
-                          <p className="text-sm text-muted-foreground italic">Admin: {report.admin_notes}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleCopy(report)}
-                        >
-                          <Copy className="h-4 w-4 mr-1" />
-                          Copy
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { setEditingId(report.id); setAdminNotes(report.admin_notes || ''); }}
-                        >
-                          {report.admin_notes ? 'Edit Notes' : 'Add Notes'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+          <TabsContent value="archived" className="space-y-4">
+            <div className="flex justify-end">
+              <Select value={archivedFilter} onValueChange={setArchivedFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Archived</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {filteredArchived.length === 0
+              ? renderEmptyState(archivedFilter === 'all' ? 'No archived bug reports.' : `No ${archivedFilter} reports.`)
+              : filteredArchived.map(r => renderReportCard(r, true))
+            }
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
