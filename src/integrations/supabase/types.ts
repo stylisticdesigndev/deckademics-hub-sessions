@@ -208,9 +208,11 @@ export type Database = {
           admin_notes: string | null
           created_at: string
           description: string
+          device_type: string | null
           id: string
           reporter_id: string
           reporter_role: string
+          screenshot_url: string | null
           seen_by_admin: boolean
           status: string
           title: string
@@ -220,9 +222,11 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           description: string
+          device_type?: string | null
           id?: string
           reporter_id: string
           reporter_role: string
+          screenshot_url?: string | null
           seen_by_admin?: boolean
           status?: string
           title: string
@@ -232,9 +236,11 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           description?: string
+          device_type?: string | null
           id?: string
           reporter_id?: string
           reporter_role?: string
+          screenshot_url?: string | null
           seen_by_admin?: boolean
           status?: string
           title?: string
