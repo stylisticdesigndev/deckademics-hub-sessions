@@ -1,20 +1,47 @@
+## Bug Reports: Active / Archived Tabs
 
+### Approach
 
-## Fix: Copy Bug Report with Screenshot
+Use a two-tab layout (Active / Archived) instead of the current flat list with a status filter dropdown.  
+  
+Also add a timestamp to the resolved and closed to know then it was
 
-### Problem
-The `ClipboardItem` API with mixed MIME types (`text/plain` + `text/html` with embedded `<img>`) is unreliable across browsers. The `fetch` for the screenshot likely fails due to CORS restrictions on the Supabase storage URL, and the silent `catch` block swallows the error, falling back to text-only copy — but even the fallback may not clearly indicate the screenshot wasn't included.
+**Archive logic — no database changes needed:**
 
-### Solution
-Simplify the copy approach — instead of trying to embed the actual image blob into the clipboard (which has broad browser compatibility issues), always copy the text content including the screenshot URL, and use the `text/html` format to make the URL a clickable link. This is reliable and works everywhere.
+- **Active tab** shows: `open` and `in_progress` reports
+- **Archived tab** shows: `resolved` and `closed` reports — no time delay needed
+
+**Why auto-archive resolved immediately:**
+Resolved means the fix is confirmed. There's no actionable reason to keep it in the active view. If it regresses, the user submits a new report. A time-based delay adds complexity without real benefit — the admin already made a deliberate decision by marking it resolved.
+
+The status filter dropdown moves inside each tab so you can still filter within archived (e.g. show only "resolved" or only "closed").
 
 ### Changes
 
-**File: `src/pages/admin/AdminBugReports.tsx`** — Replace `handleCopy` function:
-- Build plain text with title, description, device type, and screenshot URL
-- Build HTML version with the screenshot URL as a clickable `<a>` tag and an inline `<img>` tag (so pasting into rich-text apps like Slack/email shows the image)
-- Use `navigator.clipboard.write()` with both `text/plain` and `text/html` blobs — no fetching the image blob, just reference it by URL
-- If `clipboard.write()` fails, fall back to `clipboard.writeText()` with plain text
+**File: `src/pages/admin/AdminBugReports.tsx**`
 
-This avoids CORS issues entirely since we're not fetching the image — just referencing it in HTML.
+- Add `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` from existing UI components
+- Default tab: "Active" (open + in_progress)
+- Second tab: "Archived" (resolved + closed) with a count badge
+- Move the existing status filter dropdown inside each tab — Active tab filters between All/Open/In Progress; Archived tab filters between All/Resolved/Closed
+- Keep all existing card rendering, status change, notes, copy, screenshot functionality unchanged
+- When an admin changes status from open → resolved via the dropdown, it automatically moves to the Archived tab on next render
 
+### Layout
+
+```text
+┌─────────────────────────────────────┐
+│ 🐛 Bug Reports                     │
+│ Review and manage bug reports...    │
+├──────────────┬──────────────────────┤
+│ Active (3)   │ Archived (12)        │  ← tabs
+├──────────────┴──────────────────────┤
+│ Filter: [All ▾]                     │
+│                                     │
+│ ┌─ Bug Card ──────────────────────┐ │
+│ │ Title / metadata / status       │ │
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+No database migration required — purely a UI reorganization using existing status values.
