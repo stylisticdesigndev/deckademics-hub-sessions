@@ -106,7 +106,7 @@ const StudentProfile = () => {
           if (student.instructor_id) {
             const { data: instructor, error: instructorError } = await supabase
               .from('profiles')
-              .select('first_name, last_name')
+              .select('first_name, last_name, avatar_url')
               .eq('id', student.instructor_id)
               .single();
             if (!instructorError && instructor) setInstructorData(instructor);
@@ -354,6 +354,7 @@ const StudentProfile = () => {
                     {displayInstructor ? (
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
+                          {displayInstructor.avatar_url && <AvatarImage src={displayInstructor.avatar_url} alt={`${displayInstructor.first_name} ${displayInstructor.last_name}`} />}
                           <AvatarFallback className="bg-accent text-accent-foreground text-sm">
                             {`${displayInstructor.first_name?.[0] || ''}${displayInstructor.last_name?.[0] || ''}`.toUpperCase()}
                           </AvatarFallback>
