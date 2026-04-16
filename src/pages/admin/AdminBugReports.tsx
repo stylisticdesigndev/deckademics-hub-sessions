@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Bug, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Bug, Clock, CheckCircle2, XCircle, AlertCircle, Copy } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
 import { capitalizeLevel } from '@/lib/utils';
 
 interface BugReport {
@@ -195,16 +196,43 @@ const AdminBugReports = () => {
                     </div>
                   ) : (
                     <div className="flex items-start justify-between">
-                      {report.admin_notes ? (
-                        <p className="text-sm text-muted-foreground italic">Admin: {report.admin_notes}</p>
-                      ) : null}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => { setEditingId(report.id); setAdminNotes(report.admin_notes || ''); }}
-                      >
-                        {report.admin_notes ? 'Edit Notes' : 'Add Notes'}
-                      </Button>
+                      <div className="flex-1">
+                        {report.admin_notes ? (
+                          <p className="text-sm text-muted-foreground italic">Admin: {report.admin_notes}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const lines = [
+                              `Bug Report: ${report.title}`,
+                              `Status: ${(statusConfig[report.status] || statusConfig.open).label}`,
+                              `Reporter: ${getReporterName(report.reporter_id)} (${report.reporter_role})`,
+                              `Date: ${new Date(report.created_at).toLocaleDateString()}`,
+                              ``,
+                              `Description:`,
+                              report.description,
+                            ];
+                            if (report.admin_notes) {
+                              lines.push(``, `Admin Notes:`, report.admin_notes);
+                            }
+                            navigator.clipboard.writeText(lines.join('\n'));
+                            sonnerToast.success('Bug report copied to clipboard');
+                          }}
+                        >
+                          <Copy className="h-4 w-4 mr-1" />
+                          Copy
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setEditingId(report.id); setAdminNotes(report.admin_notes || ''); }}
+                        >
+                          {report.admin_notes ? 'Edit Notes' : 'Add Notes'}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
