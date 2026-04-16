@@ -87,6 +87,12 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
         </Alert>
       )}
 
+      <DashboardStats
+        todayClasses={activeTodayClasses}
+        averageProgress={activeAverageProgress}
+        totalStudents={activeTotalStudents}
+      />
+
       <TodayAttendanceSection demoMode={demoMode} />
 
       <section>
