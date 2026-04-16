@@ -1,67 +1,25 @@
+## Plan: Add Payroll Help Video Button
 
+### What
 
-## Plan: Unified Login + Admin Mode Switcher + RBAC
+Add a small help/tutorial button (e.g., a "?" or video icon) to the payroll page header that opens a dialog overlay containing the uploaded explainer video. The dialog floats over the page without navigating away.
 
-This is a significant architectural change that consolidates authentication, adds a mode-switching system for admin users, and implements hardcoded permission gates.
+### How
 
-### What Changes
+1. **Copy the video file** to `public/videos/instructor-payroll-guide.mp4` so it can be served as a static asset.
+2. **Update `AdminInstructorPayments.tsx**`:
+  - Add a state variable `showHelpVideo` (boolean).
+  - Add a small icon button (using `CircleHelp` or `Video` from lucide-react) next to the page title in the header area, wrapped in a Tooltip saying "How to use Payroll".
+  - Add a `Dialog` controlled by `showHelpVideo` containing:
+    - `DialogTitle`: "Payroll Tutorial"
+    - A `<video>` element with `controls`, `src="/videos/instructor-payroll-guide.mp4"`, sized to fill the dialog (max-w-3xl).
+  - Closing the dialog stops/pauses the video.
 
-**1. Unified Login Flow**
-- Remove the separate `/auth/admin` page and the "Administrator Access" link from the landing page
-- Remove the separate `AdminAuth.tsx` page
-- All users (students, instructors, admins) log in through the existing Student or Instructor auth pages — admins who are also instructors use `/auth/instructor`
-- After login, ALL users (including admins) route to their instructor/student dashboard first — not to `/admin/dashboard`
-- Update `redirectBasedOnRole` in `AuthProvider.tsx`: admins redirect to `/instructor/dashboard` instead of `/admin/dashboard`
+### Technical Details
 
-**2. Hardcoded Admin Emails + Permission Constants**
-- Create `src/constants/adminPermissions.ts` with:
-  - `OWNER_EMAIL = 'nick@deckademics.com'` — full access including Payroll
-  - `DEVELOPER_EMAIL = 'djstylistic11@gmail.com'` — full admin except Payroll
-  - Helper functions: `isAdminUser(email)`, `isOwner(email)`, `canAccessPayroll(email)`
-
-**3. Admin Mode Switcher**
-- For users whose email matches Nick or Evan, add an "Admin Portal" button in the `InstructorNavigation` sidebar (conditionally rendered)
-- Clicking it navigates to `/admin/dashboard`
-- In `DashboardLayout`, when `userType="admin"`:
-  - Change sidebar background color (e.g., dark red/maroon tint)
-  - Add a top banner: "ADMINISTRATION MODE" with a "Return to Teaching View" button that navigates back to `/instructor/dashboard`
-- Update `ProtectedRoute` to allow admin-role users to access both `/instructor/*` and `/admin/*` routes
-
-**4. Payroll Security Gate**
-- In `AdminInstructorPayments.tsx` and `AdminPayments.tsx` (student payments): wrap with an access check using `canAccessPayroll(email)`
-- If the user is not Nick, render an "Access Denied" card instead of the page content
-- Also hide Payroll nav items in `AdminNavigation` for non-owner admins
-
-**5. Admin Landing Page (Control Center)**
-- Redesign `AdminDashboard.tsx` as a split layout:
-  - Left side: "DJ School Operations" — links to Students, Instructors, Curriculum, Skills, Attendance, Payments, etc.
-  - Right side: "Music Production Operations" — placeholder card with "Coming Soon"
-
-**6. Future-Proofing Roles**
-- Add comments and structure in `adminPermissions.ts` for future `admin_dj` and `admin_prod` role types
-- The permission helpers will check email first (hardcoded), then fall back to Supabase role checks (for future DB-driven roles)
-
-### Routing Changes
-- Remove `/auth/admin` route from `App.tsx`
-- Update `ProtectedRoute` so `allowedRoles={['admin']}` routes also accept users with role `'instructor'` IF their email is in the admin list (or better: ensure these users have the `admin` role in the DB already)
-- Add `allowedRoles={['admin', 'instructor']}` flexibility for admin routes since Nick/Evan are both instructors and admins
-
-### Files to Create
-- `src/constants/adminPermissions.ts`
-
-### Files to Modify
-- `src/App.tsx` — remove `/auth/admin` route
-- `src/pages/Index.tsx` — remove "Administrator Access" link
-- `src/providers/AuthProvider.tsx` — redirect admins to instructor dashboard
-- `src/routes/ProtectedRoute.tsx` — allow admin users on instructor routes
-- `src/components/navigation/InstructorNavigation.tsx` — add "Admin Portal" button for admin users
-- `src/components/navigation/AdminNavigation.tsx` — hide payroll items for non-owner, add "Return to Teaching View" button
-- `src/components/layout/DashboardLayout.tsx` — admin mode visual styling (sidebar color, top banner)
-- `src/pages/admin/AdminDashboard.tsx` — split Control Center layout
-- `src/pages/admin/AdminInstructorPayments.tsx` — payroll access gate
-- `src/pages/admin/AdminPayments.tsx` — payroll access gate
-- Delete `src/pages/auth/AdminAuth.tsx`
-
-### No Database Changes Required
-Nick and Evan should already have the `admin` role in `user_roles`. The hardcoded email checks are an additional application-layer gate. No schema changes needed.
-
+- The dialog uses the existing `Dialog`/`DialogContent` components already imported in the file.
+- Video uses native HTML5 `<video controls>` for play/pause/seek.
+- A `ref` on the video element will pause playback when the dialog closes via `onOpenChange`.
+- Only visible to users who pass the `canAccessPayroll` gate (already handled by the existing access check).  
+  
+Give me a screenshot on what the page looks like with this feature 
