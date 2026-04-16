@@ -103,30 +103,28 @@ const AdminBugReports = () => {
   };
 
   const handleCopy = async (report: BugReport) => {
-    let text = `${report.title}\n\n${report.description}`;
-    if (report.device_type) text += `\n\nDevice: ${report.device_type}`;
+    let plainText = `${report.title}\n\n${report.description}`;
+    if (report.device_type) plainText += `\n\nDevice: ${report.device_type}`;
+    if (report.screenshot_url) plainText += `\n\nScreenshot: ${report.screenshot_url}`;
 
-    const items: ClipboardItem[] = [];
-
-    if (report.screenshot_url) {
-      try {
-        const response = await fetch(report.screenshot_url);
-        const blob = await response.blob();
-        const htmlContent = `${text.replace(/\n/g, '<br>')}<br><br><img src="${report.screenshot_url}" />`;
-        items.push(new ClipboardItem({
-          'text/plain': new Blob([text + `\n\nScreenshot: ${report.screenshot_url}`], { type: 'text/plain' }),
-          'text/html': new Blob([htmlContent], { type: 'text/html' }),
-        }));
-        await navigator.clipboard.write(items);
-        sonnerToast.success('Bug report with screenshot copied to clipboard');
-        return;
-      } catch {
-        // Fallback to text-only copy
+    try {
+      let htmlText = `<p><strong>${report.title}</strong></p><p>${report.description.replace(/\n/g, '<br>')}</p>`;
+      if (report.device_type) htmlText += `<p>Device: ${report.device_type}</p>`;
+      if (report.screenshot_url) {
+        htmlText += `<p><a href="${report.screenshot_url}">Screenshot</a></p><img src="${report.screenshot_url}" style="max-width:400px;" />`;
       }
-    }
 
-    navigator.clipboard.writeText(text + (report.screenshot_url ? `\n\nScreenshot: ${report.screenshot_url}` : ''));
-    sonnerToast.success('Bug report copied to clipboard');
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
+          'text/html': new Blob([htmlText], { type: 'text/html' }),
+        }),
+      ]);
+      sonnerToast.success('Bug report copied to clipboard');
+    } catch {
+      await navigator.clipboard.writeText(plainText);
+      sonnerToast.success('Bug report copied to clipboard');
+    }
   };
 
   const filteredReports = filter === 'all' ? reports : reports.filter(r => r.status === filter);
