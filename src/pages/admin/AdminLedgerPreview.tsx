@@ -187,6 +187,70 @@ const AdminLedgerPreview = () => {
   // For standalone "Add Extra Pay" — chosen instructor name before the record is created
   const [standaloneInstructorName, setStandaloneInstructorName] = useState<string>('');
 
+  // Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog)
+  const [createPayOpen, setCreatePayOpen] = useState(false);
+  const COURSE_LEVELS = [
+    { value: 'novice', label: 'Novice', total: 330, weeks: 6, fullOnly: true },
+    { value: 'amateur', label: 'Amateur', total: 660, weeks: 12, fullOnly: false },
+    { value: 'intermediate', label: 'Intermediate', total: 660, weeks: 12, fullOnly: false },
+    { value: 'advanced', label: 'Advanced', total: 330, weeks: 6, fullOnly: false },
+    { value: 'advanced_plus', label: 'Advanced Plus', total: 0, weeks: 0, fullOnly: false },
+  ] as const;
+  const [cpStudentName, setCpStudentName] = useState('');
+  const [cpCourseLevel, setCpCourseLevel] = useState<string>('amateur');
+  const [cpSchedule, setCpSchedule] = useState<'full' | 'biweekly' | 'weekly'>('full');
+  const [cpAmount, setCpAmount] = useState('660.00');
+  const [cpStartDate, setCpStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [cpStatus, setCpStatus] = useState<'pending' | 'completed' | 'upcoming'>('pending');
+  const [cpDescription, setCpDescription] = useState('');
+
+  const openCreatePayment = () => {
+    setCpStudentName('');
+    setCpCourseLevel('amateur');
+    setCpSchedule('full');
+    setCpAmount('660.00');
+    setCpStartDate(format(new Date(), 'yyyy-MM-dd'));
+    setCpStatus('pending');
+    setCpDescription('');
+    setCreatePayOpen(true);
+  };
+
+  // Auto-recalculate amount when course/schedule changes
+  useEffect(() => {
+    const course = COURSE_LEVELS.find(c => c.value === cpCourseLevel);
+    if (!course || course.value === 'advanced_plus') return;
+    if (course.fullOnly) setCpSchedule('full');
+    const total = course.total;
+    if (cpSchedule === 'full') setCpAmount(total.toFixed(2));
+    else if (cpSchedule === 'biweekly') setCpAmount((total / (course.weeks / 2)).toFixed(2));
+    else if (cpSchedule === 'weekly') setCpAmount((total / course.weeks).toFixed(2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cpCourseLevel, cpSchedule]);
+
+  const saveCreatePayment = () => {
+    if (!cpStudentName.trim()) {
+      alert('Please enter a student name.');
+      return;
+    }
+    const amt = parseFloat(cpAmount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    const courseLabel = COURSE_LEVELS.find(c => c.value === cpCourseLevel)?.label ?? cpCourseLevel;
+    const newPayment: StudentPayment = {
+      id: `sp-new-${Date.now()}`,
+      studentName: cpStudentName.trim(),
+      email: `${cpStudentName.trim().toLowerCase().replace(/\s+/g, '.')}@preview.local`,
+      amount: amt,
+      status: cpStatus,
+      payment_date: cpStartDate,
+      description: cpDescription.trim() || `${courseLabel} – ${cpSchedule}`,
+    };
+    setStudentPayments(prev => [newPayment, ...prev]);
+    setCreatePayOpen(false);
+  };
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
