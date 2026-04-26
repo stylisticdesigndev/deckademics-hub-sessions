@@ -19,6 +19,7 @@ import {
   Settings,
   ClipboardCheck,
   DollarSign,
+  Wallet,
   BookOpen,
   MessageSquare,
   UserCog,
@@ -86,6 +87,7 @@ export const AdminNavigation = () => {
     ...(showPayroll ? [
       { title: "Student Payments", icon: CreditCard, href: "/admin/payments" },
       { title: "Instructor Payments", icon: DollarSign, href: "/admin/instructor-payments" },
+      { title: "Pay Ledger Preview", icon: Wallet, href: "/admin/ledger-preview" },
     ] : []),
     { title: "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/admin/announcements" },
