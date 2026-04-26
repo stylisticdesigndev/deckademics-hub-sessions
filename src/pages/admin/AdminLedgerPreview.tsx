@@ -392,28 +392,15 @@ const AdminLedgerPreview = () => {
   const sumExtraPay = (items: ExtraPayItem[]) =>
     items.reduce((acc, e) => acc + e.amount, 0);
 
-  // Standalone "Add Extra Pay" — creates a $0 base pending record then opens the extras editor
+  // Standalone "Add Extra Pay" — opens the editor with a sentinel id; record is created on save
+  const STANDALONE_ID = '__standalone__';
   const startStandaloneExtraPay = () => {
-    const instructorPool = activeInstructors.length > 0
-      ? activeInstructors.map(i => i.name)
-      : Array.from(new Set(payrollRecords.map(p => p.instructorName)));
-    const instructorName = instructorPool[0] || 'Instructor';
     const today = format(new Date(), 'yyyy-MM-dd');
-    const newId = `pr-extra-${Date.now()}`;
-    const newRec: InstructorPayrollRecord = {
-      id: newId,
-      instructorName,
-      pay_period_start: today,
-      pay_period_end: today,
-      hours_worked: 0,
-      amount: 0,
-      extra_pay: [],
-      status: 'pending',
-      payment_date: today,
-    };
-    setPayrollRecords(prev => [newRec, ...prev]);
-    // Open the extras editor on the new record
-    setExtraPayFor(newId);
+    const defaultName = activeInstructors[0]?.name
+      ?? payrollRecords[0]?.instructorName
+      ?? '';
+    setStandaloneInstructorName(defaultName);
+    setExtraPayFor(STANDALONE_ID);
     setExtraPayDraft([]);
     setNewExtraDate(today);
     setNewExtraDesc('');
