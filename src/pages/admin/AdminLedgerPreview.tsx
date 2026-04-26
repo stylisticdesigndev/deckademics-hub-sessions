@@ -24,6 +24,9 @@ import {
   CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
 } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ────────────────────────────────────────────────────────────
 // MOCK DATA TYPES
@@ -47,6 +50,13 @@ interface StudentPayment {
   description: string;
 }
 
+interface ExtraPayItem {
+  id: string;
+  date: string;        // yyyy-MM-dd
+  description: string; // e.g. "Saturday gig at The Lot"
+  amount: number;
+}
+
 interface InstructorPayrollRecord {
   id: string;
   instructorName: string;
@@ -54,7 +64,7 @@ interface InstructorPayrollRecord {
   pay_period_end: string;
   hours_worked: number;
   amount: number;
-  bonus_amount: number;
+  extra_pay: ExtraPayItem[];
   status: 'pending' | 'paid';
   payment_date: string;
 }
@@ -130,7 +140,9 @@ const seedInstructorPayroll = (): InstructorPayrollRecord[] => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * SESSION_FEE,
-        bonus_amount: p === 0 && i === 0 ? 100 : 0,
+        extra_pay: p === 0 && i === 0
+          ? [{ id: `ep-seed-${i}-${p}`, date: format(end, 'yyyy-MM-dd'), description: 'Open-deck event at The Lot', amount: 100 }]
+          : [],
         status: p === 0 ? 'pending' : 'paid',
         payment_date: format(end, 'yyyy-MM-dd'),
       });
@@ -163,9 +175,11 @@ const AdminLedgerPreview = () => {
   // Edit classes + bonus dialogs for pending payroll rows
   const [editPayrollFor, setEditPayrollFor] = useState<string | null>(null);
   const [editPayrollClasses, setEditPayrollClasses] = useState('');
-  const [bonusFor, setBonusFor] = useState<string | null>(null);
-  const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusDescription, setBonusDescription] = useState('');
+  const [extraPayFor, setExtraPayFor] = useState<string | null>(null);
+  const [extraPayDraft, setExtraPayDraft] = useState<ExtraPayItem[]>([]);
+  const [newExtraDate, setNewExtraDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [newExtraDesc, setNewExtraDesc] = useState('');
+  const [newExtraAmount, setNewExtraAmount] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -274,7 +288,7 @@ const AdminLedgerPreview = () => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * t.fee,
-        bonus_amount: 0,
+        extra_pay: [],
         status: 'pending',
         payment_date: format(end, 'yyyy-MM-dd'),
       };
@@ -299,7 +313,7 @@ const AdminLedgerPreview = () => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * fee,
-        bonus_amount: 0,
+        extra_pay: [],
         status: 'pending',
         payment_date: format(end, 'yyyy-MM-dd'),
       };
@@ -332,25 +346,45 @@ const AdminLedgerPreview = () => {
     setEditPayrollFor(null);
   };
 
-  const openBonus = (id: string) => {
+  const openExtraPay = (id: string) => {
     const rec = payrollRecords.find(p => p.id === id);
     if (!rec) return;
-    setBonusFor(id);
-    setBonusAmount(rec.bonus_amount ? rec.bonus_amount.toString() : '');
-    setBonusDescription('');
+    setExtraPayFor(id);
+    setExtraPayDraft(rec.extra_pay.map(e => ({ ...e })));
+    setNewExtraDate(format(new Date(), 'yyyy-MM-dd'));
+    setNewExtraDesc('');
+    setNewExtraAmount('');
   };
-  const saveBonus = () => {
-    if (!bonusFor) return;
-    const amount = parseFloat(bonusAmount);
-    if (isNaN(amount) || amount < 0) {
-      alert('Enter a valid bonus amount.');
+  const addExtraPayItem = () => {
+    const amount = parseFloat(newExtraAmount);
+    if (!newExtraDate || isNaN(amount) || amount <= 0) {
+      alert('Enter a valid date and amount for the extra pay item.');
       return;
     }
-    setPayrollRecords(ps => ps.map(p =>
-      p.id === bonusFor ? { ...p, bonus_amount: amount } : p
-    ));
-    setBonusFor(null);
+    setExtraPayDraft(prev => [
+      ...prev,
+      {
+        id: `ep-${Date.now()}`,
+        date: newExtraDate,
+        description: newExtraDesc.trim(),
+        amount,
+      },
+    ]);
+    setNewExtraDesc('');
+    setNewExtraAmount('');
   };
+  const removeExtraPayItem = (id: string) => {
+    setExtraPayDraft(prev => prev.filter(e => e.id !== id));
+  };
+  const saveExtraPay = () => {
+    if (!extraPayFor) return;
+    setPayrollRecords(ps => ps.map(p =>
+      p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
+    ));
+    setExtraPayFor(null);
+  };
+  const sumExtraPay = (items: ExtraPayItem[]) =>
+    items.reduce((acc, e) => acc + e.amount, 0);
 
   return (
     <div className="space-y-6">
