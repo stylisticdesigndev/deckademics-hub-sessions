@@ -391,6 +391,57 @@ const AdminLedgerPreview = () => {
             </div>
           </div>
 
+          {/* Instructor Rates editor — mirrors Nick's Instructor Rates card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Instructor Rates</CardTitle>
+              <CardDescription>
+                Update the per-class flat fee and hourly rate. <strong>Preview only — changes are local and not saved.</strong>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activeInstructors.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading active instructors…</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Instructor</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Flat Fee / Class</TableHead>
+                        <TableHead className="text-right">Hourly Rate</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activeInstructors.map(inst => {
+                        const fee = getEffectiveFee(inst.id, inst.sessionFee);
+                        const overridden = feeOverrides[inst.id] !== undefined;
+                        return (
+                          <TableRow key={inst.id}>
+                            <TableCell className="font-medium">{inst.name}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{inst.email}</TableCell>
+                            <TableCell className="text-right">
+                              ${fee}/class
+                              {overridden && <Badge variant="secondary" className="ml-2">preview</Badge>}
+                            </TableCell>
+                            <TableCell className="text-right">${inst.hourlyRate}/hr</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="outline" size="sm" onClick={() => openRateDialog(inst.id)}>
+                                Update Rates
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Payroll History</CardTitle>
