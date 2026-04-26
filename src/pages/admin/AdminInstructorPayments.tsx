@@ -1029,23 +1029,23 @@ const AdminInstructorPayments = () => {
       <Dialog open={showEditHoursDialog} onOpenChange={setShowEditHoursDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Edit Hours</DialogTitle>
-            <DialogDescription>Add or subtract hours worked by the instructor</DialogDescription>
+            <DialogTitle>Edit Classes</DialogTitle>
+            <DialogDescription>Add or subtract classes taught by the instructor</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <RadioGroup value={hoursOperation} onValueChange={(v) => setHoursOperation(v as 'add' | 'subtract')} className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="add" id="add" />
-                <Label htmlFor="add">Add Hours</Label>
+                <Label htmlFor="add">Add Classes</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="subtract" id="subtract" />
-                <Label htmlFor="subtract">Subtract Hours</Label>
+                <Label htmlFor="subtract">Subtract Classes</Label>
               </div>
             </RadioGroup>
             <div className="grid gap-2">
-              <Label htmlFor="hours">Hours to {hoursOperation === 'add' ? 'Add' : 'Subtract'}</Label>
-              <Input id="hours" type="number" step="0.5" min="0.5" placeholder={`Enter hours to ${hoursOperation}`} value={hoursToChange} onChange={(e) => setHoursToChange(e.target.value)} />
+              <Label htmlFor="hours">Classes to {hoursOperation === 'add' ? 'Add' : 'Subtract'}</Label>
+              <Input id="hours" type="number" step="1" min="1" placeholder={`Enter classes to ${hoursOperation}`} value={hoursToChange} onChange={(e) => setHoursToChange(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
