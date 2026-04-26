@@ -592,7 +592,13 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
+              ${pendingPayments
+                .reduce(
+                  (sum, p) =>
+                    sum + p.totalAmount + sumExtras(extrasByPayment(p.id)),
+                  0,
+                )
+                .toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
@@ -692,22 +698,33 @@ const AdminInstructorPayments = () => {
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div>
-                          <span>${payment.totalAmount}</span>
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              + ${payment.bonusAmount} bonus
-                              {payment.bonusDescription && (
-                                <span className="italic"> ({payment.bonusDescription})</span>
+                        {(() => {
+                          const items = extrasByPayment(payment.id);
+                          const extraTotal = sumExtras(items);
+                          return (
+                            <div>
+                              <span>${payment.totalAmount.toFixed(2)}</span>
+                              {items.length > 0 && (
+                                <>
+                                  <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                                    {items.map((e) => (
+                                      <div key={e.id} className="whitespace-normal">
+                                        + ${Number(e.amount).toFixed(2)}{' '}
+                                        <span className="italic">
+                                          ({format(new Date(e.event_date), 'MM/dd')}
+                                          {e.description ? ` — ${e.description}` : ''})
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="text-xs font-semibold mt-1">
+                                    Total: ${(payment.totalAmount + extraTotal).toFixed(2)}
+                                  </div>
+                                </>
                               )}
                             </div>
-                          )}
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs font-semibold">
-                              Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
-                            </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -717,9 +734,14 @@ const AdminInstructorPayments = () => {
                                 <Edit className="mr-1 h-3 w-3" />
                                 Edit Classes
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
+                              <Button variant="outline" size="sm" onClick={() => openExtraPayForPayment(payment)}>
                                 <DollarSign className="mr-1 h-3 w-3" />
-                                Bonus
+                                Extra Pay
+                                {extrasByPayment(payment.id).length > 0 && (
+                                  <Badge variant="secondary" className="ml-1.5">
+                                    {extrasByPayment(payment.id).length}
+                                  </Badge>
+                                )}
                               </Button>
                             </>
                           )}
