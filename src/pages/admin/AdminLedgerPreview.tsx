@@ -24,6 +24,9 @@ import {
   CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
 } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ────────────────────────────────────────────────────────────
 // MOCK DATA TYPES
@@ -47,6 +50,13 @@ interface StudentPayment {
   description: string;
 }
 
+interface ExtraPayItem {
+  id: string;
+  date: string;        // yyyy-MM-dd
+  description: string; // e.g. "Saturday gig at The Lot"
+  amount: number;
+}
+
 interface InstructorPayrollRecord {
   id: string;
   instructorName: string;
@@ -54,7 +64,7 @@ interface InstructorPayrollRecord {
   pay_period_end: string;
   hours_worked: number;
   amount: number;
-  bonus_amount: number;
+  extra_pay: ExtraPayItem[];
   status: 'pending' | 'paid';
   payment_date: string;
 }
@@ -130,7 +140,9 @@ const seedInstructorPayroll = (): InstructorPayrollRecord[] => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * SESSION_FEE,
-        bonus_amount: p === 0 && i === 0 ? 100 : 0,
+        extra_pay: p === 0 && i === 0
+          ? [{ id: `ep-seed-${i}-${p}`, date: format(end, 'yyyy-MM-dd'), description: 'Open-deck event at The Lot', amount: 100 }]
+          : [],
         status: p === 0 ? 'pending' : 'paid',
         payment_date: format(end, 'yyyy-MM-dd'),
       });
@@ -163,9 +175,11 @@ const AdminLedgerPreview = () => {
   // Edit classes + bonus dialogs for pending payroll rows
   const [editPayrollFor, setEditPayrollFor] = useState<string | null>(null);
   const [editPayrollClasses, setEditPayrollClasses] = useState('');
-  const [bonusFor, setBonusFor] = useState<string | null>(null);
-  const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusDescription, setBonusDescription] = useState('');
+  const [extraPayFor, setExtraPayFor] = useState<string | null>(null);
+  const [extraPayDraft, setExtraPayDraft] = useState<ExtraPayItem[]>([]);
+  const [newExtraDate, setNewExtraDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [newExtraDesc, setNewExtraDesc] = useState('');
+  const [newExtraAmount, setNewExtraAmount] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -274,7 +288,7 @@ const AdminLedgerPreview = () => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * t.fee,
-        bonus_amount: 0,
+        extra_pay: [],
         status: 'pending',
         payment_date: format(end, 'yyyy-MM-dd'),
       };
@@ -299,7 +313,7 @@ const AdminLedgerPreview = () => {
         pay_period_end: format(end, 'yyyy-MM-dd'),
         hours_worked: classes,
         amount: classes * fee,
-        bonus_amount: 0,
+        extra_pay: [],
         status: 'pending',
         payment_date: format(end, 'yyyy-MM-dd'),
       };
@@ -332,25 +346,45 @@ const AdminLedgerPreview = () => {
     setEditPayrollFor(null);
   };
 
-  const openBonus = (id: string) => {
+  const openExtraPay = (id: string) => {
     const rec = payrollRecords.find(p => p.id === id);
     if (!rec) return;
-    setBonusFor(id);
-    setBonusAmount(rec.bonus_amount ? rec.bonus_amount.toString() : '');
-    setBonusDescription('');
+    setExtraPayFor(id);
+    setExtraPayDraft(rec.extra_pay.map(e => ({ ...e })));
+    setNewExtraDate(format(new Date(), 'yyyy-MM-dd'));
+    setNewExtraDesc('');
+    setNewExtraAmount('');
   };
-  const saveBonus = () => {
-    if (!bonusFor) return;
-    const amount = parseFloat(bonusAmount);
-    if (isNaN(amount) || amount < 0) {
-      alert('Enter a valid bonus amount.');
+  const addExtraPayItem = () => {
+    const amount = parseFloat(newExtraAmount);
+    if (!newExtraDate || isNaN(amount) || amount <= 0) {
+      alert('Enter a valid date and amount for the extra pay item.');
       return;
     }
-    setPayrollRecords(ps => ps.map(p =>
-      p.id === bonusFor ? { ...p, bonus_amount: amount } : p
-    ));
-    setBonusFor(null);
+    setExtraPayDraft(prev => [
+      ...prev,
+      {
+        id: `ep-${Date.now()}`,
+        date: newExtraDate,
+        description: newExtraDesc.trim(),
+        amount,
+      },
+    ]);
+    setNewExtraDesc('');
+    setNewExtraAmount('');
   };
+  const removeExtraPayItem = (id: string) => {
+    setExtraPayDraft(prev => prev.filter(e => e.id !== id));
+  };
+  const saveExtraPay = () => {
+    if (!extraPayFor) return;
+    setPayrollRecords(ps => ps.map(p =>
+      p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
+    ));
+    setExtraPayFor(null);
+  };
+  const sumExtraPay = (items: ExtraPayItem[]) =>
+    items.reduce((acc, e) => acc + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -595,7 +629,7 @@ const AdminLedgerPreview = () => {
                       <TableHead>Classes</TableHead>
                       <TableHead>Class Rate</TableHead>
                       <TableHead>Base Pay</TableHead>
-                      <TableHead>Bonus</TableHead>
+                      <TableHead>Extra Pay</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -611,8 +645,40 @@ const AdminLedgerPreview = () => {
                         <TableCell>{r.hours_worked}</TableCell>
                         <TableCell>${SESSION_FEE}/class</TableCell>
                         <TableCell>${r.amount.toFixed(2)}</TableCell>
-                        <TableCell>{r.bonus_amount > 0 ? `$${r.bonus_amount.toFixed(2)}` : '—'}</TableCell>
-                        <TableCell className="font-bold">${(r.amount + r.bonus_amount).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {r.extra_pay.length === 0 ? (
+                            '—'
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="underline decoration-dotted underline-offset-2 cursor-help"
+                                  >
+                                    ${sumExtraPay(r.extra_pay).toFixed(2)}
+                                    <span className="ml-1 text-xs text-muted-foreground">
+                                      ({r.extra_pay.length})
+                                    </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <div className="space-y-1 text-xs">
+                                    {r.extra_pay.map(e => (
+                                      <div key={e.id} className="flex justify-between gap-3">
+                                        <span>
+                                          {format(new Date(e.date), 'MM/dd')} — {e.description || 'Extra pay'}
+                                        </span>
+                                        <span className="font-medium">${e.amount.toFixed(2)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-bold">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</TableCell>
                         <TableCell>
                           {r.status === 'paid'
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
@@ -632,8 +698,8 @@ const AdminLedgerPreview = () => {
                                   <DropdownMenuItem onSelect={() => setTimeout(() => openEditPayroll(r.id), 0)}>
                                     <Edit className="h-4 w-4 mr-2" /> Edit Classes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => setTimeout(() => openBonus(r.id), 0)}>
-                                    <Plus className="h-4 w-4 mr-2" /> Add Bonus
+                                  <DropdownMenuItem onSelect={() => setTimeout(() => openExtraPay(r.id), 0)}>
+                                    <Plus className="h-4 w-4 mr-2" /> Add Extra Pay
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -699,28 +765,104 @@ const AdminLedgerPreview = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Bonus dialog (preview only) */}
-      <Dialog open={!!bonusFor} onOpenChange={(open) => { if (!open) setBonusFor(null); }}>
-        <DialogContent className="sm:max-w-[400px]">
+      {/* Add Extra Pay dialog (preview only) */}
+      <Dialog open={!!extraPayFor} onOpenChange={(open) => { if (!open) setExtraPayFor(null); }}>
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle>Add Bonus</DialogTitle>
+            <DialogTitle>Add Extra Pay</DialogTitle>
             <DialogDescription>
-              Add a bonus amount to this pending payment. Preview only — nothing saves to the database.
+              Log one-off events, gigs, or bonuses with their own date, description, and pay rate.
+              Each line item is recorded individually and shown on the instructor's payment record.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="bonus-amount">Bonus Amount ($)</Label>
-              <Input id="bonus-amount" type="number" step="0.01" min="0" value={bonusAmount} onChange={(e) => setBonusAmount(e.target.value)} />
+
+          <div className="space-y-4 py-2">
+            {/* Existing items */}
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Line items ({extraPayDraft.length})
+              </Label>
+              {extraPayDraft.length === 0 ? (
+                <p className="text-sm text-muted-foreground border border-dashed rounded p-3 text-center">
+                  No extra pay added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {extraPayDraft.map(item => (
+                    <div key={item.id} className="flex items-center gap-2 border rounded p-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">
+                          {item.description || 'Extra pay'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(item.date), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        ${item.amount.toFixed(2)}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeExtraPayItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex justify-end text-sm font-semibold pt-1">
+                    Total: ${sumExtraPay(extraPayDraft).toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bonus-desc">Description (optional)</Label>
-              <Input id="bonus-desc" value={bonusDescription} onChange={(e) => setBonusDescription(e.target.value)} placeholder="e.g. Holiday bonus" />
+
+            {/* Add new item */}
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Add new line item
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="extra-date" className="text-xs">Date</Label>
+                  <Input
+                    id="extra-date"
+                    type="date"
+                    value={newExtraDate}
+                    onChange={(e) => setNewExtraDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="extra-amount" className="text-xs">Pay rate ($)</Label>
+                  <Input
+                    id="extra-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="150.00"
+                    value={newExtraAmount}
+                    onChange={(e) => setNewExtraAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="extra-desc" className="text-xs">Description</Label>
+                <Input
+                  id="extra-desc"
+                  value={newExtraDesc}
+                  onChange={(e) => setNewExtraDesc(e.target.value)}
+                  placeholder="e.g. Open-deck event at The Lot"
+                />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addExtraPayItem}>
+                <Plus className="h-4 w-4 mr-1" /> Add line item
+              </Button>
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBonusFor(null)}>Cancel</Button>
-            <Button onClick={saveBonus}>Save Bonus</Button>
+            <Button variant="outline" onClick={() => setExtraPayFor(null)}>Cancel</Button>
+            <Button onClick={saveExtraPay}>Save Extra Pay</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
