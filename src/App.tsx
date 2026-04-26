@@ -34,6 +34,7 @@ import StudentNotes from "./pages/student/StudentNotes";
 // Instructor pages
 import InstructorDashboardGate from "./pages/instructor/InstructorDashboardGate";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
+import InstructorStudentDetail from "./pages/instructor/InstructorStudentDetail";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
@@ -116,6 +117,7 @@ const App = () => (
         <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
           <Route element={<InstructorLayoutRoute />}>
             <Route path="/instructor/students" element={<InstructorStudents />} />
+            <Route path="/instructor/students/:studentId" element={<InstructorStudentDetail />} />
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
             <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
             <Route path="/instructor/classes" element={<InstructorClasses />} />
