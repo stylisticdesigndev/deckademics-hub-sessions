@@ -1,25 +1,76 @@
-## Problem
-On `/admin/ledger-preview` (and the live `/admin/instructor-payments`), the Instructor Payroll header row shifts/reflows when you pick instructors from the dropdown. Two causes:
+## Goal
+Add a beta-only **Feature Requests** system that mirrors the existing Bug Reports flow but lives entirely separately. Students and instructors can submit feature ideas from the dashboard header (lightbulb icon next to the bug icon), and admins manage them on a dedicated page.
 
-1. **Badge widens the trigger button** — When `selectedInstructorIds.length > 0`, a count `<Badge>` is appended inside the "Pick Instructors" / "Generate Selected" button. The button grows by ~24–32px and pushes neighboring buttons.
-2. **Row wraps at ~1000px** — The header uses `flex-wrap` with `justify-between`, so any width change in the right-side button group can cause it to drop to a new line or re-distribute spacing.
+## 1. Database (new migration)
+Create a new table `feature_requests` (separate from `bug_reports`):
+- `id` uuid pk
+- `requester_id` uuid → auth.users
+- `requester_role` text ('student' | 'instructor')
+- `title` text
+- `description` text
+- `device_type` text nullable
+- `screenshot_url` text nullable (optional mockup/reference image)
+- `status` text default 'open' ('open' | 'planned' | 'in_progress' | 'shipped' | 'declined')
+- `admin_notes` text nullable
+- `created_at`, `updated_at` timestamps
 
-## Fix (preview + live, 1-for-1)
+**RLS** (mirroring `bug_reports`):
+- Students/instructors: `INSERT` their own rows, `SELECT` their own rows.
+- Admins (via `has_role(auth.uid(), 'admin')`): full `SELECT` / `UPDATE`.
 
-**File: `src/pages/admin/AdminLedgerPreview.tsx`** (preview header, lines ~667–753)
-- Give the "Pick Instructors" button a **fixed minimum width** (`min-w-[180px]`) so the badge appearing/disappearing doesn't change its size.
-- Keep badge inside but reserve consistent space using `justify-between` inside the button so icon/label/badge/chevron sit in stable slots.
-- Remove `flex-wrap` from the action group's parent, OR keep it but make the right-hand action cluster a fixed-order `flex-nowrap` group so buttons don't reorder. Outer container keeps `flex-wrap` only for very small screens.
+**Storage bucket** `feature-screenshots` (public read) for optional attachments, with the same upload policy pattern as `bug-screenshots`.
 
-**File: `src/pages/admin/AdminInstructorPayments.tsx`** (live header, lines ~575–610)
-- Apply identical treatment to the "Generate Selected" trigger button (`min-w-[200px]`, internal `justify-between` for icon/label/badge/chevron) so the badge insertion is non-shifting.
-- Confirm the right-side `<div className="flex items-center gap-2">` stays `flex-nowrap` (it already is — no change needed beyond button width stabilization).
+## 2. Submission UI — `src/components/features/FeatureRequestDialog.tsx`
+Near-clone of `BugReportDialog.tsx`:
+- Trigger: `Lightbulb` icon (lucide) with `triggerVariant="icon"`, tooltip "Suggest a feature".
+- Fields: Title, Description ("What feature would you like? Why is it useful?"), Device Type (same options), optional screenshot/mockup.
+- Inserts into `feature_requests` and uploads to the `feature-screenshots` bucket.
+- Toast on success: "Feature request submitted".
 
-## What stays the same
-- All functionality (selection, generate, extra pay, help video) unchanged.
-- Visual style (variants, icons, gap, alignment) unchanged.
-- The count badge still appears — it just no longer resizes the button.
+## 3. Header integration — `src/components/layout/DashboardLayout.tsx`
+Right next to the existing bug button (line ~145), add the new dialog for non-admin users:
+```tsx
+{userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
+{userType !== 'admin' && <FeatureRequestDialog triggerVariant="icon" />}
+```
+Order: Bug icon, then Lightbulb icon — visually distinct, no overlap.
 
-## Acceptance
-- Selecting/deselecting instructors in either the preview or the live page leaves every other button in the header in the **exact same x/y position**.
-- No row wrapping changes triggered by selection state at viewport widths ≥768px.
+## 4. Admin page — `src/pages/admin/AdminFeatureRequests.tsx`
+Structural copy of `AdminBugReports.tsx`, swapped to `feature_requests`:
+- Tabs: **Active** (open, planned, in_progress) / **Archived** (shipped, declined).
+- Status filter dropdown per tab.
+- Card per request showing requester name (joined via `profiles`), role badge, device, timestamp, description, optional screenshot, admin notes editor, status select, copy-to-clipboard button.
+- Status options: Open, Planned, In Progress, Shipped, Declined (with appropriate icons/colors — e.g., `Lightbulb`, `CalendarClock`, `Hammer`, `Rocket`, `XCircle`).
+
+## 5. Admin navigation + badge — `src/components/navigation/AdminNavigation.tsx`
+- Add menu item: `{ title: "Feature Requests", icon: Lightbulb, href: "/admin/feature-requests", badge: openFeatureCount }`.
+- Add a `useQuery` for `admin-open-feature-count` (counts rows where status in ('open','planned')).
+- Place it directly under the existing "Bug Reports" entry to keep the beta-feedback tools grouped.
+
+## 6. Routing — `src/App.tsx`
+Register the new route alongside the bug route:
+```tsx
+<Route path="/admin/feature-requests" element={<AdminFeatureRequests />} />
+```
+
+## 7. Notifications (optional, mirrors bug pattern)
+If `useAdminNotifications` aggregates bug count today, extend it to also surface new feature requests so the admin notification dropdown reflects beta feedback in one place. (Will check the hook before wiring; keep scope minimal if it complicates things.)
+
+## Out of scope
+- No public voting/upvotes (can be added later if requested).
+- No email notifications on status change.
+- No edits/deletes by the requester after submission (matches bug behavior).
+
+## Files to create
+- `supabase/migrations/<timestamp>_feature_requests.sql`
+- `src/components/features/FeatureRequestDialog.tsx`
+- `src/pages/admin/AdminFeatureRequests.tsx`
+
+## Files to edit
+- `src/components/layout/DashboardLayout.tsx` — add lightbulb trigger next to bug.
+- `src/components/navigation/AdminNavigation.tsx` — add nav entry + count query.
+- `src/App.tsx` — register route.
+- (Possibly) `src/hooks/useAdminNotifications.ts` — include feature request count.
+
+## Memory
+After implementation, save a `mem://features/feature-requests-system` memory describing the table, statuses, RLS, and that it's a separate parallel system to bug reports.
