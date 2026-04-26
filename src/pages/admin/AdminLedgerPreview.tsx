@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
   CreditCard, Plus, Edit, Trash2, CheckCircle2,
@@ -135,6 +140,61 @@ const AdminLedgerPreview = () => {
   const [search, setSearch] = useState('');
   const [selectedInstructor, setSelectedInstructor] = useState<string>('');
 
+  // Real active instructors (read-only fetch, used to populate dropdown + rate editor)
+  const [activeInstructors, setActiveInstructors] = useState<{
+    id: string; name: string; email: string; sessionFee: number; hourlyRate: number;
+  }[]>([]);
+
+  // Local mock overrides for session fee per instructor (does NOT save to DB)
+  const [feeOverrides, setFeeOverrides] = useState<Record<string, number>>({});
+  const [rateDialogFor, setRateDialogFor] = useState<string | null>(null);
+  const [rateDialogFee, setRateDialogFee] = useState('');
+  const [rateDialogHourly, setRateDialogHourly] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('instructors')
+        .select('id, hourly_rate, session_fee, profiles (first_name, last_name, email)')
+        .eq('status', 'active' as any);
+      if (error) {
+        console.error('Preview: failed to fetch instructors', error);
+        return;
+      }
+      const list = (data || []).map((inst: any) => ({
+        id: inst.id,
+        name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
+        email: inst.profiles?.email || '',
+        sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
+        hourlyRate: inst.hourly_rate || 0,
+      }));
+      setActiveInstructors(list);
+    })();
+  }, []);
+
+  const getEffectiveFee = (id: string, fallback: number) =>
+    feeOverrides[id] ?? fallback;
+
+  const openRateDialog = (id: string) => {
+    const inst = activeInstructors.find(i => i.id === id);
+    if (!inst) return;
+    setRateDialogFor(id);
+    setRateDialogFee(getEffectiveFee(id, inst.sessionFee).toString());
+    setRateDialogHourly(inst.hourlyRate.toString());
+  };
+
+  const saveRateDialog = () => {
+    if (!rateDialogFor) return;
+    const fee = parseFloat(rateDialogFee);
+    if (isNaN(fee) || fee < 0) {
+      alert('Enter a valid flat fee.');
+      return;
+    }
+    setFeeOverrides(prev => ({ ...prev, [rateDialogFor]: fee }));
+    alert(`▶︎ Mock: Updated fee to $${fee}/class for this preview only. Nothing was saved to the database.`);
+    setRateDialogFor(null);
+  };
+
   const ledgerStats = useMemo(() => {
     const unpaid = ledgerRows.filter(r => !r.paid);
     const paid = ledgerRows.filter(r => r.paid);
@@ -158,9 +218,13 @@ const AdminLedgerPreview = () => {
     };
   }, [studentPayments]);
 
-  const instructorList = useMemo(() => {
-    return Array.from(new Set(payrollRecords.map(p => p.instructorName)));
-  }, [payrollRecords]);
+  // Use real active instructors for the dropdown; fall back to seeded names if fetch hasn't returned yet
+  const instructorDropdown = useMemo(() => {
+    if (activeInstructors.length > 0) {
+      return activeInstructors.map(i => ({ id: i.id, name: i.name }));
+    }
+    return Array.from(new Set(payrollRecords.map(p => p.instructorName))).map(n => ({ id: n, name: n }));
+  }, [activeInstructors, payrollRecords]);
 
   const filterStudent = (list: StudentPayment[]) =>
     list.filter(p =>
@@ -182,7 +246,9 @@ const AdminLedgerPreview = () => {
   };
   const generateIndividual = () => {
     if (!selectedInstructor) return alert('Pick an instructor first.');
-    alert(`▶︎ Mock: Would generate payroll for ${selectedInstructor} based on their unpaid ledger entries.`);
+    const inst = activeInstructors.find(i => i.id === selectedInstructor);
+    const name = inst?.name ?? selectedInstructor;
+    alert(`▶︎ Mock: Would generate payroll for ${name} based on their unpaid ledger entries.`);
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
