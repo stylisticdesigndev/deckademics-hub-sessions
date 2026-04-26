@@ -384,6 +384,32 @@ const AdminLedgerPreview = () => {
   };
   const saveExtraPay = () => {
     if (!extraPayFor) return;
+    // Standalone create flow
+    if (extraPayFor === STANDALONE_ID) {
+      if (!standaloneInstructorName) {
+        alert('Please select an instructor.');
+        return;
+      }
+      if (extraPayDraft.length === 0) {
+        alert('Add at least one extra pay line item.');
+        return;
+      }
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const newRec: InstructorPayrollRecord = {
+        id: `pr-extra-${Date.now()}`,
+        instructorName: standaloneInstructorName,
+        pay_period_start: today,
+        pay_period_end: today,
+        hours_worked: 0,
+        amount: 0,
+        extra_pay: extraPayDraft,
+        status: 'pending',
+        payment_date: today,
+      };
+      setPayrollRecords(prev => [newRec, ...prev]);
+      setExtraPayFor(null);
+      return;
+    }
     setPayrollRecords(ps => ps.map(p =>
       p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
     ));
