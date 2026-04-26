@@ -650,33 +650,16 @@ const AdminLedgerPreview = () => {
                           {r.extra_pay.length === 0 ? (
                             '—'
                           ) : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="underline decoration-dotted underline-offset-2 cursor-help"
-                                  >
-                                    ${sumExtraPay(r.extra_pay).toFixed(2)}
-                                    <span className="ml-1 text-xs text-muted-foreground">
-                                      ({r.extra_pay.length})
-                                    </span>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <div className="space-y-1 text-xs">
-                                    {r.extra_pay.map(e => (
-                                      <div key={e.id} className="flex justify-between gap-3">
-                                        <span>
-                                          {format(new Date(e.date), 'MM/dd')} — {e.description || 'Extra pay'}
-                                        </span>
-                                        <span className="font-medium">${e.amount.toFixed(2)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <button
+                              type="button"
+                              onClick={() => setViewExtraPayFor(r.id)}
+                              className="underline decoration-dotted underline-offset-2 hover:text-primary cursor-pointer"
+                            >
+                              ${sumExtraPay(r.extra_pay).toFixed(2)}
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({r.extra_pay.length})
+                              </span>
+                            </button>
                           )}
                         </TableCell>
                         <TableCell className="font-bold">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</TableCell>
