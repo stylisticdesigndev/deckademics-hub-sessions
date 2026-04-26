@@ -184,6 +184,8 @@ const AdminLedgerPreview = () => {
   const [newExtraDesc, setNewExtraDesc] = useState('');
   const [newExtraAmount, setNewExtraAmount] = useState('');
   const [viewExtraPayFor, setViewExtraPayFor] = useState<string | null>(null);
+  // For standalone "Add Extra Pay" — chosen instructor name before the record is created
+  const [standaloneInstructorName, setStandaloneInstructorName] = useState<string>('');
 
   useEffect(() => {
     (async () => {
