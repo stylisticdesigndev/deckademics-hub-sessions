@@ -911,28 +911,41 @@ const AdminInstructorPayments = () => {
                 
                 <span className="text-muted-foreground">Class Amount</span>
                 <span className="text-right">${selectedDetailPayment.totalAmount.toFixed(2)}</span>
-                
-                {selectedDetailPayment.bonusAmount > 0 && (
+              </div>
+
+              {(() => {
+                const items = extrasByPayment(selectedDetailPayment.id);
+                const extraTotal = sumExtras(items);
+                return (
                   <>
-                    <span className="text-muted-foreground">Bonus Amount</span>
-                    <span className="text-right text-primary">${selectedDetailPayment.bonusAmount.toFixed(2)}</span>
-                    
-                    {selectedDetailPayment.bonusDescription && (
-                      <>
-                        <span className="text-muted-foreground">Bonus Description</span>
-                        <span className="text-right italic">{selectedDetailPayment.bonusDescription}</span>
-                      </>
+                    {items.length > 0 && (
+                      <div className="border-t pt-3 space-y-1.5">
+                        <div className="text-sm font-medium">Extra Pay</div>
+                        {items.map((e) => (
+                          <div key={e.id} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {format(new Date(e.event_date), 'MM/dd/yyyy')}
+                              {e.description ? ` — ${e.description}` : ''}
+                            </span>
+                            <span className="font-medium">${Number(e.amount).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-sm font-semibold pt-1">
+                          <span>Extra Pay Subtotal</span>
+                          <span>${extraTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
                     )}
+
+                    <div className="border-t pt-3 flex justify-between items-center">
+                      <span className="font-semibold">Grand Total</span>
+                      <span className="text-lg font-bold">
+                        ${(selectedDetailPayment.totalAmount + extraTotal).toFixed(2)}
+                      </span>
+                    </div>
                   </>
-                )}
-              </div>
-              
-              <div className="border-t pt-3 flex justify-between items-center">
-                <span className="font-semibold">Grand Total</span>
-                <span className="text-lg font-bold">
-                  ${(selectedDetailPayment.totalAmount + selectedDetailPayment.bonusAmount).toFixed(2)}
-                </span>
-              </div>
+                );
+              })()}
               
               {selectedDetailPayment.description && (
                 <div className="text-sm text-muted-foreground border-t pt-3">
