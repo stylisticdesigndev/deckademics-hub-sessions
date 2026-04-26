@@ -180,7 +180,32 @@ const InstructorClasses = () => {
                   <CardTitle className="text-lg">{day}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
+                  {/* Mobile: vertical stacked list */}
+                  <div className="md:hidden divide-y divide-border">
+                    {schedulesByDay[day].map(s => (
+                      <div key={s.id} className="py-3 flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          {s.avatarUrl && <AvatarImage src={s.avatarUrl} alt={s.name} />}
+                          <AvatarFallback className="text-xs bg-muted">{s.initials}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">{s.classTime}</p>
+                        </div>
+                        <Badge variant="outline" className={cn(
+                          "shrink-0",
+                          s.level === 'novice' && "border-green-500/50 text-green-500",
+                          s.level === 'amateur' && "border-yellow-500/50 text-yellow-500",
+                          s.level === 'intermediate' && "border-blue-500/50 text-blue-500",
+                          s.level === 'advanced' && "border-purple-500/50 text-purple-500"
+                        )}>
+                          {s.level.charAt(0).toUpperCase() + s.level.slice(1)}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
