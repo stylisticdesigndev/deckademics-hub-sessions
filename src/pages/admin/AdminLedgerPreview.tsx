@@ -666,6 +666,54 @@ const AdminLedgerPreview = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Classes dialog (preview only) */}
+      <Dialog open={!!editPayrollFor} onOpenChange={(open) => { if (!open) setEditPayrollFor(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit Classes</DialogTitle>
+            <DialogDescription>
+              Adjust the number of classes for this pay period. Total recalculates from the instructor's class rate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-classes">Classes</Label>
+              <Input id="edit-classes" type="number" min="0" value={editPayrollClasses} onChange={(e) => setEditPayrollClasses(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPayrollFor(null)}>Cancel</Button>
+            <Button onClick={saveEditPayroll}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Bonus dialog (preview only) */}
+      <Dialog open={!!bonusFor} onOpenChange={(open) => { if (!open) setBonusFor(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add Bonus</DialogTitle>
+            <DialogDescription>
+              Add a bonus amount to this pending payment. Preview only — nothing saves to the database.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="bonus-amount">Bonus Amount ($)</Label>
+              <Input id="bonus-amount" type="number" step="0.01" min="0" value={bonusAmount} onChange={(e) => setBonusAmount(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bonus-desc">Description (optional)</Label>
+              <Input id="bonus-desc" value={bonusDescription} onChange={(e) => setBonusDescription(e.target.value)} placeholder="e.g. Holiday bonus" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBonusFor(null)}>Cancel</Button>
+            <Button onClick={saveBonus}>Save Bonus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
