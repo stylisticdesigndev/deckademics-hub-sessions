@@ -504,14 +504,31 @@ const AdminLedgerPreview = () => {
   };
   const saveExtraPay = () => {
     if (!extraPayFor) return;
+    const pendingAmount = parseFloat(newExtraAmount);
+    const hasPendingLine = newExtraAmount.trim() !== '' || newExtraDesc.trim() !== '';
+    if (hasPendingLine && (!newExtraDate || isNaN(pendingAmount) || pendingAmount <= 0)) {
+      alert('Enter a valid date and amount for the extra pay item.');
+      return;
+    }
+    const itemsToSave = hasPendingLine
+      ? [
+          ...extraPayDraft,
+          {
+            id: `ep-${Date.now()}`,
+            date: newExtraDate,
+            description: newExtraDesc.trim(),
+            amount: pendingAmount,
+          },
+        ]
+      : extraPayDraft;
+    if (itemsToSave.length === 0) {
+      alert('Add at least one extra pay line item.');
+      return;
+    }
     // Standalone create flow
     if (extraPayFor === STANDALONE_ID) {
       if (!standaloneInstructorName) {
         alert('Please select an instructor.');
-        return;
-      }
-      if (extraPayDraft.length === 0) {
-        alert('Add at least one extra pay line item.');
         return;
       }
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -522,7 +539,7 @@ const AdminLedgerPreview = () => {
         pay_period_end: today,
         hours_worked: 0,
         amount: 0,
-        extra_pay: extraPayDraft,
+        extra_pay: itemsToSave,
         status: 'pending',
         payment_date: today,
       };
@@ -533,8 +550,11 @@ const AdminLedgerPreview = () => {
       return;
     }
     setPayrollRecords(ps => ps.map(p =>
-      p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
+      p.id === extraPayFor ? { ...p, extra_pay: itemsToSave } : p
     ));
+    setSelectedDetailPayment(prev =>
+      prev?.id === extraPayFor ? { ...prev, extra_pay: itemsToSave } : prev
+    );
     toast.success('Extra pay updated');
     setExtraPayFor(null);
   };
