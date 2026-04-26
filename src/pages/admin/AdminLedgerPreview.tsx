@@ -1254,9 +1254,11 @@ interface StudentPaymentsTableProps {
   payments: StudentPayment[];
   onMarkPaid?: (id: string) => void;
   showEditDelete?: boolean;
+  onEdit?: (p: StudentPayment) => void;
+  onDelete?: (id: string) => void;
 }
 
-const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEditDelete }: StudentPaymentsTableProps) => (
+const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEditDelete, onEdit, onDelete }: StudentPaymentsTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-lg">{title}</CardTitle>
