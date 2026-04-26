@@ -38,6 +38,7 @@ export const InstructorNavigation = () => {
     { title: "Classes", icon: Calendar, href: "/instructor/classes" },
     { title: "Attendance", icon: ClipboardCheck, href: "/instructor/attendance" },
     { title: "Curriculum", icon: BookOpen, href: "/instructor/curriculum" },
+    { title: "Pay Ledger", icon: Wallet, href: "/instructor/ledger" },
     { title: "Messages", icon: MessageSquare, href: "/instructor/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
     { title: "Profile", icon: UserCog, href: "/instructor/profile" },
