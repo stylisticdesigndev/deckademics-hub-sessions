@@ -892,7 +892,11 @@ const AdminInstructorPayments = () => {
       <Dialog open={showGenerateDialog} onOpenChange={(open) => { setShowGenerateDialog(open); if (!open) resetGenerateForm(); }}>
         <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
-            <DialogTitle>Generate Pay Period</DialogTitle>
+            <DialogTitle>
+              {generateScopedTo
+                ? `Generate Pay Period — ${instructorsList.find(i => i.id === generateScopedTo)?.name ?? ''}`
+                : 'Generate Pay Period — All Instructors'}
+            </DialogTitle>
             <DialogDescription>
               {generateStep === 'dates' 
                 ? 'Select the pay period dates. The system will calculate hours from each instructor\'s weekly schedule.'
