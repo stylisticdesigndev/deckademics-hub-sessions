@@ -884,7 +884,7 @@ const AdminInstructorPayments = () => {
                 
                 {selectedDetailPayment.paymentType === 'class' && (
                   <>
-                    <span className="text-muted-foreground">Fee per Class</span>
+                    <span className="text-muted-foreground">Class Rate</span>
                     <span className="text-right">
                       ${selectedDetailPayment.hoursLogged > 0
                         ? (selectedDetailPayment.totalAmount / selectedDetailPayment.hoursLogged).toFixed(2)
@@ -948,7 +948,7 @@ const AdminInstructorPayments = () => {
             </DialogTitle>
             <DialogDescription>
               {generateStep === 'dates' 
-                ? 'Select the pay period dates. The system will count scheduled classes from each instructor\'s weekly schedule and multiply by their flat per-class fee.'
+                ? 'Select the pay period dates. The system will count scheduled classes from each instructor\'s weekly schedule and multiply by their class rate.'
                 : 'Review the calculated payments below before confirming.'}
             </DialogDescription>
           </DialogHeader>
@@ -993,7 +993,7 @@ const AdminInstructorPayments = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Instructor</TableHead>
-                      <TableHead className="text-right">Fee / Class</TableHead>
+                      <TableHead className="text-right">Class Rate</TableHead>
                       <TableHead className="text-right">Classes</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
