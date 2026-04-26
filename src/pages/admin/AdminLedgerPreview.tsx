@@ -195,6 +195,18 @@ const AdminLedgerPreview = () => {
 
   // Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog)
   const [createPayOpen, setCreatePayOpen] = useState(false);
+  // Help-video modal (mirrors Nick's payroll tutorial)
+  const [showHelpVideo, setShowHelpVideo] = useState(false);
+  // Payment detail modal for clicking a payroll history row
+  const [selectedDetailPayment, setSelectedDetailPayment] = useState<InstructorPayrollRecord | null>(null);
+  // Pagination for payroll history
+  const HISTORY_PAGE_SIZE = 10;
+  const [historyPage, setHistoryPage] = useState(1);
+  // Edit dialog for student payments (mirrors EditPaymentDialog)
+  const [editStudentPayFor, setEditStudentPayFor] = useState<StudentPayment | null>(null);
+  const [editStudentAmount, setEditStudentAmount] = useState('');
+  const [editStudentDesc, setEditStudentDesc] = useState('');
+  const [editStudentStatus, setEditStudentStatus] = useState<'pending' | 'completed' | 'upcoming'>('pending');
   const COURSE_LEVELS = [
     { value: 'novice', label: 'Novice', total: 330, weeks: 6, fullOnly: true },
     { value: 'amateur', label: 'Amateur', total: 660, weeks: 12, fullOnly: false },
