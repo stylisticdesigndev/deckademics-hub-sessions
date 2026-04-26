@@ -180,6 +180,7 @@ const AdminLedgerPreview = () => {
   const [newExtraDate, setNewExtraDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [newExtraDesc, setNewExtraDesc] = useState('');
   const [newExtraAmount, setNewExtraAmount] = useState('');
+  const [viewExtraPayFor, setViewExtraPayFor] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
