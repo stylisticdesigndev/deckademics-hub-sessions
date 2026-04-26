@@ -160,6 +160,13 @@ const AdminLedgerPreview = () => {
   const [rateDialogFor, setRateDialogFor] = useState<string | null>(null);
   const [rateDialogFee, setRateDialogFee] = useState('');
 
+  // Edit classes + bonus dialogs for pending payroll rows
+  const [editPayrollFor, setEditPayrollFor] = useState<string | null>(null);
+  const [editPayrollClasses, setEditPayrollClasses] = useState('');
+  const [bonusFor, setBonusFor] = useState<string | null>(null);
+  const [bonusAmount, setBonusAmount] = useState('');
+  const [bonusDescription, setBonusDescription] = useState('');
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -303,6 +310,47 @@ const AdminLedgerPreview = () => {
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
+
+  const openEditPayroll = (id: string) => {
+    const rec = payrollRecords.find(p => p.id === id);
+    if (!rec) return;
+    setEditPayrollFor(id);
+    setEditPayrollClasses(rec.hours_worked.toString());
+  };
+  const saveEditPayroll = () => {
+    if (!editPayrollFor) return;
+    const classes = parseInt(editPayrollClasses, 10);
+    if (isNaN(classes) || classes < 0) {
+      alert('Enter a valid number of classes.');
+      return;
+    }
+    setPayrollRecords(ps => ps.map(p => {
+      if (p.id !== editPayrollFor) return p;
+      const rate = p.hours_worked > 0 ? p.amount / p.hours_worked : SESSION_FEE;
+      return { ...p, hours_worked: classes, amount: classes * rate };
+    }));
+    setEditPayrollFor(null);
+  };
+
+  const openBonus = (id: string) => {
+    const rec = payrollRecords.find(p => p.id === id);
+    if (!rec) return;
+    setBonusFor(id);
+    setBonusAmount(rec.bonus_amount ? rec.bonus_amount.toString() : '');
+    setBonusDescription('');
+  };
+  const saveBonus = () => {
+    if (!bonusFor) return;
+    const amount = parseFloat(bonusAmount);
+    if (isNaN(amount) || amount < 0) {
+      alert('Enter a valid bonus amount.');
+      return;
+    }
+    setPayrollRecords(ps => ps.map(p =>
+      p.id === bonusFor ? { ...p, bonus_amount: amount } : p
+    ));
+    setBonusFor(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -572,9 +620,17 @@ const AdminLedgerPreview = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           {r.status === 'pending' && (
-                            <Button size="sm" variant="ghost" onClick={() => markPayrollPaid(r.id)}>
-                              <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
-                            </Button>
+                            <div className="flex gap-1 justify-end flex-wrap">
+                              <Button size="sm" variant="outline" onClick={() => openEditPayroll(r.id)}>
+                                <Edit className="h-4 w-4 mr-1" /> Edit Classes
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openBonus(r.id)}>
+                                <Plus className="h-4 w-4 mr-1" /> Bonus
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => markPayrollPaid(r.id)}>
+                                <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
+                              </Button>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
