@@ -43,6 +43,8 @@ import {
 import { Search, Check, X, Eye, UserRound, Loader2, MessageSquare, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VinylLoader from '@/components/ui/VinylLoader';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
@@ -828,6 +830,21 @@ const AdminStudents = () => {
                   <p className="text-xs text-muted-foreground">Status</p>
                   <p className="text-sm font-medium capitalize">{viewedStudent.enrollment_status}</p>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="two-way-msg" className="text-sm">Two-way messaging</Label>
+                  <p className="text-xs text-muted-foreground">When off, the student can read instructor messages but cannot reply.</p>
+                </div>
+                <Switch
+                  id="two-way-msg"
+                  checked={(viewedStudent as any).two_way_messaging ?? true}
+                  onCheckedChange={async (checked) => {
+                    await supabase.from('students').update({ two_way_messaging: checked }).eq('id', viewedStudent.id);
+                    await refetchData();
+                  }}
+                />
               </div>
 
               <Separator />
