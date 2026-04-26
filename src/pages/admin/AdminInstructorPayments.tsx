@@ -195,7 +195,7 @@ const AdminInstructorPayments = () => {
     
     const fee = parseFloat(newSessionFee);
     if (isNaN(fee) || fee < 0) {
-      toast.error('Please enter a valid session (flat) fee.');
+      toast.error('Please enter a valid class rate.');
       return;
     }
     
@@ -213,8 +213,8 @@ const AdminInstructorPayments = () => {
       const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, sessionFee: fee } : i);
       setInstructorsList(updated);
     } catch (error) {
-      console.error('Error updating session fee:', error);
-      toast.error('Failed to update fee');
+      console.error('Error updating class rate:', error);
+      toast.error('Failed to update rate');
     }
   };
   
