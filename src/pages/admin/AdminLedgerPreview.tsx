@@ -1033,6 +1033,101 @@ const AdminLedgerPreview = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog) */}
+      <Dialog open={createPayOpen} onOpenChange={setCreatePayOpen}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Student Payment</DialogTitle>
+            <DialogDescription>
+              Log a new payment record for a student. Preview only — saves to local state and shows in the Payments table.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="cp-student" className="text-xs">Student name</Label>
+              <Input
+                id="cp-student"
+                placeholder="e.g. Alex Rivera"
+                value={cpStudentName}
+                onChange={(e) => setCpStudentName(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">In Nick's live view this is a dropdown of real students.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs">Course Level</Label>
+                <Select value={cpCourseLevel} onValueChange={setCpCourseLevel}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COURSE_LEVELS.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs">Payment Schedule</Label>
+                <Select value={cpSchedule} onValueChange={(v) => setCpSchedule(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">Pay in Full</SelectItem>
+                    <SelectItem value="biweekly">Bi-weekly Installments</SelectItem>
+                    <SelectItem value="weekly">Weekly Installments</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="cp-amount" className="text-xs">Amount ($)</Label>
+                <Input
+                  id="cp-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cpAmount}
+                  onChange={(e) => setCpAmount(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="cp-date" className="text-xs">Start Date</Label>
+                <Input
+                  id="cp-date"
+                  type="date"
+                  value={cpStartDate}
+                  onChange={(e) => setCpStartDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select value={cpStatus} onValueChange={(v) => setCpStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="cp-desc" className="text-xs">Description (optional)</Label>
+              <Textarea
+                id="cp-desc"
+                rows={2}
+                placeholder="Notes for this payment"
+                value={cpDescription}
+                onChange={(e) => setCpDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreatePayOpen(false)}>Cancel</Button>
+            <Button onClick={saveCreatePayment}>Create Payment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
