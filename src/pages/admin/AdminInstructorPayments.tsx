@@ -1158,29 +1158,23 @@ const AdminInstructorPayments = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Bonus to Row Dialog */}
-      <Dialog open={showAddBonusToRowDialog} onOpenChange={setShowAddBonusToRowDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Add Bonus to Payment</DialogTitle>
-            <DialogDescription>Attach a bonus amount to this class payment</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Bonus Amount ($)</Label>
-              <Input type="number" step="0.01" min="1" placeholder="Enter bonus amount" value={bonusRowAmount} onChange={(e) => setBonusRowAmount(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea placeholder="e.g., Event DJ, Extra class..." value={bonusRowDescription} onChange={(e) => setBonusRowDescription(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddBonusToRowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveBonusToRow}>Save Bonus</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Extra Pay dialog (replaces legacy single-bonus flow) */}
+      <ExtraPayDialog
+        open={showExtraPayDialog}
+        onOpenChange={(o) => {
+          setShowExtraPayDialog(o);
+          if (!o) {
+            setExtraPayPaymentId(null);
+            setExtraPayInstructorId(null);
+            setExtraPayInstructorName('');
+          }
+        }}
+        paymentId={extraPayPaymentId}
+        instructorId={extraPayInstructorId}
+        instructorName={extraPayInstructorName}
+        existing={extraPayPaymentId ? extrasByPayment(extraPayPaymentId) : []}
+        onSaved={invalidate}
+      />
 
       {/* Delete Payment Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
