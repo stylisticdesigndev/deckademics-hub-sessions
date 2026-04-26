@@ -28,7 +28,7 @@ import {
 
 import { Calendar } from '@/components/ui/calendar';
 import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
-import { ChevronDown, User as UserIcon } from 'lucide-react';
+import { ChevronDown, User as UserIcon, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,14 +54,13 @@ import {
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
+import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
 
 interface Instructor {
   id: string;
   name: string;
   email: string;
-  hourlyRate: number;
   sessionFee: number;
   specialization: string;
 }
@@ -87,11 +86,11 @@ const AdminInstructorPayments = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generateScopedTo, setGenerateScopedTo] = useState<string | null>(null); // null = all
+  // Multi-select: empty array = ALL instructors
+  const [generateScopedIds, setGenerateScopedIds] = useState<string[]>([]);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
-  const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   const [newSessionFee, setNewSessionFee] = useState<string>('');
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
@@ -116,7 +115,7 @@ const AdminInstructorPayments = () => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, hourly_rate, session_fee, specialties, profiles (first_name, last_name, email)')
+        .select('id, session_fee, specialties, profiles (first_name, last_name, email)')
         .eq('status', 'active' as any);
       
       if (error) {
@@ -128,7 +127,6 @@ const AdminInstructorPayments = () => {
         id: inst.id,
         name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
         email: inst.profiles?.email || '',
-        hourlyRate: inst.hourly_rate || 0,
         sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
         specialization: inst.specialties?.join(', ') || 'DJ Instruction',
       }));
@@ -181,7 +179,6 @@ const AdminInstructorPayments = () => {
   
   const openSetRateDialog = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
-    setNewHourlyRate(instructor.hourlyRate.toString());
     setNewSessionFee(instructor.sessionFee.toString());
     setShowSetRateDialog(true);
   };
@@ -196,12 +193,7 @@ const AdminInstructorPayments = () => {
   const handleUpdateHourlyRate = async () => {
     if (!selectedInstructor) return;
     
-    const rate = parseFloat(newHourlyRate);
     const fee = parseFloat(newSessionFee);
-    if (isNaN(rate) || rate < 0) {
-      toast.error('Please enter a valid hourly rate.');
-      return;
-    }
     if (isNaN(fee) || fee < 0) {
       toast.error('Please enter a valid session (flat) fee.');
       return;
@@ -210,19 +202,19 @@ const AdminInstructorPayments = () => {
     try {
       const { error } = await supabase
         .from('instructors')
-        .update({ hourly_rate: rate, session_fee: fee } as any)
+        .update({ session_fee: fee } as any)
         .eq('id', selectedInstructor.id as any);
       
       if (error) throw error;
       
-      toast.success(`${selectedInstructor.name} updated — $${fee}/session, $${rate}/hr`);
+      toast.success(`${selectedInstructor.name} updated — $${fee}/class`);
       setShowSetRateDialog(false);
       setSelectedInstructor(null);
-      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, hourlyRate: rate, sessionFee: fee } : i);
+      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, sessionFee: fee } : i);
       setInstructorsList(updated);
     } catch (error) {
-      console.error('Error updating hourly rate:', error);
-      toast.error('Failed to update rates');
+      console.error('Error updating session fee:', error);
+      toast.error('Failed to update fee');
     }
   };
   
@@ -231,7 +223,7 @@ const AdminInstructorPayments = () => {
     
     const hours = parseFloat(hoursToChange);
     if (isNaN(hours) || hours <= 0) {
-      toast.error('Please enter a valid number of hours.');
+      toast.error('Please enter a valid number of classes.');
       return;
     }
     
@@ -243,7 +235,11 @@ const AdminInstructorPayments = () => {
         ? payment.hoursLogged + hours 
         : Math.max(0, payment.hoursLogged - hours);
       
-      const newTotal = newHours * payment.hourlyRate;
+      // hoursLogged is repurposed as "sessions" for class-type payments
+      const perSession = payment.hoursLogged > 0
+        ? payment.totalAmount / payment.hoursLogged
+        : payment.hourlyRate || 50;
+      const newTotal = newHours * perSession;
       
       const { error } = await supabase
         .from('instructor_payments')
@@ -252,13 +248,13 @@ const AdminInstructorPayments = () => {
       
       if (error) throw error;
       
-      toast.success(`${hours} hours ${hoursOperation === 'add' ? 'added' : 'subtracted'}`);
+      toast.success(`${hours} class${hours === 1 ? '' : 'es'} ${hoursOperation === 'add' ? 'added' : 'subtracted'}`);
       setShowEditHoursDialog(false);
       setEditPaymentId(null);
       invalidate();
     } catch (error) {
-      console.error('Error updating hours:', error);
-      toast.error('Failed to update hours');
+      console.error('Error updating classes:', error);
+      toast.error('Failed to update classes');
     }
   };
 
@@ -357,7 +353,7 @@ const AdminInstructorPayments = () => {
     setDateRange(undefined);
     setGeneratedPayments([]);
     setGenerateStep('dates');
-    setGenerateScopedTo(null);
+    setGenerateScopedIds([]);
   };
 
   const handleGeneratePreview = async () => {
@@ -392,8 +388,8 @@ const AdminInstructorPayments = () => {
 
       const preview: GeneratedPayment[] = [];
 
-      const scopedList = generateScopedTo
-        ? instructorsList.filter(i => i.id === generateScopedTo)
+      const scopedList = generateScopedIds.length > 0
+        ? instructorsList.filter(i => generateScopedIds.includes(i.id))
         : instructorsList;
 
       for (const inst of scopedList) {
@@ -409,19 +405,19 @@ const AdminInstructorPayments = () => {
         const schedules = schedulesByInstructor[inst.id];
         if (!schedules || schedules.length === 0) continue;
 
-        const { totalHours, totalAmount } = calculateScheduledHours(
+        const { totalSessions, totalAmount } = calculateScheduledSessions(
           schedules,
           dateRange.from,
           dateRange.to,
-          inst.hourlyRate
+          inst.sessionFee
         );
 
-        if (totalHours > 0) {
+        if (totalSessions > 0) {
           preview.push({
             instructorId: inst.id,
             instructorName: inst.name,
-            hourlyRate: inst.hourlyRate,
-            totalHours,
+            sessionFee: inst.sessionFee,
+            totalSessions,
             totalAmount,
           });
         }
@@ -455,7 +451,7 @@ const AdminInstructorPayments = () => {
         await createPayment({
           instructor_id: gp.instructorId,
           amount: gp.totalAmount,
-          hours_worked: gp.totalHours,
+          hours_worked: gp.totalSessions,
           pay_period_start: startStr,
           pay_period_end: endStr,
           payment_type: 'class',
