@@ -28,6 +28,15 @@ import {
 
 import { Calendar } from '@/components/ui/calendar';
 import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
+import { ChevronDown, User as UserIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -77,6 +86,7 @@ const AdminInstructorPayments = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateScopedTo, setGenerateScopedTo] = useState<string | null>(null); // null = all
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
@@ -338,6 +348,7 @@ const AdminInstructorPayments = () => {
     setDateRange(undefined);
     setGeneratedPayments([]);
     setGenerateStep('dates');
+    setGenerateScopedTo(null);
   };
 
   const handleGeneratePreview = async () => {
@@ -372,7 +383,11 @@ const AdminInstructorPayments = () => {
 
       const preview: GeneratedPayment[] = [];
 
-      for (const inst of instructorsList) {
+      const scopedList = generateScopedTo
+        ? instructorsList.filter(i => i.id === generateScopedTo)
+        : instructorsList;
+
+      for (const inst of scopedList) {
         const hasOverlap = pendingPayments.some(p => 
           p.instructorId === inst.id && 
           p.paymentType === 'class' &&
@@ -486,10 +501,41 @@ const AdminInstructorPayments = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
-            <Zap className="mr-1 h-4 w-4" />
-            Generate Pay Period
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
+              <Zap className="mr-1 h-4 w-4" />
+              Generate All
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <UserIcon className="mr-1 h-4 w-4" />
+                  Generate Individual
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+                <DropdownMenuLabel>Choose an instructor</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {instructorsList.length === 0 ? (
+                  <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
+                ) : (
+                  instructorsList.map(inst => (
+                    <DropdownMenuItem
+                      key={inst.id}
+                      onClick={() => {
+                        resetGenerateForm();
+                        setGenerateScopedTo(inst.id);
+                        setShowGenerateDialog(true);
+                      }}
+                    >
+                      {inst.name}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Help Video Dialog */}
@@ -846,7 +892,11 @@ const AdminInstructorPayments = () => {
       <Dialog open={showGenerateDialog} onOpenChange={(open) => { setShowGenerateDialog(open); if (!open) resetGenerateForm(); }}>
         <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
-            <DialogTitle>Generate Pay Period</DialogTitle>
+            <DialogTitle>
+              {generateScopedTo
+                ? `Generate Pay Period — ${instructorsList.find(i => i.id === generateScopedTo)?.name ?? ''}`
+                : 'Generate Pay Period — All Instructors'}
+            </DialogTitle>
             <DialogDescription>
               {generateStep === 'dates' 
                 ? 'Select the pay period dates. The system will calculate hours from each instructor\'s weekly schedule.'

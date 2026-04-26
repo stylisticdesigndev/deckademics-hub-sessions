@@ -836,16 +836,16 @@ const AdminStudents = () => {
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div className="space-y-0.5">
                   <Label htmlFor="two-way-msg" className="text-sm">Two-way messaging</Label>
-                  <p className="text-xs text-muted-foreground">When off, the student can read instructor messages but cannot reply.</p>
+                  <p className="text-xs text-muted-foreground">Controlled by the assigned instructor.</p>
                 </div>
-                <Switch
-                  id="two-way-msg"
-                  checked={(viewedStudent as any).two_way_messaging ?? true}
-                  onCheckedChange={async (checked) => {
-                    await supabase.from('students').update({ two_way_messaging: checked }).eq('id', viewedStudent.id);
-                    await refetchData();
-                  }}
-                />
+                <Badge
+                  variant="outline"
+                  className={(viewedStudent as any).two_way_messaging === false
+                    ? "border-yellow-500/50 text-yellow-500"
+                    : "border-green-500/50 text-green-500"}
+                >
+                  {(viewedStudent as any).two_way_messaging === false ? 'Read-only' : 'Enabled'}
+                </Badge>
               </div>
 
               <Separator />

@@ -100,6 +100,7 @@ const StudentMessages = () => {
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
+  const [twoWayEnabled, setTwoWayEnabled] = useState<boolean>(true);
 
   const isDemoMode = !session || demoMode;
   const userId = session?.user?.id;
@@ -124,6 +125,12 @@ const StudentMessages = () => {
       return;
     }
     fetchData();
+    if (userId) {
+      supabase.from('students').select('two_way_messaging').eq('id', userId).maybeSingle()
+        .then(({ data }: any) => {
+          if (data) setTwoWayEnabled(data.two_way_messaging !== false);
+        });
+    }
   }, [isDemoMode]);
 
   const fetchData = async () => {
@@ -442,6 +449,7 @@ const StudentMessages = () => {
           onBack={() => setActiveInstructorId(null)}
           onSaveToNotes={handleSaveToNotes}
           savedMessageIds={savedMessageIds}
+          replyDisabled={!isDemoMode && !twoWayEnabled}
         />
       </div>
     );
