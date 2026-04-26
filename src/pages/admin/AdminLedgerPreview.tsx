@@ -269,6 +269,43 @@ const AdminLedgerPreview = () => {
     setCreatePayOpen(false);
   };
 
+  // Edit/Delete student payments (mock-only)
+  const openEditStudentPay = (p: StudentPayment) => {
+    setEditStudentPayFor(p);
+    setEditStudentAmount(p.amount.toString());
+    setEditStudentDesc(p.description);
+    setEditStudentStatus(p.status);
+  };
+  const saveEditStudentPay = () => {
+    if (!editStudentPayFor) return;
+    const amt = parseFloat(editStudentAmount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Enter a valid amount.');
+      return;
+    }
+    setStudentPayments(ps => ps.map(p =>
+      p.id === editStudentPayFor.id
+        ? { ...p, amount: amt, description: editStudentDesc, status: editStudentStatus }
+        : p
+    ));
+    setEditStudentPayFor(null);
+  };
+  const deleteStudentPay = (id: string) => {
+    if (!confirm('Delete this payment record? (Preview only)')) return;
+    setStudentPayments(ps => ps.filter(p => p.id !== id));
+  };
+
+  // Pagination derived for payroll history
+  const totalHistoryPages = Math.max(1, Math.ceil(payrollRecords.length / HISTORY_PAGE_SIZE));
+  const paginatedPayroll = payrollRecords.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE,
+  );
+  // Reset to page 1 if the list shrinks past current page
+  useEffect(() => {
+    if (historyPage > totalHistoryPages) setHistoryPage(1);
+  }, [historyPage, totalHistoryPages]);
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
