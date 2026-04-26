@@ -193,11 +193,11 @@ const AdminLedgerPreview = () => {
     if (!rateDialogFor) return;
     const fee = parseFloat(rateDialogFee);
     if (isNaN(fee) || fee < 0) {
-      alert('Enter a valid flat fee.');
+      alert('Enter a valid class rate.');
       return;
     }
     setFeeOverrides(prev => ({ ...prev, [rateDialogFor]: fee }));
-    alert(`▶︎ Mock: Updated fee to $${fee}/class for this preview only. Nothing was saved to the database.`);
+    alert(`▶︎ Mock: Updated rate to $${fee}/class for this preview only. Nothing was saved to the database.`);
     setRateDialogFor(null);
   };
 
@@ -446,7 +446,7 @@ const AdminLedgerPreview = () => {
             <CardHeader>
               <CardTitle className="text-lg">Instructor Rates</CardTitle>
               <CardDescription>
-                Update the flat fee per class. <strong>Preview only — changes are local and not saved.</strong>
+                Update the class rate. <strong>Preview only — changes are local and not saved.</strong>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -459,7 +459,7 @@ const AdminLedgerPreview = () => {
                       <TableRow>
                         <TableHead>Instructor</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead className="text-right">Flat Fee / Class</TableHead>
+                        <TableHead className="text-right">Class Rate</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -477,7 +477,7 @@ const AdminLedgerPreview = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <Button variant="outline" size="sm" onClick={() => openRateDialog(inst.id)}>
-                                Update Fee
+                                Update Rate
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -546,7 +546,7 @@ const AdminLedgerPreview = () => {
             <div>
               <h2 className="text-xl font-bold">Pay Ledger — Instructor View</h2>
               <p className="text-sm text-muted-foreground">
-                What an instructor sees: flat <strong>${SESSION_FEE}</strong> per scheduled slot, paid once per slot regardless of attendee count.
+                What an instructor sees: <strong>${SESSION_FEE}</strong> class rate per scheduled slot, paid once per slot regardless of attendee count.
               </p>
             </div>
             <Button onClick={markLedgerAllPaid}>Mark All Paid</Button>
@@ -577,7 +577,7 @@ const AdminLedgerPreview = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Time Slot</TableHead>
                       <TableHead>Attendees</TableHead>
-                      <TableHead>Session Fee</TableHead>
+                      <TableHead>Class Rate</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -599,7 +599,7 @@ const AdminLedgerPreview = () => {
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground mt-4">
-                ✅ Even when multiple students attend, the session fee stays at ${SESSION_FEE} — the instructor is paid once per slot.
+                ✅ Even when multiple students attend, the class rate stays at ${SESSION_FEE} — the instructor is paid once per slot.
               </p>
             </CardContent>
           </Card>
@@ -610,21 +610,21 @@ const AdminLedgerPreview = () => {
       <Dialog open={!!rateDialogFor} onOpenChange={(open) => { if (!open) setRateDialogFor(null); }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Flat Fee per Class</DialogTitle>
+            <DialogTitle>Update Class Rate</DialogTitle>
             <DialogDescription>
-              {rateDialogFor && `Set the flat per-class fee for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
+              {rateDialogFor && `Set the class rate for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="preview-fee">Flat Fee per Class ($)</Label>
+              <Label htmlFor="preview-fee">Class Rate ($)</Label>
               <Input id="preview-fee" type="number" step="0.50" min="0" value={rateDialogFee} onChange={(e) => setRateDialogFee(e.target.value)} />
               <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRateDialogFor(null)}>Cancel</Button>
-            <Button onClick={saveRateDialog}>Save Fee</Button>
+            <Button onClick={saveRateDialog}>Save Rate</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
