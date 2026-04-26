@@ -620,7 +620,7 @@ const AdminInstructorPayments = () => {
         <Card>
           <CardHeader>
             <CardTitle>Instructor Rates</CardTitle>
-            <CardDescription>Manage the flat per-class fee paid to each instructor</CardDescription>
+            <CardDescription>Manage the class rate paid to each instructor</CardDescription>
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
@@ -630,7 +630,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
-                    <TableHead className="text-right">Flat Fee / Class</TableHead>
+                    <TableHead className="text-right">Class Rate</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -648,7 +648,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Fee
+                            Update Rate
                           </Button>
                         </div>
                       </TableCell>
@@ -676,7 +676,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Fee / Class</TableHead>
+                    <TableHead className="text-right">Class Rate</TableHead>
                     <TableHead className="text-right">Classes</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
