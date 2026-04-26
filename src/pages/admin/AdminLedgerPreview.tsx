@@ -620,14 +620,24 @@ const AdminLedgerPreview = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           {r.status === 'pending' && (
-                            <div className="flex gap-1 justify-end flex-wrap">
-                              <Button size="sm" variant="outline" onClick={() => openEditPayroll(r.id)}>
-                                <Edit className="h-4 w-4 mr-1" /> Edit Classes
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => openBonus(r.id)}>
-                                <Plus className="h-4 w-4 mr-1" /> Bonus
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => markPayrollPaid(r.id)}>
+                            <div className="flex gap-2 justify-end items-center flex-nowrap whitespace-nowrap">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="outline">
+                                    <Edit className="h-4 w-4 mr-1" /> Edit
+                                    <ChevronDown className="h-4 w-4 ml-1" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => openEditPayroll(r.id)}>
+                                    <Edit className="h-4 w-4 mr-2" /> Edit Classes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => openBonus(r.id)}>
+                                    <Plus className="h-4 w-4 mr-2" /> Add Bonus
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <Button size="sm" onClick={() => markPayrollPaid(r.id)}>
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
                               </Button>
                             </div>
