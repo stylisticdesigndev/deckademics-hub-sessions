@@ -122,13 +122,14 @@ const seedInstructorPayroll = (): InstructorPayrollRecord[] => {
     for (let p = 0; p < 3; p++) {
       const start = subDays(new Date(), (p + 1) * 14);
       const end = subDays(start, -13);
+      const classes = 8 + i * 2 + p;
       out.push({
         id: `ip-${i}-${p}`,
         instructorName: name,
         pay_period_start: format(start, 'yyyy-MM-dd'),
         pay_period_end: format(end, 'yyyy-MM-dd'),
-        hours_worked: 12 + (i + p) * 1.5,
-        amount: (12 + (i + p) * 1.5) * SESSION_FEE,
+        hours_worked: classes,
+        amount: classes * SESSION_FEE,
         bonus_amount: p === 0 && i === 0 ? 100 : 0,
         status: p === 0 ? 'pending' : 'paid',
         payment_date: format(end, 'yyyy-MM-dd'),
@@ -502,7 +503,9 @@ const AdminLedgerPreview = () => {
                     <TableRow>
                       <TableHead>Instructor</TableHead>
                       <TableHead>Pay Period</TableHead>
-                      <TableHead>Hours</TableHead>
+                      <TableHead>Classes</TableHead>
+                      <TableHead>Class Rate</TableHead>
+                      <TableHead>Base Pay</TableHead>
                       <TableHead>Bonus</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
@@ -517,6 +520,8 @@ const AdminLedgerPreview = () => {
                           {format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}
                         </TableCell>
                         <TableCell>{r.hours_worked}</TableCell>
+                        <TableCell>${SESSION_FEE}/class</TableCell>
+                        <TableCell>${r.amount.toFixed(2)}</TableCell>
                         <TableCell>{r.bonus_amount > 0 ? `$${r.bonus_amount.toFixed(2)}` : '—'}</TableCell>
                         <TableCell className="font-bold">${(r.amount + r.bonus_amount).toFixed(2)}</TableCell>
                         <TableCell>
