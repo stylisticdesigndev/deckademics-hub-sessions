@@ -1021,20 +1021,26 @@ const AdminInstructorPayments = () => {
       <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Set Hourly Rate</DialogTitle>
+            <DialogTitle>Update Instructor Rates</DialogTitle>
             <DialogDescription>
-              {selectedInstructor && `Update hourly rate for ${selectedInstructor.name}`}
+              {selectedInstructor && `Set the per-class flat fee and hourly rate for ${selectedInstructor.name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="sessionFee">Flat Fee per Class ($)</Label>
+              <Input id="sessionFee" type="number" step="0.50" min="0" placeholder="e.g. 50" value={newSessionFee} onChange={(e) => setNewSessionFee(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Used by the Pay Ledger — instructor earns this each scheduled class slot.</p>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="rate">Hourly Rate ($)</Label>
               <Input id="rate" type="number" step="0.50" min="1" placeholder="Enter hourly rate" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Used by Generate Pay Period to calculate hours × rate.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateHourlyRate}>Save Rate</Button>
+            <Button onClick={handleUpdateHourlyRate}>Save Rates</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
