@@ -10,6 +10,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RunningLateButton } from '@/components/student/RunningLateButton';
 import {
   mockStudentData,
   mockSkills,
@@ -110,15 +111,18 @@ const StudentDashboard = ({
             Your instructor: <span className="text-primary font-medium">{activeStudentData.instructor !== 'Not assigned' ? activeStudentData.instructor : 'Not yet assigned'}</span>
           </p>
         </div>
-        <Button
-          variant={demoMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDemoMode(!demoMode)}
-          className="flex items-center gap-2"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <RunningLateButton studentId={studentId} disabled={demoMode} />
+          <Button
+            variant={demoMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="flex items-center gap-2"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
+        </div>
       </section>
 
       {fetchError && !demoMode && (
