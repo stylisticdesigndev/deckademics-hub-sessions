@@ -444,8 +444,9 @@ export type Database = {
       }
       instructor_ledger_entries: {
         Row: {
-          amount: number | null
+          amount: number
           class_date: string
+          class_time: string | null
           created_at: string
           hourly_rate: number
           hours: number
@@ -457,8 +458,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          amount?: number | null
+          amount?: number
           class_date: string
+          class_time?: string | null
           created_at?: string
           hourly_rate?: number
           hours?: number
@@ -470,8 +472,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          amount?: number | null
+          amount?: number
           class_date?: string
+          class_time?: string | null
           created_at?: string
           hourly_rate?: number
           hours?: number
@@ -580,6 +583,7 @@ export type Database = {
           bio: string | null
           hourly_rate: number | null
           id: string
+          session_fee: number
           specialties: string[] | null
           status: string | null
           years_experience: number | null
@@ -588,6 +592,7 @@ export type Database = {
           bio?: string | null
           hourly_rate?: number | null
           id: string
+          session_fee?: number
           specialties?: string[] | null
           status?: string | null
           years_experience?: number | null
@@ -596,6 +601,7 @@ export type Database = {
           bio?: string | null
           hourly_rate?: number | null
           id?: string
+          session_fee?: number
           specialties?: string[] | null
           status?: string | null
           years_experience?: number | null

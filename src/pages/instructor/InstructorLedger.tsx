@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Wallet, Clock, DollarSign } from 'lucide-react';
+import { Wallet, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { format } from 'date-fns';
@@ -13,8 +13,7 @@ import { format } from 'date-fns';
 interface LedgerRow {
   id: string;
   class_date: string;
-  hours: number;
-  hourly_rate: number;
+  class_time: string | null;
   amount: number | null;
   payment_id: string | null;
   student_id: string;
@@ -33,7 +32,7 @@ const InstructorLedger = () => {
       setLoading(true);
       const { data } = await supabase
         .from('instructor_ledger_entries')
-        .select('id, class_date, hours, hourly_rate, amount, payment_id, student_id')
+        .select('id, class_date, class_time, amount, payment_id, student_id')
         .eq('instructor_id', instructorId)
         .order('class_date', { ascending: false });
 
@@ -42,7 +41,7 @@ const InstructorLedger = () => {
         const { data: profs } = await supabase
           .from('profiles').select('id, first_name, last_name').in('id', ids);
         const map = new Map((profs ?? []).map(p => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Student']));
-        setRows(data.map(r => ({ ...r, amount: r.amount ?? Number(r.hours) * Number(r.hourly_rate), student_name: map.get(r.student_id) })));
+        setRows(data.map((r: any) => ({ ...r, student_name: map.get(r.student_id) })));
       } else {
         setRows([]);
       }
@@ -54,10 +53,9 @@ const InstructorLedger = () => {
     const unpaid = rows.filter(r => !r.payment_id);
     const paid = rows.filter(r => r.payment_id);
     const sum = (xs: LedgerRow[]) => xs.reduce((a, r) => a + (Number(r.amount) || 0), 0);
-    const hrs = (xs: LedgerRow[]) => xs.reduce((a, r) => a + Number(r.hours), 0);
     return {
       unpaidAmt: sum(unpaid), paidAmt: sum(paid),
-      unpaidHrs: hrs(unpaid), totalSessions: rows.length,
+      unpaidSessions: unpaid.length, totalSessions: rows.length,
     };
   }, [rows]);
 
@@ -66,7 +64,7 @@ const InstructorLedger = () => {
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-bold">Pay Ledger</h1>
-          <p className="text-muted-foreground mt-1">Auto-generated from your marked attendance (1.5 hrs/session × your rate).</p>
+          <p className="text-muted-foreground mt-1">Auto-generated from your marked attendance — flat fee per class session. You earn once per scheduled time slot, regardless of how many students attend.</p>
         </section>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -75,8 +73,8 @@ const InstructorLedger = () => {
             <CardContent><div className="text-2xl font-bold">${stats.unpaidAmt.toFixed(2)}</div></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" /> Unpaid Hours</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold">{stats.unpaidHrs.toFixed(1)}</div></CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Unpaid Sessions</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{stats.unpaidSessions}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Lifetime Paid</CardTitle></CardHeader>
@@ -97,10 +95,8 @@ const InstructorLedger = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Hours</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Amount</TableHead>
+                      <TableHead>Time Slot</TableHead>
+                      <TableHead>Session Fee</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -108,9 +104,7 @@ const InstructorLedger = () => {
                     {rows.map(r => (
                       <TableRow key={r.id}>
                         <TableCell>{format(new Date(r.class_date), 'MM/dd/yyyy')}</TableCell>
-                        <TableCell>{r.student_name}</TableCell>
-                        <TableCell>{Number(r.hours).toFixed(1)}</TableCell>
-                        <TableCell>${Number(r.hourly_rate).toFixed(2)}</TableCell>
+                        <TableCell>{r.class_time || '—'}</TableCell>
                         <TableCell className="font-medium">${Number(r.amount ?? 0).toFixed(2)}</TableCell>
                         <TableCell>
                           {r.payment_id
