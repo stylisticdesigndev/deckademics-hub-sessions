@@ -6,14 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
-  CreditCard, Plus, Edit, Trash2, CheckCircle2,
+  CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
 } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 
@@ -138,24 +146,24 @@ const AdminLedgerPreview = () => {
   const [studentPayments, setStudentPayments] = useState<StudentPayment[]>(seedStudentPayments());
   const [payrollRecords, setPayrollRecords] = useState<InstructorPayrollRecord[]>(seedInstructorPayroll());
   const [search, setSearch] = useState('');
-  const [selectedInstructor, setSelectedInstructor] = useState<string>('');
+  // Multi-select: empty array = ALL active instructors
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<string[]>([]);
 
   // Real active instructors (read-only fetch, used to populate dropdown + rate editor)
   const [activeInstructors, setActiveInstructors] = useState<{
-    id: string; name: string; email: string; sessionFee: number; hourlyRate: number;
+    id: string; name: string; email: string; sessionFee: number;
   }[]>([]);
 
   // Local mock overrides for session fee per instructor (does NOT save to DB)
   const [feeOverrides, setFeeOverrides] = useState<Record<string, number>>({});
   const [rateDialogFor, setRateDialogFor] = useState<string | null>(null);
   const [rateDialogFee, setRateDialogFee] = useState('');
-  const [rateDialogHourly, setRateDialogHourly] = useState('');
 
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, hourly_rate, session_fee, profiles (first_name, last_name, email)')
+        .select('id, session_fee, profiles (first_name, last_name, email)')
         .eq('status', 'active' as any);
       if (error) {
         console.error('Preview: failed to fetch instructors', error);
@@ -166,7 +174,6 @@ const AdminLedgerPreview = () => {
         name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
         email: inst.profiles?.email || '',
         sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
-        hourlyRate: inst.hourly_rate || 0,
       }));
       setActiveInstructors(list);
     })();
@@ -180,7 +187,6 @@ const AdminLedgerPreview = () => {
     if (!inst) return;
     setRateDialogFor(id);
     setRateDialogFee(getEffectiveFee(id, inst.sessionFee).toString());
-    setRateDialogHourly(inst.hourlyRate.toString());
   };
 
   const saveRateDialog = () => {
@@ -244,11 +250,13 @@ const AdminLedgerPreview = () => {
   const generateAll = () => {
     alert('▶︎ Mock: Would generate payroll for ALL active instructors based on attendance ledger.');
   };
-  const generateIndividual = () => {
-    if (!selectedInstructor) return alert('Pick an instructor first.');
-    const inst = activeInstructors.find(i => i.id === selectedInstructor);
-    const name = inst?.name ?? selectedInstructor;
-    alert(`▶︎ Mock: Would generate payroll for ${name} based on their unpaid ledger entries.`);
+  const generateSelected = () => {
+    if (selectedInstructorIds.length === 0)
+      return alert('Pick at least one instructor first.');
+    const names = selectedInstructorIds
+      .map(id => activeInstructors.find(i => i.id === id)?.name ?? id)
+      .join(', ');
+    alert(`▶︎ Mock: Would generate payroll for ${selectedInstructorIds.length} instructor(s): ${names}.`);
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
@@ -370,20 +378,62 @@ const AdminLedgerPreview = () => {
               <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
             </div>
             <div className="flex gap-2 items-center">
-              <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Pick instructor..." />
-                </SelectTrigger>
-                <SelectContent>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <UserIcon className="h-4 w-4 mr-1" />
+                    Pick Instructors
+                    {selectedInstructorIds.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{selectedInstructorIds.length}</Badge>
+                    )}
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                  <DropdownMenuLabel>Pick one or more instructors</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {instructorDropdown.length === 0 ? (
-                    <SelectItem value="__none__" disabled>No active instructors</SelectItem>
+                    <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
                   ) : (
-                    instructorDropdown.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)
+                    <>
+                      {instructorDropdown.map(i => {
+                        const checked = selectedInstructorIds.includes(i.id);
+                        return (
+                          <DropdownMenuItem
+                            key={i.id}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setSelectedInstructorIds(prev =>
+                                prev.includes(i.id)
+                                  ? prev.filter(id => id !== i.id)
+                                  : [...prev, i.id]
+                              );
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Checkbox checked={checked} className="pointer-events-none" />
+                            <span className="flex-1">{i.name}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setSelectedInstructorIds([])}
+                          disabled={selectedInstructorIds.length === 0}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </>
                   )}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={generateIndividual}>
-                <Plus className="h-4 w-4 mr-1" /> Generate Individual
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" onClick={generateSelected} disabled={selectedInstructorIds.length === 0}>
+                <Plus className="h-4 w-4 mr-1" /> Generate Selected
               </Button>
               <Button onClick={generateAll}>
                 <Plus className="h-4 w-4 mr-1" /> Generate All
@@ -396,7 +446,7 @@ const AdminLedgerPreview = () => {
             <CardHeader>
               <CardTitle className="text-lg">Instructor Rates</CardTitle>
               <CardDescription>
-                Update the per-class flat fee and hourly rate. <strong>Preview only — changes are local and not saved.</strong>
+                Update the flat fee per class. <strong>Preview only — changes are local and not saved.</strong>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -410,7 +460,6 @@ const AdminLedgerPreview = () => {
                         <TableHead>Instructor</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead className="text-right">Flat Fee / Class</TableHead>
-                        <TableHead className="text-right">Hourly Rate</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -426,10 +475,9 @@ const AdminLedgerPreview = () => {
                               ${fee}/class
                               {overridden && <Badge variant="secondary" className="ml-2">preview</Badge>}
                             </TableCell>
-                            <TableCell className="text-right">${inst.hourlyRate}/hr</TableCell>
                             <TableCell className="text-right">
                               <Button variant="outline" size="sm" onClick={() => openRateDialog(inst.id)}>
-                                Update Rates
+                                Update Fee
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -562,26 +610,21 @@ const AdminLedgerPreview = () => {
       <Dialog open={!!rateDialogFor} onOpenChange={(open) => { if (!open) setRateDialogFor(null); }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Instructor Rates</DialogTitle>
+            <DialogTitle>Update Flat Fee per Class</DialogTitle>
             <DialogDescription>
-              {rateDialogFor && `Set the per-class flat fee and hourly rate for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
+              {rateDialogFor && `Set the flat per-class fee for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="preview-fee">Flat Fee per Class ($)</Label>
               <Input id="preview-fee" type="number" step="0.50" min="0" value={rateDialogFee} onChange={(e) => setRateDialogFee(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by the Pay Ledger — instructor earns this each scheduled class slot.</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="preview-rate">Hourly Rate ($)</Label>
-              <Input id="preview-rate" type="number" step="0.50" min="0" value={rateDialogHourly} onChange={(e) => setRateDialogHourly(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by Generate Pay Period to calculate hours × rate.</p>
+              <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRateDialogFor(null)}>Cancel</Button>
-            <Button onClick={saveRateDialog}>Save Rates</Button>
+            <Button onClick={saveRateDialog}>Save Fee</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

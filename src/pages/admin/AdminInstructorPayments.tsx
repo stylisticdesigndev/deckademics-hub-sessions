@@ -28,7 +28,7 @@ import {
 
 import { Calendar } from '@/components/ui/calendar';
 import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
-import { ChevronDown, User as UserIcon } from 'lucide-react';
+import { ChevronDown, User as UserIcon, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,14 +54,13 @@ import {
 import { useInstructorPayments, InstructorPayment } from '@/hooks/useInstructorPayments';
 import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateScheduledHours, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
+import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
 
 interface Instructor {
   id: string;
   name: string;
   email: string;
-  hourlyRate: number;
   sessionFee: number;
   specialization: string;
 }
@@ -87,11 +86,11 @@ const AdminInstructorPayments = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generateScopedTo, setGenerateScopedTo] = useState<string | null>(null); // null = all
+  // Multi-select: empty array = ALL instructors
+  const [generateScopedIds, setGenerateScopedIds] = useState<string[]>([]);
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
-  const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   const [newSessionFee, setNewSessionFee] = useState<string>('');
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
@@ -116,7 +115,7 @@ const AdminInstructorPayments = () => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, hourly_rate, session_fee, specialties, profiles (first_name, last_name, email)')
+        .select('id, session_fee, specialties, profiles (first_name, last_name, email)')
         .eq('status', 'active' as any);
       
       if (error) {
@@ -128,7 +127,6 @@ const AdminInstructorPayments = () => {
         id: inst.id,
         name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
         email: inst.profiles?.email || '',
-        hourlyRate: inst.hourly_rate || 0,
         sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
         specialization: inst.specialties?.join(', ') || 'DJ Instruction',
       }));
@@ -181,7 +179,6 @@ const AdminInstructorPayments = () => {
   
   const openSetRateDialog = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
-    setNewHourlyRate(instructor.hourlyRate.toString());
     setNewSessionFee(instructor.sessionFee.toString());
     setShowSetRateDialog(true);
   };
@@ -196,12 +193,7 @@ const AdminInstructorPayments = () => {
   const handleUpdateHourlyRate = async () => {
     if (!selectedInstructor) return;
     
-    const rate = parseFloat(newHourlyRate);
     const fee = parseFloat(newSessionFee);
-    if (isNaN(rate) || rate < 0) {
-      toast.error('Please enter a valid hourly rate.');
-      return;
-    }
     if (isNaN(fee) || fee < 0) {
       toast.error('Please enter a valid session (flat) fee.');
       return;
@@ -210,19 +202,19 @@ const AdminInstructorPayments = () => {
     try {
       const { error } = await supabase
         .from('instructors')
-        .update({ hourly_rate: rate, session_fee: fee } as any)
+        .update({ session_fee: fee } as any)
         .eq('id', selectedInstructor.id as any);
       
       if (error) throw error;
       
-      toast.success(`${selectedInstructor.name} updated — $${fee}/session, $${rate}/hr`);
+      toast.success(`${selectedInstructor.name} updated — $${fee}/class`);
       setShowSetRateDialog(false);
       setSelectedInstructor(null);
-      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, hourlyRate: rate, sessionFee: fee } : i);
+      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, sessionFee: fee } : i);
       setInstructorsList(updated);
     } catch (error) {
-      console.error('Error updating hourly rate:', error);
-      toast.error('Failed to update rates');
+      console.error('Error updating session fee:', error);
+      toast.error('Failed to update fee');
     }
   };
   
@@ -231,7 +223,7 @@ const AdminInstructorPayments = () => {
     
     const hours = parseFloat(hoursToChange);
     if (isNaN(hours) || hours <= 0) {
-      toast.error('Please enter a valid number of hours.');
+      toast.error('Please enter a valid number of classes.');
       return;
     }
     
@@ -243,7 +235,11 @@ const AdminInstructorPayments = () => {
         ? payment.hoursLogged + hours 
         : Math.max(0, payment.hoursLogged - hours);
       
-      const newTotal = newHours * payment.hourlyRate;
+      // hoursLogged is repurposed as "sessions" for class-type payments
+      const perSession = payment.hoursLogged > 0
+        ? payment.totalAmount / payment.hoursLogged
+        : payment.hourlyRate || 50;
+      const newTotal = newHours * perSession;
       
       const { error } = await supabase
         .from('instructor_payments')
@@ -252,13 +248,13 @@ const AdminInstructorPayments = () => {
       
       if (error) throw error;
       
-      toast.success(`${hours} hours ${hoursOperation === 'add' ? 'added' : 'subtracted'}`);
+      toast.success(`${hours} class${hours === 1 ? '' : 'es'} ${hoursOperation === 'add' ? 'added' : 'subtracted'}`);
       setShowEditHoursDialog(false);
       setEditPaymentId(null);
       invalidate();
     } catch (error) {
-      console.error('Error updating hours:', error);
-      toast.error('Failed to update hours');
+      console.error('Error updating classes:', error);
+      toast.error('Failed to update classes');
     }
   };
 
@@ -357,7 +353,7 @@ const AdminInstructorPayments = () => {
     setDateRange(undefined);
     setGeneratedPayments([]);
     setGenerateStep('dates');
-    setGenerateScopedTo(null);
+    setGenerateScopedIds([]);
   };
 
   const handleGeneratePreview = async () => {
@@ -392,8 +388,8 @@ const AdminInstructorPayments = () => {
 
       const preview: GeneratedPayment[] = [];
 
-      const scopedList = generateScopedTo
-        ? instructorsList.filter(i => i.id === generateScopedTo)
+      const scopedList = generateScopedIds.length > 0
+        ? instructorsList.filter(i => generateScopedIds.includes(i.id))
         : instructorsList;
 
       for (const inst of scopedList) {
@@ -409,19 +405,19 @@ const AdminInstructorPayments = () => {
         const schedules = schedulesByInstructor[inst.id];
         if (!schedules || schedules.length === 0) continue;
 
-        const { totalHours, totalAmount } = calculateScheduledHours(
+        const { totalSessions, totalAmount } = calculateScheduledSessions(
           schedules,
           dateRange.from,
           dateRange.to,
-          inst.hourlyRate
+          inst.sessionFee
         );
 
-        if (totalHours > 0) {
+        if (totalSessions > 0) {
           preview.push({
             instructorId: inst.id,
             instructorName: inst.name,
-            hourlyRate: inst.hourlyRate,
-            totalHours,
+            sessionFee: inst.sessionFee,
+            totalSessions,
             totalAmount,
           });
         }
@@ -455,7 +451,7 @@ const AdminInstructorPayments = () => {
         await createPayment({
           instructor_id: gp.instructorId,
           amount: gp.totalAmount,
-          hours_worked: gp.totalHours,
+          hours_worked: gp.totalSessions,
           pay_period_start: startStr,
           pay_period_end: endStr,
           payment_type: 'class',
@@ -519,28 +515,64 @@ const AdminInstructorPayments = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
                   <UserIcon className="mr-1 h-4 w-4" />
-                  Generate Individual
+                  Generate Selected
+                  {generateScopedIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">{generateScopedIds.length}</Badge>
+                  )}
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
-                <DropdownMenuLabel>Choose an instructor</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                <DropdownMenuLabel>Pick one or more instructors</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {instructorsList.length === 0 ? (
                   <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
                 ) : (
-                  instructorsList.map(inst => (
-                    <DropdownMenuItem
-                      key={inst.id}
-                      onClick={() => {
-                        resetGenerateForm();
-                        setGenerateScopedTo(inst.id);
-                        setShowGenerateDialog(true);
-                      }}
-                    >
-                      {inst.name}
-                    </DropdownMenuItem>
-                  ))
+                  <>
+                    {instructorsList.map(inst => {
+                      const checked = generateScopedIds.includes(inst.id);
+                      return (
+                        <DropdownMenuItem
+                          key={inst.id}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setGenerateScopedIds(prev =>
+                              prev.includes(inst.id)
+                                ? prev.filter(id => id !== inst.id)
+                                : [...prev, inst.id]
+                            );
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Checkbox checked={checked} className="pointer-events-none" />
+                          <span className="flex-1">{inst.name}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                    <DropdownMenuSeparator />
+                    <div className="flex items-center justify-between gap-2 px-2 py-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGenerateScopedIds([])}
+                        disabled={generateScopedIds.length === 0}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (generateScopedIds.length === 0) {
+                            toast.error('Pick at least one instructor');
+                            return;
+                          }
+                          setShowGenerateDialog(true);
+                        }}
+                      >
+                        Continue ({generateScopedIds.length})
+                      </Button>
+                    </div>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -588,7 +620,7 @@ const AdminInstructorPayments = () => {
         <Card>
           <CardHeader>
             <CardTitle>Instructor Rates</CardTitle>
-            <CardDescription>Manage instructor hourly rates for payment calculations</CardDescription>
+            <CardDescription>Manage the flat per-class fee paid to each instructor</CardDescription>
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
@@ -598,8 +630,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
-                    <TableHead className="text-right">Session Fee</TableHead>
-                    <TableHead className="text-right">Hourly Rate</TableHead>
+                    <TableHead className="text-right">Flat Fee / Class</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -610,7 +641,6 @@ const AdminInstructorPayments = () => {
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
                       <TableCell className="text-right">${instructor.sessionFee}/class</TableCell>
-                      <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openScheduleDialog(instructor)}>
@@ -618,7 +648,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Rates
+                            Update Fee
                           </Button>
                         </div>
                       </TableCell>
@@ -646,8 +676,8 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="text-right">Fee / Class</TableHead>
+                    <TableHead className="text-right">Classes</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -670,7 +700,9 @@ const AdminInstructorPayments = () => {
                         {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {payment.paymentType === 'class' ? `$${payment.hourlyRate}/hr` : '—'}
+                        {payment.paymentType === 'class' && payment.hoursLogged > 0
+                          ? `$${(payment.totalAmount / payment.hoursLogged).toFixed(2)}/class`
+                          : '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
@@ -699,7 +731,7 @@ const AdminInstructorPayments = () => {
                             <>
                               <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
                                 <Edit className="mr-1 h-3 w-3" />
-                                Edit Hours
+                                Edit Classes
                               </Button>
                               <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
                                 <DollarSign className="mr-1 h-3 w-3" />
@@ -852,10 +884,14 @@ const AdminInstructorPayments = () => {
                 
                 {selectedDetailPayment.paymentType === 'class' && (
                   <>
-                    <span className="text-muted-foreground">Hourly Rate</span>
-                    <span className="text-right">${selectedDetailPayment.hourlyRate}/hr</span>
+                    <span className="text-muted-foreground">Fee per Class</span>
+                    <span className="text-right">
+                      ${selectedDetailPayment.hoursLogged > 0
+                        ? (selectedDetailPayment.totalAmount / selectedDetailPayment.hoursLogged).toFixed(2)
+                        : '0.00'}/class
+                    </span>
                     
-                    <span className="text-muted-foreground">Hours Worked</span>
+                    <span className="text-muted-foreground">Classes</span>
                     <span className="text-right">{selectedDetailPayment.hoursLogged}</span>
                   </>
                 )}
@@ -904,13 +940,15 @@ const AdminInstructorPayments = () => {
         <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle>
-              {generateScopedTo
-                ? `Generate Pay Period — ${instructorsList.find(i => i.id === generateScopedTo)?.name ?? ''}`
-                : 'Generate Pay Period — All Instructors'}
+              {generateScopedIds.length === 0
+                ? 'Generate Pay Period — All Instructors'
+                : generateScopedIds.length === 1
+                  ? `Generate Pay Period — ${instructorsList.find(i => i.id === generateScopedIds[0])?.name ?? ''}`
+                  : `Generate Pay Period — ${generateScopedIds.length} Instructors`}
             </DialogTitle>
             <DialogDescription>
               {generateStep === 'dates' 
-                ? 'Select the pay period dates. The system will calculate hours from each instructor\'s weekly schedule.'
+                ? 'Select the pay period dates. The system will count scheduled classes from each instructor\'s weekly schedule and multiply by their flat per-class fee.'
                 : 'Review the calculated payments below before confirming.'}
             </DialogDescription>
           </DialogHeader>
@@ -955,8 +993,8 @@ const AdminInstructorPayments = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Instructor</TableHead>
-                      <TableHead className="text-right">Rate</TableHead>
-                      <TableHead className="text-right">Hours</TableHead>
+                      <TableHead className="text-right">Fee / Class</TableHead>
+                      <TableHead className="text-right">Classes</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -964,8 +1002,8 @@ const AdminInstructorPayments = () => {
                     {generatedPayments.map((gp) => (
                       <TableRow key={gp.instructorId}>
                         <TableCell className="font-medium">{gp.instructorName}</TableCell>
-                        <TableCell className="text-right">${gp.hourlyRate}/hr</TableCell>
-                        <TableCell className="text-right">{gp.totalHours}</TableCell>
+                        <TableCell className="text-right">${gp.sessionFee}/class</TableCell>
+                        <TableCell className="text-right">{gp.totalSessions}</TableCell>
                         <TableCell className="text-right">${gp.totalAmount.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
@@ -991,23 +1029,23 @@ const AdminInstructorPayments = () => {
       <Dialog open={showEditHoursDialog} onOpenChange={setShowEditHoursDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Edit Hours</DialogTitle>
-            <DialogDescription>Add or subtract hours worked by the instructor</DialogDescription>
+            <DialogTitle>Edit Classes</DialogTitle>
+            <DialogDescription>Add or subtract classes taught by the instructor</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <RadioGroup value={hoursOperation} onValueChange={(v) => setHoursOperation(v as 'add' | 'subtract')} className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="add" id="add" />
-                <Label htmlFor="add">Add Hours</Label>
+                <Label htmlFor="add">Add Classes</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="subtract" id="subtract" />
-                <Label htmlFor="subtract">Subtract Hours</Label>
+                <Label htmlFor="subtract">Subtract Classes</Label>
               </div>
             </RadioGroup>
             <div className="grid gap-2">
-              <Label htmlFor="hours">Hours to {hoursOperation === 'add' ? 'Add' : 'Subtract'}</Label>
-              <Input id="hours" type="number" step="0.5" min="0.5" placeholder={`Enter hours to ${hoursOperation}`} value={hoursToChange} onChange={(e) => setHoursToChange(e.target.value)} />
+              <Label htmlFor="hours">Classes to {hoursOperation === 'add' ? 'Add' : 'Subtract'}</Label>
+              <Input id="hours" type="number" step="1" min="1" placeholder={`Enter classes to ${hoursOperation}`} value={hoursToChange} onChange={(e) => setHoursToChange(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
@@ -1021,26 +1059,21 @@ const AdminInstructorPayments = () => {
       <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Instructor Rates</DialogTitle>
+            <DialogTitle>Update Flat Fee per Class</DialogTitle>
             <DialogDescription>
-              {selectedInstructor && `Set the per-class flat fee and hourly rate for ${selectedInstructor.name}`}
+              {selectedInstructor && `Set the flat per-class fee for ${selectedInstructor.name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="sessionFee">Flat Fee per Class ($)</Label>
               <Input id="sessionFee" type="number" step="0.50" min="0" placeholder="e.g. 50" value={newSessionFee} onChange={(e) => setNewSessionFee(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by the Pay Ledger — instructor earns this each scheduled class slot.</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="rate">Hourly Rate ($)</Label>
-              <Input id="rate" type="number" step="0.50" min="1" placeholder="Enter hourly rate" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by Generate Pay Period to calculate hours × rate.</p>
+              <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateHourlyRate}>Save Rates</Button>
+            <Button onClick={handleUpdateHourlyRate}>Save Fee</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
