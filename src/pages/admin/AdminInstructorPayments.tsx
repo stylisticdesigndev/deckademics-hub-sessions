@@ -884,10 +884,14 @@ const AdminInstructorPayments = () => {
                 
                 {selectedDetailPayment.paymentType === 'class' && (
                   <>
-                    <span className="text-muted-foreground">Hourly Rate</span>
-                    <span className="text-right">${selectedDetailPayment.hourlyRate}/hr</span>
+                    <span className="text-muted-foreground">Fee per Class</span>
+                    <span className="text-right">
+                      ${selectedDetailPayment.hoursLogged > 0
+                        ? (selectedDetailPayment.totalAmount / selectedDetailPayment.hoursLogged).toFixed(2)
+                        : '0.00'}/class
+                    </span>
                     
-                    <span className="text-muted-foreground">Hours Worked</span>
+                    <span className="text-muted-foreground">Classes</span>
                     <span className="text-right">{selectedDetailPayment.hoursLogged}</span>
                   </>
                 )}
