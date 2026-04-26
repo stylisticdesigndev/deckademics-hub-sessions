@@ -28,6 +28,15 @@ import {
 
 import { Calendar } from '@/components/ui/calendar';
 import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
+import { ChevronDown, User as UserIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -77,6 +86,7 @@ const AdminInstructorPayments = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [generatedPayments, setGeneratedPayments] = useState<GeneratedPayment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateScopedTo, setGenerateScopedTo] = useState<string | null>(null); // null = all
   const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null);
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
@@ -338,6 +348,7 @@ const AdminInstructorPayments = () => {
     setDateRange(undefined);
     setGeneratedPayments([]);
     setGenerateStep('dates');
+    setGenerateScopedTo(null);
   };
 
   const handleGeneratePreview = async () => {
@@ -372,7 +383,11 @@ const AdminInstructorPayments = () => {
 
       const preview: GeneratedPayment[] = [];
 
-      for (const inst of instructorsList) {
+      const scopedList = generateScopedTo
+        ? instructorsList.filter(i => i.id === generateScopedTo)
+        : instructorsList;
+
+      for (const inst of scopedList) {
         const hasOverlap = pendingPayments.some(p => 
           p.instructorId === inst.id && 
           p.paymentType === 'class' &&
