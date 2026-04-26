@@ -822,9 +822,20 @@ const AdminLedgerPreview = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payrollRecords.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{r.instructorName}</TableCell>
+                    {paginatedPayroll.map(r => (
+                      <TableRow
+                        key={r.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedDetailPayment(r)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <span>{r.instructorName}</span>
+                            {r.extra_pay.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px]">+ Extra Pay</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}
                         </TableCell>
@@ -837,7 +848,7 @@ const AdminLedgerPreview = () => {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => setViewExtraPayFor(r.id)}
+                              onClick={(e) => { e.stopPropagation(); setViewExtraPayFor(r.id); }}
                               className="underline decoration-dotted underline-offset-2 hover:text-primary cursor-pointer"
                             >
                               ${sumExtraPay(r.extra_pay).toFixed(2)}
@@ -853,7 +864,7 @@ const AdminLedgerPreview = () => {
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
                             : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Pending</Badge>}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           {r.status === 'pending' && (
                             <div className="flex gap-2 justify-end items-center flex-nowrap whitespace-nowrap">
                               <DropdownMenu>
@@ -883,6 +894,35 @@ const AdminLedgerPreview = () => {
                   </TableBody>
                 </Table>
               </div>
+              {totalHistoryPages > 1 && (
+                <Pagination className="mt-4">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                        className={historyPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === historyPage}
+                          onClick={() => setHistoryPage(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
+                        className={historyPage >= totalHistoryPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
