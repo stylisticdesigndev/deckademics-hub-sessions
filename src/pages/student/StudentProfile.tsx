@@ -38,6 +38,7 @@ const StudentProfile = () => {
     email: userData?.profile?.email || session?.user?.email || '',
     phone: userData?.profile?.phone || '',
     bio: userData?.profile?.bio || '',
+    pronouns: (userData?.profile as any)?.pronouns || '',
   });
 
   const [formData, setFormData] = useState({...profile});
