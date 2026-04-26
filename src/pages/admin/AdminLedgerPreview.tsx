@@ -26,7 +26,12 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
   CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
+  CircleHelp,
 } from 'lucide-react';
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink,
+  PaginationNext, PaginationPrevious,
+} from '@/components/ui/pagination';
 import { format, subDays, addDays } from 'date-fns';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
