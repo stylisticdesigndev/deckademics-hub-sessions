@@ -33,6 +33,7 @@ import {
   PaginationNext, PaginationPrevious,
 } from '@/components/ui/pagination';
 import { format, subDays, addDays } from 'date-fns';
+import { toast } from 'sonner';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -526,12 +527,15 @@ const AdminLedgerPreview = () => {
         payment_date: today,
       };
       setPayrollRecords(prev => [newRec, ...prev]);
+      setHistoryPage(1);
+      toast.success(`Extra pay added for ${standaloneInstructorName}`);
       setExtraPayFor(null);
       return;
     }
     setPayrollRecords(ps => ps.map(p =>
       p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
     ));
+    toast.success('Extra pay updated');
     setExtraPayFor(null);
   };
   const sumExtraPay = (items: ExtraPayItem[]) =>
