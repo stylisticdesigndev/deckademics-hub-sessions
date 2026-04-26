@@ -859,6 +859,26 @@ const AdminLedgerPreview = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {extraPayFor === STANDALONE_ID && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="extra-instructor" className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Instructor
+                </Label>
+                <Select value={standaloneInstructorName} onValueChange={setStandaloneInstructorName}>
+                  <SelectTrigger id="extra-instructor">
+                    <SelectValue placeholder="Select an instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(activeInstructors.length > 0
+                      ? activeInstructors.map(i => i.name)
+                      : Array.from(new Set(payrollRecords.map(p => p.instructorName)))
+                    ).map(name => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* Existing items */}
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
