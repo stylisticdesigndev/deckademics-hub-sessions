@@ -1302,10 +1302,10 @@ const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEd
                     )}
                     {showEditDelete && (
                       <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => alert(`▶︎ Mock: Edit ${p.studentName}'s payment`)}>
+                        <Button size="sm" variant="ghost" onClick={() => onEdit?.(p)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => alert(`▶︎ Mock: Delete ${p.studentName}'s payment`)}>
+                        <Button size="sm" variant="ghost" onClick={() => onDelete?.(p.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
