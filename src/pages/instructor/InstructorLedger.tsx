@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Wallet, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
+import { Wallet, Calendar as CalendarIcon, DollarSign, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { format } from 'date-fns';
+import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
 
 interface LedgerRow {
   id: string;
@@ -25,6 +26,7 @@ const InstructorLedger = () => {
   const instructorId = session?.user?.id;
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { extras, sumExtras } = useInstructorPaymentExtras();
 
   useEffect(() => {
     if (!instructorId) return;
@@ -53,11 +55,14 @@ const InstructorLedger = () => {
     const unpaid = rows.filter(r => !r.payment_id);
     const paid = rows.filter(r => r.payment_id);
     const sum = (xs: LedgerRow[]) => xs.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+    const extraTotal = sumExtras(extras);
     return {
-      unpaidAmt: sum(unpaid), paidAmt: sum(paid),
+      unpaidAmt: sum(unpaid), paidAmt: sum(paid) + extraTotal,
       unpaidSessions: unpaid.length, totalSessions: rows.length,
+      extraTotal,
+      extraCount: extras.length,
     };
-  }, [rows]);
+  }, [rows, extras, sumExtras]);
 
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
@@ -81,6 +86,47 @@ const InstructorLedger = () => {
             <CardContent><div className="text-2xl font-bold">${stats.paidAmt.toFixed(2)}</div></CardContent>
           </Card>
         </div>
+
+        {extras.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Extra Pay
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                One-off events, gigs, and bonuses added by the school.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {extras.map(e => (
+                      <TableRow key={e.id}>
+                        <TableCell>{format(new Date(e.event_date), 'MM/dd/yyyy')}</TableCell>
+                        <TableCell className="text-sm">
+                          {e.description || <span className="text-muted-foreground italic">No description</span>}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">${Number(e.amount).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="mt-3 flex justify-between text-sm font-semibold border-t pt-2">
+                  <span>Total Extra Pay</span>
+                  <span>${stats.extraTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle className="text-lg">Sessions</CardTitle></CardHeader>

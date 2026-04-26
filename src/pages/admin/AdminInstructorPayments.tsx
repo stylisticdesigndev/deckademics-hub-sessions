@@ -56,6 +56,8 @@ import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
+import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
+import { ExtraPayDialog } from '@/components/admin/payments/ExtraPayDialog';
 
 interface Instructor {
   id: string;
@@ -72,6 +74,11 @@ const AdminInstructorPayments = () => {
 
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
+  const {
+    extras: allExtras,
+    extrasByPayment,
+    sumExtras,
+  } = useInstructorPaymentExtras();
   
   const [showHelpVideo, setShowHelpVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -101,11 +108,11 @@ const AdminInstructorPayments = () => {
   const [scheduleItems, setScheduleItems] = useState<{ day: string; hours: string }[]>([]);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
-  // Add bonus to existing payment state
-  const [showAddBonusToRowDialog, setShowAddBonusToRowDialog] = useState(false);
-  const [bonusRowPaymentId, setBonusRowPaymentId] = useState<string | null>(null);
-  const [bonusRowAmount, setBonusRowAmount] = useState('');
-  const [bonusRowDescription, setBonusRowDescription] = useState('');
+  // Extra Pay dialog state (replaces legacy single-bonus flow)
+  const [showExtraPayDialog, setShowExtraPayDialog] = useState(false);
+  const [extraPayPaymentId, setExtraPayPaymentId] = useState<string | null>(null);
+  const [extraPayInstructorId, setExtraPayInstructorId] = useState<string | null>(null);
+  const [extraPayInstructorName, setExtraPayInstructorName] = useState<string>('');
 
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -258,34 +265,11 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const openAddBonusToRow = (paymentId: string) => {
-    setBonusRowPaymentId(paymentId);
-    const payment = payments?.find(p => p.id === paymentId);
-    setBonusRowAmount(payment?.bonusAmount ? payment.bonusAmount.toString() : '');
-    setBonusRowDescription(payment?.bonusDescription || '');
-    setShowAddBonusToRowDialog(true);
-  };
-
-  const handleSaveBonusToRow = async () => {
-    if (!bonusRowPaymentId) return;
-    const amount = parseFloat(bonusRowAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid bonus amount');
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('instructor_payments')
-        .update({ bonus_amount: amount, bonus_description: bonusRowDescription || null } as any)
-        .eq('id', bonusRowPaymentId as any);
-      if (error) throw error;
-      toast.success('Bonus added to payment');
-      setShowAddBonusToRowDialog(false);
-      invalidate();
-    } catch (error) {
-      console.error('Error adding bonus:', error);
-      toast.error('Failed to add bonus');
-    }
+  const openExtraPayForPayment = (payment: InstructorPayment) => {
+    setExtraPayPaymentId(payment.id);
+    setExtraPayInstructorId(payment.instructorId || null);
+    setExtraPayInstructorName(payment.instructorName);
+    setShowExtraPayDialog(true);
   };
 
   const handleDeletePayment = async () => {
@@ -608,7 +592,13 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${pendingPayments.reduce((sum, p) => sum + p.totalAmount + p.bonusAmount, 0).toFixed(2)}
+              ${pendingPayments
+                .reduce(
+                  (sum, p) =>
+                    sum + p.totalAmount + sumExtras(extrasByPayment(p.id)),
+                  0,
+                )
+                .toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
@@ -708,22 +698,33 @@ const AdminInstructorPayments = () => {
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div>
-                          <span>${payment.totalAmount}</span>
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              + ${payment.bonusAmount} bonus
-                              {payment.bonusDescription && (
-                                <span className="italic"> ({payment.bonusDescription})</span>
+                        {(() => {
+                          const items = extrasByPayment(payment.id);
+                          const extraTotal = sumExtras(items);
+                          return (
+                            <div>
+                              <span>${payment.totalAmount.toFixed(2)}</span>
+                              {items.length > 0 && (
+                                <>
+                                  <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                                    {items.map((e) => (
+                                      <div key={e.id} className="whitespace-normal">
+                                        + ${Number(e.amount).toFixed(2)}{' '}
+                                        <span className="italic">
+                                          ({format(new Date(e.event_date), 'MM/dd')}
+                                          {e.description ? ` — ${e.description}` : ''})
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="text-xs font-semibold mt-1">
+                                    Total: ${(payment.totalAmount + extraTotal).toFixed(2)}
+                                  </div>
+                                </>
                               )}
                             </div>
-                          )}
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs font-semibold">
-                              Total: ${(payment.totalAmount + payment.bonusAmount).toFixed(2)}
-                            </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -733,9 +734,14 @@ const AdminInstructorPayments = () => {
                                 <Edit className="mr-1 h-3 w-3" />
                                 Edit Classes
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
+                              <Button variant="outline" size="sm" onClick={() => openExtraPayForPayment(payment)}>
                                 <DollarSign className="mr-1 h-3 w-3" />
-                                Bonus
+                                Extra Pay
+                                {extrasByPayment(payment.id).length > 0 && (
+                                  <Badge variant="secondary" className="ml-1.5">
+                                    {extrasByPayment(payment.id).length}
+                                  </Badge>
+                                )}
                               </Button>
                             </>
                           )}
@@ -802,8 +808,8 @@ const AdminInstructorPayments = () => {
                             ) : (
                               <>
                                 <Badge variant="outline">Class</Badge>
-                                {payment.bonusAmount > 0 && (
-                                  <Badge variant="secondary">+ Bonus</Badge>
+                                {extrasByPayment(payment.id).length > 0 && (
+                                  <Badge variant="secondary">+ Extra Pay</Badge>
                                 )}
                               </>
                             )}
@@ -813,10 +819,17 @@ const AdminInstructorPayments = () => {
                           {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span>${(payment.totalAmount + payment.bonusAmount).toFixed(2)}</span>
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs text-muted-foreground">includes bonus</div>
-                          )}
+                          {(() => {
+                            const extraTotal = sumExtras(extrasByPayment(payment.id));
+                            return (
+                              <>
+                                <span>${(payment.totalAmount + extraTotal).toFixed(2)}</span>
+                                {extraTotal > 0 && (
+                                  <div className="text-xs text-muted-foreground">includes extra pay</div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
@@ -898,28 +911,41 @@ const AdminInstructorPayments = () => {
                 
                 <span className="text-muted-foreground">Class Amount</span>
                 <span className="text-right">${selectedDetailPayment.totalAmount.toFixed(2)}</span>
-                
-                {selectedDetailPayment.bonusAmount > 0 && (
+              </div>
+
+              {(() => {
+                const items = extrasByPayment(selectedDetailPayment.id);
+                const extraTotal = sumExtras(items);
+                return (
                   <>
-                    <span className="text-muted-foreground">Bonus Amount</span>
-                    <span className="text-right text-primary">${selectedDetailPayment.bonusAmount.toFixed(2)}</span>
-                    
-                    {selectedDetailPayment.bonusDescription && (
-                      <>
-                        <span className="text-muted-foreground">Bonus Description</span>
-                        <span className="text-right italic">{selectedDetailPayment.bonusDescription}</span>
-                      </>
+                    {items.length > 0 && (
+                      <div className="border-t pt-3 space-y-1.5">
+                        <div className="text-sm font-medium">Extra Pay</div>
+                        {items.map((e) => (
+                          <div key={e.id} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {format(new Date(e.event_date), 'MM/dd/yyyy')}
+                              {e.description ? ` — ${e.description}` : ''}
+                            </span>
+                            <span className="font-medium">${Number(e.amount).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-sm font-semibold pt-1">
+                          <span>Extra Pay Subtotal</span>
+                          <span>${extraTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
                     )}
+
+                    <div className="border-t pt-3 flex justify-between items-center">
+                      <span className="font-semibold">Grand Total</span>
+                      <span className="text-lg font-bold">
+                        ${(selectedDetailPayment.totalAmount + extraTotal).toFixed(2)}
+                      </span>
+                    </div>
                   </>
-                )}
-              </div>
-              
-              <div className="border-t pt-3 flex justify-between items-center">
-                <span className="font-semibold">Grand Total</span>
-                <span className="text-lg font-bold">
-                  ${(selectedDetailPayment.totalAmount + selectedDetailPayment.bonusAmount).toFixed(2)}
-                </span>
-              </div>
+                );
+              })()}
               
               {selectedDetailPayment.description && (
                 <div className="text-sm text-muted-foreground border-t pt-3">
@@ -1152,29 +1178,23 @@ const AdminInstructorPayments = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Bonus to Row Dialog */}
-      <Dialog open={showAddBonusToRowDialog} onOpenChange={setShowAddBonusToRowDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Add Bonus to Payment</DialogTitle>
-            <DialogDescription>Attach a bonus amount to this class payment</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Bonus Amount ($)</Label>
-              <Input type="number" step="0.01" min="1" placeholder="Enter bonus amount" value={bonusRowAmount} onChange={(e) => setBonusRowAmount(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea placeholder="e.g., Event DJ, Extra class..." value={bonusRowDescription} onChange={(e) => setBonusRowDescription(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddBonusToRowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSaveBonusToRow}>Save Bonus</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Extra Pay dialog (replaces legacy single-bonus flow) */}
+      <ExtraPayDialog
+        open={showExtraPayDialog}
+        onOpenChange={(o) => {
+          setShowExtraPayDialog(o);
+          if (!o) {
+            setExtraPayPaymentId(null);
+            setExtraPayInstructorId(null);
+            setExtraPayInstructorName('');
+          }
+        }}
+        paymentId={extraPayPaymentId}
+        instructorId={extraPayInstructorId}
+        instructorName={extraPayInstructorName}
+        existing={extraPayPaymentId ? extrasByPayment(extraPayPaymentId) : []}
+        onSaved={invalidate}
+      />
 
       {/* Delete Payment Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

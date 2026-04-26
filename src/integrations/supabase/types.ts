@@ -487,6 +487,47 @@ export type Database = {
         }
         Relationships: []
       }
+      instructor_payment_extras: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          event_date: string
+          id: string
+          instructor_id: string
+          payment_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          event_date: string
+          id?: string
+          instructor_id: string
+          payment_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          id?: string
+          instructor_id?: string
+          payment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_payment_extras_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructor_payments: {
         Row: {
           amount: number
