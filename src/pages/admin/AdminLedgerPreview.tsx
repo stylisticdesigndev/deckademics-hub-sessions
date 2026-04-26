@@ -610,26 +610,21 @@ const AdminLedgerPreview = () => {
       <Dialog open={!!rateDialogFor} onOpenChange={(open) => { if (!open) setRateDialogFor(null); }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Instructor Rates</DialogTitle>
+            <DialogTitle>Update Flat Fee per Class</DialogTitle>
             <DialogDescription>
-              {rateDialogFor && `Set the per-class flat fee and hourly rate for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
+              {rateDialogFor && `Set the flat per-class fee for ${activeInstructors.find(i => i.id === rateDialogFor)?.name ?? ''}. Preview only — nothing saves to the database.`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="preview-fee">Flat Fee per Class ($)</Label>
               <Input id="preview-fee" type="number" step="0.50" min="0" value={rateDialogFee} onChange={(e) => setRateDialogFee(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by the Pay Ledger — instructor earns this each scheduled class slot.</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="preview-rate">Hourly Rate ($)</Label>
-              <Input id="preview-rate" type="number" step="0.50" min="0" value={rateDialogHourly} onChange={(e) => setRateDialogHourly(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used by Generate Pay Period to calculate hours × rate.</p>
+              <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRateDialogFor(null)}>Cancel</Button>
-            <Button onClick={saveRateDialog}>Save Rates</Button>
+            <Button onClick={saveRateDialog}>Save Fee</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
