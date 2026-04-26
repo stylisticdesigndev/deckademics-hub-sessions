@@ -663,15 +663,8 @@ const AdminLedgerPreview = () => {
 
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <CardTitle className="text-lg">Payroll History</CardTitle>
-                  <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
-                </div>
-                <Button size="sm" onClick={startStandaloneExtraPay}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Extra Pay
-                </Button>
-              </div>
+              <CardTitle className="text-lg">Payroll History</CardTitle>
+              <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
