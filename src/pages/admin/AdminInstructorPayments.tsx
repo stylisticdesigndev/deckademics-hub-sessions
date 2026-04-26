@@ -661,6 +661,10 @@ const AdminInstructorPayments = () => {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button variant="outline" onClick={openStandaloneExtra}>
+              <DollarSign className="mr-1 h-4 w-4" />
+              Add Extra Pay
+            </Button>
           </div>
         </div>
 
