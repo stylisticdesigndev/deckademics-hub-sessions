@@ -24,6 +24,8 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     password: '',
     firstName: '',
     lastName: '',
+    phone: '',
+    pronouns: '',
   });
   const [debugMode, setDebugMode] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
@@ -111,6 +113,14 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         setSignupLoading(false);
         return;
       }
+
+      if (userType === 'student' && (!formData.phone.trim() || !formData.pronouns.trim())) {
+        const msg = 'Phone number and pronouns are required.';
+        toast({ title: 'Missing information', description: msg, variant: 'destructive' });
+        setSignupError(msg);
+        setSignupLoading(false);
+        return;
+      }
       
       if (!formData.email || !formData.password) {
         toast({
@@ -148,7 +158,9 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         userType,
         {
           first_name: formData.firstName,
-          last_name: formData.lastName
+          last_name: formData.lastName,
+          phone: formData.phone,
+          pronouns: formData.pronouns,
         }
       );
       
@@ -257,7 +269,9 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
                 email: formData.email,
                 password: formData.password,
                 firstName: formData.firstName,
-                lastName: formData.lastName
+                lastName: formData.lastName,
+                phone: formData.phone,
+                pronouns: formData.pronouns,
               }}
               isLoading={signupLoading}
               handleChange={handleChange}
