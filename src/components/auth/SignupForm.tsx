@@ -11,6 +11,8 @@ interface SignupFormProps {
     password: string;
     firstName: string;
     lastName: string;
+    phone: string;
+    pronouns: string;
   };
   isLoading: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -38,7 +40,8 @@ export const SignupForm = ({
   const passedCount = PASSWORD_REQUIREMENTS.filter(r => r.test(formData.password)).length;
   const allPassed = passedCount === PASSWORD_REQUIREMENTS.length;
   const passwordsMatch = formData.password === confirmPassword && confirmPassword.length > 0;
-  const canSubmit = allPassed && passwordsMatch && !isLoading;
+  const hasContact = formData.phone.trim().length > 0 && formData.pronouns.trim().length > 0;
+  const canSubmit = allPassed && passwordsMatch && hasContact && !isLoading;
 
   const getStrengthLabel = () => {
     if (passedCount <= 1) return { label: 'Weak', color: 'text-red-500' };
@@ -112,6 +115,33 @@ export const SignupForm = ({
             required
             className="pl-10"
             value={formData.email}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            name="phone"
+            placeholder="(555) 123-4567"
+            type="tel"
+            required
+            value={formData.phone}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="pronouns">Pronouns</Label>
+          <Input
+            id="pronouns"
+            name="pronouns"
+            placeholder="she/her, he/him, they/them..."
+            type="text"
+            required
+            value={formData.pronouns}
             onChange={handleChange}
           />
         </div>

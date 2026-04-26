@@ -32,6 +32,8 @@ interface Student {
   skillProgress?: SkillProgress[];
   classDay?: string;
   classTime?: string;
+  phone?: string | null;
+  pronouns?: string | null;
 }
 
 
@@ -47,6 +49,8 @@ interface StudentWithProfile {
     last_name: string;
     email: string;
     avatar_url: string;
+    phone?: string | null;
+    pronouns?: string | null;
   };
 }
 
@@ -73,7 +77,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             notes,
             class_day,
             class_time,
-            profiles!inner(first_name, last_name, email, avatar_url)
+            profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns)
           `)
           .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
           
@@ -198,6 +202,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             skillProgress,
             classDay: student.class_day || undefined,
             classTime: student.class_time || undefined,
+            phone: profile?.phone || null,
+            pronouns: profile?.pronouns || null,
           };
         });
 

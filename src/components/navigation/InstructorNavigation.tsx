@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { isAdminUser } from '@/constants/adminPermissions';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
@@ -25,6 +26,8 @@ export const InstructorNavigation = () => {
   const { userData } = useAuth();
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
+  const { setOpenMobile, isMobile } = useSidebar();
+  const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
@@ -45,6 +48,7 @@ export const InstructorNavigation = () => {
         <Link
           key={item.href}
           to={item.href}
+          onClick={closeMobileNav}
           className={cn(
             "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
             pathname === item.href

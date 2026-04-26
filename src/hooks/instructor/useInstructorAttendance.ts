@@ -114,10 +114,6 @@ export function useInstructorAttendance(instructorId: string | undefined) {
   const markAttendance = async (studentId: string, date: string, status: 'present' | 'absent') => {
     setSaving(true);
     try {
-      // Use a deterministic class_id based on schedule (no classes table rows needed)
-      // Convention: 'schedule' — same as student side uses
-      const classId = 'schedule';
-
       // Check if record exists
       const { data: existing } = await supabase
         .from('attendance')
@@ -134,12 +130,11 @@ export function useInstructorAttendance(instructorId: string | undefined) {
           .eq('id', existing[0].id);
         if (error) throw error;
       } else {
-        // Insert
+        // Insert — class_id is now nullable; schedule-based attendance has no class row
         const { error } = await supabase
           .from('attendance')
           .insert({
             student_id: studentId,
-            class_id: classId,
             date,
             status,
           } as any);
@@ -153,7 +148,11 @@ export function useInstructorAttendance(instructorId: string | undefined) {
       }));
     } catch (err: any) {
       console.error('Error marking attendance:', err);
-      toast({ title: 'Error', description: 'Failed to update attendance.', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: err?.message || 'Failed to update attendance.',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }

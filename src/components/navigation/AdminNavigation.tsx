@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { canAccessPayroll } from '@/constants/adminPermissions';
+import { useSidebar } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
   Users,
@@ -34,6 +35,8 @@ export const AdminNavigation = () => {
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
   const showPayroll = canAccessPayroll(userEmail);
+  const { setOpenMobile, isMobile } = useSidebar();
+  const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: studentCounts } = useQuery({
     queryKey: ['admin-student-counts-nav'],
@@ -109,6 +112,7 @@ export const AdminNavigation = () => {
         <Link
           key={item.href}
           to={item.href}
+          onClick={closeMobileNav}
           className={cn(
             "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
             pathname === item.href

@@ -16,11 +16,14 @@ import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
   const { userData } = useAuth();
   const studentId = userData.user?.id;
+  const { setOpenMobile, isMobile } = useSidebar();
+  const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
@@ -52,6 +55,7 @@ export const StudentNavigation = () => {
             href={item.href}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={closeMobileNav}
             className={linkClasses(item.href)}
           >
             <item.icon className="h-5 w-5" />
@@ -61,6 +65,7 @@ export const StudentNavigation = () => {
           <Link
             key={item.href}
             to={item.href}
+            onClick={closeMobileNav}
             className={linkClasses(item.href)}
           >
             <item.icon className="h-5 w-5" />

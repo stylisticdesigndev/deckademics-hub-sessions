@@ -414,6 +414,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role,
             first_name: metadata.first_name || metadata.firstName || '',
             last_name: metadata.last_name || metadata.lastName || '',
+            phone: metadata.phone || '',
+            pronouns: metadata.pronouns || '',
           },
           emailRedirectTo: redirectTo
         }
@@ -430,6 +432,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.session && data.user) {
         try {
           await createProfileFromMetadata(data.user.id);
+          // Persist phone + pronouns onto the freshly-created profile
+          if (metadata.phone || metadata.pronouns) {
+            await supabase
+              .from('profiles')
+              .update({
+                phone: metadata.phone || null,
+                pronouns: metadata.pronouns || null,
+              } as any)
+              .eq('id', data.user.id);
+          }
         } catch (profileError) {
           console.error("Error creating profile after signup:", profileError);
         }

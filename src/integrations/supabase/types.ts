@@ -163,7 +163,7 @@ export type Database = {
       }
       attendance: {
         Row: {
-          class_id: string
+          class_id: string | null
           date: string
           id: string
           notes: string | null
@@ -171,7 +171,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
-          class_id: string
+          class_id?: string | null
           date: string
           id?: string
           notes?: string | null
@@ -179,7 +179,7 @@ export type Database = {
           student_id: string
         }
         Update: {
-          class_id?: string
+          class_id?: string | null
           date?: string
           id?: string
           notes?: string | null
@@ -442,6 +442,48 @@ export type Database = {
           },
         ]
       }
+      instructor_ledger_entries: {
+        Row: {
+          amount: number | null
+          class_date: string
+          created_at: string
+          hourly_rate: number
+          hours: number
+          id: string
+          instructor_id: string
+          payment_id: string | null
+          source: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          class_date: string
+          created_at?: string
+          hourly_rate?: number
+          hours?: number
+          id?: string
+          instructor_id: string
+          payment_id?: string | null
+          source?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          class_date?: string
+          created_at?: string
+          hourly_rate?: number
+          hours?: number
+          id?: string
+          instructor_id?: string
+          payment_id?: string | null
+          source?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       instructor_payments: {
         Row: {
           amount: number
@@ -699,6 +741,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          phone: string | null
+          pronouns: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
@@ -710,6 +754,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          phone?: string | null
+          pronouns?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -721,6 +767,8 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          phone?: string | null
+          pronouns?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -991,6 +1039,33 @@ export type Database = {
           },
         ]
       }
+      student_status: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          set_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          set_at?: string
+          status: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          set_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       student_tasks: {
         Row: {
           completed: boolean
@@ -1037,6 +1112,7 @@ export type Database = {
           level: string | null
           notes: string | null
           start_date: string | null
+          two_way_messaging: boolean
         }
         Insert: {
           class_day?: string | null
@@ -1047,6 +1123,7 @@ export type Database = {
           level?: string | null
           notes?: string | null
           start_date?: string | null
+          two_way_messaging?: boolean
         }
         Update: {
           class_day?: string | null
@@ -1057,6 +1134,7 @@ export type Database = {
           level?: string | null
           notes?: string | null
           start_date?: string | null
+          two_way_messaging?: boolean
         }
         Relationships: [
           {
@@ -1184,6 +1262,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          phone: string | null
+          pronouns: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }[]

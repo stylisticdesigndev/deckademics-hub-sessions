@@ -21,7 +21,8 @@ const StudentProfileSetup = () => {
     last_name: userData.profile?.last_name || '',
     email: userData.profile?.email || '',
     bio: '',
-    phone: ''
+    phone: '',
+    pronouns: ''
   });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +37,11 @@ const StudentProfileSetup = () => {
       setShowAvatarError(true);
       return;
     }
+
+    if (!formData.phone.trim() || !formData.pronouns.trim()) {
+      toast({ title: 'Missing information', description: 'Phone number and pronouns are required.', variant: 'destructive' });
+      return;
+    }
     
     try {
       await updateProfile({
@@ -44,7 +50,8 @@ const StudentProfileSetup = () => {
         phone: formData.phone,
         bio: formData.bio,
         avatar_url: avatarUrl,
-      });
+        pronouns: formData.pronouns,
+      } as any);
       
       toast({ title: 'Profile updated', description: 'Your profile has been set up successfully!' });
       navigate('/student/dashboard');
@@ -101,7 +108,12 @@ const StudentProfileSetup = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="Your phone number" />
+                  <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="Your phone number" required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pronouns">Pronouns</Label>
+                  <Input id="pronouns" name="pronouns" value={formData.pronouns} onChange={handleChange} placeholder="she/her, he/him, they/them..." required />
                 </div>
                 
                 <div className="space-y-2">
