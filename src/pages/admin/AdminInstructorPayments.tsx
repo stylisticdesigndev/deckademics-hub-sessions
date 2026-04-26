@@ -56,6 +56,8 @@ import { useCreateInstructorPayment } from '@/hooks/useCreateInstructorPayment';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/utils/scheduleHours';
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
+import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
+import { ExtraPayDialog } from '@/components/admin/payments/ExtraPayDialog';
 
 interface Instructor {
   id: string;
@@ -72,6 +74,11 @@ const AdminInstructorPayments = () => {
 
   const { payments, isLoading, invalidate } = useInstructorPayments();
   const { createPayment, isPending: isCreating } = useCreateInstructorPayment();
+  const {
+    extras: allExtras,
+    extrasByPayment,
+    sumExtras,
+  } = useInstructorPaymentExtras();
   
   const [showHelpVideo, setShowHelpVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -101,11 +108,11 @@ const AdminInstructorPayments = () => {
   const [scheduleItems, setScheduleItems] = useState<{ day: string; hours: string }[]>([]);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
-  // Add bonus to existing payment state
-  const [showAddBonusToRowDialog, setShowAddBonusToRowDialog] = useState(false);
-  const [bonusRowPaymentId, setBonusRowPaymentId] = useState<string | null>(null);
-  const [bonusRowAmount, setBonusRowAmount] = useState('');
-  const [bonusRowDescription, setBonusRowDescription] = useState('');
+  // Extra Pay dialog state (replaces legacy single-bonus flow)
+  const [showExtraPayDialog, setShowExtraPayDialog] = useState(false);
+  const [extraPayPaymentId, setExtraPayPaymentId] = useState<string | null>(null);
+  const [extraPayInstructorId, setExtraPayInstructorId] = useState<string | null>(null);
+  const [extraPayInstructorName, setExtraPayInstructorName] = useState<string>('');
 
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -258,34 +265,11 @@ const AdminInstructorPayments = () => {
     }
   };
 
-  const openAddBonusToRow = (paymentId: string) => {
-    setBonusRowPaymentId(paymentId);
-    const payment = payments?.find(p => p.id === paymentId);
-    setBonusRowAmount(payment?.bonusAmount ? payment.bonusAmount.toString() : '');
-    setBonusRowDescription(payment?.bonusDescription || '');
-    setShowAddBonusToRowDialog(true);
-  };
-
-  const handleSaveBonusToRow = async () => {
-    if (!bonusRowPaymentId) return;
-    const amount = parseFloat(bonusRowAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid bonus amount');
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('instructor_payments')
-        .update({ bonus_amount: amount, bonus_description: bonusRowDescription || null } as any)
-        .eq('id', bonusRowPaymentId as any);
-      if (error) throw error;
-      toast.success('Bonus added to payment');
-      setShowAddBonusToRowDialog(false);
-      invalidate();
-    } catch (error) {
-      console.error('Error adding bonus:', error);
-      toast.error('Failed to add bonus');
-    }
+  const openExtraPayForPayment = (payment: InstructorPayment) => {
+    setExtraPayPaymentId(payment.id);
+    setExtraPayInstructorId(payment.instructorId || null);
+    setExtraPayInstructorName(payment.instructorName);
+    setShowExtraPayDialog(true);
   };
 
   const handleDeletePayment = async () => {
