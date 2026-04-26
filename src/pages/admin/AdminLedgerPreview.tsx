@@ -502,7 +502,7 @@ const AdminLedgerPreview = () => {
   const removeExtraPayItem = (id: string) => {
     setExtraPayDraft(prev => prev.filter(e => e.id !== id));
   };
-  const saveExtraPay = () => {
+  const saveExtraPay = async () => {
     if (!extraPayFor) return;
     const pendingAmount = parseFloat(newExtraAmount);
     const hasPendingLine = newExtraAmount.trim() !== '' || newExtraDesc.trim() !== '';
@@ -525,6 +525,60 @@ const AdminLedgerPreview = () => {
       alert('Add at least one extra pay line item.');
       return;
     }
+
+    // Resolve the target instructor name + try to find their real DB id so we can
+    // persist the extras to instructor_payment_extras (and have them show up on
+    // the instructor's own ledger).
+    const targetName = extraPayFor === STANDALONE_ID
+      ? standaloneInstructorName
+      : payrollRecords.find(p => p.id === extraPayFor)?.instructorName ?? '';
+    const matchedInstructor = activeInstructors.find(
+      i => i.name.toLowerCase() === targetName.toLowerCase(),
+    );
+
+    // Persist to DB when we have a real instructor. Creates a fresh
+    // instructor_payments row to anchor the extras, then inserts the line items.
+    if (matchedInstructor) {
+      try {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const totalAmount = itemsToSave.reduce((s, e) => s + (e.amount || 0), 0);
+        const { data: payment, error: payErr } = await supabase
+          .from('instructor_payments')
+          .insert({
+            instructor_id: matchedInstructor.id,
+            amount: totalAmount,
+            payment_type: 'extra',
+            status: 'pending',
+            description: 'Extra pay',
+            pay_period_start: today,
+            pay_period_end: today,
+          })
+          .select('id')
+          .single();
+        if (payErr) throw payErr;
+
+        const rows = itemsToSave.map(e => ({
+          payment_id: payment!.id,
+          instructor_id: matchedInstructor.id,
+          event_date: e.date,
+          description: e.description || null,
+          amount: e.amount,
+        }));
+        const { error: insErr } = await supabase
+          .from('instructor_payment_extras')
+          .insert(rows);
+        if (insErr) throw insErr;
+      } catch (err) {
+        console.error('Failed to persist extra pay', err);
+        toast.error('Failed to save extra pay to database');
+        return;
+      }
+    } else {
+      toast.message('Saved locally only — instructor not found in database', {
+        description: `${targetName} is not a real active instructor, so this won't show on their ledger.`,
+      });
+    }
+
     // Standalone create flow
     if (extraPayFor === STANDALONE_ID) {
       if (!standaloneInstructorName) {
@@ -545,7 +599,9 @@ const AdminLedgerPreview = () => {
       };
       setPayrollRecords(prev => [newRec, ...prev]);
       setHistoryPage(1);
-      toast.success(`Extra pay added for ${standaloneInstructorName}`);
+      if (matchedInstructor) {
+        toast.success(`Extra pay saved for ${standaloneInstructorName}`);
+      }
       setExtraPayFor(null);
       return;
     }
@@ -555,7 +611,9 @@ const AdminLedgerPreview = () => {
     setSelectedDetailPayment(prev =>
       prev?.id === extraPayFor ? { ...prev, extra_pay: itemsToSave } : prev
     );
-    toast.success('Extra pay updated');
+    if (matchedInstructor) {
+      toast.success('Extra pay updated');
+    }
     setExtraPayFor(null);
   };
   const sumExtraPay = (items: ExtraPayItem[]) =>
