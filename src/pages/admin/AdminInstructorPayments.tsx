@@ -808,8 +808,8 @@ const AdminInstructorPayments = () => {
                             ) : (
                               <>
                                 <Badge variant="outline">Class</Badge>
-                                {payment.bonusAmount > 0 && (
-                                  <Badge variant="secondary">+ Bonus</Badge>
+                                {extrasByPayment(payment.id).length > 0 && (
+                                  <Badge variant="secondary">+ Extra Pay</Badge>
                                 )}
                               </>
                             )}
@@ -819,10 +819,17 @@ const AdminInstructorPayments = () => {
                           {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span>${(payment.totalAmount + payment.bonusAmount).toFixed(2)}</span>
-                          {payment.bonusAmount > 0 && (
-                            <div className="text-xs text-muted-foreground">includes bonus</div>
-                          )}
+                          {(() => {
+                            const extraTotal = sumExtras(extrasByPayment(payment.id));
+                            return (
+                              <>
+                                <span>${(payment.totalAmount + extraTotal).toFixed(2)}</span>
+                                {extraTotal > 0 && (
+                                  <div className="text-xs text-muted-foreground">includes extra pay</div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
