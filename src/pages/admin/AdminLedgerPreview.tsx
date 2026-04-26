@@ -378,20 +378,62 @@ const AdminLedgerPreview = () => {
               <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
             </div>
             <div className="flex gap-2 items-center">
-              <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Pick instructor..." />
-                </SelectTrigger>
-                <SelectContent>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <UserIcon className="h-4 w-4 mr-1" />
+                    Pick Instructors
+                    {selectedInstructorIds.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{selectedInstructorIds.length}</Badge>
+                    )}
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                  <DropdownMenuLabel>Pick one or more instructors</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {instructorDropdown.length === 0 ? (
-                    <SelectItem value="__none__" disabled>No active instructors</SelectItem>
+                    <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
                   ) : (
-                    instructorDropdown.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)
+                    <>
+                      {instructorDropdown.map(i => {
+                        const checked = selectedInstructorIds.includes(i.id);
+                        return (
+                          <DropdownMenuItem
+                            key={i.id}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setSelectedInstructorIds(prev =>
+                                prev.includes(i.id)
+                                  ? prev.filter(id => id !== i.id)
+                                  : [...prev, i.id]
+                              );
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Checkbox checked={checked} className="pointer-events-none" />
+                            <span className="flex-1">{i.name}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setSelectedInstructorIds([])}
+                          disabled={selectedInstructorIds.length === 0}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </>
                   )}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={generateIndividual}>
-                <Plus className="h-4 w-4 mr-1" /> Generate Individual
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" onClick={generateSelected} disabled={selectedInstructorIds.length === 0}>
+                <Plus className="h-4 w-4 mr-1" /> Generate Selected
               </Button>
               <Button onClick={generateAll}>
                 <Plus className="h-4 w-4 mr-1" /> Generate All
@@ -404,7 +446,7 @@ const AdminLedgerPreview = () => {
             <CardHeader>
               <CardTitle className="text-lg">Instructor Rates</CardTitle>
               <CardDescription>
-                Update the per-class flat fee and hourly rate. <strong>Preview only — changes are local and not saved.</strong>
+                Update the flat fee per class. <strong>Preview only — changes are local and not saved.</strong>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -418,7 +460,6 @@ const AdminLedgerPreview = () => {
                         <TableHead>Instructor</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead className="text-right">Flat Fee / Class</TableHead>
-                        <TableHead className="text-right">Hourly Rate</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -434,10 +475,9 @@ const AdminLedgerPreview = () => {
                               ${fee}/class
                               {overridden && <Badge variant="secondary" className="ml-2">preview</Badge>}
                             </TableCell>
-                            <TableCell className="text-right">${inst.hourlyRate}/hr</TableCell>
                             <TableCell className="text-right">
                               <Button variant="outline" size="sm" onClick={() => openRateDialog(inst.id)}>
-                                Update Rates
+                                Update Fee
                               </Button>
                             </TableCell>
                           </TableRow>
