@@ -26,7 +26,12 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
   CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
+  CircleHelp,
 } from 'lucide-react';
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink,
+  PaginationNext, PaginationPrevious,
+} from '@/components/ui/pagination';
 import { format, subDays, addDays } from 'date-fns';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -190,6 +195,18 @@ const AdminLedgerPreview = () => {
 
   // Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog)
   const [createPayOpen, setCreatePayOpen] = useState(false);
+  // Help-video modal (mirrors Nick's payroll tutorial)
+  const [showHelpVideo, setShowHelpVideo] = useState(false);
+  // Payment detail modal for clicking a payroll history row
+  const [selectedDetailPayment, setSelectedDetailPayment] = useState<InstructorPayrollRecord | null>(null);
+  // Pagination for payroll history
+  const HISTORY_PAGE_SIZE = 10;
+  const [historyPage, setHistoryPage] = useState(1);
+  // Edit dialog for student payments (mirrors EditPaymentDialog)
+  const [editStudentPayFor, setEditStudentPayFor] = useState<StudentPayment | null>(null);
+  const [editStudentAmount, setEditStudentAmount] = useState('');
+  const [editStudentDesc, setEditStudentDesc] = useState('');
+  const [editStudentStatus, setEditStudentStatus] = useState<'pending' | 'completed' | 'upcoming'>('pending');
   const COURSE_LEVELS = [
     { value: 'novice', label: 'Novice', total: 330, weeks: 6, fullOnly: true },
     { value: 'amateur', label: 'Amateur', total: 660, weeks: 12, fullOnly: false },
@@ -251,6 +268,43 @@ const AdminLedgerPreview = () => {
     setStudentPayments(prev => [newPayment, ...prev]);
     setCreatePayOpen(false);
   };
+
+  // Edit/Delete student payments (mock-only)
+  const openEditStudentPay = (p: StudentPayment) => {
+    setEditStudentPayFor(p);
+    setEditStudentAmount(p.amount.toString());
+    setEditStudentDesc(p.description);
+    setEditStudentStatus(p.status);
+  };
+  const saveEditStudentPay = () => {
+    if (!editStudentPayFor) return;
+    const amt = parseFloat(editStudentAmount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Enter a valid amount.');
+      return;
+    }
+    setStudentPayments(ps => ps.map(p =>
+      p.id === editStudentPayFor.id
+        ? { ...p, amount: amt, description: editStudentDesc, status: editStudentStatus }
+        : p
+    ));
+    setEditStudentPayFor(null);
+  };
+  const deleteStudentPay = (id: string) => {
+    if (!confirm('Delete this payment record? (Preview only)')) return;
+    setStudentPayments(ps => ps.filter(p => p.id !== id));
+  };
+
+  // Pagination derived for payroll history
+  const totalHistoryPages = Math.max(1, Math.ceil(payrollRecords.length / HISTORY_PAGE_SIZE));
+  const paginatedPayroll = payrollRecords.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE,
+  );
+  // Reset to page 1 if the list shrinks past current page
+  useEffect(() => {
+    if (historyPage > totalHistoryPages) setHistoryPage(1);
+  }, [historyPage, totalHistoryPages]);
 
   useEffect(() => {
     (async () => {
@@ -601,6 +655,8 @@ const AdminLedgerPreview = () => {
                 description="Complete payment history with full management"
                 payments={filterStudent(studentPayments)}
                 showEditDelete
+                onEdit={openEditStudentPay}
+                onDelete={deleteStudentPay}
               />
             </TabsContent>
           </Tabs>
@@ -609,9 +665,26 @@ const AdminLedgerPreview = () => {
         {/* ──────────── TAB 2: INSTRUCTOR PAYMENTS ──────────── */}
         <TabsContent value="instructor-payments" className="space-y-4 mt-4">
           <div className="flex justify-between items-start flex-wrap gap-3">
-            <div>
-              <h2 className="text-xl font-bold">Instructor Payroll</h2>
-              <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-xl font-bold">Instructor Payroll</h2>
+                <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => setShowHelpVideo(true)}
+                    >
+                      <CircleHelp className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>How to use Payroll</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex gap-2 items-center">
               <DropdownMenu>
@@ -751,9 +824,20 @@ const AdminLedgerPreview = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payrollRecords.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{r.instructorName}</TableCell>
+                    {paginatedPayroll.map(r => (
+                      <TableRow
+                        key={r.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedDetailPayment(r)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <span>{r.instructorName}</span>
+                            {r.extra_pay.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px]">+ Extra Pay</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}
                         </TableCell>
@@ -766,7 +850,7 @@ const AdminLedgerPreview = () => {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => setViewExtraPayFor(r.id)}
+                              onClick={(e) => { e.stopPropagation(); setViewExtraPayFor(r.id); }}
                               className="underline decoration-dotted underline-offset-2 hover:text-primary cursor-pointer"
                             >
                               ${sumExtraPay(r.extra_pay).toFixed(2)}
@@ -782,7 +866,7 @@ const AdminLedgerPreview = () => {
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
                             : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Pending</Badge>}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           {r.status === 'pending' && (
                             <div className="flex gap-2 justify-end items-center flex-nowrap whitespace-nowrap">
                               <DropdownMenu>
@@ -812,6 +896,35 @@ const AdminLedgerPreview = () => {
                   </TableBody>
                 </Table>
               </div>
+              {totalHistoryPages > 1 && (
+                <Pagination className="mt-4">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                        className={historyPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === historyPage}
+                          onClick={() => setHistoryPage(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
+                        className={historyPage >= totalHistoryPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1128,6 +1241,134 @@ const AdminLedgerPreview = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Help Video dialog (mirrors Nick's Payroll Tutorial) */}
+      <Dialog open={showHelpVideo} onOpenChange={setShowHelpVideo}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Payroll Tutorial</DialogTitle>
+            <DialogDescription>Learn how to use the instructor payroll system</DialogDescription>
+          </DialogHeader>
+          <video
+            src="/videos/instructor-payroll-guide.mp4"
+            controls
+            className="w-full rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Detail modal — clicking a Payroll History row */}
+      <Dialog open={!!selectedDetailPayment} onOpenChange={(open) => { if (!open) setSelectedDetailPayment(null); }}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+            <DialogDescription>
+              {selectedDetailPayment && `${selectedDetailPayment.instructorName} — ${format(new Date(selectedDetailPayment.pay_period_start), 'MM/dd/yyyy')} to ${format(new Date(selectedDetailPayment.pay_period_end), 'MM/dd/yyyy')}`}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDetailPayment && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-y-3 text-sm">
+                <span className="text-muted-foreground">Instructor</span>
+                <span className="font-medium text-right">{selectedDetailPayment.instructorName}</span>
+
+                <span className="text-muted-foreground">Pay Period</span>
+                <span className="text-right">
+                  {format(new Date(selectedDetailPayment.pay_period_start), 'MM/dd/yyyy')} – {format(new Date(selectedDetailPayment.pay_period_end), 'MM/dd/yyyy')}
+                </span>
+
+                <span className="text-muted-foreground">Class Rate</span>
+                <span className="text-right">${SESSION_FEE}/class</span>
+
+                <span className="text-muted-foreground">Classes</span>
+                <span className="text-right">{selectedDetailPayment.hours_worked}</span>
+
+                <span className="text-muted-foreground">Base Pay</span>
+                <span className="text-right">${selectedDetailPayment.amount.toFixed(2)}</span>
+              </div>
+
+              {selectedDetailPayment.extra_pay.length > 0 && (
+                <div className="border-t pt-3 space-y-1.5">
+                  <div className="text-sm font-medium">Extra Pay</div>
+                  {selectedDetailPayment.extra_pay.map(e => (
+                    <div key={e.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {format(new Date(e.date), 'MM/dd/yyyy')}
+                        {e.description ? ` — ${e.description}` : ''}
+                      </span>
+                      <span className="font-medium">${e.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-sm font-semibold pt-1">
+                    <span>Extra Pay Subtotal</span>
+                    <span>${sumExtraPay(selectedDetailPayment.extra_pay).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-3 flex justify-between items-center">
+                <span className="font-semibold">Grand Total</span>
+                <span className="text-lg font-bold">
+                  ${(selectedDetailPayment.amount + sumExtraPay(selectedDetailPayment.extra_pay)).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Status: <span className="capitalize">{selectedDetailPayment.status}</span>
+                {' · '}
+                Date: {format(new Date(selectedDetailPayment.payment_date), 'MM/dd/yyyy')}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Payment dialog (mirrors Nick's EditPaymentDialog) */}
+      <Dialog open={!!editStudentPayFor} onOpenChange={(open) => { if (!open) setEditStudentPayFor(null); }}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Edit Payment</DialogTitle>
+            <DialogDescription>
+              {editStudentPayFor && `Update ${editStudentPayFor.studentName}'s payment record. Preview only.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Amount ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editStudentAmount}
+                onChange={(e) => setEditStudentAmount(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                rows={2}
+                value={editStudentDesc}
+                onChange={(e) => setEditStudentDesc(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select value={editStudentStatus} onValueChange={(v) => setEditStudentStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditStudentPayFor(null)}>Cancel</Button>
+            <Button onClick={saveEditStudentPay}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -1141,9 +1382,11 @@ interface StudentPaymentsTableProps {
   payments: StudentPayment[];
   onMarkPaid?: (id: string) => void;
   showEditDelete?: boolean;
+  onEdit?: (p: StudentPayment) => void;
+  onDelete?: (id: string) => void;
 }
 
-const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEditDelete }: StudentPaymentsTableProps) => (
+const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEditDelete, onEdit, onDelete }: StudentPaymentsTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-lg">{title}</CardTitle>
@@ -1187,10 +1430,10 @@ const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEd
                     )}
                     {showEditDelete && (
                       <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => alert(`▶︎ Mock: Edit ${p.studentName}'s payment`)}>
+                        <Button size="sm" variant="ghost" onClick={() => onEdit?.(p)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => alert(`▶︎ Mock: Delete ${p.studentName}'s payment`)}>
+                        <Button size="sm" variant="ghost" onClick={() => onDelete?.(p.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
