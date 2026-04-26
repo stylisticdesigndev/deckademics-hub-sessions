@@ -831,12 +831,7 @@ const AdminLedgerPreview = () => {
                         onClick={() => setSelectedDetailPayment(r)}
                       >
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-1.5">
-                            <span>{r.instructorName}</span>
-                            {r.extra_pay.length > 0 && (
-                              <Badge variant="secondary" className="text-[10px]">+ Extra Pay</Badge>
-                            )}
-                          </div>
+                          {r.instructorName}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}

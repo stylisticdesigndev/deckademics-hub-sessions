@@ -911,12 +911,7 @@ const AdminInstructorPayments = () => {
                             {payment.paymentType === 'bonus' ? (
                               <Badge variant="secondary">Bonus</Badge>
                             ) : (
-                              <>
-                                <Badge variant="outline">Class</Badge>
-                                {extrasByPayment(payment.id).length > 0 && (
-                                  <Badge variant="secondary">+ Extra Pay</Badge>
-                                )}
-                              </>
+                              <Badge variant="outline">Class</Badge>
                             )}
                           </div>
                         </TableCell>
