@@ -195,7 +195,7 @@ const AdminInstructorPayments = () => {
     
     const fee = parseFloat(newSessionFee);
     if (isNaN(fee) || fee < 0) {
-      toast.error('Please enter a valid session (flat) fee.');
+      toast.error('Please enter a valid class rate.');
       return;
     }
     
@@ -213,8 +213,8 @@ const AdminInstructorPayments = () => {
       const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, sessionFee: fee } : i);
       setInstructorsList(updated);
     } catch (error) {
-      console.error('Error updating session fee:', error);
-      toast.error('Failed to update fee');
+      console.error('Error updating class rate:', error);
+      toast.error('Failed to update rate');
     }
   };
   
@@ -620,7 +620,7 @@ const AdminInstructorPayments = () => {
         <Card>
           <CardHeader>
             <CardTitle>Instructor Rates</CardTitle>
-            <CardDescription>Manage the flat per-class fee paid to each instructor</CardDescription>
+            <CardDescription>Manage the class rate paid to each instructor</CardDescription>
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
@@ -630,7 +630,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
-                    <TableHead className="text-right">Flat Fee / Class</TableHead>
+                    <TableHead className="text-right">Class Rate</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -648,7 +648,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Fee
+                            Update Rate
                           </Button>
                         </div>
                       </TableCell>
@@ -676,7 +676,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Fee / Class</TableHead>
+                    <TableHead className="text-right">Class Rate</TableHead>
                     <TableHead className="text-right">Classes</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -884,7 +884,7 @@ const AdminInstructorPayments = () => {
                 
                 {selectedDetailPayment.paymentType === 'class' && (
                   <>
-                    <span className="text-muted-foreground">Fee per Class</span>
+                    <span className="text-muted-foreground">Class Rate</span>
                     <span className="text-right">
                       ${selectedDetailPayment.hoursLogged > 0
                         ? (selectedDetailPayment.totalAmount / selectedDetailPayment.hoursLogged).toFixed(2)
@@ -948,7 +948,7 @@ const AdminInstructorPayments = () => {
             </DialogTitle>
             <DialogDescription>
               {generateStep === 'dates' 
-                ? 'Select the pay period dates. The system will count scheduled classes from each instructor\'s weekly schedule and multiply by their flat per-class fee.'
+                ? 'Select the pay period dates. The system will count scheduled classes from each instructor\'s weekly schedule and multiply by their class rate.'
                 : 'Review the calculated payments below before confirming.'}
             </DialogDescription>
           </DialogHeader>
@@ -993,7 +993,7 @@ const AdminInstructorPayments = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Instructor</TableHead>
-                      <TableHead className="text-right">Fee / Class</TableHead>
+                      <TableHead className="text-right">Class Rate</TableHead>
                       <TableHead className="text-right">Classes</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
@@ -1059,21 +1059,21 @@ const AdminInstructorPayments = () => {
       <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Flat Fee per Class</DialogTitle>
+            <DialogTitle>Update Class Rate</DialogTitle>
             <DialogDescription>
-              {selectedInstructor && `Set the flat per-class fee for ${selectedInstructor.name}`}
+              {selectedInstructor && `Set the class rate for ${selectedInstructor.name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="sessionFee">Flat Fee per Class ($)</Label>
+              <Label htmlFor="sessionFee">Class Rate ($)</Label>
               <Input id="sessionFee" type="number" step="0.50" min="0" placeholder="e.g. 50" value={newSessionFee} onChange={(e) => setNewSessionFee(e.target.value)} />
               <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateHourlyRate}>Save Fee</Button>
+            <Button onClick={handleUpdateHourlyRate}>Save Rate</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
