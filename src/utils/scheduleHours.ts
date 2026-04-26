@@ -76,30 +76,35 @@ export interface ScheduleEntry {
 export interface GeneratedPayment {
   instructorId: string;
   instructorName: string;
-  hourlyRate: number;
-  totalHours: number;
+  sessionFee: number;
+  totalSessions: number;
   totalAmount: number;
 }
 
 /**
- * Calculate total hours and amount for an instructor given their schedule and a date range.
+ * Count total scheduled sessions (slots) for an instructor in a date range,
+ * and compute amount as sessions × flat session fee.
  */
-export function calculateScheduledHours(
+export function calculateScheduledSessions(
   schedules: ScheduleEntry[],
   startDate: Date,
   endDate: Date,
-  hourlyRate: number
-): { totalHours: number; totalAmount: number } {
-  let totalHours = 0;
+  sessionFee: number
+): { totalSessions: number; totalAmount: number } {
+  let totalSessions = 0;
 
   for (const entry of schedules) {
     const occurrences = countDayOccurrences(startDate, endDate, entry.day);
-    const hoursPerSession = parseHoursDuration(entry.hours);
-    totalHours += occurrences * hoursPerSession;
+    // Each comma-separated slot in `hours` = 1 class session for that day.
+    const slotsPerDay = entry.hours.split(',').map(s => s.trim()).filter(Boolean).length;
+    totalSessions += occurrences * slotsPerDay;
   }
 
   return {
-    totalHours: Math.round(totalHours * 100) / 100,
-    totalAmount: Math.round(totalHours * hourlyRate * 100) / 100,
+    totalSessions,
+    totalAmount: Math.round(totalSessions * sessionFee * 100) / 100,
   };
 }
+
+// Backwards-compat alias (deprecated)
+export const calculateScheduledHours = calculateScheduledSessions;
