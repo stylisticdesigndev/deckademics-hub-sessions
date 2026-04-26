@@ -1301,6 +1301,100 @@ const AdminInstructorPayments = () => {
         onSaved={invalidate}
       />
 
+      {/* Standalone Extra Pay (no payroll period) */}
+      <Dialog open={showStandaloneExtra} onOpenChange={setShowStandaloneExtra}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Add Extra Pay</DialogTitle>
+            <DialogDescription>
+              Pay an instructor for one-off events or gigs without generating a full payroll period.
+              This will appear in the pending payments list and can be marked Paid like any other payment.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="standalone-instructor" className="text-xs uppercase tracking-wide text-muted-foreground">
+                Instructor
+              </Label>
+              <Select value={standaloneInstructorId} onValueChange={setStandaloneInstructorId}>
+                <SelectTrigger id="standalone-instructor">
+                  <SelectValue placeholder="Select an instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instructorsList.map(inst => (
+                    <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Line items ({standaloneItems.length})
+              </Label>
+              {standaloneItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground border border-dashed rounded p-3 text-center">
+                  No extra pay added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {standaloneItems.map(item => (
+                    <div key={item._key} className="flex items-center gap-2 border rounded p-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{item.description || 'Extra pay'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(item.event_date), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        ${(parseFloat(item.amount) || 0).toFixed(2)}
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => removeStandaloneItem(item._key)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex justify-end text-sm font-semibold pt-1">
+                    Total: ${standaloneTotal.toFixed(2)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Add new line item
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="sa-date" className="text-xs">Date</Label>
+                  <Input id="sa-date" type="date" value={standaloneNewDate} onChange={(e) => setStandaloneNewDate(e.target.value)} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="sa-amount" className="text-xs">Pay rate ($)</Label>
+                  <Input id="sa-amount" type="number" step="0.01" min="0" placeholder="150.00" value={standaloneNewAmount} onChange={(e) => setStandaloneNewAmount(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="sa-desc" className="text-xs">Description</Label>
+                <Input id="sa-desc" value={standaloneNewDesc} onChange={(e) => setStandaloneNewDesc(e.target.value)} placeholder="e.g. Open-deck event at The Lot" />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addStandaloneItem}>
+                <Plus className="h-4 w-4 mr-1" /> Add line item
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStandaloneExtra(false)} disabled={standaloneSaving}>Cancel</Button>
+            <Button onClick={saveStandaloneExtra} disabled={standaloneSaving}>
+              {standaloneSaving ? 'Saving...' : 'Save Extra Pay'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Payment Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-[400px]">
