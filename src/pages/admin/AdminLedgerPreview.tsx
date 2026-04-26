@@ -122,13 +122,14 @@ const seedInstructorPayroll = (): InstructorPayrollRecord[] => {
     for (let p = 0; p < 3; p++) {
       const start = subDays(new Date(), (p + 1) * 14);
       const end = subDays(start, -13);
+      const classes = 8 + i * 2 + p;
       out.push({
         id: `ip-${i}-${p}`,
         instructorName: name,
         pay_period_start: format(start, 'yyyy-MM-dd'),
         pay_period_end: format(end, 'yyyy-MM-dd'),
-        hours_worked: 12 + (i + p) * 1.5,
-        amount: (12 + (i + p) * 1.5) * SESSION_FEE,
+        hours_worked: classes,
+        amount: classes * SESSION_FEE,
         bonus_amount: p === 0 && i === 0 ? 100 : 0,
         status: p === 0 ? 'pending' : 'paid',
         payment_date: format(end, 'yyyy-MM-dd'),
