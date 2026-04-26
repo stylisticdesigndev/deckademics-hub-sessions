@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Send, Clock, Bookmark, Check } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Bookmark, Check, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,6 +30,7 @@ interface StudentConversationThreadProps {
   sending?: boolean;
   onSaveToNotes?: (message: ThreadMessage) => void;
   savedMessageIds?: Set<string>;
+  replyDisabled?: boolean;
 }
 
 const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
@@ -43,6 +44,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   sending = false,
   onSaveToNotes,
   savedMessageIds = new Set(),
+  replyDisabled = false,
 }) => {
   const [replyText, setReplyText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -170,8 +172,15 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Reply input or expired notice */}
-      {canReply ? (
+      {/* Reply input, expired notice, or read-only notice */}
+      {replyDisabled ? (
+        <div className="border-t pt-3">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-muted-foreground text-sm">
+            <Lock className="h-4 w-4" />
+            <span>Read-only — your instructor has disabled replies. You'll still receive their messages.</span>
+          </div>
+        </div>
+      ) : canReply ? (
         <div className="border-t pt-3 space-y-1.5">
           <div className="flex gap-2">
             <Textarea
