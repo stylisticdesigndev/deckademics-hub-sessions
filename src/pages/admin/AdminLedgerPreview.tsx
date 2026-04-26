@@ -629,10 +629,10 @@ const AdminLedgerPreview = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => openEditPayroll(r.id), 0); }}>
+                                  <DropdownMenuItem onSelect={() => setTimeout(() => openEditPayroll(r.id), 0)}>
                                     <Edit className="h-4 w-4 mr-2" /> Edit Classes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => openBonus(r.id), 0); }}>
+                                  <DropdownMenuItem onSelect={() => setTimeout(() => openBonus(r.id), 0)}>
                                     <Plus className="h-4 w-4 mr-2" /> Add Bonus
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
