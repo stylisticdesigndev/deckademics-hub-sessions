@@ -160,6 +160,13 @@ const AdminLedgerPreview = () => {
   const [rateDialogFor, setRateDialogFor] = useState<string | null>(null);
   const [rateDialogFee, setRateDialogFee] = useState('');
 
+  // Edit classes + bonus dialogs for pending payroll rows
+  const [editPayrollFor, setEditPayrollFor] = useState<string | null>(null);
+  const [editPayrollClasses, setEditPayrollClasses] = useState('');
+  const [bonusFor, setBonusFor] = useState<string | null>(null);
+  const [bonusAmount, setBonusAmount] = useState('');
+  const [bonusDescription, setBonusDescription] = useState('');
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -303,6 +310,47 @@ const AdminLedgerPreview = () => {
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
+
+  const openEditPayroll = (id: string) => {
+    const rec = payrollRecords.find(p => p.id === id);
+    if (!rec) return;
+    setEditPayrollFor(id);
+    setEditPayrollClasses(rec.hours_worked.toString());
+  };
+  const saveEditPayroll = () => {
+    if (!editPayrollFor) return;
+    const classes = parseInt(editPayrollClasses, 10);
+    if (isNaN(classes) || classes < 0) {
+      alert('Enter a valid number of classes.');
+      return;
+    }
+    setPayrollRecords(ps => ps.map(p => {
+      if (p.id !== editPayrollFor) return p;
+      const rate = p.hours_worked > 0 ? p.amount / p.hours_worked : SESSION_FEE;
+      return { ...p, hours_worked: classes, amount: classes * rate };
+    }));
+    setEditPayrollFor(null);
+  };
+
+  const openBonus = (id: string) => {
+    const rec = payrollRecords.find(p => p.id === id);
+    if (!rec) return;
+    setBonusFor(id);
+    setBonusAmount(rec.bonus_amount ? rec.bonus_amount.toString() : '');
+    setBonusDescription('');
+  };
+  const saveBonus = () => {
+    if (!bonusFor) return;
+    const amount = parseFloat(bonusAmount);
+    if (isNaN(amount) || amount < 0) {
+      alert('Enter a valid bonus amount.');
+      return;
+    }
+    setPayrollRecords(ps => ps.map(p =>
+      p.id === bonusFor ? { ...p, bonus_amount: amount } : p
+    ));
+    setBonusFor(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -572,9 +620,17 @@ const AdminLedgerPreview = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           {r.status === 'pending' && (
-                            <Button size="sm" variant="ghost" onClick={() => markPayrollPaid(r.id)}>
-                              <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
-                            </Button>
+                            <div className="flex gap-1 justify-end flex-wrap">
+                              <Button size="sm" variant="outline" onClick={() => openEditPayroll(r.id)}>
+                                <Edit className="h-4 w-4 mr-1" /> Edit Classes
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openBonus(r.id)}>
+                                <Plus className="h-4 w-4 mr-1" /> Bonus
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => markPayrollPaid(r.id)}>
+                                <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
+                              </Button>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
@@ -607,6 +663,54 @@ const AdminLedgerPreview = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRateDialogFor(null)}>Cancel</Button>
             <Button onClick={saveRateDialog}>Save Rate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Classes dialog (preview only) */}
+      <Dialog open={!!editPayrollFor} onOpenChange={(open) => { if (!open) setEditPayrollFor(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit Classes</DialogTitle>
+            <DialogDescription>
+              Adjust the number of classes for this pay period. Total recalculates from the instructor's class rate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-classes">Classes</Label>
+              <Input id="edit-classes" type="number" min="0" value={editPayrollClasses} onChange={(e) => setEditPayrollClasses(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPayrollFor(null)}>Cancel</Button>
+            <Button onClick={saveEditPayroll}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Bonus dialog (preview only) */}
+      <Dialog open={!!bonusFor} onOpenChange={(open) => { if (!open) setBonusFor(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add Bonus</DialogTitle>
+            <DialogDescription>
+              Add a bonus amount to this pending payment. Preview only — nothing saves to the database.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="bonus-amount">Bonus Amount ($)</Label>
+              <Input id="bonus-amount" type="number" step="0.01" min="0" value={bonusAmount} onChange={(e) => setBonusAmount(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bonus-desc">Description (optional)</Label>
+              <Input id="bonus-desc" value={bonusDescription} onChange={(e) => setBonusDescription(e.target.value)} placeholder="e.g. Holiday bonus" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBonusFor(null)}>Cancel</Button>
+            <Button onClick={saveBonus}>Save Bonus</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
