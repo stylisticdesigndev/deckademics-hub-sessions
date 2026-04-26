@@ -18,6 +18,9 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
@@ -181,6 +184,8 @@ const AdminLedgerPreview = () => {
   const [newExtraDesc, setNewExtraDesc] = useState('');
   const [newExtraAmount, setNewExtraAmount] = useState('');
   const [viewExtraPayFor, setViewExtraPayFor] = useState<string | null>(null);
+  // For standalone "Add Extra Pay" — chosen instructor name before the record is created
+  const [standaloneInstructorName, setStandaloneInstructorName] = useState<string>('');
 
   useEffect(() => {
     (async () => {
@@ -379,6 +384,32 @@ const AdminLedgerPreview = () => {
   };
   const saveExtraPay = () => {
     if (!extraPayFor) return;
+    // Standalone create flow
+    if (extraPayFor === STANDALONE_ID) {
+      if (!standaloneInstructorName) {
+        alert('Please select an instructor.');
+        return;
+      }
+      if (extraPayDraft.length === 0) {
+        alert('Add at least one extra pay line item.');
+        return;
+      }
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const newRec: InstructorPayrollRecord = {
+        id: `pr-extra-${Date.now()}`,
+        instructorName: standaloneInstructorName,
+        pay_period_start: today,
+        pay_period_end: today,
+        hours_worked: 0,
+        amount: 0,
+        extra_pay: extraPayDraft,
+        status: 'pending',
+        payment_date: today,
+      };
+      setPayrollRecords(prev => [newRec, ...prev]);
+      setExtraPayFor(null);
+      return;
+    }
     setPayrollRecords(ps => ps.map(p =>
       p.id === extraPayFor ? { ...p, extra_pay: extraPayDraft } : p
     ));
@@ -387,28 +418,15 @@ const AdminLedgerPreview = () => {
   const sumExtraPay = (items: ExtraPayItem[]) =>
     items.reduce((acc, e) => acc + e.amount, 0);
 
-  // Standalone "Add Extra Pay" — creates a $0 base pending record then opens the extras editor
+  // Standalone "Add Extra Pay" — opens the editor with a sentinel id; record is created on save
+  const STANDALONE_ID = '__standalone__';
   const startStandaloneExtraPay = () => {
-    const instructorPool = activeInstructors.length > 0
-      ? activeInstructors.map(i => i.name)
-      : Array.from(new Set(payrollRecords.map(p => p.instructorName)));
-    const instructorName = instructorPool[0] || 'Instructor';
     const today = format(new Date(), 'yyyy-MM-dd');
-    const newId = `pr-extra-${Date.now()}`;
-    const newRec: InstructorPayrollRecord = {
-      id: newId,
-      instructorName,
-      pay_period_start: today,
-      pay_period_end: today,
-      hours_worked: 0,
-      amount: 0,
-      extra_pay: [],
-      status: 'pending',
-      payment_date: today,
-    };
-    setPayrollRecords(prev => [newRec, ...prev]);
-    // Open the extras editor on the new record
-    setExtraPayFor(newId);
+    const defaultName = activeInstructors[0]?.name
+      ?? payrollRecords[0]?.instructorName
+      ?? '';
+    setStandaloneInstructorName(defaultName);
+    setExtraPayFor(STANDALONE_ID);
     setExtraPayDraft([]);
     setNewExtraDate(today);
     setNewExtraDesc('');
@@ -591,6 +609,9 @@ const AdminLedgerPreview = () => {
               <Button onClick={generateAll}>
                 <Plus className="h-4 w-4 mr-1" /> Generate All
               </Button>
+              <Button variant="outline" onClick={startStandaloneExtraPay}>
+                <DollarSign className="h-4 w-4 mr-1" /> Add Extra Pay
+              </Button>
             </div>
           </div>
 
@@ -645,15 +666,8 @@ const AdminLedgerPreview = () => {
 
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <CardTitle className="text-lg">Payroll History</CardTitle>
-                  <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
-                </div>
-                <Button size="sm" onClick={startStandaloneExtraPay}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Extra Pay
-                </Button>
-              </div>
+              <CardTitle className="text-lg">Payroll History</CardTitle>
+              <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -845,6 +859,26 @@ const AdminLedgerPreview = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {extraPayFor === STANDALONE_ID && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="extra-instructor" className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Instructor
+                </Label>
+                <Select value={standaloneInstructorName} onValueChange={setStandaloneInstructorName}>
+                  <SelectTrigger id="extra-instructor">
+                    <SelectValue placeholder="Select an instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(activeInstructors.length > 0
+                      ? activeInstructors.map(i => i.name)
+                      : Array.from(new Set(payrollRecords.map(p => p.instructorName)))
+                    ).map(name => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* Existing items */}
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
