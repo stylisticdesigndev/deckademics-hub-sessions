@@ -375,7 +375,11 @@ const AdminLedgerPreview = () => {
                   <SelectValue placeholder="Pick instructor..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {instructorList.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                  {instructorDropdown.length === 0 ? (
+                    <SelectItem value="__none__" disabled>No active instructors</SelectItem>
+                  ) : (
+                    instructorDropdown.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)
+                  )}
                 </SelectContent>
               </Select>
               <Button variant="outline" onClick={generateIndividual}>
@@ -390,7 +394,7 @@ const AdminLedgerPreview = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Payroll History</CardTitle>
-              <CardDescription>{payrollRecords.length} payroll records across {instructorList.length} instructors</CardDescription>
+              <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
