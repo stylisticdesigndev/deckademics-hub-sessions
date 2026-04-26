@@ -731,7 +731,7 @@ const AdminInstructorPayments = () => {
                             <>
                               <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
                                 <Edit className="mr-1 h-3 w-3" />
-                                Edit Hours
+                                Edit Classes
                               </Button>
                               <Button variant="outline" size="sm" onClick={() => openAddBonusToRow(payment.id)}>
                                 <DollarSign className="mr-1 h-3 w-3" />
