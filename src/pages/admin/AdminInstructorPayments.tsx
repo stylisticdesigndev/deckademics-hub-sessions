@@ -515,28 +515,64 @@ const AdminInstructorPayments = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
                   <UserIcon className="mr-1 h-4 w-4" />
-                  Generate Individual
+                  Generate Selected
+                  {generateScopedIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">{generateScopedIds.length}</Badge>
+                  )}
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
-                <DropdownMenuLabel>Choose an instructor</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                <DropdownMenuLabel>Pick one or more instructors</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {instructorsList.length === 0 ? (
                   <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
                 ) : (
-                  instructorsList.map(inst => (
-                    <DropdownMenuItem
-                      key={inst.id}
-                      onClick={() => {
-                        resetGenerateForm();
-                        setGenerateScopedTo(inst.id);
-                        setShowGenerateDialog(true);
-                      }}
-                    >
-                      {inst.name}
-                    </DropdownMenuItem>
-                  ))
+                  <>
+                    {instructorsList.map(inst => {
+                      const checked = generateScopedIds.includes(inst.id);
+                      return (
+                        <DropdownMenuItem
+                          key={inst.id}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setGenerateScopedIds(prev =>
+                              prev.includes(inst.id)
+                                ? prev.filter(id => id !== inst.id)
+                                : [...prev, inst.id]
+                            );
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Checkbox checked={checked} className="pointer-events-none" />
+                          <span className="flex-1">{inst.name}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                    <DropdownMenuSeparator />
+                    <div className="flex items-center justify-between gap-2 px-2 py-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGenerateScopedIds([])}
+                        disabled={generateScopedIds.length === 0}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (generateScopedIds.length === 0) {
+                            toast.error('Pick at least one instructor');
+                            return;
+                          }
+                          setShowGenerateDialog(true);
+                        }}
+                      >
+                        Continue ({generateScopedIds.length})
+                      </Button>
+                    </div>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
