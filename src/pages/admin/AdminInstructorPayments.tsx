@@ -115,6 +115,15 @@ const AdminInstructorPayments = () => {
   const [extraPayInstructorId, setExtraPayInstructorId] = useState<string | null>(null);
   const [extraPayInstructorName, setExtraPayInstructorName] = useState<string>('');
 
+  // Standalone Extra Pay (no payroll generation) dialog state
+  const [showStandaloneExtra, setShowStandaloneExtra] = useState(false);
+  const [standaloneInstructorId, setStandaloneInstructorId] = useState<string>('');
+  const [standaloneItems, setStandaloneItems] = useState<{ _key: string; event_date: string; description: string; amount: string }[]>([]);
+  const [standaloneNewDate, setStandaloneNewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [standaloneNewDesc, setStandaloneNewDesc] = useState('');
+  const [standaloneNewAmount, setStandaloneNewAmount] = useState('');
+  const [standaloneSaving, setStandaloneSaving] = useState(false);
+
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
