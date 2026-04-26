@@ -21,6 +21,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
@@ -186,6 +187,70 @@ const AdminLedgerPreview = () => {
   const [viewExtraPayFor, setViewExtraPayFor] = useState<string | null>(null);
   // For standalone "Add Extra Pay" — chosen instructor name before the record is created
   const [standaloneInstructorName, setStandaloneInstructorName] = useState<string>('');
+
+  // Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog)
+  const [createPayOpen, setCreatePayOpen] = useState(false);
+  const COURSE_LEVELS = [
+    { value: 'novice', label: 'Novice', total: 330, weeks: 6, fullOnly: true },
+    { value: 'amateur', label: 'Amateur', total: 660, weeks: 12, fullOnly: false },
+    { value: 'intermediate', label: 'Intermediate', total: 660, weeks: 12, fullOnly: false },
+    { value: 'advanced', label: 'Advanced', total: 330, weeks: 6, fullOnly: false },
+    { value: 'advanced_plus', label: 'Advanced Plus', total: 0, weeks: 0, fullOnly: false },
+  ] as const;
+  const [cpStudentName, setCpStudentName] = useState('');
+  const [cpCourseLevel, setCpCourseLevel] = useState<string>('amateur');
+  const [cpSchedule, setCpSchedule] = useState<'full' | 'biweekly' | 'weekly'>('full');
+  const [cpAmount, setCpAmount] = useState('660.00');
+  const [cpStartDate, setCpStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [cpStatus, setCpStatus] = useState<'pending' | 'completed' | 'upcoming'>('pending');
+  const [cpDescription, setCpDescription] = useState('');
+
+  const openCreatePayment = () => {
+    setCpStudentName('');
+    setCpCourseLevel('amateur');
+    setCpSchedule('full');
+    setCpAmount('660.00');
+    setCpStartDate(format(new Date(), 'yyyy-MM-dd'));
+    setCpStatus('pending');
+    setCpDescription('');
+    setCreatePayOpen(true);
+  };
+
+  // Auto-recalculate amount when course/schedule changes
+  useEffect(() => {
+    const course = COURSE_LEVELS.find(c => c.value === cpCourseLevel);
+    if (!course || course.value === 'advanced_plus') return;
+    if (course.fullOnly) setCpSchedule('full');
+    const total = course.total;
+    if (cpSchedule === 'full') setCpAmount(total.toFixed(2));
+    else if (cpSchedule === 'biweekly') setCpAmount((total / (course.weeks / 2)).toFixed(2));
+    else if (cpSchedule === 'weekly') setCpAmount((total / course.weeks).toFixed(2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cpCourseLevel, cpSchedule]);
+
+  const saveCreatePayment = () => {
+    if (!cpStudentName.trim()) {
+      alert('Please enter a student name.');
+      return;
+    }
+    const amt = parseFloat(cpAmount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    const courseLabel = COURSE_LEVELS.find(c => c.value === cpCourseLevel)?.label ?? cpCourseLevel;
+    const newPayment: StudentPayment = {
+      id: `sp-new-${Date.now()}`,
+      studentName: cpStudentName.trim(),
+      email: `${cpStudentName.trim().toLowerCase().replace(/\s+/g, '.')}@preview.local`,
+      amount: amt,
+      status: cpStatus,
+      payment_date: cpStartDate,
+      description: cpDescription.trim() || `${courseLabel} – ${cpSchedule}`,
+    };
+    setStudentPayments(prev => [newPayment, ...prev]);
+    setCreatePayOpen(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -470,7 +535,7 @@ const AdminLedgerPreview = () => {
               <h2 className="text-xl font-bold">Payment Management</h2>
               <p className="text-sm text-muted-foreground">Track and manage student payments</p>
             </div>
-            <Button onClick={() => alert('▶︎ Mock: Would open Create Payment dialog')}>
+            <Button onClick={openCreatePayment}>
               <Plus className="h-4 w-4 mr-2" /> Create Payment
             </Button>
           </div>
@@ -965,6 +1030,101 @@ const AdminLedgerPreview = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setExtraPayFor(null)}>Cancel</Button>
             <Button onClick={saveExtraPay}>Save Extra Pay</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Payment dialog (preview-only mock — mirrors Nick's CreatePaymentDialog) */}
+      <Dialog open={createPayOpen} onOpenChange={setCreatePayOpen}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Student Payment</DialogTitle>
+            <DialogDescription>
+              Log a new payment record for a student. Preview only — saves to local state and shows in the Payments table.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="cp-student" className="text-xs">Student name</Label>
+              <Input
+                id="cp-student"
+                placeholder="e.g. Alex Rivera"
+                value={cpStudentName}
+                onChange={(e) => setCpStudentName(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">In Nick's live view this is a dropdown of real students.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs">Course Level</Label>
+                <Select value={cpCourseLevel} onValueChange={setCpCourseLevel}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COURSE_LEVELS.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs">Payment Schedule</Label>
+                <Select value={cpSchedule} onValueChange={(v) => setCpSchedule(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">Pay in Full</SelectItem>
+                    <SelectItem value="biweekly">Bi-weekly Installments</SelectItem>
+                    <SelectItem value="weekly">Weekly Installments</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="cp-amount" className="text-xs">Amount ($)</Label>
+                <Input
+                  id="cp-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cpAmount}
+                  onChange={(e) => setCpAmount(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="cp-date" className="text-xs">Start Date</Label>
+                <Input
+                  id="cp-date"
+                  type="date"
+                  value={cpStartDate}
+                  onChange={(e) => setCpStartDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select value={cpStatus} onValueChange={(v) => setCpStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="cp-desc" className="text-xs">Description (optional)</Label>
+              <Textarea
+                id="cp-desc"
+                rows={2}
+                placeholder="Notes for this payment"
+                value={cpDescription}
+                onChange={(e) => setCpDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreatePayOpen(false)}>Cancel</Button>
+            <Button onClick={saveCreatePayment}>Create Payment</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
