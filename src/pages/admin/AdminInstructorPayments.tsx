@@ -501,10 +501,41 @@ const AdminInstructorPayments = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
-            <Zap className="mr-1 h-4 w-4" />
-            Generate Pay Period
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
+              <Zap className="mr-1 h-4 w-4" />
+              Generate All
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <UserIcon className="mr-1 h-4 w-4" />
+                  Generate Individual
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+                <DropdownMenuLabel>Choose an instructor</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {instructorsList.length === 0 ? (
+                  <DropdownMenuItem disabled>No active instructors</DropdownMenuItem>
+                ) : (
+                  instructorsList.map(inst => (
+                    <DropdownMenuItem
+                      key={inst.id}
+                      onClick={() => {
+                        resetGenerateForm();
+                        setGenerateScopedTo(inst.id);
+                        setShowGenerateDialog(true);
+                      }}
+                    >
+                      {inst.name}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Help Video Dialog */}
