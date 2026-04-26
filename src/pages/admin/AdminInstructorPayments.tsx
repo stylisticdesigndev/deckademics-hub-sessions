@@ -62,6 +62,7 @@ interface Instructor {
   name: string;
   email: string;
   hourlyRate: number;
+  sessionFee: number;
   specialization: string;
 }
 
@@ -91,6 +92,7 @@ const AdminInstructorPayments = () => {
   const [hoursToChange, setHoursToChange] = useState<string>('');
   const [hoursOperation, setHoursOperation] = useState<'add' | 'subtract'>('add');
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
+  const [newSessionFee, setNewSessionFee] = useState<string>('');
   
   const [instructorsList, setInstructorsList] = React.useState<Instructor[]>([]);
   
@@ -114,7 +116,7 @@ const AdminInstructorPayments = () => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, hourly_rate, specialties, profiles (first_name, last_name, email)')
+        .select('id, hourly_rate, session_fee, specialties, profiles (first_name, last_name, email)')
         .eq('status', 'active' as any);
       
       if (error) {
@@ -127,6 +129,7 @@ const AdminInstructorPayments = () => {
         name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
         email: inst.profiles?.email || '',
         hourlyRate: inst.hourly_rate || 0,
+        sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
         specialization: inst.specialties?.join(', ') || 'DJ Instruction',
       }));
       
@@ -179,6 +182,7 @@ const AdminInstructorPayments = () => {
   const openSetRateDialog = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setNewHourlyRate(instructor.hourlyRate.toString());
+    setNewSessionFee(instructor.sessionFee.toString());
     setShowSetRateDialog(true);
   };
   
@@ -193,27 +197,32 @@ const AdminInstructorPayments = () => {
     if (!selectedInstructor) return;
     
     const rate = parseFloat(newHourlyRate);
-    if (isNaN(rate) || rate <= 0) {
+    const fee = parseFloat(newSessionFee);
+    if (isNaN(rate) || rate < 0) {
       toast.error('Please enter a valid hourly rate.');
+      return;
+    }
+    if (isNaN(fee) || fee < 0) {
+      toast.error('Please enter a valid session (flat) fee.');
       return;
     }
     
     try {
       const { error } = await supabase
         .from('instructors')
-        .update({ hourly_rate: rate } as any)
+        .update({ hourly_rate: rate, session_fee: fee } as any)
         .eq('id', selectedInstructor.id as any);
       
       if (error) throw error;
       
-      toast.success(`${selectedInstructor.name}'s hourly rate updated to $${rate}`);
+      toast.success(`${selectedInstructor.name} updated — $${fee}/session, $${rate}/hr`);
       setShowSetRateDialog(false);
       setSelectedInstructor(null);
-      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, hourlyRate: rate } : i);
+      const updated = instructorsList.map(i => i.id === selectedInstructor.id ? { ...i, hourlyRate: rate, sessionFee: fee } : i);
       setInstructorsList(updated);
     } catch (error) {
       console.error('Error updating hourly rate:', error);
-      toast.error('Failed to update hourly rate');
+      toast.error('Failed to update rates');
     }
   };
   
@@ -589,6 +598,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
+                    <TableHead className="text-right">Session Fee</TableHead>
                     <TableHead className="text-right">Hourly Rate</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -599,6 +609,7 @@ const AdminInstructorPayments = () => {
                       <TableCell className="font-medium">{instructor.name}</TableCell>
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
+                      <TableCell className="text-right">${instructor.sessionFee}/class</TableCell>
                       <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -607,7 +618,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Rate
+                            Update Rates
                           </Button>
                         </div>
                       </TableCell>
@@ -1010,20 +1021,26 @@ const AdminInstructorPayments = () => {
       <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Set Hourly Rate</DialogTitle>
+            <DialogTitle>Update Instructor Rates</DialogTitle>
             <DialogDescription>
-              {selectedInstructor && `Update hourly rate for ${selectedInstructor.name}`}
+              {selectedInstructor && `Set the per-class flat fee and hourly rate for ${selectedInstructor.name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="sessionFee">Flat Fee per Class ($)</Label>
+              <Input id="sessionFee" type="number" step="0.50" min="0" placeholder="e.g. 50" value={newSessionFee} onChange={(e) => setNewSessionFee(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Used by the Pay Ledger — instructor earns this each scheduled class slot.</p>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="rate">Hourly Rate ($)</Label>
               <Input id="rate" type="number" step="0.50" min="1" placeholder="Enter hourly rate" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Used by Generate Pay Period to calculate hours × rate.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateHourlyRate}>Save Rate</Button>
+            <Button onClick={handleUpdateHourlyRate}>Save Rates</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
