@@ -58,6 +58,7 @@ import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/u
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
 import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
 import { ExtraPayDialog } from '@/components/admin/payments/ExtraPayDialog';
+import { Plus } from 'lucide-react';
 
 interface Instructor {
   id: string;
@@ -78,6 +79,7 @@ const AdminInstructorPayments = () => {
     extras: allExtras,
     extrasByPayment,
     sumExtras,
+    saveExtras,
   } = useInstructorPaymentExtras();
   
   const [showHelpVideo, setShowHelpVideo] = useState(false);
@@ -113,6 +115,15 @@ const AdminInstructorPayments = () => {
   const [extraPayPaymentId, setExtraPayPaymentId] = useState<string | null>(null);
   const [extraPayInstructorId, setExtraPayInstructorId] = useState<string | null>(null);
   const [extraPayInstructorName, setExtraPayInstructorName] = useState<string>('');
+
+  // Standalone Extra Pay (no payroll generation) dialog state
+  const [showStandaloneExtra, setShowStandaloneExtra] = useState(false);
+  const [standaloneInstructorId, setStandaloneInstructorId] = useState<string>('');
+  const [standaloneItems, setStandaloneItems] = useState<{ _key: string; event_date: string; description: string; amount: string }[]>([]);
+  const [standaloneNewDate, setStandaloneNewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [standaloneNewDesc, setStandaloneNewDesc] = useState('');
+  const [standaloneNewAmount, setStandaloneNewAmount] = useState('');
+  const [standaloneSaving, setStandaloneSaving] = useState(false);
 
   // Delete payment state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -460,6 +471,95 @@ const AdminInstructorPayments = () => {
     return format(date, 'MM/dd/yyyy');
   };
 
+  // ===== Standalone Extra Pay (no payroll period) =====
+  const openStandaloneExtra = () => {
+    setStandaloneInstructorId('');
+    setStandaloneItems([]);
+    setStandaloneNewDate(format(new Date(), 'yyyy-MM-dd'));
+    setStandaloneNewDesc('');
+    setStandaloneNewAmount('');
+    setShowStandaloneExtra(true);
+  };
+
+  const addStandaloneItem = () => {
+    const amt = parseFloat(standaloneNewAmount);
+    if (!standaloneNewDate || isNaN(amt) || amt <= 0) {
+      toast.error('Enter a valid date and pay rate');
+      return;
+    }
+    setStandaloneItems(prev => [
+      ...prev,
+      {
+        _key: `${Date.now()}-${Math.random()}`,
+        event_date: standaloneNewDate,
+        description: standaloneNewDesc.trim(),
+        amount: standaloneNewAmount,
+      },
+    ]);
+    setStandaloneNewDesc('');
+    setStandaloneNewAmount('');
+  };
+
+  const removeStandaloneItem = (key: string) => {
+    setStandaloneItems(prev => prev.filter(i => i._key !== key));
+  };
+
+  const standaloneTotal = standaloneItems.reduce(
+    (acc, i) => acc + (parseFloat(i.amount) || 0),
+    0,
+  );
+
+  const saveStandaloneExtra = async () => {
+    if (!standaloneInstructorId) {
+      toast.error('Please select an instructor');
+      return;
+    }
+    if (standaloneItems.length === 0) {
+      toast.error('Add at least one extra pay line item');
+      return;
+    }
+    setStandaloneSaving(true);
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data: created, error: insErr } = await supabase
+        .from('instructor_payments')
+        .insert([{
+          instructor_id: standaloneInstructorId,
+          amount: 0,
+          hours_worked: null,
+          pay_period_start: today,
+          pay_period_end: today,
+          payment_type: 'bonus',
+          description: 'Extra pay',
+          status: 'pending',
+          payment_date: new Date().toISOString(),
+        } as any])
+        .select('id')
+        .single();
+      if (insErr || !created) throw insErr || new Error('No payment created');
+
+      const ok = await saveExtras(
+        (created as any).id,
+        standaloneInstructorId,
+        standaloneItems.map(i => ({
+          event_date: i.event_date,
+          description: i.description || null,
+          amount: parseFloat(i.amount) || 0,
+        })),
+      );
+      if (!ok) throw new Error('Failed to save line items');
+
+      toast.success('Extra pay recorded');
+      invalidate();
+      setShowStandaloneExtra(false);
+    } catch (err) {
+      console.error('Standalone extra pay save failed', err);
+      toast.error('Failed to record extra pay');
+    } finally {
+      setStandaloneSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -467,6 +567,7 @@ const AdminInstructorPayments = () => {
       </div>
     );
   }
+
 
   return (
     <>
@@ -560,6 +661,10 @@ const AdminInstructorPayments = () => {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button variant="outline" onClick={openStandaloneExtra}>
+              <DollarSign className="mr-1 h-4 w-4" />
+              Add Extra Pay
+            </Button>
           </div>
         </div>
 
@@ -1195,6 +1300,100 @@ const AdminInstructorPayments = () => {
         existing={extraPayPaymentId ? extrasByPayment(extraPayPaymentId) : []}
         onSaved={invalidate}
       />
+
+      {/* Standalone Extra Pay (no payroll period) */}
+      <Dialog open={showStandaloneExtra} onOpenChange={setShowStandaloneExtra}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Add Extra Pay</DialogTitle>
+            <DialogDescription>
+              Pay an instructor for one-off events or gigs without generating a full payroll period.
+              This will appear in the pending payments list and can be marked Paid like any other payment.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="standalone-instructor" className="text-xs uppercase tracking-wide text-muted-foreground">
+                Instructor
+              </Label>
+              <Select value={standaloneInstructorId} onValueChange={setStandaloneInstructorId}>
+                <SelectTrigger id="standalone-instructor">
+                  <SelectValue placeholder="Select an instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instructorsList.map(inst => (
+                    <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Line items ({standaloneItems.length})
+              </Label>
+              {standaloneItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground border border-dashed rounded p-3 text-center">
+                  No extra pay added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {standaloneItems.map(item => (
+                    <div key={item._key} className="flex items-center gap-2 border rounded p-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{item.description || 'Extra pay'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(item.event_date), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        ${(parseFloat(item.amount) || 0).toFixed(2)}
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => removeStandaloneItem(item._key)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex justify-end text-sm font-semibold pt-1">
+                    Total: ${standaloneTotal.toFixed(2)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Add new line item
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="sa-date" className="text-xs">Date</Label>
+                  <Input id="sa-date" type="date" value={standaloneNewDate} onChange={(e) => setStandaloneNewDate(e.target.value)} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="sa-amount" className="text-xs">Pay rate ($)</Label>
+                  <Input id="sa-amount" type="number" step="0.01" min="0" placeholder="150.00" value={standaloneNewAmount} onChange={(e) => setStandaloneNewAmount(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="sa-desc" className="text-xs">Description</Label>
+                <Input id="sa-desc" value={standaloneNewDesc} onChange={(e) => setStandaloneNewDesc(e.target.value)} placeholder="e.g. Open-deck event at The Lot" />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addStandaloneItem}>
+                <Plus className="h-4 w-4 mr-1" /> Add line item
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStandaloneExtra(false)} disabled={standaloneSaving}>Cancel</Button>
+            <Button onClick={saveStandaloneExtra} disabled={standaloneSaving}>
+              {standaloneSaving ? 'Saving...' : 'Save Extra Pay'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Payment Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
