@@ -1241,6 +1241,134 @@ const AdminLedgerPreview = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Help Video dialog (mirrors Nick's Payroll Tutorial) */}
+      <Dialog open={showHelpVideo} onOpenChange={setShowHelpVideo}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Payroll Tutorial</DialogTitle>
+            <DialogDescription>Learn how to use the instructor payroll system</DialogDescription>
+          </DialogHeader>
+          <video
+            src="/videos/instructor-payroll-guide.mp4"
+            controls
+            className="w-full rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Detail modal — clicking a Payroll History row */}
+      <Dialog open={!!selectedDetailPayment} onOpenChange={(open) => { if (!open) setSelectedDetailPayment(null); }}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+            <DialogDescription>
+              {selectedDetailPayment && `${selectedDetailPayment.instructorName} — ${format(new Date(selectedDetailPayment.pay_period_start), 'MM/dd/yyyy')} to ${format(new Date(selectedDetailPayment.pay_period_end), 'MM/dd/yyyy')}`}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDetailPayment && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-y-3 text-sm">
+                <span className="text-muted-foreground">Instructor</span>
+                <span className="font-medium text-right">{selectedDetailPayment.instructorName}</span>
+
+                <span className="text-muted-foreground">Pay Period</span>
+                <span className="text-right">
+                  {format(new Date(selectedDetailPayment.pay_period_start), 'MM/dd/yyyy')} – {format(new Date(selectedDetailPayment.pay_period_end), 'MM/dd/yyyy')}
+                </span>
+
+                <span className="text-muted-foreground">Class Rate</span>
+                <span className="text-right">${SESSION_FEE}/class</span>
+
+                <span className="text-muted-foreground">Classes</span>
+                <span className="text-right">{selectedDetailPayment.hours_worked}</span>
+
+                <span className="text-muted-foreground">Base Pay</span>
+                <span className="text-right">${selectedDetailPayment.amount.toFixed(2)}</span>
+              </div>
+
+              {selectedDetailPayment.extra_pay.length > 0 && (
+                <div className="border-t pt-3 space-y-1.5">
+                  <div className="text-sm font-medium">Extra Pay</div>
+                  {selectedDetailPayment.extra_pay.map(e => (
+                    <div key={e.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {format(new Date(e.date), 'MM/dd/yyyy')}
+                        {e.description ? ` — ${e.description}` : ''}
+                      </span>
+                      <span className="font-medium">${e.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-sm font-semibold pt-1">
+                    <span>Extra Pay Subtotal</span>
+                    <span>${sumExtraPay(selectedDetailPayment.extra_pay).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-3 flex justify-between items-center">
+                <span className="font-semibold">Grand Total</span>
+                <span className="text-lg font-bold">
+                  ${(selectedDetailPayment.amount + sumExtraPay(selectedDetailPayment.extra_pay)).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Status: <span className="capitalize">{selectedDetailPayment.status}</span>
+                {' · '}
+                Date: {format(new Date(selectedDetailPayment.payment_date), 'MM/dd/yyyy')}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Payment dialog (mirrors Nick's EditPaymentDialog) */}
+      <Dialog open={!!editStudentPayFor} onOpenChange={(open) => { if (!open) setEditStudentPayFor(null); }}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Edit Payment</DialogTitle>
+            <DialogDescription>
+              {editStudentPayFor && `Update ${editStudentPayFor.studentName}'s payment record. Preview only.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Amount ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editStudentAmount}
+                onChange={(e) => setEditStudentAmount(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                rows={2}
+                value={editStudentDesc}
+                onChange={(e) => setEditStudentDesc(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select value={editStudentStatus} onValueChange={(v) => setEditStudentStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditStudentPayFor(null)}>Cancel</Button>
+            <Button onClick={saveEditStudentPay}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
