@@ -609,6 +609,9 @@ const AdminLedgerPreview = () => {
               <Button onClick={generateAll}>
                 <Plus className="h-4 w-4 mr-1" /> Generate All
               </Button>
+              <Button variant="outline" onClick={startStandaloneExtraPay}>
+                <DollarSign className="h-4 w-4 mr-1" /> Add Extra Pay
+              </Button>
             </div>
           </div>
 
