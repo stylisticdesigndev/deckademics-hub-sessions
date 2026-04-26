@@ -745,10 +745,10 @@ const AdminStudents = () => {
                     onValueChange={(value) => handleLevelChange(viewedStudent.id, value)}
                     disabled={updateStudentLevel.isPending}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full pointer-events-auto">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[60] pointer-events-auto" position="popper">
                       <SelectItem value="novice">Novice</SelectItem>
                       <SelectItem value="amateur">Amateur</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
