@@ -765,28 +765,104 @@ const AdminLedgerPreview = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Bonus dialog (preview only) */}
-      <Dialog open={!!bonusFor} onOpenChange={(open) => { if (!open) setBonusFor(null); }}>
-        <DialogContent className="sm:max-w-[400px]">
+      {/* Add Extra Pay dialog (preview only) */}
+      <Dialog open={!!extraPayFor} onOpenChange={(open) => { if (!open) setExtraPayFor(null); }}>
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle>Add Bonus</DialogTitle>
+            <DialogTitle>Add Extra Pay</DialogTitle>
             <DialogDescription>
-              Add a bonus amount to this pending payment. Preview only — nothing saves to the database.
+              Log one-off events, gigs, or bonuses with their own date, description, and pay rate.
+              Each line item is recorded individually and shown on the instructor's payment record.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="bonus-amount">Bonus Amount ($)</Label>
-              <Input id="bonus-amount" type="number" step="0.01" min="0" value={bonusAmount} onChange={(e) => setBonusAmount(e.target.value)} />
+
+          <div className="space-y-4 py-2">
+            {/* Existing items */}
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Line items ({extraPayDraft.length})
+              </Label>
+              {extraPayDraft.length === 0 ? (
+                <p className="text-sm text-muted-foreground border border-dashed rounded p-3 text-center">
+                  No extra pay added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {extraPayDraft.map(item => (
+                    <div key={item.id} className="flex items-center gap-2 border rounded p-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">
+                          {item.description || 'Extra pay'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(item.date), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        ${item.amount.toFixed(2)}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeExtraPayItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex justify-end text-sm font-semibold pt-1">
+                    Total: ${sumExtraPay(extraPayDraft).toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bonus-desc">Description (optional)</Label>
-              <Input id="bonus-desc" value={bonusDescription} onChange={(e) => setBonusDescription(e.target.value)} placeholder="e.g. Holiday bonus" />
+
+            {/* Add new item */}
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Add new line item
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="extra-date" className="text-xs">Date</Label>
+                  <Input
+                    id="extra-date"
+                    type="date"
+                    value={newExtraDate}
+                    onChange={(e) => setNewExtraDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="extra-amount" className="text-xs">Pay rate ($)</Label>
+                  <Input
+                    id="extra-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="150.00"
+                    value={newExtraAmount}
+                    onChange={(e) => setNewExtraAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="extra-desc" className="text-xs">Description</Label>
+                <Input
+                  id="extra-desc"
+                  value={newExtraDesc}
+                  onChange={(e) => setNewExtraDesc(e.target.value)}
+                  placeholder="e.g. Open-deck event at The Lot"
+                />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addExtraPayItem}>
+                <Plus className="h-4 w-4 mr-1" /> Add line item
+              </Button>
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBonusFor(null)}>Cancel</Button>
-            <Button onClick={saveBonus}>Save Bonus</Button>
+            <Button variant="outline" onClick={() => setExtraPayFor(null)}>Cancel</Button>
+            <Button onClick={saveExtraPay}>Save Extra Pay</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
