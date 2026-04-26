@@ -1059,21 +1059,21 @@ const AdminInstructorPayments = () => {
       <Dialog open={showSetRateDialog} onOpenChange={setShowSetRateDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Update Flat Fee per Class</DialogTitle>
+            <DialogTitle>Update Class Rate</DialogTitle>
             <DialogDescription>
-              {selectedInstructor && `Set the flat per-class fee for ${selectedInstructor.name}`}
+              {selectedInstructor && `Set the class rate for ${selectedInstructor.name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="sessionFee">Flat Fee per Class ($)</Label>
+              <Label htmlFor="sessionFee">Class Rate ($)</Label>
               <Input id="sessionFee" type="number" step="0.50" min="0" placeholder="e.g. 50" value={newSessionFee} onChange={(e) => setNewSessionFee(e.target.value)} />
               <p className="text-xs text-muted-foreground">Instructor earns this for each scheduled class slot — used by both the Pay Ledger and Generate Pay Period.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSetRateDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateHourlyRate}>Save Fee</Button>
+            <Button onClick={handleUpdateHourlyRate}>Save Rate</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
