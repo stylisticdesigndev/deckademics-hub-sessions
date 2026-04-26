@@ -620,7 +620,7 @@ const AdminInstructorPayments = () => {
         <Card>
           <CardHeader>
             <CardTitle>Instructor Rates</CardTitle>
-            <CardDescription>Manage instructor hourly rates for payment calculations</CardDescription>
+            <CardDescription>Manage the flat per-class fee paid to each instructor</CardDescription>
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
@@ -630,8 +630,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
-                    <TableHead className="text-right">Session Fee</TableHead>
-                    <TableHead className="text-right">Hourly Rate</TableHead>
+                    <TableHead className="text-right">Flat Fee / Class</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -642,7 +641,6 @@ const AdminInstructorPayments = () => {
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
                       <TableCell className="text-right">${instructor.sessionFee}/class</TableCell>
-                      <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openScheduleDialog(instructor)}>
@@ -650,7 +648,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Rates
+                            Update Fee
                           </Button>
                         </div>
                       </TableCell>
@@ -678,8 +676,8 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Pay Period</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="text-right">Fee / Class</TableHead>
+                    <TableHead className="text-right">Classes</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -702,7 +700,9 @@ const AdminInstructorPayments = () => {
                         {formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {payment.paymentType === 'class' ? `$${payment.hourlyRate}/hr` : '—'}
+                        {payment.paymentType === 'class' && payment.hoursLogged > 0
+                          ? `$${(payment.totalAmount / payment.hoursLogged).toFixed(2)}/class`
+                          : '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         {payment.paymentType === 'class' ? payment.hoursLogged : '—'}
