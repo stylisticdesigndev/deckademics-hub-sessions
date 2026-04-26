@@ -614,9 +614,26 @@ const AdminLedgerPreview = () => {
         {/* ──────────── TAB 2: INSTRUCTOR PAYMENTS ──────────── */}
         <TabsContent value="instructor-payments" className="space-y-4 mt-4">
           <div className="flex justify-between items-start flex-wrap gap-3">
-            <div>
-              <h2 className="text-xl font-bold">Instructor Payroll</h2>
-              <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-xl font-bold">Instructor Payroll</h2>
+                <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => setShowHelpVideo(true)}
+                    >
+                      <CircleHelp className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>How to use Payroll</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex gap-2 items-center">
               <DropdownMenu>
