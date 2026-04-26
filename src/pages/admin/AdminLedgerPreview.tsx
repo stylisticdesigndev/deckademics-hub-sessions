@@ -387,6 +387,34 @@ const AdminLedgerPreview = () => {
   const sumExtraPay = (items: ExtraPayItem[]) =>
     items.reduce((acc, e) => acc + e.amount, 0);
 
+  // Standalone "Add Extra Pay" — creates a $0 base pending record then opens the extras editor
+  const startStandaloneExtraPay = () => {
+    const instructorPool = activeInstructors.length > 0
+      ? activeInstructors.map(i => i.name)
+      : Array.from(new Set(payrollRecords.map(p => p.instructorName)));
+    const instructorName = instructorPool[0] || 'Instructor';
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const newId = `pr-extra-${Date.now()}`;
+    const newRec: InstructorPayrollRecord = {
+      id: newId,
+      instructorName,
+      pay_period_start: today,
+      pay_period_end: today,
+      hours_worked: 0,
+      amount: 0,
+      extra_pay: [],
+      status: 'pending',
+      payment_date: today,
+    };
+    setPayrollRecords(prev => [newRec, ...prev]);
+    // Open the extras editor on the new record
+    setExtraPayFor(newId);
+    setExtraPayDraft([]);
+    setNewExtraDate(today);
+    setNewExtraDesc('');
+    setNewExtraAmount('');
+  };
+
   return (
     <div className="space-y-6">
       <section className="flex justify-between items-start gap-4 flex-wrap">
@@ -617,8 +645,15 @@ const AdminLedgerPreview = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Payroll History</CardTitle>
-              <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <CardTitle className="text-lg">Payroll History</CardTitle>
+                  <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
+                </div>
+                <Button size="sm" onClick={startStandaloneExtraPay}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Extra Pay
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
