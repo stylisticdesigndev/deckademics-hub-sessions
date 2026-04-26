@@ -40,6 +40,7 @@ import InstructorClasses from "./pages/instructor/InstructorClasses";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorMessages from "./pages/instructor/InstructorMessages";
 import InstructorAttendance from "./pages/instructor/InstructorAttendance";
+import InstructorLedger from "./pages/instructor/InstructorLedger";
 
 // Admin pages
 import AdminDashboardGate from "./pages/admin/AdminDashboardGate";
@@ -122,6 +123,7 @@ const App = () => (
             <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
             <Route path="/instructor/classes" element={<InstructorClasses />} />
             <Route path="/instructor/attendance" element={<InstructorAttendance />} />
+            <Route path="/instructor/ledger" element={<InstructorLedger />} />
             <Route path="/instructor/profile" element={<InstructorProfile />} />
             <Route path="/instructor/messages" element={<InstructorMessages />} />
           </Route>

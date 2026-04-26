@@ -11,7 +11,8 @@ import {
   UserCog,
   Bell,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Wallet
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export const InstructorNavigation = () => {
     { title: "Students", icon: Users, href: "/instructor/students" },
     { title: "Classes", icon: Calendar, href: "/instructor/classes" },
     { title: "Attendance", icon: ClipboardCheck, href: "/instructor/attendance" },
+    { title: "Pay Ledger", icon: Wallet, href: "/instructor/ledger" },
     { title: "Curriculum", icon: BookOpen, href: "/instructor/curriculum" },
     { title: "Messages", icon: MessageSquare, href: "/instructor/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
