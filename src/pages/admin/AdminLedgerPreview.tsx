@@ -249,15 +249,57 @@ const AdminLedgerPreview = () => {
   const markStudentPaid = (id: string) =>
     setStudentPayments(ps => ps.map(p => p.id === id ? { ...p, status: 'completed' as const } : p));
   const generateAll = () => {
-    alert('▶︎ Mock: Would generate payroll for ALL active instructors based on attendance ledger.');
+    const targets = activeInstructors.length > 0
+      ? activeInstructors.map(i => ({ id: i.id, name: i.name, fee: getEffectiveFee(i.id, i.sessionFee) }))
+      : Array.from(new Set(payrollRecords.map(p => p.instructorName))).map(n => ({ id: n, name: n, fee: SESSION_FEE }));
+    if (targets.length === 0) {
+      alert('No active instructors to generate payroll for.');
+      return;
+    }
+    const start = subDays(new Date(), 13);
+    const end = new Date();
+    const newRecords: InstructorPayrollRecord[] = targets.map((t, idx) => {
+      const classes = 6 + (idx % 4);
+      return {
+        id: `ip-gen-${Date.now()}-${idx}`,
+        instructorName: t.name,
+        pay_period_start: format(start, 'yyyy-MM-dd'),
+        pay_period_end: format(end, 'yyyy-MM-dd'),
+        hours_worked: classes,
+        amount: classes * t.fee,
+        bonus_amount: 0,
+        status: 'pending',
+        payment_date: format(end, 'yyyy-MM-dd'),
+      };
+    });
+    setPayrollRecords(prev => [...newRecords, ...prev]);
+    alert(`▶︎ Mock: Generated ${newRecords.length} pending payroll record(s). See Payroll History below.`);
   };
   const generateSelected = () => {
     if (selectedInstructorIds.length === 0)
       return alert('Pick at least one instructor first.');
-    const names = selectedInstructorIds
-      .map(id => activeInstructors.find(i => i.id === id)?.name ?? id)
-      .join(', ');
-    alert(`▶︎ Mock: Would generate payroll for ${selectedInstructorIds.length} instructor(s): ${names}.`);
+    const start = subDays(new Date(), 13);
+    const end = new Date();
+    const newRecords: InstructorPayrollRecord[] = selectedInstructorIds.map((id, idx) => {
+      const inst = activeInstructors.find(i => i.id === id);
+      const name = inst?.name ?? id;
+      const fee = inst ? getEffectiveFee(inst.id, inst.sessionFee) : SESSION_FEE;
+      const classes = 6 + (idx % 4);
+      return {
+        id: `ip-gen-${Date.now()}-${idx}`,
+        instructorName: name,
+        pay_period_start: format(start, 'yyyy-MM-dd'),
+        pay_period_end: format(end, 'yyyy-MM-dd'),
+        hours_worked: classes,
+        amount: classes * fee,
+        bonus_amount: 0,
+        status: 'pending',
+        payment_date: format(end, 'yyyy-MM-dd'),
+      };
+    });
+    setPayrollRecords(prev => [...newRecords, ...prev]);
+    setSelectedInstructorIds([]);
+    alert(`▶︎ Mock: Generated ${newRecords.length} pending payroll record(s). See Payroll History below.`);
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
@@ -287,10 +329,9 @@ const AdminLedgerPreview = () => {
       </Card>
 
       <Tabs defaultValue="student-payments" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="student-payments"><CreditCard className="h-4 w-4 mr-2" /> Student Payments</TabsTrigger>
           <TabsTrigger value="instructor-payments"><DollarSign className="h-4 w-4 mr-2" /> Instructor Payments</TabsTrigger>
-          <TabsTrigger value="ledger"><Wallet className="h-4 w-4 mr-2" /> Pay Ledger (Instructor View)</TabsTrigger>
         </TabsList>
 
         {/* ──────────── TAB 1: STUDENT PAYMENTS ──────────── */}
