@@ -655,6 +655,8 @@ const AdminLedgerPreview = () => {
                 description="Complete payment history with full management"
                 payments={filterStudent(studentPayments)}
                 showEditDelete
+                onEdit={openEditStudentPay}
+                onDelete={deleteStudentPay}
               />
             </TabsContent>
           </Tabs>
