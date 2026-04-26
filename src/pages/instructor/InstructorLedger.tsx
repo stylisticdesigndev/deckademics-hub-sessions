@@ -1,6 +1,4 @@
 import { useEffect, useState, useMemo } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -65,8 +63,7 @@ const InstructorLedger = () => {
   }, [rows, extras, sumExtras]);
 
   return (
-    <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
-      <div className="space-y-6">
+    <div className="space-y-6 w-full">
         <section>
           <h1 className="text-2xl font-bold">Pay Ledger</h1>
           <p className="text-muted-foreground mt-1">Auto-generated from your marked attendance — flat fee per class session. You earn once per scheduled time slot, regardless of how many students attend.</p>
@@ -165,8 +162,7 @@ const InstructorLedger = () => {
             )}
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
