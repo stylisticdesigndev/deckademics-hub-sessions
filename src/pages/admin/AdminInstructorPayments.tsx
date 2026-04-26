@@ -79,6 +79,7 @@ const AdminInstructorPayments = () => {
     extras: allExtras,
     extrasByPayment,
     sumExtras,
+    saveExtras,
   } = useInstructorPaymentExtras();
   
   const [showHelpVideo, setShowHelpVideo] = useState(false);
