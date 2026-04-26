@@ -180,6 +180,7 @@ const AdminLedgerPreview = () => {
   const [newExtraDate, setNewExtraDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [newExtraDesc, setNewExtraDesc] = useState('');
   const [newExtraAmount, setNewExtraAmount] = useState('');
+  const [viewExtraPayFor, setViewExtraPayFor] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -649,33 +650,16 @@ const AdminLedgerPreview = () => {
                           {r.extra_pay.length === 0 ? (
                             '—'
                           ) : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="underline decoration-dotted underline-offset-2 cursor-help"
-                                  >
-                                    ${sumExtraPay(r.extra_pay).toFixed(2)}
-                                    <span className="ml-1 text-xs text-muted-foreground">
-                                      ({r.extra_pay.length})
-                                    </span>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <div className="space-y-1 text-xs">
-                                    {r.extra_pay.map(e => (
-                                      <div key={e.id} className="flex justify-between gap-3">
-                                        <span>
-                                          {format(new Date(e.date), 'MM/dd')} — {e.description || 'Extra pay'}
-                                        </span>
-                                        <span className="font-medium">${e.amount.toFixed(2)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <button
+                              type="button"
+                              onClick={() => setViewExtraPayFor(r.id)}
+                              className="underline decoration-dotted underline-offset-2 hover:text-primary cursor-pointer"
+                            >
+                              ${sumExtraPay(r.extra_pay).toFixed(2)}
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({r.extra_pay.length})
+                              </span>
+                            </button>
                           )}
                         </TableCell>
                         <TableCell className="font-bold">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</TableCell>
@@ -762,6 +746,55 @@ const AdminLedgerPreview = () => {
             <Button variant="outline" onClick={() => setEditPayrollFor(null)}>Cancel</Button>
             <Button onClick={saveEditPayroll}>Save</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Extra Pay breakdown dialog */}
+      <Dialog open={!!viewExtraPayFor} onOpenChange={(open) => { if (!open) setViewExtraPayFor(null); }}>
+        <DialogContent className="sm:max-w-[520px]">
+          {(() => {
+            const rec = payrollRecords.find(p => p.id === viewExtraPayFor);
+            if (!rec) return null;
+            const total = sumExtraPay(rec.extra_pay);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Extra Pay — {rec.instructorName}</DialogTitle>
+                  <DialogDescription>
+                    {format(new Date(rec.pay_period_start), 'MM/dd/yyyy')} – {format(new Date(rec.pay_period_end), 'MM/dd/yyyy')}
+                    {' · '}{rec.extra_pay.length} item{rec.extra_pay.length === 1 ? '' : 's'}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
+                  {rec.extra_pay.map(e => (
+                    <div
+                      key={e.id}
+                      className="flex items-start justify-between gap-3 border rounded p-3 text-sm"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium break-words">
+                          {e.description || 'Extra pay'}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {format(new Date(e.date), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        ${e.amount.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-2 border-t font-semibold">
+                    <span>Total Extra Pay</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setViewExtraPayFor(null)}>Close</Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
