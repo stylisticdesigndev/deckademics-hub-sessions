@@ -58,7 +58,7 @@ import { calculateScheduledSessions, GeneratedPayment, ScheduleEntry } from '@/u
 import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } from '@/utils/instructorSchedule';
 import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
 import { ExtraPayDialog } from '@/components/admin/payments/ExtraPayDialog';
-import { Plus, Trash2 as Trash2Icon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface Instructor {
   id: string;
