@@ -598,13 +598,17 @@ const AdminInstructorPayments = () => {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <UserIcon className="mr-1 h-4 w-4" />
-                  Generate Selected
-                  {generateScopedIds.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">{generateScopedIds.length}</Badge>
-                  )}
-                  <ChevronDown className="ml-1 h-4 w-4" />
+                <Button variant="outline" className="min-w-[200px] justify-between">
+                  <span className="flex items-center">
+                    <UserIcon className="mr-1 h-4 w-4" />
+                    Generate Selected
+                  </span>
+                  <span className="flex items-center">
+                    {generateScopedIds.length > 0 && (
+                      <Badge variant="secondary" className="mr-2">{generateScopedIds.length}</Badge>
+                    )}
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
