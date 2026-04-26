@@ -471,6 +471,95 @@ const AdminInstructorPayments = () => {
     return format(date, 'MM/dd/yyyy');
   };
 
+  // ===== Standalone Extra Pay (no payroll period) =====
+  const openStandaloneExtra = () => {
+    setStandaloneInstructorId('');
+    setStandaloneItems([]);
+    setStandaloneNewDate(format(new Date(), 'yyyy-MM-dd'));
+    setStandaloneNewDesc('');
+    setStandaloneNewAmount('');
+    setShowStandaloneExtra(true);
+  };
+
+  const addStandaloneItem = () => {
+    const amt = parseFloat(standaloneNewAmount);
+    if (!standaloneNewDate || isNaN(amt) || amt <= 0) {
+      toast.error('Enter a valid date and pay rate');
+      return;
+    }
+    setStandaloneItems(prev => [
+      ...prev,
+      {
+        _key: `${Date.now()}-${Math.random()}`,
+        event_date: standaloneNewDate,
+        description: standaloneNewDesc.trim(),
+        amount: standaloneNewAmount,
+      },
+    ]);
+    setStandaloneNewDesc('');
+    setStandaloneNewAmount('');
+  };
+
+  const removeStandaloneItem = (key: string) => {
+    setStandaloneItems(prev => prev.filter(i => i._key !== key));
+  };
+
+  const standaloneTotal = standaloneItems.reduce(
+    (acc, i) => acc + (parseFloat(i.amount) || 0),
+    0,
+  );
+
+  const saveStandaloneExtra = async () => {
+    if (!standaloneInstructorId) {
+      toast.error('Please select an instructor');
+      return;
+    }
+    if (standaloneItems.length === 0) {
+      toast.error('Add at least one extra pay line item');
+      return;
+    }
+    setStandaloneSaving(true);
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data: created, error: insErr } = await supabase
+        .from('instructor_payments')
+        .insert([{
+          instructor_id: standaloneInstructorId,
+          amount: 0,
+          hours_worked: null,
+          pay_period_start: today,
+          pay_period_end: today,
+          payment_type: 'bonus',
+          description: 'Extra pay',
+          status: 'pending',
+          payment_date: new Date().toISOString(),
+        } as any])
+        .select('id')
+        .single();
+      if (insErr || !created) throw insErr || new Error('No payment created');
+
+      const ok = await saveExtras(
+        (created as any).id,
+        standaloneInstructorId,
+        standaloneItems.map(i => ({
+          event_date: i.event_date,
+          description: i.description || null,
+          amount: parseFloat(i.amount) || 0,
+        })),
+      );
+      if (!ok) throw new Error('Failed to save line items');
+
+      toast.success('Extra pay recorded');
+      invalidate();
+      setShowStandaloneExtra(false);
+    } catch (err) {
+      console.error('Standalone extra pay save failed', err);
+      toast.error('Failed to record extra pay');
+    } finally {
+      setStandaloneSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
