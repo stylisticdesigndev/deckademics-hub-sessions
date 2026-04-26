@@ -598,6 +598,7 @@ const AdminInstructorPayments = () => {
                     <TableHead>Instructor</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Specialization</TableHead>
+                    <TableHead className="text-right">Session Fee</TableHead>
                     <TableHead className="text-right">Hourly Rate</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -608,6 +609,7 @@ const AdminInstructorPayments = () => {
                       <TableCell className="font-medium">{instructor.name}</TableCell>
                       <TableCell>{instructor.email}</TableCell>
                       <TableCell>{instructor.specialization}</TableCell>
+                      <TableCell className="text-right">${instructor.sessionFee}/class</TableCell>
                       <TableCell className="text-right">${instructor.hourlyRate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -616,7 +618,7 @@ const AdminInstructorPayments = () => {
                             Set Schedule
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openSetRateDialog(instructor)}>
-                            Update Rate
+                            Update Rates
                           </Button>
                         </div>
                       </TableCell>
