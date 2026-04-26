@@ -442,6 +442,51 @@ export type Database = {
           },
         ]
       }
+      feature_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          device_type: string | null
+          id: string
+          requester_id: string
+          requester_role: string
+          screenshot_url: string | null
+          seen_by_admin: boolean
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          device_type?: string | null
+          id?: string
+          requester_id: string
+          requester_role: string
+          screenshot_url?: string | null
+          seen_by_admin?: boolean
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          device_type?: string | null
+          id?: string
+          requester_id?: string
+          requester_role?: string
+          screenshot_url?: string | null
+          seen_by_admin?: boolean
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       instructor_ledger_entries: {
         Row: {
           amount: number

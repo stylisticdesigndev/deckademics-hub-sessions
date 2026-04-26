@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Target,
   Bug as BugIcon,
+  Lightbulb,
   ArrowLeft
 } from 'lucide-react';
 
@@ -72,6 +73,19 @@ export const AdminNavigation = () => {
     staleTime: 30000,
   });
 
+  const { data: openFeatureCount = 0 } = useQuery({
+    queryKey: ['admin-open-feature-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('feature_requests' as any)
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['open', 'planned']);
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 30000,
+  });
+
   const pendingStudentsCount = studentCounts?.pending || 0;
   const pendingInstructorsCount = instructorCounts?.pending || 0;
 
@@ -93,6 +107,7 @@ export const AdminNavigation = () => {
     { title: "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/admin/announcements" },
     { title: "Bug Reports", icon: BugIcon, href: "/admin/bug-reports", badge: openBugCount },
+    { title: "Feature Requests", icon: Lightbulb, href: "/admin/feature-requests", badge: openFeatureCount },
     { title: "Profile", icon: UserCog, href: "/admin/profile" },
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];

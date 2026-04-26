@@ -57,6 +57,7 @@ import AdminSkills from "./pages/admin/AdminSkills";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminProgress from "./pages/admin/AdminProgress";
 import AdminBugReports from "./pages/admin/AdminBugReports";
+import AdminFeatureRequests from "./pages/admin/AdminFeatureRequests";
 import AdminLedgerPreview from "./pages/admin/AdminLedgerPreview";
 import StudentCurriculum from "./pages/student/StudentCurriculum";
 import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
@@ -144,6 +145,7 @@ const App = () => (
             <Route path="/admin/announcements" element={<AdminAnnouncements />} />
             <Route path="/admin/messages" element={<AdminMessages />} />
             <Route path="/admin/bug-reports" element={<AdminBugReports />} />
+            <Route path="/admin/feature-requests" element={<AdminFeatureRequests />} />
             <Route path="/admin/ledger-preview" element={<AdminLedgerPreview />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
             <Route path="/admin/settings" element={<AdminSettings />} />

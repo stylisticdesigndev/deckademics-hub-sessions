@@ -49,6 +49,7 @@
 - [Supabase Auth Redirect](mem://arch/supabase-auth-redirect-configuration) — Password reset hardcoded to redirect to /reset-password for Lovable preview
 - [Student Scheduling System](mem://features/student-scheduling-system) — Fixed class blocks power 'Next Class' display and instructor roster filtering
 - [Bug Reporting System](mem://features/bug-reporting-system) — bug_reports table with RLS and admin notification badge logic
+- [Feature Requests System](mem://features/feature-requests-system) — feature_requests table parallel to bug_reports, lightbulb dialog for students/instructors during beta
 - [PWA Mobile Setup](mem://features/pwa-mobile-setup) — Standalone PWA, web manifest, custom iOS splash screen
 - [Resilient Avatar Uploads](mem://ux/resilient-avatar-uploads) — Off-screen JPEG conversion, max 1024px, 1s retry logic for reliability
 - [Admin RBAC & Mode Switcher](mem://features/admin-rbac-mode-switcher) — Unified login, hardcoded admin emails, admin mode visual state, payroll owner-only gate
