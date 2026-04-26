@@ -629,7 +629,7 @@ const AdminLedgerPreview = () => {
                       <TableHead>Classes</TableHead>
                       <TableHead>Class Rate</TableHead>
                       <TableHead>Base Pay</TableHead>
-                      <TableHead>Bonus</TableHead>
+                      <TableHead>Extra Pay</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -645,8 +645,40 @@ const AdminLedgerPreview = () => {
                         <TableCell>{r.hours_worked}</TableCell>
                         <TableCell>${SESSION_FEE}/class</TableCell>
                         <TableCell>${r.amount.toFixed(2)}</TableCell>
-                        <TableCell>{r.bonus_amount > 0 ? `$${r.bonus_amount.toFixed(2)}` : '—'}</TableCell>
-                        <TableCell className="font-bold">${(r.amount + r.bonus_amount).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {r.extra_pay.length === 0 ? (
+                            '—'
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="underline decoration-dotted underline-offset-2 cursor-help"
+                                  >
+                                    ${sumExtraPay(r.extra_pay).toFixed(2)}
+                                    <span className="ml-1 text-xs text-muted-foreground">
+                                      ({r.extra_pay.length})
+                                    </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <div className="space-y-1 text-xs">
+                                    {r.extra_pay.map(e => (
+                                      <div key={e.id} className="flex justify-between gap-3">
+                                        <span>
+                                          {format(new Date(e.date), 'MM/dd')} — {e.description || 'Extra pay'}
+                                        </span>
+                                        <span className="font-medium">${e.amount.toFixed(2)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-bold">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</TableCell>
                         <TableCell>
                           {r.status === 'paid'
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
@@ -666,8 +698,8 @@ const AdminLedgerPreview = () => {
                                   <DropdownMenuItem onSelect={() => setTimeout(() => openEditPayroll(r.id), 0)}>
                                     <Edit className="h-4 w-4 mr-2" /> Edit Classes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => setTimeout(() => openBonus(r.id), 0)}>
-                                    <Plus className="h-4 w-4 mr-2" /> Add Bonus
+                                  <DropdownMenuItem onSelect={() => setTimeout(() => openExtraPay(r.id), 0)}>
+                                    <Plus className="h-4 w-4 mr-2" /> Add Extra Pay
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
