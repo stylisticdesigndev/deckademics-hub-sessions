@@ -21,6 +21,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
@@ -534,7 +535,7 @@ const AdminLedgerPreview = () => {
               <h2 className="text-xl font-bold">Payment Management</h2>
               <p className="text-sm text-muted-foreground">Track and manage student payments</p>
             </div>
-            <Button onClick={() => alert('▶︎ Mock: Would open Create Payment dialog')}>
+            <Button onClick={openCreatePayment}>
               <Plus className="h-4 w-4 mr-2" /> Create Payment
             </Button>
           </div>
