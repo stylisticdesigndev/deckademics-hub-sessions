@@ -689,13 +689,17 @@ const AdminLedgerPreview = () => {
             <div className="flex gap-2 items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <UserIcon className="h-4 w-4 mr-1" />
-                    Pick Instructors
-                    {selectedInstructorIds.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">{selectedInstructorIds.length}</Badge>
-                    )}
-                    <ChevronDown className="h-4 w-4 ml-1" />
+                  <Button variant="outline" className="min-w-[180px] justify-between">
+                    <span className="flex items-center">
+                      <UserIcon className="h-4 w-4 mr-1" />
+                      Pick Instructors
+                    </span>
+                    <span className="flex items-center">
+                      {selectedInstructorIds.length > 0 && (
+                        <Badge variant="secondary" className="mr-2">{selectedInstructorIds.length}</Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
