@@ -9,6 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { MessageSquare } from 'lucide-react';
 
 interface DetailData {
   id: string;
@@ -24,15 +28,18 @@ interface DetailData {
   class_day: string | null;
   class_time: string | null;
   start_date: string | null;
+  two_way_messaging: boolean;
 }
 
 const InstructorStudentDetail = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const { userData } = useAuth();
+  const { toast } = useToast();
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingToggle, setSavingToggle] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +49,7 @@ const InstructorStudentDetail = () => {
       const { data: row, error: fetchError } = await supabase
         .from('students')
         .select(`
-          id, level, enrollment_status, class_day, class_time, start_date,
+          id, level, enrollment_status, class_day, class_time, start_date, two_way_messaging,
           profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns, bio)
         `)
         .eq('id', studentId)
@@ -67,12 +74,34 @@ const InstructorStudentDetail = () => {
           class_day: row.class_day,
           class_time: row.class_time,
           start_date: row.start_date,
+          two_way_messaging: row.two_way_messaging ?? true,
         });
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [studentId]);
+
+  const handleToggleMessaging = async (checked: boolean) => {
+    if (!data) return;
+    setSavingToggle(true);
+    const { error } = await supabase
+      .from('students')
+      .update({ two_way_messaging: checked } as any)
+      .eq('id', data.id);
+    setSavingToggle(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Could not save', description: error.message });
+      return;
+    }
+    setData({ ...data, two_way_messaging: checked });
+    toast({
+      title: checked ? 'Replies enabled' : 'Replies disabled',
+      description: checked
+        ? 'This student can now reply to your messages.'
+        : 'This student is now read-only — they can receive but not send messages.',
+    });
+  };
 
   if (loading) {
     return (
@@ -150,6 +179,24 @@ const InstructorStudentDetail = () => {
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.bio}</p>
             </div>
           )}
+
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="space-y-0.5 flex-1 pr-4">
+              <Label htmlFor="two-way-msg" className="text-sm flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Allow this student to reply
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                When off, the student sees a read-only banner and cannot send messages. You can still message them.
+              </p>
+            </div>
+            <Switch
+              id="two-way-msg"
+              checked={data.two_way_messaging}
+              onCheckedChange={handleToggleMessaging}
+              disabled={savingToggle}
+            />
+          </div>
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={() => navigate('/instructor/students')} variant="outline">
