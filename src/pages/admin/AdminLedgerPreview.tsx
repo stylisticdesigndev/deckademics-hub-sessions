@@ -503,7 +503,9 @@ const AdminLedgerPreview = () => {
                     <TableRow>
                       <TableHead>Instructor</TableHead>
                       <TableHead>Pay Period</TableHead>
-                      <TableHead>Hours</TableHead>
+                      <TableHead>Classes</TableHead>
+                      <TableHead>Class Rate</TableHead>
+                      <TableHead>Base Pay</TableHead>
                       <TableHead>Bonus</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
@@ -518,6 +520,8 @@ const AdminLedgerPreview = () => {
                           {format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}
                         </TableCell>
                         <TableCell>{r.hours_worked}</TableCell>
+                        <TableCell>${SESSION_FEE}/class</TableCell>
+                        <TableCell>${r.amount.toFixed(2)}</TableCell>
                         <TableCell>{r.bonus_amount > 0 ? `$${r.bonus_amount.toFixed(2)}` : '—'}</TableCell>
                         <TableCell className="font-bold">${(r.amount + r.bonus_amount).toFixed(2)}</TableCell>
                         <TableCell>
