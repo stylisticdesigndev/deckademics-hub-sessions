@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import { useMockUsers } from '@/hooks/useMockUsers';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import ScheduleRequestsList from '@/components/admin/schedule-requests/ScheduleRequestsList';
 import { useScheduleChangeRequests } from '@/hooks/useScheduleChangeRequests';
@@ -105,6 +107,9 @@ const AdminStudents = () => {
   } = useAdminStudents();
 
   const { pendingRequests } = useScheduleChangeRequests('admin');
+  const { settings } = useAppSettings();
+  const { setMockFlag } = useMockUsers();
+  const hideMocks = settings?.hide_mock_users === true;
 
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
@@ -200,10 +205,12 @@ const AdminStudents = () => {
   const filterStudents = (students: typeof activeStudents) => {
     return students?.filter(
       student => (
-        student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        !searchQuery
+        (
+          student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          !searchQuery
+        ) && (!hideMocks || !student.profile?.is_mock)
       )
     ) || [];
   };
@@ -333,6 +340,9 @@ const AdminStudents = () => {
               <Button size="sm" variant="outline" onClick={handleBulkMessage}>
                 <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
               </Button>
+              <Button size="sm" variant="outline" onClick={() => setMockFlag.mutate({ userIds: selectedIds, isMock: true })} disabled={setMockFlag.isPending}>
+                Mark as Mock
+              </Button>
               <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateDialog(true)}>
                 Deactivate
               </Button>
@@ -385,7 +395,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -532,7 +542,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -642,7 +652,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -738,6 +748,9 @@ const AdminStudents = () => {
               <div className="flex items-center gap-2">
                 {getStatusBadge(viewedStudent.enrollment_status)}
                 <Badge variant="outline" className="capitalize">{viewedStudent.level}</Badge>
+                {viewedStudent.profile?.is_mock && (
+                  <Badge variant="outline" className="border-amber-500/50 text-amber-500">Mock</Badge>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -846,6 +859,21 @@ const AdminStudents = () => {
                 >
                   {(viewedStudent as any).two_way_messaging === false ? 'Read-only' : 'Enabled'}
                 </Badge>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="mock-flag-student" className="text-sm">Mark as mock user</Label>
+                  <p className="text-xs text-muted-foreground">Test/seed account. Hidden when "Hide mock users" is on.</p>
+                </div>
+                <Switch
+                  id="mock-flag-student"
+                  checked={!!viewedStudent.profile?.is_mock}
+                  disabled={setMockFlag.isPending}
+                  onCheckedChange={(checked) =>
+                    setMockFlag.mutate({ userIds: [viewedStudent.id], isMock: checked })
+                  }
+                />
               </div>
 
               <Separator />

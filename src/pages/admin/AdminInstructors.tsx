@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
+import { useMockUsers } from '@/hooks/useMockUsers';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useStudentAssignment } from '@/hooks/useStudentAssignment';
 import {
   Card,
@@ -62,6 +64,8 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const AdminInstructors = () => {
   const navigate = useNavigate();
@@ -88,7 +92,10 @@ const AdminInstructors = () => {
     deactivateInstructor,
     activateInstructor,
   } = useAdminInstructors();
-  
+  const { settings } = useAppSettings();
+  const { setMockFlag } = useMockUsers();
+  const hideMocks = settings?.hide_mock_users === true;
+
   const {
     unassignedStudents,
     assignedStudents,
@@ -107,25 +114,31 @@ const AdminInstructors = () => {
 
   const filteredActiveInstructors = (activeInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
   const filteredPendingInstructors = (pendingInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
   const filteredInactiveInstructors = (inactiveInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
@@ -550,6 +563,9 @@ const AdminInstructors = () => {
                     }>
                       {viewedInstructor.status}
                     </Badge>
+                    {viewedInstructor.profile?.is_mock && (
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-500">Mock</Badge>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -607,6 +623,20 @@ const AdminInstructors = () => {
                   <SeparatorUI />
 
                   <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between rounded-md border p-3 mb-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="mock-flag-instructor" className="text-sm">Mark as mock user</Label>
+                        <p className="text-xs text-muted-foreground">Test/seed account. Hidden when "Hide mock users" is on.</p>
+                      </div>
+                      <Switch
+                        id="mock-flag-instructor"
+                        checked={!!viewedInstructor.profile?.is_mock}
+                        disabled={setMockFlag.isPending}
+                        onCheckedChange={(checked) =>
+                          setMockFlag.mutate({ userIds: [viewedInstructor.id], isMock: checked })
+                        }
+                      />
+                    </div>
                     {viewedInstructor.status === 'active' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); handleOpenAssignStudents(viewInstructorId!); }}>
@@ -664,6 +694,9 @@ const AdminInstructors = () => {
                     <MessageSquare className="h-3.5 w-3.5 mr-1" />
                     Message
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setMockFlag.mutate({ userIds: selectedInstructorIds, isMock: true })} disabled={setMockFlag.isPending}>
+                    Mark as Mock
+                  </Button>
                   <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateInstructors(true)}>
                     Deactivate
                   </Button>
@@ -714,7 +747,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -822,7 +855,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -930,7 +963,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -1028,6 +1061,7 @@ interface InstructorWithProfile {
     last_name: string | null;
     email: string;
     avatar_url?: string | null;
+    is_mock?: boolean;
   };
 }
 

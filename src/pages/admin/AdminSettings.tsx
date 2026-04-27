@@ -23,6 +23,7 @@ import { Video, Trash, RefreshCw, AlertCircle, Info, CheckCircle, Loader2, UserP
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoBackground } from '@/components/background/VideoBackground';
+import MockUsersSection from '@/components/admin/mock-users/MockUsersSection';
 import {
   Dialog,
   DialogContent,
@@ -523,6 +524,7 @@ const AdminSettings = () => {
             </Form>
           </CardContent>
         </Card>
+        <MockUsersSection />
       </div>
     </>
   );
