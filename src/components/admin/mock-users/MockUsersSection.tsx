@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { useMockUsers } from '@/hooks/useMockUsers';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import { capitalize } from '@/lib/utils';
 
 const MockUsersSection = () => {
   const { settings, updateSettings } = useAppSettings();
