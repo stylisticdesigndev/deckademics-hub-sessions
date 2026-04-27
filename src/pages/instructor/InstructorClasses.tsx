@@ -210,8 +210,8 @@ const InstructorClasses = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Student</TableHead>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Level</TableHead>
+                          <TableHead className="text-right">Time</TableHead>
+                          <TableHead className="text-right">Level</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -226,8 +226,8 @@ const InstructorClasses = () => {
                                 <span>{s.name}</span>
                               </div>
                             </TableCell>
-                            <TableCell>{s.classTime}</TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">{s.classTime}</TableCell>
+                            <TableCell className="text-right">
                               <Badge variant="outline" className={cn(
                                 s.level === 'novice' && "border-green-500/50 text-green-500",
                                 s.level === 'amateur' && "border-yellow-500/50 text-yellow-500",
