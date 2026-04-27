@@ -206,28 +206,28 @@ const InstructorClasses = () => {
                   </div>
                   {/* Desktop: table */}
                   <div className="hidden md:block overflow-x-auto">
-                    <Table>
+                    <Table className="table-fixed w-full">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Student</TableHead>
-                          <TableHead className="text-right">Time</TableHead>
-                          <TableHead className="text-right">Level</TableHead>
+                          <TableHead className="w-1/2">Student</TableHead>
+                          <TableHead className="w-1/4">Time</TableHead>
+                          <TableHead className="w-1/4 text-right pr-6">Level</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {schedulesByDay[day].map(s => (
                           <TableRow key={s.id}>
-                            <TableCell>
+                            <TableCell className="w-1/2">
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8">
                                   {s.avatarUrl && <AvatarImage src={s.avatarUrl} alt={s.name} />}
                                   <AvatarFallback className="text-xs bg-muted">{s.initials}</AvatarFallback>
                                 </Avatar>
-                                <span>{s.name}</span>
+                                <span className="truncate">{s.name}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">{s.classTime}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="w-1/4 tabular-nums">{s.classTime}</TableCell>
+                            <TableCell className="w-1/4 text-right pr-6">
                               <Badge variant="outline" className={cn(
                                 s.level === 'novice' && "border-green-500/50 text-green-500",
                                 s.level === 'amateur' && "border-yellow-500/50 text-yellow-500",
