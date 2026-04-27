@@ -35,6 +35,7 @@ const InstructorProfile = () => {
     firstName: '', lastName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
   });
   const [formData, setFormData] = useState({ ...profile });
+  const [privacy, setPrivacy] = useState({ hidePhone: false, hideEmail: false });
 
   useEffect(() => {
     if (demoMode) {
@@ -74,6 +75,10 @@ const InstructorProfile = () => {
           console.error('Error fetching instructor data:', instructorError);
         }
         setInstructorData(instrData);
+        setPrivacy({
+          hidePhone: !!(instrData as any)?.hide_phone,
+          hideEmail: !!(instrData as any)?.hide_email,
+        });
 
         try {
           // Derive teaching schedule from assigned students' class_day/class_time
@@ -138,7 +143,9 @@ const InstructorProfile = () => {
       if (session?.user?.id) {
         const { error } = await supabase.from('instructors').update({
           bio: formData.bio,
-          specialties: formData.expertiseAreas.split(',').map(s => s.trim()).filter(s => s !== '')
+          specialties: formData.expertiseAreas.split(',').map(s => s.trim()).filter(s => s !== ''),
+          hide_phone: privacy.hidePhone,
+          hide_email: privacy.hideEmail,
         }).eq('id', session.user.id);
         if (error) throw error;
       }
