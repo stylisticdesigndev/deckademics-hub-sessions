@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User, Calendar, Eye, EyeOff, UserCircle2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
