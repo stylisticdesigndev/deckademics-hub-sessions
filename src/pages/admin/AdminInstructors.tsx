@@ -727,7 +727,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -835,7 +835,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -943,7 +943,7 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
