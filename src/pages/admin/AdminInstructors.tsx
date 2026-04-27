@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
+import { useMockUsers } from '@/hooks/useMockUsers';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useStudentAssignment } from '@/hooks/useStudentAssignment';
 import {
   Card,
@@ -62,6 +64,8 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const AdminInstructors = () => {
   const navigate = useNavigate();
@@ -107,25 +111,31 @@ const AdminInstructors = () => {
 
   const filteredActiveInstructors = (activeInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
   const filteredPendingInstructors = (pendingInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
   const filteredInactiveInstructors = (inactiveInstructors as InstructorWithProfile[])?.filter(
     instructor => (
-      instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (
+        instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ) && (!hideMocks || !instructor.profile.is_mock)
     )
   ) || [];
 
