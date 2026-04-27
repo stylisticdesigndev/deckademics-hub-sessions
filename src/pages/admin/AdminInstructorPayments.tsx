@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 
 import { Calendar } from '@/components/ui/calendar';
-import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp } from 'lucide-react';
+import { Save, Edit, CalendarIcon, Zap, Loader2, Clock, Trash2, DollarSign, CircleHelp, XCircle, RotateCcw } from 'lucide-react';
 import { ChevronDown, User as UserIcon, Check } from 'lucide-react';
 import {
   DropdownMenu,
@@ -977,24 +977,34 @@ const AdminInstructorPayments = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-right no-underline" onClick={(e) => e.stopPropagation()}>
-                          {payment.status === 'paid' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleVoidPayment(payment.id)}
-                            >
-                              Void
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRestorePayment(payment.id)}
-                            >
-                              Restore
-                            </Button>
-                          )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {payment.status === 'paid' ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive h-8 w-8"
+                                    onClick={() => handleVoidPayment(payment.id)}
+                                    aria-label="Void payment"
+                                  >
+                                    <XCircle className="h-5 w-5" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleRestorePayment(payment.id)}
+                                    aria-label="Restore payment"
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>{payment.status === 'paid' ? 'Void' : 'Restore'}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                       </TableRow>
                     ))}
