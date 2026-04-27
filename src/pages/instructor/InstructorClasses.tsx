@@ -208,9 +208,9 @@ const InstructorClasses = () => {
                   <div className="hidden md:block overflow-x-auto">
                     <Table className="table-fixed w-full">
                       <colgroup>
-                        <col className="w-[52%]" />
-                        <col className="w-[28%]" />
-                        <col className="w-[20%]" />
+                        <col className="w-1/3" />
+                        <col className="w-1/3" />
+                        <col className="w-1/3" />
                       </colgroup>
                       <TableHeader>
                         <TableRow>
