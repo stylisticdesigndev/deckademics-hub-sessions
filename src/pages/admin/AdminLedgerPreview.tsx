@@ -26,7 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Wallet, Calendar as CalendarIcon, DollarSign, Eye, Info, Search,
   CreditCard, Plus, Edit, Trash2, CheckCircle2, ChevronDown, User as UserIcon,
-  CircleHelp,
+  CircleHelp, XCircle, RotateCcw,
 } from 'lucide-react';
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
@@ -978,19 +978,40 @@ const AdminLedgerPreview = () => {
                             </div>
                           )}
                           {r.status === 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => voidPayrollRecord(r.id)}
-                            >
-                              Void
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive h-8 w-8"
+                                    onClick={() => voidPayrollRecord(r.id)}
+                                    aria-label="Void payment"
+                                  >
+                                    <XCircle className="h-5 w-5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Void</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                           {r.status === 'void' && (
-                            <Button size="sm" variant="ghost" onClick={() => restorePayrollRecord(r.id)}>
-                              Restore
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                    onClick={() => restorePayrollRecord(r.id)}
+                                    aria-label="Restore payment"
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Restore</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </TableCell>
                       </TableRow>
