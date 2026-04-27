@@ -1,8 +1,12 @@
-# One-Way Email + SMS + Push Notifications for New Messages
+# One-Way Email + SMS + Push Notifications for New Messages and Announcements
 
 ## Decision
 
-When someone receives a new in-app message, they get notified via email and/or SMS (based on their preferences) and via push (if enabled). The notification **shows the message preview + sender name + a deep link** that opens the conversation in the app. **All replies happen in-app** — no reply-by-email, no reply-by-SMS.
+Two events trigger outbound notifications:
+1. **A new in-app message** is sent to the user.
+2. **A new school announcement** is published that targets the user's role.
+
+In both cases, the recipient gets notified via email and/or SMS (based on their preferences) and via push (if enabled). The notification **shows the content preview + sender/author name + a deep link** that opens the message thread or the announcement in the app. **All replies, acknowledgements, and dismissals happen in-app** — no reply-by-email, no reply-by-SMS.
 
 ---
 
@@ -23,11 +27,16 @@ Branded email like:
 ### What gets built
 
 1. **Set up sender domain** (e.g. `notify.deckademics.com`) via the one-time DNS setup dialog. Then it's hands-off forever.
-2. **One React email template** — `new-message-notification` — styled to match Deckademics (dark accents on white body, vinyl-themed header).
-3. **Wire `send-transactional-email` into the message-send flow.** Wherever the app currently inserts into `public.messages` (instructor messages, student replies, admin messages), immediately after the insert we also enqueue a notification email to the recipient.
+2. **Two React email templates** — both styled to match Deckademics (dark accents on white body, vinyl-themed header):
+   - `new-message-notification` — for new direct messages.
+   - `new-announcement-notification` — for new school announcements (shows title, type badge, content preview, "Open announcement" CTA).
+3. **Wire `send-transactional-email` into both flows:**
+   - **Messages:** wherever the app inserts into `public.messages`, immediately after the insert we enqueue a notification email to the recipient.
+   - **Announcements:** wherever the app inserts into `public.announcements`, we fan out notification emails to **every user whose role is in `target_role`** (respecting their preferences and suppression rules).
 4. **Smart suppression rules** so we don't spam:
   - Skip if recipient was active in the app within the last 60 seconds (they already saw it).
   - Skip if recipient has `email_notifications = false` in their `notification_preferences`.
+  - Skip announcement emails for recipients who have already dismissed/read it (edge case for re-publishes).
   - Skip if recipient's email is in the suppression list (bounced/unsubscribed).
   - One unsubscribe link per email, system-managed.
 5. **Unsubscribe page** at `/unsubscribe` matching the app's branding.
@@ -42,8 +51,14 @@ Just DNS access for `deckademics.com` (one-time, ~5 min).
 
 ### What you'll see
 
+**For a message:**
 > [Deckademics] Nick Davis: "Hey, just confirming Tuesday at 6pm works."
-> Open: [https://deckademics.app/m/abc123](https://deckademics.app/m/abc123)
+> Open: https://deckademics.app/m/abc123
+> Reply STOP to opt out.
+
+**For an announcement:**
+> [Deckademics] Announcement — Spring Showcase: "Sign-ups open now through Friday…"
+> Open: https://deckademics.app/a/xyz789
 > Reply STOP to opt out.
 
 ### What gets built
@@ -52,7 +67,8 @@ Just DNS access for `deckademics.com` (one-time, ~5 min).
 2. **New edge function `send-sms-notification**` that:
   - Reads recipient's `notification_preferences`.
   - If `sms_notifications = true` AND `phone_number` is verified, sends the SMS via the Twilio gateway.
-  - Truncates message preview to ~120 chars to fit in one SMS segment (cheaper, more reliable).
+  - Truncates content preview to ~120 chars to fit in one SMS segment (cheaper, more reliable).
+  - Handles both `message` and `announcement` event types — same function, different preview formatting.
   - Same suppression rules as email (skip if recently active, opted out, etc.).
 3. **Phone verification flow** on the profile page — user enters number → we send a 6-digit code → they confirm → we set `phone_verified_at`. We never SMS an unverified number.
 4. **Required Twilio safeguards** (you turn these on in the Twilio console after signing up — I'll give exact steps):
@@ -99,12 +115,17 @@ Ship **Option A** in this phase to validate the feature. Layer in **Option B** a
 - `profiles.phone_verified_at timestamptz` — gates SMS sending.
 - `profiles.last_active_at timestamptz` — used for the "skip if user is currently in the app" suppression rule. Updated by a heartbeat.
 - `messages.notified_via text[] default '{}'` — audit trail showing which channels actually fired (`['email','sms','push']`).
+- `announcements.notified_via text[] default '{}'` — same audit trail for announcements.
 
 ---
 
 ## How the trigger fires (technical, for reference)
 
-Today, sending a message inserts into `public.messages`. We'll add a server-side step right after that insert: a new edge function `notify-new-message` reads the recipient's preferences and fans out to email + SMS + push as appropriate. It uses an idempotency key derived from the message ID so retries can't double-send. All three channels run independently — if SMS fails, email still goes out.
+A single edge function `notify-event` handles both event types:
+- **`message` event:** triggered after insert into `public.messages`. Notifies the single recipient.
+- **`announcement` event:** triggered after insert into `public.announcements`. Fans out to every user whose role is in `target_role`.
+
+It reads each recipient's preferences and dispatches to email + SMS + push as appropriate. Idempotency keys derived from the source row ID prevent double-sends on retry. All three channels run independently — if SMS fails, email still goes out.
 
 ---
 
