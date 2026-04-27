@@ -65,7 +65,7 @@ const InstructorLedger = () => {
   return (
     <div className="space-y-6 w-full">
         <section>
-          <h1 className="text-2xl font-bold">Pay Ledger</h1>
+          <h1 className="text-2xl font-bold">My Payment</h1>
           <p className="text-muted-foreground mt-1">Auto-generated from your marked attendance — flat fee per class session. You earn once per scheduled time slot, regardless of how many students attend.</p>
         </section>
 
@@ -126,7 +126,7 @@ const InstructorLedger = () => {
         )}
 
         <Card>
-          <CardHeader><CardTitle className="text-lg">Sessions</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg">My Payment</CardTitle></CardHeader>
           <CardContent>
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
@@ -138,8 +138,7 @@ const InstructorLedger = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Time Slot</TableHead>
-                      <TableHead>Session Fee</TableHead>
+                      <TableHead>Pay Period</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -148,7 +147,6 @@ const InstructorLedger = () => {
                       <TableRow key={r.id}>
                         <TableCell>{format(new Date(r.class_date), 'MM/dd/yyyy')}</TableCell>
                         <TableCell>{r.class_time || '—'}</TableCell>
-                        <TableCell className="font-medium">${Number(r.amount ?? 0).toFixed(2)}</TableCell>
                         <TableCell>
                           {r.payment_id
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
