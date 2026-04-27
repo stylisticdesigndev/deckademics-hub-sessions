@@ -450,6 +450,10 @@ const AdminLedgerPreview = () => {
   };
   const markPayrollPaid = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
+  const voidPayrollRecord = (id: string) =>
+    setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'void' as const } : p));
+  const restorePayrollRecord = (id: string) =>
+    setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
 
   const openEditPayroll = (id: string) => {
     const rec = payrollRecords.find(p => p.id === id);
