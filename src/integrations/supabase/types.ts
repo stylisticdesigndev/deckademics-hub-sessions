@@ -126,6 +126,7 @@ export type Database = {
       app_settings: {
         Row: {
           created_at: string | null
+          hide_mock_users: boolean
           id: string
           notification_channels: Database["public"]["Enums"]["notification_channel"]
           notifications_enabled: boolean
@@ -135,6 +136,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          hide_mock_users?: boolean
           id?: string
           notification_channels?: Database["public"]["Enums"]["notification_channel"]
           notifications_enabled?: boolean
@@ -144,6 +146,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          hide_mock_users?: boolean
           id?: string
           notification_channels?: Database["public"]["Enums"]["notification_channel"]
           notifications_enabled?: boolean
@@ -832,6 +835,7 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
+          is_mock: boolean
           last_name: string | null
           phone: string | null
           pronouns: string | null
@@ -845,6 +849,7 @@ export type Database = {
           email: string
           first_name?: string | null
           id: string
+          is_mock?: boolean
           last_name?: string | null
           phone?: string | null
           pronouns?: string | null
@@ -858,6 +863,7 @@ export type Database = {
           email?: string
           first_name?: string | null
           id?: string
+          is_mock?: boolean
           last_name?: string | null
           phone?: string | null
           pronouns?: string | null
@@ -1328,6 +1334,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_all_mock_users: { Args: never; Returns: Json }
       get_all_users: {
         Args: never
         Returns: {
@@ -1389,6 +1396,7 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
+          is_mock: boolean
           last_name: string | null
           phone: string | null
           pronouns: string | null
@@ -1414,6 +1422,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      set_mock_flag: {
+        Args: { _is_mock: boolean; _user_ids: string[] }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "instructor" | "student"
