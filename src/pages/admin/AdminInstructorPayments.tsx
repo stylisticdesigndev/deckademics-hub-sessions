@@ -171,7 +171,7 @@ const AdminInstructorPayments = () => {
   }
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
-  const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
+  const completedPayments = payments?.filter(payment => payment.status === 'paid' || payment.status === 'void') || [];
   const totalHistoryPages = Math.ceil(completedPayments.length / HISTORY_PER_PAGE);
   const paginatedHistory = completedPayments.slice(
     (historyPage - 1) * HISTORY_PER_PAGE,
@@ -192,6 +192,36 @@ const AdminInstructorPayments = () => {
     } catch (error) {
       console.error('Error updating payment:', error);
       toast.error('Failed to mark payment as paid');
+    }
+  };
+
+  const handleVoidPayment = async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ status: 'void' } as any)
+        .eq('id', paymentId as any);
+      if (error) throw error;
+      toast.success('Payment voided');
+      invalidate();
+    } catch (error) {
+      console.error('Error voiding payment:', error);
+      toast.error('Failed to void payment');
+    }
+  };
+
+  const handleRestorePayment = async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ status: 'paid' } as any)
+        .eq('id', paymentId as any);
+      if (error) throw error;
+      toast.success('Payment restored');
+      invalidate();
+    } catch (error) {
+      console.error('Error restoring payment:', error);
+      toast.error('Failed to restore payment');
     }
   };
   
