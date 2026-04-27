@@ -152,6 +152,65 @@ export function useStudentDashboardCore() {
     return { nextClass: 'Not scheduled', instructor: assignedInstructor || 'Not assigned' };
   }, [classDay, classTime, upcomingClasses, assignedInstructor]);
 
+  // Build a synthetic "today's class" from the student's assigned weekly slot
+  // so the dashboard's "Today's Class" card reflects the real schedule
+  // (the `classes` table is not populated per-week for recurring student slots).
+  const scheduledClasses = useMemo(() => {
+    if (!classDay || !classTime) return upcomingClasses;
+
+    const dayNameToNumber: Record<string, number> = {
+      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+      'Thursday': 4, 'Friday': 5, 'Saturday': 6,
+    };
+    const targetDay = dayNameToNumber[classDay] ?? -1;
+    if (targetDay < 0) return upcomingClasses;
+
+    const today = startOfDay(new Date());
+    const todayDow = getDay(today);
+    let diff = targetDay - todayDow;
+    if (diff < 0) diff += 7;
+    const nextDate = addDays(today, diff);
+    const dateStr = format(nextDate, 'MM/dd/yyyy'); // matches formatDateUS
+
+    // Parse "3:30 PM - 5:00 PM" into start/end and compute duration
+    const [startStr, endStr] = classTime.split(' - ').map((s) => s.trim());
+    const parseTo24 = (t: string) => {
+      const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+      if (!m) return null;
+      let h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      const period = m[3]?.toUpperCase();
+      if (period === 'PM' && h !== 12) h += 12;
+      if (period === 'AM' && h === 12) h = 0;
+      return h * 60 + min;
+    };
+    const startMin = parseTo24(startStr || '');
+    const endMin = parseTo24(endStr || '');
+    let duration = '1h 30m';
+    if (startMin !== null && endMin !== null && endMin > startMin) {
+      const d = endMin - startMin;
+      duration = `${Math.floor(d / 60)}h ${d % 60}m`;
+    }
+
+    const synthetic = {
+      id: `assigned-${classDay}-${startStr}`,
+      title: 'DJ Class',
+      instructor: assignedInstructor || 'Not assigned',
+      date: dateStr,
+      time: startStr || classTime,
+      duration,
+      location: 'Main Studio',
+      attendees: 0,
+      isUpcoming: true,
+    };
+
+    // Avoid duplicating if a real class already exists for the same date+time
+    const dedup = upcomingClasses.filter(
+      (c) => !(c.date === synthetic.date && c.time === synthetic.time)
+    );
+    return [synthetic, ...dedup];
+  }, [classDay, classTime, assignedInstructor, upcomingClasses]);
+
   // Derive first-time user status
   useEffect(() => {
     if (!classesLoading && !progressLoading && dataFetchedRef.current) {
@@ -175,7 +234,7 @@ export function useStudentDashboardCore() {
     studentData,
     isFirstTimeUser,
     progressData,
-    upcomingClasses,
+    upcomingClasses: scheduledClasses,
     fetchStudentInfo,
     fetchError
   };
