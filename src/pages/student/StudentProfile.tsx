@@ -9,11 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle, UserCircle2 } from 'lucide-react';
+import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle, UserCircle2, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 import { mockProfileData } from '@/data/mockDashboardData';
+import { capitalizeLevel } from '@/lib/utils';
+import { formatDateUS } from '@/lib/utils';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -27,14 +29,9 @@ const StudentProfile = () => {
   
   const isDemoActive = !session || demoMode;
 
-  const fullName = userData?.profile 
-    ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim()
-    : session?.user?.user_metadata 
-      ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
-      : '';
-      
   const [profile, setProfile] = useState({
-    name: fullName || '',
+    firstName: userData?.profile?.first_name || session?.user?.user_metadata?.first_name || '',
+    lastName: userData?.profile?.last_name || session?.user?.user_metadata?.last_name || '',
     email: userData?.profile?.email || session?.user?.email || '',
     phone: userData?.profile?.phone || '',
     bio: userData?.profile?.bio || '',
@@ -46,18 +43,23 @@ const StudentProfile = () => {
   const studentId = session?.user?.id;
 
   // Resolve display data based on demo mode
+  const mockNameParts = (mockProfileData.name || '').split(' ');
+  const mockFirst = mockNameParts[0] || '';
+  const mockLast = mockNameParts.slice(1).join(' ') || '';
   const displayProfile = isDemoActive ? {
-    name: mockProfileData.name,
+    firstName: mockFirst, lastName: mockLast,
     email: mockProfileData.email,
     phone: mockProfileData.phone,
     bio: mockProfileData.bio,
+    pronouns: '',
   } : profile;
 
   const displayFormData = isDemoActive ? {
-    name: mockProfileData.name,
+    firstName: mockFirst, lastName: mockLast,
     email: mockProfileData.email,
     phone: mockProfileData.phone,
     bio: mockProfileData.bio,
+    pronouns: '',
   } : formData;
 
   const displayCourse = isDemoActive ? mockProfileData.course : courseData;
@@ -90,7 +92,7 @@ const StudentProfile = () => {
         
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('bio')
+          .select('bio, first_name, last_name, phone, pronouns')
           .eq('id', studentId)
           .single();
           
@@ -98,9 +100,17 @@ const StudentProfile = () => {
           console.error('Error fetching profile data:', profileError);
         }
         
-        const bioText = profileData?.bio || '';
-        setProfile(prev => ({ ...prev, bio: bioText }));
-        setFormData(prev => ({ ...prev, bio: bioText }));
+        if (profileData) {
+          const merged = {
+            firstName: profileData.first_name || '',
+            lastName: profileData.last_name || '',
+            phone: profileData.phone || '',
+            bio: profileData.bio || '',
+            pronouns: (profileData as any).pronouns || '',
+          };
+          setProfile(prev => ({ ...prev, ...merged }));
+          setFormData(prev => ({ ...prev, ...merged }));
+        }
         
         if (student) {
           // Fetch instructor directly from students.instructor_id
@@ -156,13 +166,9 @@ const StudentProfile = () => {
     e.preventDefault();
     
     try {
-      const nameParts = formData.name.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
       await updateProfile({
-        first_name: firstName,
-        last_name: lastName,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         phone: formData.phone,
         bio: formData.bio,
         pronouns: formData.pronouns,
@@ -184,9 +190,11 @@ const StudentProfile = () => {
     }
   };
 
-  const initials = displayProfile.name 
-    ? displayProfile.name.split(' ').map(n => n[0]).join('').toUpperCase() 
+  const initialsName = `${displayProfile.firstName} ${displayProfile.lastName}`.trim();
+  const initials = initialsName
+    ? initialsName.split(' ').map(n => n[0]).join('').toUpperCase()
     : '?';
+  const displayFullName = `${displayProfile.firstName} ${displayProfile.lastName}`.trim();
 
   return (
     <>
@@ -250,7 +258,7 @@ const StudentProfile = () => {
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold truncate">{displayProfile.name || 'Student'}</h2>
+                  <h2 className="text-lg font-semibold truncate">{displayFullName || 'Student'}</h2>
                   <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
                 </div>
                 {!isEditing && !isDemoActive && (
@@ -271,11 +279,20 @@ const StudentProfile = () => {
                     <CardDescription>Your contact and bio information</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 flex-1">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="name" name="name" placeholder="Your name" className="pl-10" value={displayFormData.name} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={displayFormData.firstName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={displayFormData.lastName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        </div>
                       </div>
                     </div>
                     
@@ -335,22 +352,28 @@ const StudentProfile = () => {
                       <BookOpen className="h-4 w-4" />
                       <span>Course</span>
                     </div>
-                    {displayCourse ? (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Level</p>
-                          <p className="text-sm font-medium capitalize">{displayLevel}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Duration</p>
-                          <p className="text-sm font-medium">{displayCourse.duration_weeks || 12} weeks</p>
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Level</p>
+                        <p className="text-sm font-medium">{capitalizeLevel(displayLevel)}</p>
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">
-                        Course details will appear once you're enrolled.
-                      </p>
-                    )}
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Status</p>
+                        <p className="text-sm font-medium capitalize">{isDemoActive ? 'Active' : (studentData?.enrollment_status || 'Pending')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Class Day</p>
+                        <p className="text-sm font-medium">{isDemoActive ? 'Tuesdays' : (studentData?.class_day || 'Not assigned')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
+                        <p className="text-sm font-medium">{isDemoActive ? '6:00 PM' : (studentData?.class_time || 'Not assigned')}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Start Date</p>
+                        <p className="text-sm font-medium">{isDemoActive ? formatDateUS(new Date().toISOString()) : (studentData?.start_date ? formatDateUS(studentData.start_date) : 'Not set')}</p>
+                      </div>
+                    </div>
                   </div>
 
                   <hr className="border-border" />
