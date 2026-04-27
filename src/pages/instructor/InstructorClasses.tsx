@@ -207,17 +207,22 @@ const InstructorClasses = () => {
                   {/* Desktop: table */}
                   <div className="hidden md:block overflow-x-auto">
                     <Table className="table-fixed w-full">
+                      <colgroup>
+                        <col className="w-[52%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[20%]" />
+                      </colgroup>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-1/2">Student</TableHead>
-                          <TableHead className="w-1/4">Time</TableHead>
-                          <TableHead className="w-1/4 text-right pr-6">Level</TableHead>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Level</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {schedulesByDay[day].map(s => (
                           <TableRow key={s.id}>
-                            <TableCell className="w-1/2">
+                            <TableCell>
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8">
                                   {s.avatarUrl && <AvatarImage src={s.avatarUrl} alt={s.name} />}
@@ -226,9 +231,10 @@ const InstructorClasses = () => {
                                 <span className="truncate">{s.name}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="w-1/4 tabular-nums">{s.classTime}</TableCell>
-                            <TableCell className="w-1/4 text-right pr-6">
+                            <TableCell className="whitespace-nowrap tabular-nums">{s.classTime}</TableCell>
+                            <TableCell className="whitespace-nowrap">
                               <Badge variant="outline" className={cn(
+                                "inline-flex min-w-24 justify-center",
                                 s.level === 'novice' && "border-green-500/50 text-green-500",
                                 s.level === 'amateur' && "border-yellow-500/50 text-yellow-500",
                                 s.level === 'intermediate' && "border-blue-500/50 text-blue-500",
