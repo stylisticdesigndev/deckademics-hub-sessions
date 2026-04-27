@@ -20,7 +20,6 @@ import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PendingApproval from '@/pages/PendingApproval';
-import { isAdminUser } from '@/constants/adminPermissions';
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -139,9 +138,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }
   
   // If user is authenticated but has no role or wrong role
-  // Admin-email users with 'instructor' role can also access admin routes
-  const hasAccess = allowedRoles.includes(effectiveRole!) || 
-    (allowedRoles.includes('admin') && effectiveRole === 'instructor' && isAdminUser(userData.profile?.email));
+  // Access is governed solely by the database-backed role.
+  const hasAccess = allowedRoles.includes(effectiveRole!);
   
   if (!effectiveRole || !hasAccess) {
     const roleForRedirect = effectiveRole || 'student';
