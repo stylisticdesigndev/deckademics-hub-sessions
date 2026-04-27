@@ -75,7 +75,7 @@ interface InstructorPayrollRecord {
   hours_worked: number;
   amount: number;
   extra_pay: ExtraPayItem[];
-  status: 'pending' | 'paid';
+  status: 'pending' | 'paid' | 'void';
   payment_date: string;
 }
 
@@ -449,6 +449,10 @@ const AdminLedgerPreview = () => {
     alert(`▶︎ Mock: Generated ${newRecords.length} pending payroll record(s). See Payroll History below.`);
   };
   const markPayrollPaid = (id: string) =>
+    setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
+  const voidPayrollRecord = (id: string) =>
+    setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'void' as const } : p));
+  const restorePayrollRecord = (id: string) =>
     setPayrollRecords(ps => ps.map(p => p.id === id ? { ...p, status: 'paid' as const } : p));
 
   const openEditPayroll = (id: string) => {
@@ -913,7 +917,7 @@ const AdminLedgerPreview = () => {
                     {paginatedPayroll.map(r => (
                       <TableRow
                         key={r.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${r.status === 'void' ? 'opacity-60 [&_td]:line-through' : ''}`}
                         onClick={() => setSelectedDetailPayment(r)}
                       >
                         <TableCell className="font-medium">
@@ -942,12 +946,14 @@ const AdminLedgerPreview = () => {
                           )}
                         </TableCell>
                         <TableCell className="font-bold">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</TableCell>
-                        <TableCell>
-                          {r.status === 'paid'
-                            ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
-                            : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Pending</Badge>}
+                        <TableCell className="no-underline">
+                          {r.status === 'void'
+                            ? <Badge variant="outline" className="border-destructive/50 text-destructive no-underline">Void</Badge>
+                            : r.status === 'paid'
+                              ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
+                              : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Pending</Badge>}
                         </TableCell>
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="text-right no-underline" onClick={(e) => e.stopPropagation()}>
                           {r.status === 'pending' && (
                             <div className="flex gap-2 justify-end items-center flex-nowrap whitespace-nowrap">
                               <DropdownMenu>
@@ -970,6 +976,21 @@ const AdminLedgerPreview = () => {
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
                               </Button>
                             </div>
+                          )}
+                          {r.status === 'paid' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => voidPayrollRecord(r.id)}
+                            >
+                              Void
+                            </Button>
+                          )}
+                          {r.status === 'void' && (
+                            <Button size="sm" variant="ghost" onClick={() => restorePayrollRecord(r.id)}>
+                              Restore
+                            </Button>
                           )}
                         </TableCell>
                       </TableRow>

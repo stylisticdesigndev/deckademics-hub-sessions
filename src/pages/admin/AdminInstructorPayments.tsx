@@ -171,7 +171,7 @@ const AdminInstructorPayments = () => {
   }
   
   const pendingPayments = payments?.filter(payment => payment.status === 'pending') || [];
-  const completedPayments = payments?.filter(payment => payment.status === 'paid') || [];
+  const completedPayments = payments?.filter(payment => payment.status === 'paid' || payment.status === 'void') || [];
   const totalHistoryPages = Math.ceil(completedPayments.length / HISTORY_PER_PAGE);
   const paginatedHistory = completedPayments.slice(
     (historyPage - 1) * HISTORY_PER_PAGE,
@@ -192,6 +192,36 @@ const AdminInstructorPayments = () => {
     } catch (error) {
       console.error('Error updating payment:', error);
       toast.error('Failed to mark payment as paid');
+    }
+  };
+
+  const handleVoidPayment = async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ status: 'void' } as any)
+        .eq('id', paymentId as any);
+      if (error) throw error;
+      toast.success('Payment voided');
+      invalidate();
+    } catch (error) {
+      console.error('Error voiding payment:', error);
+      toast.error('Failed to void payment');
+    }
+  };
+
+  const handleRestorePayment = async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('instructor_payments')
+        .update({ status: 'paid' } as any)
+        .eq('id', paymentId as any);
+      if (error) throw error;
+      toast.success('Payment restored');
+      invalidate();
+    } catch (error) {
+      console.error('Error restoring payment:', error);
+      toast.error('Failed to restore payment');
     }
   };
   
@@ -900,13 +930,17 @@ const AdminInstructorPayments = () => {
                       <TableHead>Pay Period</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedHistory.map((payment) => (
                       <TableRow 
                         key={payment.id} 
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={cn(
+                          "cursor-pointer hover:bg-muted/50",
+                          payment.status === 'void' && "opacity-60 [&_td]:line-through"
+                        )}
                         onClick={() => setSelectedDetailPayment(payment)}
                       >
                         <TableCell className="font-medium">{payment.instructorName}</TableCell>
@@ -935,8 +969,32 @@ const AdminInstructorPayments = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
+                        <TableCell className="text-center no-underline">
+                          {payment.status === 'void' ? (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive no-underline">Void</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right no-underline" onClick={(e) => e.stopPropagation()}>
+                          {payment.status === 'paid' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleVoidPayment(payment.id)}
+                            >
+                              Void
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRestorePayment(payment.id)}
+                            >
+                              Restore
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
