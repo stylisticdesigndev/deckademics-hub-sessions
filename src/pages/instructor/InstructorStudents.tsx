@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock, GripVertical } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -31,6 +31,7 @@ import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStu
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
+import { capitalizeLevel, formatDateUS } from "@/lib/utils";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -55,6 +56,10 @@ interface Student {
   skillProgress?: SkillProgress[];
   classDay?: string;
   classTime?: string;
+  phone?: string | null;
+  pronouns?: string | null;
+  bio?: string | null;
+  enrollmentStatus?: string | null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
 
