@@ -34,14 +34,17 @@ const InstructorProfile = () => {
   const [demoMode, setDemoMode] = useState(false);
 
   const [profile, setProfile] = useState({
-    name: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
+    firstName: '', lastName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
   });
   const [formData, setFormData] = useState({ ...profile });
 
   useEffect(() => {
     if (demoMode) {
+      const mockNameParts = (mockInstructorProfile.name || '').split(' ');
+      const mockFirst = mockNameParts[0] || '';
+      const mockLast = mockNameParts.slice(1).join(' ') || '';
       setProfile({
-        name: mockInstructorProfile.name,
+        firstName: mockFirst, lastName: mockLast,
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
         pronouns: '',
@@ -50,7 +53,7 @@ const InstructorProfile = () => {
         expertiseAreas: mockInstructorProfile.expertiseAreas,
       });
       setFormData({
-        name: mockInstructorProfile.name,
+        firstName: mockFirst, lastName: mockLast,
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
         pronouns: '',
@@ -87,14 +90,9 @@ const InstructorProfile = () => {
           }
         } catch { setTeachingSchedule(fallbackSchedule); }
 
-        const name = userData?.profile
-          ? `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim()
-          : session.user?.user_metadata
-            ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
-            : '';
-
         const profileObj = {
-          name: name || 'Instructor',
+          firstName: userData?.profile?.first_name || session.user?.user_metadata?.first_name || '',
+          lastName: userData?.profile?.last_name || session.user?.user_metadata?.last_name || '',
           email: userData?.profile?.email || session.user?.email || '',
           phone: (userData?.profile as any)?.phone || '',
           pronouns: (userData?.profile as any)?.pronouns || '',
@@ -125,8 +123,7 @@ const InstructorProfile = () => {
       return;
     }
     try {
-      const nameParts = formData.name.split(' ');
-      await updateProfile({ first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', phone: formData.phone, pronouns: formData.pronouns });
+      await updateProfile({ first_name: formData.firstName, last_name: formData.lastName, phone: formData.phone, pronouns: formData.pronouns });
       if (session?.user?.id) {
         const { error } = await supabase.from('instructors').update({
           bio: formData.bio,
@@ -191,21 +188,28 @@ const InstructorProfile = () => {
                       <AvatarUpload
                         currentUrl={userData?.profile?.avatar_url}
                         onUpload={async (url) => { try { await updateProfile({ avatar_url: url }); } catch (e) { console.error('Error updating avatar:', e); } }}
-                        initials={getInitials(profile.name)}
+                        initials={getInitials(`${profile.firstName} ${profile.lastName}`.trim())}
                       />
                     ) : (
                       <Avatar className="h-24 w-24">
-                        <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">{getInitials(profile.name)}</AvatarFallback>
+                        <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">{getInitials(`${profile.firstName} ${profile.lastName}`.trim())}</AvatarFallback>
                       </Avatar>
                     )}
                   </div>
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="firstName">First Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="name" name="name" placeholder="Your name" className="pl-10" value={formData.name} onChange={handleChange} disabled={!isEditing || demoMode} />
+                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={formData.firstName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={formData.lastName} onChange={handleChange} disabled={!isEditing || demoMode} />
                         </div>
                       </div>
                       <div className="space-y-2">
