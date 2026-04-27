@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock, GripVertical } from 'lucide-react';
+import { Search, Filter, X, Edit, Eye, EyeOff, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -31,6 +31,7 @@ import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStu
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
+import { capitalizeLevel, formatDateUS } from "@/lib/utils";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -55,6 +56,10 @@ interface Student {
   skillProgress?: SkillProgress[];
   classDay?: string;
   classTime?: string;
+  phone?: string | null;
+  pronouns?: string | null;
+  bio?: string | null;
+  enrollmentStatus?: string | null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -694,9 +699,9 @@ const InstructorStudents = () => {
             {detailedStudent && (
               <div className="space-y-6">
                 <DialogHeader>
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4 text-left">
                     <Avatar
-                      className={cn("h-12 w-12", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
+                      className={cn("h-16 w-16 shrink-0", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
                       onClick={() => detailedStudent.avatar && setEnlargedPhoto(detailedStudent.avatar)}
                     >
                       {detailedStudent.avatar ? (
@@ -707,9 +712,47 @@ const InstructorStudents = () => {
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    <div>
-                      <DialogTitle className="text-xl">{detailedStudent.name}</DialogTitle>
-                      <DialogDescription>{detailedStudent.email}</DialogDescription>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <DialogTitle className="text-xl">{detailedStudent.name}</DialogTitle>
+                        {detailedStudent.pronouns && (
+                          <DialogDescription className="text-xs mt-0.5">{detailedStudent.pronouns}</DialogDescription>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="outline" className={cn(
+                          detailedStudent.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                          detailedStudent.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
+                          detailedStudent.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                          detailedStudent.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
+                        )}>
+                          {capitalizeLevel(detailedStudent.level)}
+                        </Badge>
+                        {detailedStudent.enrollmentStatus && (
+                          <Badge variant="outline" className={cn(
+                            "capitalize",
+                            detailedStudent.enrollmentStatus === 'active' && "border-green-500/50 text-green-500",
+                            detailedStudent.enrollmentStatus === 'pending' && "border-yellow-500/50 text-yellow-500",
+                            detailedStudent.enrollmentStatus === 'inactive' && "border-muted-foreground/50 text-muted-foreground"
+                          )}>
+                            {detailedStudent.enrollmentStatus}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1 text-sm pt-1">
+                        {detailedStudent.email && (
+                          <a href={`mailto:${detailedStudent.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                            <Mail className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{detailedStudent.email}</span>
+                          </a>
+                        )}
+                        {detailedStudent.phone && (
+                          <a href={`tel:${detailedStudent.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span>{detailedStudent.phone}</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </DialogHeader>
@@ -722,50 +765,80 @@ const InstructorStudents = () => {
                     <TabsTrigger value="tasks">Tasks</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="info" className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 py-4">
-                      <div>
-                        <h3 className="font-medium text-muted-foreground">Enrollment Date</h3>
-                        <p>{detailedStudent.enrollmentDate}</p>
+                  <TabsContent value="info" className="space-y-6 pt-4">
+                    {/* Enrollment Section */}
+                    <section className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Enrollment</span>
                       </div>
-                      <div>
-                        <h3 className="font-medium text-muted-foreground">Level</h3>
-                        <Badge variant="outline" className={cn(
-                          detailedStudent.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
-                          detailedStudent.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
-                          detailedStudent.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
-                          detailedStudent.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
-                        )}>
-                          {detailedStudent.level.charAt(0).toUpperCase() + detailedStudent.level.slice(1)}
-                        </Badge>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-muted-foreground">Class Day</h3>
-                        <p>{detailedStudent.classDay || 'Not assigned'}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-muted-foreground">Class Time</h3>
-                        <p>{detailedStudent.classTime || 'Not assigned'}</p>
-                      </div>
-                      {detailedStudent.nextClass && (
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 pl-6">
                         <div>
-                          <h3 className="font-medium text-muted-foreground">Next Class</h3>
-                          <p>{detailedStudent.nextClass}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Status
+                          </p>
+                          <p className="text-sm font-medium capitalize">
+                            {detailedStudent.enrollmentStatus || 'Pending'}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="border-t pt-4 space-y-3">
-                      <h3 className="font-medium mb-2">Overall Progress</h3>
-                      <div className="flex items-center gap-2">
-                        <Progress value={detailedStudent.progress} className="h-2 flex-grow" />
-                        <span className="text-sm font-medium w-10 text-right">
-                          {detailedStudent.progress}%
-                        </span>
+                        <div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Start Date
+                          </p>
+                          <p className="text-sm font-medium">
+                            {detailedStudent.enrollmentDate || 'Not set'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Class Day
+                          </p>
+                          <p className="text-sm font-medium">
+                            {detailedStudent.classDay || 'Not assigned'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Class Time
+                          </p>
+                          <p className="text-sm font-medium">
+                            {detailedStudent.classTime || 'Not assigned'}
+                          </p>
+                        </div>
+                        {detailedStudent.nextClass && (
+                          <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <CalendarClock className="h-3 w-3" /> Next Class
+                            </p>
+                            <p className="text-sm font-medium">{detailedStudent.nextClass}</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    </section>
 
-                    <div className="border-t pt-4">
+                    {/* About Section */}
+                    <section className="space-y-3 border-t pt-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <UserIcon className="h-4 w-4" />
+                        <span>About</span>
+                      </div>
+                      <p className="text-sm pl-6 whitespace-pre-wrap text-foreground/90">
+                        {detailedStudent.bio || <span className="text-muted-foreground italic">No bio provided yet.</span>}
+                      </p>
+                    </section>
+
+                    {/* Overall Progress Section */}
+                    <section className="space-y-3 border-t pt-4">
+                      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+                        <span>Overall Progress</span>
+                        <span className="text-foreground">{detailedStudent.progress}%</span>
+                      </div>
+                      <Progress value={detailedStudent.progress} className="h-2" />
+                    </section>
+
+                    {/* Actions Section */}
+                    <section className="space-y-3 border-t pt-4">
+                      <div className="text-sm font-medium text-muted-foreground">Actions</div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -783,7 +856,7 @@ const InstructorStudents = () => {
                           ? 'Schedule Change Pending'
                           : 'Request Schedule Change'}
                       </Button>
-                    </div>
+                    </section>
                   </TabsContent>
                   
                   <TabsContent value="progress" className="space-y-6">
