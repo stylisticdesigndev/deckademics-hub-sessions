@@ -16,6 +16,7 @@ import NotificationPreferencesCard from '@/components/student/profile/Notificati
 import { mockProfileData } from '@/data/mockDashboardData';
 import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ const StudentProfile = () => {
   const [studentData, setStudentData] = useState<any>(null);
   const [courseData, setCourseData] = useState<any>(null);
   const [instructorData, setInstructorData] = useState<any>(null);
+  const [instructorDialogOpen, setInstructorDialogOpen] = useState(false);
   
   const isDemoActive = !session || demoMode;
 
@@ -117,10 +119,26 @@ const StudentProfile = () => {
           if (student.instructor_id) {
             const { data: instructor, error: instructorError } = await supabase
               .from('profiles')
-              .select('first_name, last_name, avatar_url')
+              .select('first_name, last_name, avatar_url, email, phone, bio, pronouns')
               .eq('id', student.instructor_id)
               .single();
-            if (!instructorError && instructor) setInstructorData(instructor);
+            let merged: any = (!instructorError && instructor) ? instructor : null;
+            const { data: instrExtra } = await supabase
+              .from('instructors')
+              .select('bio, specialties, years_experience, hide_phone, hide_email')
+              .eq('id', student.instructor_id)
+              .maybeSingle();
+            if (merged && instrExtra) {
+              merged = {
+                ...merged,
+                bio: instrExtra.bio || merged.bio,
+                specialties: instrExtra.specialties || [],
+                years_experience: instrExtra.years_experience,
+                hide_phone: !!instrExtra.hide_phone,
+                hide_email: !!instrExtra.hide_email,
+              };
+            }
+            if (merged) setInstructorData(merged);
           }
 
           // Fetch course data from enrollments if available
