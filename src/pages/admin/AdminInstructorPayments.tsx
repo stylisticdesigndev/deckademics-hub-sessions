@@ -930,13 +930,17 @@ const AdminInstructorPayments = () => {
                       <TableHead>Pay Period</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedHistory.map((payment) => (
                       <TableRow 
                         key={payment.id} 
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={cn(
+                          "cursor-pointer hover:bg-muted/50",
+                          payment.status === 'void' && "opacity-60 [&_td]:line-through"
+                        )}
                         onClick={() => setSelectedDetailPayment(payment)}
                       >
                         <TableCell className="font-medium">{payment.instructorName}</TableCell>
@@ -965,8 +969,32 @@ const AdminInstructorPayments = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
+                        <TableCell className="text-center no-underline">
+                          {payment.status === 'void' ? (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive no-underline">Void</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-accent text-accent-foreground">Paid</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right no-underline" onClick={(e) => e.stopPropagation()}>
+                          {payment.status === 'paid' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleVoidPayment(payment.id)}
+                            >
+                              Void
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRestorePayment(payment.id)}
+                            >
+                              Restore
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
