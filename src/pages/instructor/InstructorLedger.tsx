@@ -17,6 +17,8 @@ interface LedgerRow {
   payment_id: string | null;
   student_id: string;
   student_name?: string;
+  pay_period_start?: string | null;
+  pay_period_end?: string | null;
 }
 
 const InstructorLedger = () => {
@@ -41,7 +43,23 @@ const InstructorLedger = () => {
         const { data: profs } = await supabase
           .from('profiles').select('id, first_name, last_name').in('id', ids);
         const map = new Map((profs ?? []).map(p => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Student']));
-        setRows(data.map((r: any) => ({ ...r, student_name: map.get(r.student_id) })));
+
+        const paymentIds = Array.from(new Set(data.map(r => r.payment_id).filter(Boolean))) as string[];
+        let payMap = new Map<string, { start: string; end: string }>();
+        if (paymentIds.length > 0) {
+          const { data: pays } = await supabase
+            .from('instructor_payments')
+            .select('id, pay_period_start, pay_period_end')
+            .in('id', paymentIds);
+          payMap = new Map((pays ?? []).map(p => [p.id, { start: p.pay_period_start, end: p.pay_period_end }]));
+        }
+
+        setRows(data.map((r: any) => ({
+          ...r,
+          student_name: map.get(r.student_id),
+          pay_period_start: r.payment_id ? payMap.get(r.payment_id)?.start ?? null : null,
+          pay_period_end: r.payment_id ? payMap.get(r.payment_id)?.end ?? null : null,
+        })));
       } else {
         setRows([]);
       }
@@ -146,7 +164,11 @@ const InstructorLedger = () => {
                     {rows.map(r => (
                       <TableRow key={r.id}>
                         <TableCell>{format(new Date(r.class_date), 'MM/dd/yyyy')}</TableCell>
-                        <TableCell>{r.class_time || '—'}</TableCell>
+                        <TableCell>
+                          {r.pay_period_start && r.pay_period_end
+                            ? `${format(new Date(r.pay_period_start), 'MM/dd/yyyy')} – ${format(new Date(r.pay_period_end), 'MM/dd/yyyy')}`
+                            : '—'}
+                        </TableCell>
                         <TableCell>
                           {r.payment_id
                             ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
