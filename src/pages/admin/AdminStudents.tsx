@@ -392,7 +392,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -539,7 +539,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -649,7 +649,7 @@ const AdminStudents = () => {
                                   {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>
+                              <span className="font-medium">{student.profile?.first_name} {student.profile?.last_name}</span>{student.profile?.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
