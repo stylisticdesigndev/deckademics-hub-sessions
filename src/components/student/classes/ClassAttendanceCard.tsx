@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, MapPin, XCircle } from 'lucide-react';
 import { cn, formatDateUS } from '@/lib/utils';
+import { RunningLateButton } from '@/components/student/RunningLateButton';
+import { isToday } from 'date-fns';
 
 interface ClassAttendanceCardProps {
   date: Date;
@@ -18,6 +20,7 @@ interface ClassAttendanceCardProps {
   status?: 'present' | 'absent' | 'upcoming' | 'unmarked';
   onMarkAbsent?: (date: Date, reason?: string) => void;
   marking?: boolean;
+  studentId?: string;
 }
 
 export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
@@ -30,6 +33,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
   status = 'upcoming',
   onMarkAbsent,
   marking = false,
+  studentId,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -90,17 +94,24 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
               </div>
             </div>
 
-            {status === 'upcoming' && onMarkAbsent && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0 text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setDialogOpen(true)}
-                disabled={marking}
-              >
-                <XCircle className="h-4 w-4 mr-1" />
-                Mark Absent
-              </Button>
+            {status === 'upcoming' && (
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                {isToday(date) && (
+                  <RunningLateButton studentId={studentId} />
+                )}
+                {onMarkAbsent && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => setDialogOpen(true)}
+                    disabled={marking}
+                  >
+                    <XCircle className="h-4 w-4 mr-1" />
+                    Mark Absent
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </CardContent>

@@ -274,6 +274,7 @@ const StudentClasses = () => {
                             status={record || 'upcoming'}
                             onMarkAbsent={!record ? handleMarkAbsent : undefined}
                             marking={marking}
+                            studentId={session?.user?.id}
                           />
                         );
                       })
