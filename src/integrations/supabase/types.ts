@@ -670,6 +670,8 @@ export type Database = {
       instructors: {
         Row: {
           bio: string | null
+          hide_email: boolean
+          hide_phone: boolean
           hourly_rate: number | null
           id: string
           session_fee: number
@@ -679,6 +681,8 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          hide_email?: boolean
+          hide_phone?: boolean
           hourly_rate?: number | null
           id: string
           session_fee?: number
@@ -688,6 +692,8 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          hide_email?: boolean
+          hide_phone?: boolean
           hourly_rate?: number | null
           id?: string
           session_fee?: number

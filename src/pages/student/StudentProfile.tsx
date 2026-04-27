@@ -16,6 +16,7 @@ import NotificationPreferencesCard from '@/components/student/profile/Notificati
 import { mockProfileData } from '@/data/mockDashboardData';
 import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ const StudentProfile = () => {
   const [studentData, setStudentData] = useState<any>(null);
   const [courseData, setCourseData] = useState<any>(null);
   const [instructorData, setInstructorData] = useState<any>(null);
+  const [instructorDialogOpen, setInstructorDialogOpen] = useState(false);
   
   const isDemoActive = !session || demoMode;
 
@@ -117,10 +119,26 @@ const StudentProfile = () => {
           if (student.instructor_id) {
             const { data: instructor, error: instructorError } = await supabase
               .from('profiles')
-              .select('first_name, last_name, avatar_url')
+              .select('first_name, last_name, avatar_url, email, phone, bio, pronouns')
               .eq('id', student.instructor_id)
               .single();
-            if (!instructorError && instructor) setInstructorData(instructor);
+            let merged: any = (!instructorError && instructor) ? instructor : null;
+            const { data: instrExtra } = await supabase
+              .from('instructors')
+              .select('bio, specialties, years_experience, hide_phone, hide_email')
+              .eq('id', student.instructor_id)
+              .maybeSingle();
+            if (merged && instrExtra) {
+              merged = {
+                ...merged,
+                bio: instrExtra.bio || merged.bio,
+                specialties: instrExtra.specialties || [],
+                years_experience: instrExtra.years_experience,
+                hide_phone: !!instrExtra.hide_phone,
+                hide_email: !!instrExtra.hide_email,
+              };
+            }
+            if (merged) setInstructorData(merged);
           }
 
           // Fetch course data from enrollments if available
@@ -385,7 +403,11 @@ const StudentProfile = () => {
                       <span>Instructor</span>
                     </div>
                     {displayInstructor ? (
-                      <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setInstructorDialogOpen(true)}
+                        className="flex items-center gap-3 w-full text-left p-2 -m-2 rounded-md hover:bg-accent/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
                         <Avatar className="h-10 w-10">
                           {displayInstructor.avatar_url && <AvatarImage src={displayInstructor.avatar_url} alt={`${displayInstructor.first_name} ${displayInstructor.last_name}`} />}
                           <AvatarFallback className="bg-accent text-accent-foreground text-sm">
@@ -393,10 +415,10 @@ const StudentProfile = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{`${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}</p>
-                          <p className="text-xs text-muted-foreground">DJ Instructor</p>
+                          <p className="text-sm font-medium hover:underline">{`${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}</p>
+                          <p className="text-xs text-muted-foreground">DJ Instructor · View profile</p>
                         </div>
-                      </div>
+                      </button>
                     ) : (
                       <p className="text-sm text-muted-foreground py-2">
                         Instructor info will appear once assigned.
@@ -411,6 +433,76 @@ const StudentProfile = () => {
             <NotificationPreferencesCard />
           </div>
         )}
+
+        {/* Instructor Profile Dialog */}
+        <Dialog open={instructorDialogOpen} onOpenChange={setInstructorDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Instructor Profile</DialogTitle>
+              <DialogDescription>Details about your assigned instructor</DialogDescription>
+            </DialogHeader>
+            {displayInstructor && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    {displayInstructor.avatar_url && <AvatarImage src={displayInstructor.avatar_url} alt={`${displayInstructor.first_name} ${displayInstructor.last_name}`} />}
+                    <AvatarFallback className="bg-accent text-accent-foreground">
+                      {`${displayInstructor.first_name?.[0] || ''}${displayInstructor.last_name?.[0] || ''}`.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-base font-semibold">{`${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}</p>
+                    <p className="text-xs text-muted-foreground">DJ Instructor</p>
+                    {displayInstructor.pronouns && (
+                      <p className="text-xs text-muted-foreground">{displayInstructor.pronouns}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-sm">
+                  {displayInstructor.email && !displayInstructor.hide_email && (
+                    <div className="flex items-start gap-2">
+                      <AtSign className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <a href={`mailto:${displayInstructor.email}`} className="text-primary hover:underline break-all">
+                        {displayInstructor.email}
+                      </a>
+                    </div>
+                  )}
+                  {displayInstructor.phone && !displayInstructor.hide_phone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <a href={`tel:${displayInstructor.phone}`} className="text-primary hover:underline">
+                        {displayInstructor.phone}
+                      </a>
+                    </div>
+                  )}
+                  {displayInstructor.bio && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">About</p>
+                      <p className="text-sm whitespace-pre-wrap">{displayInstructor.bio}</p>
+                    </div>
+                  )}
+                  {Array.isArray(displayInstructor.specialties) && displayInstructor.specialties.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Areas of Expertise</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {displayInstructor.specialties.map((s: string, i: number) => (
+                          <span key={i} className="text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {typeof displayInstructor.years_experience === 'number' && displayInstructor.years_experience > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Experience</p>
+                      <p className="text-sm">{displayInstructor.years_experience} years</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );

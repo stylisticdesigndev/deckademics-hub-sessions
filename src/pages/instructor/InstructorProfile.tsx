@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AtSign, Phone, Save, User, Calendar, Eye, EyeOff, UserCircle2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
@@ -35,6 +36,7 @@ const InstructorProfile = () => {
     firstName: '', lastName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
   });
   const [formData, setFormData] = useState({ ...profile });
+  const [privacy, setPrivacy] = useState({ hidePhone: false, hideEmail: false });
 
   useEffect(() => {
     if (demoMode) {
@@ -74,6 +76,10 @@ const InstructorProfile = () => {
           console.error('Error fetching instructor data:', instructorError);
         }
         setInstructorData(instrData);
+        setPrivacy({
+          hidePhone: !!(instrData as any)?.hide_phone,
+          hideEmail: !!(instrData as any)?.hide_email,
+        });
 
         try {
           // Derive teaching schedule from assigned students' class_day/class_time
@@ -138,7 +144,9 @@ const InstructorProfile = () => {
       if (session?.user?.id) {
         const { error } = await supabase.from('instructors').update({
           bio: formData.bio,
-          specialties: formData.expertiseAreas.split(',').map(s => s.trim()).filter(s => s !== '')
+          specialties: formData.expertiseAreas.split(',').map(s => s.trim()).filter(s => s !== ''),
+          hide_phone: privacy.hidePhone,
+          hide_email: privacy.hideEmail,
         }).eq('id', session.user.id);
         if (error) throw error;
       }
@@ -295,6 +303,59 @@ const InstructorProfile = () => {
                     <div className="text-center py-2 text-muted-foreground text-sm">No classes assigned yet. Your schedule will appear here once students are assigned.</div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Privacy</CardTitle>
+                <CardDescription>Control what students see on your profile</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-phone" className="text-sm font-medium">Hide phone number</Label>
+                    <p className="text-xs text-muted-foreground">Students won't see your phone</p>
+                  </div>
+                  <Switch
+                    id="hide-phone"
+                    checked={privacy.hidePhone}
+                    onCheckedChange={(v) => setPrivacy(p => ({ ...p, hidePhone: !!v }))}
+                    disabled={demoMode}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-email" className="text-sm font-medium">Hide email address</Label>
+                    <p className="text-xs text-muted-foreground">Students won't see your email</p>
+                  </div>
+                  <Switch
+                    id="hide-email"
+                    checked={privacy.hideEmail}
+                    onCheckedChange={(v) => setPrivacy(p => ({ ...p, hideEmail: !!v }))}
+                    disabled={demoMode}
+                  />
+                </div>
+                {!demoMode && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={async () => {
+                      if (!session?.user?.id) return;
+                      const { error } = await supabase.from('instructors').update({
+                        hide_phone: privacy.hidePhone,
+                        hide_email: privacy.hideEmail,
+                      }).eq('id', session.user.id);
+                      if (error) {
+                        toast({ title: 'Error', description: 'Could not save privacy settings.', variant: 'destructive' });
+                      } else {
+                        toast({ title: 'Privacy updated', description: 'Your visibility settings have been saved.' });
+                      }
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-2" />Save Privacy
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
