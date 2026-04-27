@@ -235,10 +235,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileData) {
         if (import.meta.env.DEV) console.log("User profile fetched successfully:", profileData);
         
+        // Prefer the role from user_roles (via get_user_role RPC) since admins
+        // can have a non-admin profile.role (e.g. instructor) but an 'admin'
+        // entry in user_roles. Fall back to profile.role if RPC returned nothing.
+        const effectiveRole = (roleData as UserRole) || (profileData.role as UserRole);
+
         setUserData({
           user: session?.user || null,
           profile: profileData as Profile,
-          role: profileData.role as UserRole,
+          role: effectiveRole,
         });
         
         return profileData as Profile;
