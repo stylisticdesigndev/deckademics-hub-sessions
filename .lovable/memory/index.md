@@ -52,4 +52,5 @@
 - [Feature Requests System](mem://features/feature-requests-system) — feature_requests table parallel to bug_reports, lightbulb dialog for students/instructors during beta
 - [PWA Mobile Setup](mem://features/pwa-mobile-setup) — Standalone PWA, web manifest, custom iOS splash screen
 - [Resilient Avatar Uploads](mem://ux/resilient-avatar-uploads) — Off-screen JPEG conversion, max 1024px, 1s retry logic for reliability
+- [Mock User Management](mem://features/mock-user-management) — `profiles.is_mock` flag + `app_settings.hide_mock_users` global filter, per-user/bulk toggle, dedicated MockUsersSection with cascading purge RPC
 - [Admin RBAC & Mode Switcher](mem://features/admin-rbac-mode-switcher) — Unified login, hardcoded admin emails, admin mode visual state, payroll owner-only gate
