@@ -92,7 +92,10 @@ const AdminInstructors = () => {
     deactivateInstructor,
     activateInstructor,
   } = useAdminInstructors();
-  
+  const { settings } = useAppSettings();
+  const { setMockFlag } = useMockUsers();
+  const hideMocks = settings?.hide_mock_users === true;
+
   const {
     unassignedStudents,
     assignedStudents,
