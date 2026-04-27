@@ -165,17 +165,19 @@ const InstructorLedger = () => {
                   </TableHeader>
                   <TableBody>
                     {rows.map(r => (
-                      <TableRow key={r.id}>
+                      <TableRow key={r.id} className={r.payment_status === 'void' ? 'opacity-60 [&_td]:line-through' : ''}>
                         <TableCell>{format(new Date(r.class_date), 'MM/dd/yyyy')}</TableCell>
                         <TableCell>
                           {r.pay_period_start && r.pay_period_end
                             ? `${format(new Date(r.pay_period_start), 'MM/dd/yyyy')} – ${format(new Date(r.pay_period_end), 'MM/dd/yyyy')}`
                             : '—'}
                         </TableCell>
-                        <TableCell>
-                          {r.payment_id
-                            ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
-                            : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Unpaid</Badge>}
+                        <TableCell className="no-underline">
+                          {r.payment_status === 'void'
+                            ? <Badge variant="outline" className="border-destructive/50 text-destructive no-underline">Void</Badge>
+                            : r.payment_id
+                              ? <Badge variant="outline" className="border-green-500/50 text-green-500">Paid</Badge>
+                              : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Unpaid</Badge>}
                         </TableCell>
                       </TableRow>
                     ))}
