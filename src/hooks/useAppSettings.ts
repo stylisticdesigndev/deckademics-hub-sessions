@@ -8,6 +8,7 @@ interface AppSettings {
   school_name: string;
   notifications_enabled: boolean;
   notification_channels: 'email' | 'push' | 'all' | 'none';
+  hide_mock_users?: boolean;
   updated_at: string;
   updated_by: string | null;
 }
@@ -16,6 +17,7 @@ interface UpdateSettingsInput {
   school_name?: string;
   notifications_enabled?: boolean;
   notification_channels?: 'email' | 'push' | 'all' | 'none';
+  hide_mock_users?: boolean;
 }
 
 export const useAppSettings = () => {
