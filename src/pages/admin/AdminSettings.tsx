@@ -524,6 +524,7 @@ const AdminSettings = () => {
             </Form>
           </CardContent>
         </Card>
+        <MockUsersSection />
       </div>
     </>
   );
