@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import { useMockUsers } from '@/hooks/useMockUsers';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import ScheduleRequestsList from '@/components/admin/schedule-requests/ScheduleRequestsList';
 import { useScheduleChangeRequests } from '@/hooks/useScheduleChangeRequests';
@@ -105,6 +107,9 @@ const AdminStudents = () => {
   } = useAdminStudents();
 
   const { pendingRequests } = useScheduleChangeRequests('admin');
+  const { settings } = useAppSettings();
+  const { setMockFlag } = useMockUsers();
+  const hideMocks = settings?.hide_mock_users === true;
 
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
@@ -200,10 +205,12 @@ const AdminStudents = () => {
   const filterStudents = (students: typeof activeStudents) => {
     return students?.filter(
       student => (
-        student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        !searchQuery
+        (
+          student.profile?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          !searchQuery
+        ) && (!hideMocks || !student.profile?.is_mock)
       )
     ) || [];
   };
