@@ -35,11 +35,14 @@ export const mockAttendance = {
   total: 10,
 };
 
+const _today = new Date();
+const _todayStr = `${String(_today.getMonth() + 1).padStart(2, '0')}/${String(_today.getDate()).padStart(2, '0')}/${_today.getFullYear()}`;
+
 export const mockUpcomingClasses = [
   {
     id: 'mock-1',
     title: 'Intermediate Class',
-    date: 'Tomorrow',
+    date: _todayStr,
     time: '3:00 PM',
     instructor: 'DJ Master K',
     location: 'Classroom 1',
