@@ -76,7 +76,10 @@ export const FeatureRequestDialog = ({ triggerVariant = 'button' }: FeatureReque
 
       if (screenshotFile) {
         const timestamp = Date.now();
-        const filePath = `${session.user.id}/${timestamp}_${screenshotFile.name}`;
+        const safeName = screenshotFile.name
+          .replace(/[^a-zA-Z0-9._-]/g, '_')
+          .replace(/_+/g, '_');
+        const filePath = `${session.user.id}/${timestamp}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('feature-screenshots')
           .upload(filePath, screenshotFile);
