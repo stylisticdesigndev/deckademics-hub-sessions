@@ -75,7 +75,7 @@ interface InstructorPayrollRecord {
   hours_worked: number;
   amount: number;
   extra_pay: ExtraPayItem[];
-  status: 'pending' | 'paid';
+  status: 'pending' | 'paid' | 'void';
   payment_date: string;
 }
 
