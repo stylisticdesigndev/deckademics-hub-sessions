@@ -34,6 +34,8 @@ interface Student {
   classTime?: string;
   phone?: string | null;
   pronouns?: string | null;
+  bio?: string | null;
+  enrollmentStatus?: string | null;
 }
 
 
@@ -44,6 +46,7 @@ interface StudentWithProfile {
   notes: string | null;
   class_day: string | null;
   class_time: string | null;
+  enrollment_status: string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -51,6 +54,7 @@ interface StudentWithProfile {
     avatar_url: string;
     phone?: string | null;
     pronouns?: string | null;
+    bio?: string | null;
   };
 }
 
@@ -77,7 +81,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             notes,
             class_day,
             class_time,
-            profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns)
+            enrollment_status,
+            profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns, bio)
           `)
           .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
           
@@ -204,6 +209,8 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             classTime: student.class_time || undefined,
             phone: profile?.phone || null,
             pronouns: profile?.pronouns || null,
+            bio: profile?.bio || null,
+            enrollmentStatus: student.enrollment_status || null,
           };
         });
 
