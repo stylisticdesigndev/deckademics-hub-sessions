@@ -9,6 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Eye, EyeOff, CheckCircle, XCircle, ChevronDown, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
+import { useInstructorMakeups, type MakeupRow, type MakeupStatus } from '@/hooks/instructor/useInstructorMakeups';
+import { MakeupControl } from '@/components/instructor/attendance/MakeupControl';
 import { format, startOfDay, getDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +27,7 @@ export default function InstructorAttendance() {
   const { userData } = useAuth();
   const instructorId = userData.user?.id;
   const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students } = useInstructorAttendance(instructorId);
+  const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [demoMode, setDemoMode] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
 
@@ -138,6 +141,13 @@ export default function InstructorAttendance() {
                   saving={saving}
                   demoMode={demoMode}
                   onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
+                  makeup={demoMode ? null : getMakeup(item.student.id, item.dateStr)}
+                  makeupSaving={makeupSaving}
+                  onScheduleMakeup={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
+                  onSetMakeupStatus={(s) => {
+                    const m = getMakeup(item.student.id, item.dateStr);
+                    if (m) setMakeupStatus(m.id, s);
+                  }}
                 />
               ))}
             </div>
@@ -160,7 +170,7 @@ export default function InstructorAttendance() {
                 <h3 className="text-sm font-medium text-muted-foreground">{weekLabel}</h3>
                 {items.map(item => (
                   <Card key={`${item.student.id}-${item.dateStr}`} className="p-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <Avatar className="h-8 w-8">
                         {item.student.avatar && <AvatarImage src={item.student.avatar} />}
                         <AvatarFallback className="text-xs">{item.student.initials}</AvatarFallback>
@@ -172,6 +182,19 @@ export default function InstructorAttendance() {
                         </p>
                       </div>
                       <StatusBadge status={item.status} />
+                      {item.status === 'absent' && (
+                        <div className="w-full flex justify-end">
+                          <MakeupControl
+                            makeup={getMakeup(item.student.id, item.dateStr)}
+                            disabled={makeupSaving}
+                            onSchedule={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
+                            onSetStatus={(s) => {
+                              const m = getMakeup(item.student.id, item.dateStr);
+                              if (m) setMakeupStatus(m.id, s);
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </Card>
                 ))}
@@ -192,6 +215,10 @@ function StudentAttendanceRow({
   saving,
   demoMode,
   onMark,
+  makeup,
+  makeupSaving,
+  onScheduleMakeup,
+  onSetMakeupStatus,
 }: {
   student: { id: string; name: string; initials: string; avatar?: string | null; level: string; classDay: string; classTime: string };
   dateStr: string;
@@ -200,10 +227,14 @@ function StudentAttendanceRow({
   saving: boolean;
   demoMode: boolean;
   onMark: (status: 'present' | 'absent') => void;
+  makeup: MakeupRow | null;
+  makeupSaving: boolean;
+  onScheduleMakeup: (date: Date) => void;
+  onSetMakeupStatus: (status: MakeupStatus) => void;
 }) {
   return (
     <Card className="p-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Avatar className="h-10 w-10">
           {student.avatar && <AvatarImage src={student.avatar} />}
           <AvatarFallback className="text-sm">{student.initials}</AvatarFallback>
@@ -253,6 +284,16 @@ function StudentAttendanceRow({
             </div>
           )}
         </div>
+        {status === 'absent' && !demoMode && (
+          <div className="w-full flex justify-end pt-1">
+            <MakeupControl
+              makeup={makeup}
+              disabled={makeupSaving}
+              onSchedule={onScheduleMakeup}
+              onSetStatus={onSetMakeupStatus}
+            />
+          </div>
+        )}
       </div>
     </Card>
   );

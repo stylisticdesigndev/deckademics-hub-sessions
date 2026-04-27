@@ -1001,6 +1001,42 @@ export type Database = {
           },
         ]
       }
+      student_makeups: {
+        Row: {
+          absence_date: string
+          created_at: string
+          id: string
+          instructor_id: string
+          makeup_date: string
+          notes: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          absence_date: string
+          created_at?: string
+          id?: string
+          instructor_id: string
+          makeup_date: string
+          notes?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          absence_date?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          makeup_date?: string
+          notes?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_notes: {
         Row: {
           content: string
