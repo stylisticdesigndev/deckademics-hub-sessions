@@ -8,10 +8,10 @@ export const useMockUsers = () => {
   const { data: mockUsers = [], isLoading } = useQuery({
     queryKey: ['admin', 'mock-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email, role, avatar_url, is_mock' as any)
-        .eq('is_mock' as any, true as any)
+      const query: any = supabase.from('profiles' as any);
+      const { data, error } = await query
+        .select('id, first_name, last_name, email, role, avatar_url, is_mock')
+        .eq('is_mock', true)
         .order('role', { ascending: true });
       if (error) throw error;
       return (data as any[]) || [];
