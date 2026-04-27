@@ -305,6 +305,59 @@ const InstructorProfile = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Privacy</CardTitle>
+                <CardDescription>Control what students see on your profile</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-phone" className="text-sm font-medium">Hide phone number</Label>
+                    <p className="text-xs text-muted-foreground">Students won't see your phone</p>
+                  </div>
+                  <Switch
+                    id="hide-phone"
+                    checked={privacy.hidePhone}
+                    onCheckedChange={(v) => setPrivacy(p => ({ ...p, hidePhone: !!v }))}
+                    disabled={demoMode}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-email" className="text-sm font-medium">Hide email address</Label>
+                    <p className="text-xs text-muted-foreground">Students won't see your email</p>
+                  </div>
+                  <Switch
+                    id="hide-email"
+                    checked={privacy.hideEmail}
+                    onCheckedChange={(v) => setPrivacy(p => ({ ...p, hideEmail: !!v }))}
+                    disabled={demoMode}
+                  />
+                </div>
+                {!demoMode && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={async () => {
+                      if (!session?.user?.id) return;
+                      const { error } = await supabase.from('instructors').update({
+                        hide_phone: privacy.hidePhone,
+                        hide_email: privacy.hideEmail,
+                      }).eq('id', session.user.id);
+                      if (error) {
+                        toast({ title: 'Error', description: 'Could not save privacy settings.', variant: 'destructive' });
+                      } else {
+                        toast({ title: 'Privacy updated', description: 'Your visibility settings have been saved.' });
+                      }
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-2" />Save Privacy
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
