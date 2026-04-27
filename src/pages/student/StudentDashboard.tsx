@@ -112,7 +112,6 @@ const StudentDashboard = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <RunningLateButton studentId={studentId} disabled={demoMode} />
           <Button
             variant={demoMode ? "default" : "outline"}
             size="sm"
@@ -153,6 +152,8 @@ const StudentDashboard = ({
         <UpcomingClassesSection
           classes={activeUpcomingClasses}
           onAddToCalendar={handleAddToCalendar}
+          studentId={studentId}
+          demoMode={demoMode}
         />
       </section>
 
