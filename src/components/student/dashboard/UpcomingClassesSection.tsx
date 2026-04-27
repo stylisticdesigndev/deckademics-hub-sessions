@@ -12,15 +12,50 @@ interface UpcomingClassesSectionProps {
   demoMode?: boolean;
 }
 
+// Parse "3:00 PM" / "03:00 PM" / "15:00" into minutes-since-midnight
+const parseTimeToMinutes = (time: string): number | null => {
+  if (!time) return null;
+  const m = time.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const period = m[3]?.toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+};
+
+// Parse "1h", "1h 30m", "90m" into minutes
+const parseDurationToMinutes = (duration: string): number => {
+  if (!duration) return 60;
+  let total = 0;
+  const hMatch = duration.match(/(\d+)\s*h/i);
+  const mMatch = duration.match(/(\d+)\s*m/i);
+  if (hMatch) total += parseInt(hMatch[1], 10) * 60;
+  if (mMatch) total += parseInt(mMatch[1], 10);
+  return total || 60;
+};
+
+// Active from 60 min before start through end of class
+const isWithinLateWindow = (session: ClassSession): boolean => {
+  const startMin = parseTimeToMinutes(session.time);
+  if (startMin === null) return false;
+  const durMin = parseDurationToMinutes(session.duration);
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return nowMin >= startMin - 60 && nowMin <= startMin + durMin;
+};
+
 export const UpcomingClassesSection = ({ classes, onAddToCalendar, studentId, demoMode }: UpcomingClassesSectionProps) => {
   const today = formatDateUS(new Date());
   const todaysClasses = classes.filter(c => c.date === today);
+  const lateEligible = todaysClasses.some(isWithinLateWindow);
 
   return (
     <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-sm font-semibold">Today's Class</CardTitle>
-        {todaysClasses.length > 0 && (
+        {lateEligible && (
           <RunningLateButton studentId={studentId} disabled={demoMode} />
         )}
       </CardHeader>
