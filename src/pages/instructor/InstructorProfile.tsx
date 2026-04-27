@@ -12,9 +12,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
-import { ScheduleEditor } from '@/components/instructor/ScheduleEditor';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
-import { DAY_ORDER, sanitizeScheduleItems } from '@/utils/instructorSchedule';
+import { DAY_ORDER, sanitizeScheduleItems, CLASS_SLOTS } from '@/utils/instructorSchedule';
 
 type TeachingScheduleItem = {
   day: string;
@@ -30,7 +29,6 @@ const InstructorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [instructorData, setInstructorData] = useState<any>(null);
   const [teachingSchedule, setTeachingSchedule] = useState<TeachingScheduleItem[]>(fallbackSchedule);
-  const [isScheduleEditorOpen, setIsScheduleEditorOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
 
   const [profile, setProfile] = useState({
@@ -78,13 +76,26 @@ const InstructorProfile = () => {
         setInstructorData(instrData);
 
         try {
-          const { data: scheduleRows } = await supabase
-            .from('instructor_schedules').select('day,hours').eq('instructor_id', session.user.id);
-          if (scheduleRows && Array.isArray(scheduleRows) && scheduleRows.length > 0) {
-            const sorted = sanitizeScheduleItems(
-              scheduleRows.map(s => ({ day: s.day, hours: s.hours }))
-            );
-            setTeachingSchedule(sorted);
+          // Derive teaching schedule from assigned students' class_day/class_time
+          const { data: studentRows } = await supabase
+            .from('students')
+            .select('class_day, class_time')
+            .eq('instructor_id', session.user.id);
+
+          if (studentRows && studentRows.length > 0) {
+            const dayMap = new Map<string, Set<string>>();
+            for (const s of studentRows) {
+              if (!s.class_day || !s.class_time) continue;
+              if (!dayMap.has(s.class_day)) dayMap.set(s.class_day, new Set());
+              dayMap.get(s.class_day)!.add(s.class_time);
+            }
+            const items: TeachingScheduleItem[] = Array.from(dayMap.entries()).map(([day, slots]) => ({
+              day,
+              hours: Array.from(slots)
+                .sort((a, b) => CLASS_SLOTS.indexOf(a as any) - CLASS_SLOTS.indexOf(b as any))
+                .join(', '),
+            }));
+            setTeachingSchedule(sanitizeScheduleItems(items));
           } else {
             setTeachingSchedule(fallbackSchedule);
           }
@@ -262,7 +273,7 @@ const InstructorProfile = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Teaching Schedule</CardTitle>
-                <CardDescription>Your weekly hours</CardDescription>
+                <CardDescription>Auto-generated from assigned classes</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -281,28 +292,13 @@ const InstructorProfile = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-2 text-muted-foreground">No teaching schedule set up yet.</div>
-                  )}
-                  {!demoMode && (
-                    <Button variant="outline" className="w-full" onClick={() => setIsScheduleEditorOpen(true)}>Edit Schedule</Button>
+                    <div className="text-center py-2 text-muted-foreground text-sm">No classes assigned yet. Your schedule will appear here once students are assigned.</div>
                   )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      )}
-
-      {!demoMode && (
-        <ScheduleEditor
-          open={isScheduleEditorOpen}
-          onOpenChange={setIsScheduleEditorOpen}
-          scheduleItems={teachingSchedule}
-          instructorId={session?.user?.id || ''}
-          onScheduleUpdated={(newSchedule) => {
-            setTeachingSchedule(sanitizeScheduleItems(newSchedule));
-          }}
-        />
       )}
     </div>
   );
