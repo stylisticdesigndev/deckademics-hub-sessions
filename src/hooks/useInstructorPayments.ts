@@ -16,7 +16,7 @@ export interface InstructorPayment {
   payPeriodEnd: string;
   paymentType: 'class' | 'bonus';
   description: string | null;
-  status: 'pending' | 'paid';
+  status: 'pending' | 'paid' | 'void';
   lastUpdated: string;
 }
 
@@ -105,7 +105,7 @@ export const useInstructorPayments = () => {
             payPeriodEnd: paymentObj.pay_period_end || paymentObj.payment_date,
             paymentType: (paymentObj.payment_type || 'class') as 'class' | 'bonus',
             description: paymentObj.description || null,
-            status: paymentObj.status as 'pending' | 'paid',
+            status: paymentObj.status as 'pending' | 'paid' | 'void',
             lastUpdated: paymentObj.payment_date
           });
         }
@@ -129,7 +129,7 @@ export const useInstructorPayments = () => {
     
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const paidThisMonth = payments.filter(p => 
+    const paidThisMonth = payments.filter(p =>
       p.status === 'paid' && new Date(p.lastUpdated) >= monthStart
     );
 
