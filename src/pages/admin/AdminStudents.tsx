@@ -745,6 +745,9 @@ const AdminStudents = () => {
               <div className="flex items-center gap-2">
                 {getStatusBadge(viewedStudent.enrollment_status)}
                 <Badge variant="outline" className="capitalize">{viewedStudent.level}</Badge>
+                {viewedStudent.profile?.is_mock && (
+                  <Badge variant="outline" className="border-amber-500/50 text-amber-500">Mock</Badge>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -853,6 +856,21 @@ const AdminStudents = () => {
                 >
                   {(viewedStudent as any).two_way_messaging === false ? 'Read-only' : 'Enabled'}
                 </Badge>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="mock-flag-student" className="text-sm">Mark as mock user</Label>
+                  <p className="text-xs text-muted-foreground">Test/seed account. Hidden when "Hide mock users" is on.</p>
+                </div>
+                <Switch
+                  id="mock-flag-student"
+                  checked={!!viewedStudent.profile?.is_mock}
+                  disabled={setMockFlag.isPending}
+                  onCheckedChange={(checked) =>
+                    setMockFlag.mutate({ userIds: [viewedStudent.id], isMock: checked })
+                  }
+                />
               </div>
 
               <Separator />
