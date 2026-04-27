@@ -694,6 +694,9 @@ const AdminInstructors = () => {
                     <MessageSquare className="h-3.5 w-3.5 mr-1" />
                     Message
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setMockFlag.mutate({ userIds: selectedInstructorIds, isMock: true })} disabled={setMockFlag.isPending}>
+                    Mark as Mock
+                  </Button>
                   <Button size="sm" variant="destructive" onClick={() => setShowBulkDeactivateInstructors(true)}>
                     Deactivate
                   </Button>
