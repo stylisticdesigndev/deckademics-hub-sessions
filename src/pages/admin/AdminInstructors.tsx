@@ -563,6 +563,9 @@ const AdminInstructors = () => {
                     }>
                       {viewedInstructor.status}
                     </Badge>
+                    {viewedInstructor.profile?.is_mock && (
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-500">Mock</Badge>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -620,6 +623,20 @@ const AdminInstructors = () => {
                   <SeparatorUI />
 
                   <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between rounded-md border p-3 mb-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="mock-flag-instructor" className="text-sm">Mark as mock user</Label>
+                        <p className="text-xs text-muted-foreground">Test/seed account. Hidden when "Hide mock users" is on.</p>
+                      </div>
+                      <Switch
+                        id="mock-flag-instructor"
+                        checked={!!viewedInstructor.profile?.is_mock}
+                        disabled={setMockFlag.isPending}
+                        onCheckedChange={(checked) =>
+                          setMockFlag.mutate({ userIds: [viewedInstructor.id], isMock: checked })
+                        }
+                      />
+                    </div>
                     {viewedInstructor.status === 'active' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => { closeViewInstructor(); handleOpenAssignStudents(viewInstructorId!); }}>
