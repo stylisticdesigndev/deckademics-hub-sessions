@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, Calendar, Eye, EyeOff } from 'lucide-react';
+import { AtSign, Phone, Save, User, Calendar, Eye, EyeOff, UserCircle2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +34,7 @@ const InstructorProfile = () => {
   const [demoMode, setDemoMode] = useState(false);
 
   const [profile, setProfile] = useState({
-    name: '', email: '', phone: '', bio: '', startDate: '', expertiseAreas: '',
+    name: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
   });
   const [formData, setFormData] = useState({ ...profile });
 
@@ -44,6 +44,7 @@ const InstructorProfile = () => {
         name: mockInstructorProfile.name,
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
+        pronouns: '',
         bio: mockInstructorProfile.bio,
         startDate: '',
         expertiseAreas: mockInstructorProfile.expertiseAreas,
@@ -52,6 +53,7 @@ const InstructorProfile = () => {
         name: mockInstructorProfile.name,
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
+        pronouns: '',
         bio: mockInstructorProfile.bio,
         startDate: '',
         expertiseAreas: mockInstructorProfile.expertiseAreas,
@@ -95,6 +97,7 @@ const InstructorProfile = () => {
           name: name || 'Instructor',
           email: userData?.profile?.email || session.user?.email || '',
           phone: (userData?.profile as any)?.phone || '',
+          pronouns: (userData?.profile as any)?.pronouns || '',
           bio: instrData?.bio || 'No bio provided yet.',
           startDate: '',
           expertiseAreas: instrData?.specialties ? instrData.specialties.join(', ') : '',
@@ -123,7 +126,7 @@ const InstructorProfile = () => {
     }
     try {
       const nameParts = formData.name.split(' ');
-      await updateProfile({ first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', phone: formData.phone });
+      await updateProfile({ first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', phone: formData.phone, pronouns: formData.pronouns });
       if (session?.user?.id) {
         const { error } = await supabase.from('instructors').update({
           bio: formData.bio,
@@ -218,6 +221,13 @@ const InstructorProfile = () => {
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input id="phone" name="phone" className="pl-10" value={formData.phone} onChange={handleChange} disabled={!isEditing || demoMode} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pronouns">Pronouns</Label>
+                      <div className="relative">
+                        <UserCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={formData.pronouns} onChange={handleChange} disabled={!isEditing || demoMode} />
                       </div>
                     </div>
                     <div className="space-y-2">

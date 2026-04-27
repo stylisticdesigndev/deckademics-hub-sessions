@@ -38,6 +38,7 @@ interface Profile {
   bio?: string | null;
   experience?: string | null;
   specialty?: string | null;
+  pronouns?: string | null;
 }
 
 interface UserData {

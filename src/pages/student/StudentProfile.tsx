@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle, UserCircle2 } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
@@ -164,7 +164,8 @@ const StudentProfile = () => {
         first_name: firstName,
         last_name: lastName,
         phone: formData.phone,
-        bio: formData.bio
+        bio: formData.bio,
+        pronouns: formData.pronouns,
       });
       
       setProfile({...formData});
@@ -293,7 +294,15 @@ const StudentProfile = () => {
                         <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing || isDemoActive} />
                       </div>
                     </div>
-                    
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pronouns">Pronouns</Label>
+                      <div className="relative">
+                        <UserCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={(displayFormData as any).pronouns || ''} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
                       <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing || isDemoActive} />
