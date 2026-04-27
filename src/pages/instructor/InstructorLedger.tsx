@@ -19,6 +19,7 @@ interface LedgerRow {
   student_name?: string;
   pay_period_start?: string | null;
   pay_period_end?: string | null;
+  payment_status?: 'pending' | 'paid' | 'void' | null;
 }
 
 const InstructorLedger = () => {
@@ -45,13 +46,13 @@ const InstructorLedger = () => {
         const map = new Map((profs ?? []).map(p => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Student']));
 
         const paymentIds = Array.from(new Set(data.map(r => r.payment_id).filter(Boolean))) as string[];
-        let payMap = new Map<string, { start: string; end: string }>();
+        let payMap = new Map<string, { start: string; end: string; status: string }>();
         if (paymentIds.length > 0) {
           const { data: pays } = await supabase
             .from('instructor_payments')
-            .select('id, pay_period_start, pay_period_end')
+            .select('id, pay_period_start, pay_period_end, status')
             .in('id', paymentIds);
-          payMap = new Map((pays ?? []).map(p => [p.id, { start: p.pay_period_start, end: p.pay_period_end }]));
+          payMap = new Map((pays ?? []).map((p: any) => [p.id, { start: p.pay_period_start, end: p.pay_period_end, status: p.status }]));
         }
 
         setRows(data.map((r: any) => ({
@@ -59,6 +60,7 @@ const InstructorLedger = () => {
           student_name: map.get(r.student_id),
           pay_period_start: r.payment_id ? payMap.get(r.payment_id)?.start ?? null : null,
           pay_period_end: r.payment_id ? payMap.get(r.payment_id)?.end ?? null : null,
+          payment_status: r.payment_id ? (payMap.get(r.payment_id)?.status as any) ?? null : null,
         })));
       } else {
         setRows([]);
@@ -68,8 +70,9 @@ const InstructorLedger = () => {
   }, [instructorId]);
 
   const stats = useMemo(() => {
-    const unpaid = rows.filter(r => !r.payment_id);
-    const paid = rows.filter(r => r.payment_id);
+    // Voided payments count as unpaid (the work still needs to be paid via a new payroll entry)
+    const unpaid = rows.filter(r => !r.payment_id || r.payment_status === 'void');
+    const paid = rows.filter(r => r.payment_id && r.payment_status !== 'void');
     const sum = (xs: LedgerRow[]) => xs.reduce((a, r) => a + (Number(r.amount) || 0), 0);
     const extraTotal = sumExtras(extras);
     return {
