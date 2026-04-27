@@ -10,7 +10,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { RunningLateButton } from '@/components/student/RunningLateButton';
 import {
   mockStudentData,
   mockSkills,
