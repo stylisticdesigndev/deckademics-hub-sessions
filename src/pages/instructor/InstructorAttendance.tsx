@@ -63,7 +63,12 @@ export default function InstructorAttendance() {
     if (demoMode) return {};
     const grouped: Record<string, typeof pastWeeksData> = {};
     pastWeeksData.forEach(item => {
-      const weekLabel = `Week of ${format(addDays(item.classDate, -(getDay(item.classDate) === 0 ? 6 : getDay(item.classDate) - 1)), 'MMM d')}`;
+      const weekStart = addDays(item.classDate, -(getDay(item.classDate) === 0 ? 6 : getDay(item.classDate) - 1));
+      const weekEnd = addDays(weekStart, 6);
+      const sameMonth = format(weekStart, 'MMM') === format(weekEnd, 'MMM');
+      const weekLabel = sameMonth
+        ? `Week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'd')}`
+        : `Week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
       if (!grouped[weekLabel]) grouped[weekLabel] = [];
       grouped[weekLabel].push(item);
     });
