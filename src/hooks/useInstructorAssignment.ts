@@ -55,6 +55,23 @@ export const useInstructorAssignment = () => {
         .eq('id', studentId as any);
 
       if (error) throw error;
+
+      // Keep student_instructors in sync — primary role mirrors students.instructor_id.
+      // 1. Remove any existing primary link.
+      await supabase
+        .from('student_instructors' as any)
+        .delete()
+        .eq('student_id', studentId)
+        .eq('role', 'primary');
+      // 2. Upsert the new primary link if one is provided.
+      if (instructorId) {
+        await supabase
+          .from('student_instructors' as any)
+          .upsert(
+            { student_id: studentId, instructor_id: instructorId, role: 'primary' },
+            { onConflict: 'student_id,instructor_id' }
+          );
+      }
       return { success: true, studentId, instructorId };
     },
     onSuccess: (data) => {
@@ -72,9 +89,38 @@ export const useInstructorAssignment = () => {
     }
   });
 
+  const setSecondaryInstructor = useMutation({
+    mutationFn: async ({ studentId, instructorId, action }: { studentId: string; instructorId: string; action: 'add' | 'remove' }) => {
+      if (action === 'add') {
+        const { error } = await supabase
+          .from('student_instructors' as any)
+          .upsert(
+            { student_id: studentId, instructor_id: instructorId, role: 'secondary' },
+            { onConflict: 'student_id,instructor_id' }
+          );
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('student_instructors' as any)
+          .delete()
+          .eq('student_id', studentId)
+          .eq('instructor_id', instructorId);
+        if (error) throw error;
+      }
+      return { success: true };
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+      queryClient.invalidateQueries({ queryKey: ['student-instructors', vars.studentId] });
+      toast.success(vars.action === 'add' ? 'Secondary instructor added' : 'Secondary instructor removed');
+    },
+    onError: () => toast.error('Failed to update secondary instructor.'),
+  });
+
   return {
     activeInstructors: activeInstructors || [],
     isLoadingInstructors,
-    assignInstructorToStudent
+    assignInstructorToStudent,
+    setSecondaryInstructor,
   };
 };

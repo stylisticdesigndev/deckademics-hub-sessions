@@ -11,6 +11,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { useInstructorMakeups, type MakeupRow, type MakeupStatus } from '@/hooks/instructor/useInstructorMakeups';
 import { MakeupControl } from '@/components/instructor/attendance/MakeupControl';
+import { AddCoverSessionDialog } from '@/components/instructor/attendance/AddCoverSessionDialog';
 import { format, startOfDay, getDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +27,7 @@ const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 export default function InstructorAttendance() {
   const { userData } = useAuth();
   const instructorId = userData.user?.id || userData.profile?.id;
-  const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students } = useInstructorAttendance(instructorId);
+  const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students, refetch } = useInstructorAttendance(instructorId);
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [demoMode, setDemoMode] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
@@ -88,15 +89,20 @@ export default function InstructorAttendance() {
           <h1 className="text-2xl font-bold">Attendance</h1>
           <p className="text-muted-foreground">Mark and review student attendance</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setDemoMode(!demoMode)}
-          className="gap-1.5"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {instructorId && !demoMode && (
+            <AddCoverSessionDialog instructorId={instructorId} onCreated={refetch} />
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="gap-1.5"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
+        </div>
       </div>
 
       {demoMode && (
@@ -169,34 +175,23 @@ export default function InstructorAttendance() {
               <div key={weekLabel} className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">{weekLabel}</h3>
                 {items.map(item => (
-                  <Card key={`${item.student.id}-${item.dateStr}`} className="p-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Avatar className="h-8 w-8">
-                        {item.student.avatar && <AvatarImage src={item.student.avatar} />}
-                        <AvatarFallback className="text-xs">{item.student.initials}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.student.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.student.classDay} · {format(item.classDate, 'MMM d')}
-                        </p>
-                      </div>
-                      <StatusBadge status={item.status} />
-                      {item.status === 'absent' && (
-                        <div className="w-full flex justify-end">
-                          <MakeupControl
-                            makeup={getMakeup(item.student.id, item.dateStr)}
-                            disabled={makeupSaving}
-                            onSchedule={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
-                            onSetStatus={(s) => {
-                              const m = getMakeup(item.student.id, item.dateStr);
-                              if (m) setMakeupStatus(m.id, s);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+                  <StudentAttendanceRow
+                    key={`${item.student.id}-${item.dateStr}`}
+                    student={item.student}
+                    dateStr={item.dateStr}
+                    status={item.status}
+                    isPast={true}
+                    saving={saving}
+                    demoMode={demoMode}
+                    onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
+                    makeup={getMakeup(item.student.id, item.dateStr)}
+                    makeupSaving={makeupSaving}
+                    onScheduleMakeup={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
+                    onSetMakeupStatus={(s) => {
+                      const m = getMakeup(item.student.id, item.dateStr);
+                      if (m) setMakeupStatus(m.id, s);
+                    }}
+                  />
                 ))}
               </div>
             ))}

@@ -120,39 +120,40 @@ export const DashboardLayout = ({
           </SidebarFooter>
         </Sidebar>
         <div className="flex-1 overflow-auto">
-          {/* Admin Mode Banner */}
-          {isAdminMode && (
-            <div className="bg-red-900/80 text-red-100 px-4 py-2 flex items-center justify-between text-sm font-semibold">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                ADMINISTRATION MODE
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
+            {isAdminMode && (
+              <div className="bg-red-900/80 text-red-100 px-4 py-2 flex items-center justify-between text-sm font-semibold">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  ADMINISTRATION MODE
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-100 hover:text-white hover:bg-red-800/50"
+                  onClick={() => navigate('/instructor/dashboard')}
+                >
+                  Return to Teaching View
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-100 hover:text-white hover:bg-red-800/50"
-                onClick={() => navigate('/instructor/dashboard')}
-              >
-                Return to Teaching View
-              </Button>
-            </div>
-          )}
-          <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="hidden md:flex" />
-              <MobileMenuButton />
-            </div>
-            <div className="flex items-center gap-2">
-              {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
-              {userType !== 'admin' && <FeatureRequestDialog triggerVariant="icon" />}
-              {userType === 'admin' && <NotificationDropdown />}
-              {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+            )}
+            <header className="h-16 flex items-center justify-between px-4 md:px-6">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="hidden md:flex" />
+                <MobileMenuButton />
+              </div>
+              <div className="flex items-center gap-2">
+                {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
+                {userType !== 'admin' && <FeatureRequestDialog triggerVariant="icon" />}
+                {userType === 'admin' && <NotificationDropdown />}
+                {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </header>
+          </div>
           <main className="p-4 md:p-6">
             {children}
           </main>

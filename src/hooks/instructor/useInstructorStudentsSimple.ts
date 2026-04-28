@@ -71,7 +71,22 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
       try {
         console.log('Fetching students for instructor:', instructorId);
         
-        // Fetch students directly assigned to this instructor
+        // Resolve all student IDs assigned to this instructor (primary or secondary)
+        const { data: links, error: linkError } = await supabase
+          .from('student_instructors' as any)
+          .select('student_id')
+          .eq('instructor_id', instructorId);
+        if (linkError) {
+          console.error('Error fetching student_instructors:', linkError);
+          setLoading(false);
+          return;
+        }
+        const ids = ((links as any[]) || []).map(l => l.student_id);
+        if (!ids.length) {
+          setStudents([]);
+          setLoading(false);
+          return;
+        }
         const { data: assignedStudents, error: studentsError } = await supabase
           .from('students')
           .select(`
@@ -84,7 +99,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             enrollment_status,
             profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns, bio)
           `)
-          .eq('instructor_id', instructorId) as { data: StudentWithProfile[] | null, error: any };
+          .in('id', ids) as { data: StudentWithProfile[] | null, error: any };
           
         if (studentsError) {
           console.error('Error fetching students:', studentsError);

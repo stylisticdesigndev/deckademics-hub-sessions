@@ -41,7 +41,7 @@ const InstructorAnnouncements = () => {
         .select(`
           id, title, content, published_at, author_id, type,
           profiles:author_id (first_name, last_name),
-          announcement_reads!left (id, read_at)
+          announcement_reads!left (id, read_at, user_id, dismissed)
         `)
         .contains('target_role', ['instructor'])
         .order('published_at', { ascending: false });
@@ -49,10 +49,14 @@ const InstructorAnnouncements = () => {
       if (error) { console.error('Error fetching announcements:', error); return; }
 
       if (data) {
-        const formatted = data.map((ann: any) => {
+        const formatted: any[] = [];
+        for (const ann of data as any[]) {
           const authorProfile = ann.profiles as AuthorProfile;
-          const readRecords = Array.isArray(ann.announcement_reads) ? ann.announcement_reads : [];
-          return {
+          const allReads = Array.isArray(ann.announcement_reads) ? ann.announcement_reads : [];
+          const myReads = allReads.filter((r: any) => r.user_id === user.id);
+          const isDismissed = myReads.some((r: any) => r.dismissed === true);
+          if (isDismissed) continue;
+          formatted.push({
             id: ann.id,
             title: ann.title || 'Announcement',
             content: ann.content || '',
@@ -61,10 +65,10 @@ const InstructorAnnouncements = () => {
               name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
               initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A'
             },
-            isNew: readRecords.length === 0,
+            isNew: myReads.length === 0,
             type: ann.type || 'announcement',
-          };
-        });
+          });
+        }
         setAnnouncements(formatted);
       }
     } catch (err) {

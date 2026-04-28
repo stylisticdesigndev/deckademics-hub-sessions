@@ -338,6 +338,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cover_sessions: {
+        Row: {
+          class_date: string
+          class_time: string
+          cover_instructor_id: string
+          created_at: string
+          created_by: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          class_date: string
+          class_time: string
+          cover_instructor_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          class_date?: string
+          class_time?: string
+          cover_instructor_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       curriculum_lessons: {
         Row: {
           created_at: string
@@ -1013,6 +1043,30 @@ export type Database = {
           },
         ]
       }
+      student_instructors: {
+        Row: {
+          created_at: string
+          id: string
+          instructor_id: string
+          role: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructor_id: string
+          role?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          role?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       student_makeups: {
         Row: {
           absence_date: string
@@ -1330,6 +1384,10 @@ export type Database = {
       assign_student_to_instructor: {
         Args: { _instructor_id: string; _student_id: string }
         Returns: Json
+      }
+      can_instructor_access_student: {
+        Args: { _instructor_id: string; _student_id: string }
+        Returns: boolean
       }
       create_demo_student: {
         Args: {

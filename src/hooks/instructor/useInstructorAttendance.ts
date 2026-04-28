@@ -81,11 +81,29 @@ export function useInstructorAttendance(instructorId: string | undefined) {
     setLoading(true);
 
     try {
-      // Fetch assigned students with profile
+      // 1. Resolve assigned student IDs via student_instructors (primary + secondary)
+      const { data: links } = await supabase
+        .from('student_instructors' as any)
+        .select('student_id')
+        .eq('instructor_id', instructorId);
+      const assignedIds = new Set<string>(((links as any[]) || []).map(l => l.student_id));
+
+      // 2. Pull cover sessions for this instructor (any date) so we can include
+      //    those students on the matching date/time in currentWeekStudents.
+      const { data: covers } = await supabase
+        .from('cover_sessions' as any)
+        .select('student_id, class_date, class_time')
+        .eq('cover_instructor_id', instructorId);
+      const coverList = ((covers as any[]) || []) as Array<{ student_id: string; class_date: string; class_time: string }>;
+      coverList.forEach(c => assignedIds.add(c.student_id));
+
+      const allIds = Array.from(assignedIds);
+      if (!allIds.length) { setStudents([]); setLoading(false); return; }
+
       const { data: assignedStudents, error } = await supabase
         .from('students')
         .select('id, level, class_day, class_time, profiles!inner(first_name, last_name, avatar_url)')
-        .eq('instructor_id', instructorId)
+        .in('id', allIds)
         .eq('enrollment_status', 'active') as any;
 
       if (error) { console.error(error); setLoading(false); return; }
