@@ -74,10 +74,10 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[35%]">Student</TableHead>
-                    <TableHead className="w-[30%]">Progress</TableHead>
+                    <TableHead className="w-[30%]">Student</TableHead>
+                    <TableHead className="w-[25%]">Progress</TableHead>
                     <TableHead className="w-[15%] text-center">Level</TableHead>
-                    <TableHead className="w-[20%] text-center">Class Time</TableHead>
+                    <TableHead className="w-[30%] text-center whitespace-nowrap">Class Time</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -110,8 +110,8 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                           </div>
                         </TableCell>
                         <TableCell className="text-center capitalize">{student.level}</TableCell>
-                        <TableCell className="text-center text-sm text-muted-foreground">
-                          {student.classTime || '—'}
+                        <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
+                          {student.classTime ? student.classTime.replace(/ - /g, '\u00A0-\u00A0') : '—'}
                         </TableCell>
                       </TableRow>
                     ))
