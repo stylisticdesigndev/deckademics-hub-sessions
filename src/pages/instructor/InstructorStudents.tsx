@@ -481,11 +481,6 @@ const InstructorStudents = () => {
                                 </SelectContent>
                               </Select>
                             </div>
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
                           </div>
                           
                           <div className="col-span-2 flex justify-center">
