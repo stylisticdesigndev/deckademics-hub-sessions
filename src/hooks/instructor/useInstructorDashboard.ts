@@ -237,23 +237,6 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       }
       setTotalStudents(allStudentCount || 0);
       
-      // Count today's classes for this instructor
-      const today = new Date().toISOString().split('T')[0];
-      const { count, error: todayClassesError } = await supabase
-        .from('classes')
-        .select('id', { count: 'exact', head: true })
-        .eq('instructor_id', instructorId)
-        .gte('start_time', `${today}T00:00:00`)
-        .lte('start_time', `${today}T23:59:59`);
-        
-      if (todayClassesError) {
-        console.error("Error counting today's classes:", todayClassesError);
-        // Don't throw here, just log and continue
-      } else {
-        setTodayClasses(count || 0);
-        if (import.meta.env.DEV) console.log("Today's classes count:", count);
-      }
-      
     } catch (error: any) {
       console.error('Error fetching instructor dashboard data:', error);
       setFetchError('Failed to load dashboard data');
