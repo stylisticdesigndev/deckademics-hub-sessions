@@ -19,8 +19,7 @@ interface BugReportDialogProps {
 }
 
 const DEVICE_OPTIONS = [
-  'iPhone',
-  'Android Phone',
+  'Mobile',
   'iPad/Tablet',
   'Desktop (Mac)',
   'Desktop (Windows)',
