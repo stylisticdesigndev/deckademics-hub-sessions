@@ -223,6 +223,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       } else {
         if (import.meta.env.DEV) console.log("No students scheduled for today");
         setStudents([]);
+        setTodayClasses(0);
         setAverageProgress(0);
       }
 
