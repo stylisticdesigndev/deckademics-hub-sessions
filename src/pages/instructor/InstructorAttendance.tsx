@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Eye, EyeOff, CheckCircle, XCircle, ChevronDown, ClipboardCheck } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, XCircle, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { useInstructorMakeups, type MakeupRow, type MakeupStatus } from '@/hooks/instructor/useInstructorMakeups';
@@ -31,6 +31,7 @@ export default function InstructorAttendance() {
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [demoMode, setDemoMode] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
+  const [pastWeekIndex, setPastWeekIndex] = useState(0);
 
   const today = startOfDay(new Date());
   const startOfWeekDate = addDays(today, -(getDay(today) === 0 ? 6 : getDay(today) - 1));
@@ -68,6 +69,24 @@ export default function InstructorAttendance() {
     });
     return grouped;
   }, [demoMode, pastWeeksData]);
+
+  // Sort past weeks chronologically descending (most recent past week first)
+  const sortedPastWeeks = useMemo(() => {
+    return Object.entries(groupedPastWeeks).sort(([, a], [, b]) => {
+      const aDate = a[0]?.classDate?.getTime() ?? 0;
+      const bDate = b[0]?.classDate?.getTime() ?? 0;
+      return bDate - aDate;
+    });
+  }, [groupedPastWeeks]);
+
+  // Reset to most recent week when opening or when data length changes
+  useEffect(() => {
+    setPastWeekIndex(0);
+  }, [pastOpen, sortedPastWeeks.length]);
+
+  const totalPastWeeks = sortedPastWeeks.length;
+  const safeIndex = Math.min(pastWeekIndex, Math.max(0, totalPastWeeks - 1));
+  const currentPastWeek = sortedPastWeeks[safeIndex];
 
   if (loading) {
     return (
@@ -162,7 +181,7 @@ export default function InstructorAttendance() {
       )}
 
       {/* Past Weeks */}
-      {Object.keys(groupedPastWeeks).length > 0 && (
+      {totalPastWeeks > 0 && (
         <Collapsible open={pastOpen} onOpenChange={setPastOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full justify-between text-muted-foreground">
@@ -171,10 +190,10 @@ export default function InstructorAttendance() {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-2">
-            {Object.entries(groupedPastWeeks).map(([weekLabel, items]) => (
-              <div key={weekLabel} className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">{weekLabel}</h3>
-                {items.map(item => (
+            {currentPastWeek && (
+              <div key={currentPastWeek[0]} className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">{currentPastWeek[0]}</h3>
+                {currentPastWeek[1].map(item => (
                   <StudentAttendanceRow
                     key={`${item.student.id}-${item.dateStr}`}
                     student={item.student}
@@ -194,7 +213,35 @@ export default function InstructorAttendance() {
                   />
                 ))}
               </div>
-            ))}
+            )}
+
+            {totalPastWeeks > 1 && (
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPastWeekIndex(i => Math.min(totalPastWeeks - 1, i + 1))}
+                  disabled={safeIndex >= totalPastWeeks - 1}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous Week
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Week {safeIndex + 1} of {totalPastWeeks}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPastWeekIndex(i => Math.max(0, i - 1))}
+                  disabled={safeIndex <= 0}
+                  className="gap-1"
+                >
+                  Next Week
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
       )}
