@@ -60,7 +60,7 @@ export function useAnnouncements(targetRole: string = 'student') {
             author_id,
             type,
             profiles:author_id (first_name, last_name),
-            announcement_reads!left (id, read_at, user_id)
+            announcement_reads!left (id, read_at, user_id, dismissed)
           `)
           .contains('target_role', [targetRole]);
 
