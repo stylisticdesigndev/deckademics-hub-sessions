@@ -124,7 +124,8 @@ export const InstructorAssignmentDialog: React.FC<InstructorAssignmentDialogProp
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-16">Primary</TableHead>
+                    <TableHead className="w-20 text-center">Secondary</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Experience</TableHead>
@@ -146,6 +147,13 @@ export const InstructorAssignmentDialog: React.FC<InstructorAssignmentDialogProp
                           checked={selectedInstructorId === instructor.id}
                           onChange={() => setSelectedInstructorId(instructor.id)}
                           className="w-4 h-4"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={secondaryIds.has(instructor.id)}
+                          disabled={selectedInstructorId === instructor.id || setSecondaryInstructor.isPending}
+                          onCheckedChange={(v) => toggleSecondary(instructor.id, v === true)}
                         />
                       </TableCell>
                       <TableCell className="font-medium">
