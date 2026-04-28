@@ -30,9 +30,12 @@ interface StudentData {
   id: string;
   level?: string;
   notes?: string;
+  class_day?: string;
   class_time?: string;
   profiles?: { first_name?: string; last_name?: string; avatar_url?: string };
 }
+
+const normalizeClassDay = (day?: string | null) => day?.trim().toLowerCase().replace(/s$/, '') || '';
 
 interface InstructorDashboardData {
   students: Student[];
@@ -79,7 +82,8 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const todayDayName = dayNames[new Date().getDay()];
 
-      // Fetch only students whose class_day matches today
+      // Fetch assigned active students, then normalize class_day in JS so values like
+      // "Tuesday" and "Tuesdays" both match today's schedule.
       const { data: assignedStudents, error: studentsError } = await supabase
         .from('students')
         .select(`
@@ -91,7 +95,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           profiles!inner(first_name, last_name, avatar_url)
         `)
         .eq('instructor_id', instructorId)
-        .eq('class_day', todayDayName);
+        .eq('enrollment_status', 'active');
         
       if (studentsError) {
         console.error("Error fetching assigned students:", studentsError);
@@ -100,9 +104,18 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       
       if (import.meta.env.DEV) console.log("Assigned students raw data:", assignedStudents);
       
-      if (assignedStudents && Array.isArray(assignedStudents) && assignedStudents.length > 0) {
+      const todayAssignedStudents = (assignedStudents || []).filter((student: any) =>
+        normalizeClassDay(student?.class_day) === normalizeClassDay(todayDayName)
+      );
+
+      if (todayAssignedStudents && Array.isArray(todayAssignedStudents) && todayAssignedStudents.length > 0) {
+        const todayClassSlots = new Set(
+          todayAssignedStudents.map((student: any) => student?.class_time).filter(Boolean)
+        );
+        setTodayClasses(todayClassSlots.size || todayAssignedStudents.length);
+
         // Get progress data for these students
-        const studentIds = assignedStudents
+        const studentIds = todayAssignedStudents
           .filter(student => 
             isDataObject(student) && 
             hasProperty(student, 'id')
@@ -141,7 +154,7 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         if (import.meta.env.DEV) console.log("Progress data:", progressData);
         
         // Process and format student data
-        const formattedStudents = assignedStudents
+        const formattedStudents = todayAssignedStudents
           .filter(student => 
             isDataObject(student) && 
             hasProperty(student, 'id') && 
