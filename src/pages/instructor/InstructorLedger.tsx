@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { format } from 'date-fns';
 import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
+import { formatPayPeriodUS } from '@/utils/payPeriods';
 
 interface LedgerRow {
   id: string;
@@ -170,7 +171,7 @@ const InstructorLedger = () => {
                         <TableCell>
                           {r.pay_period_start && r.pay_period_end
                             ? `${format(new Date(r.pay_period_start), 'MM/dd/yyyy')} – ${format(new Date(r.pay_period_end), 'MM/dd/yyyy')}`
-                            : '—'}
+                            : formatPayPeriodUS(r.class_date)}
                         </TableCell>
                         <TableCell className="no-underline">
                           {r.payment_status === 'void'
