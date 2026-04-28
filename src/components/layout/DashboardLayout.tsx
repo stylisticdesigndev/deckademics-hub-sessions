@@ -76,7 +76,7 @@ export const DashboardLayout = ({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="h-screen flex w-full overflow-hidden">
         <Sidebar className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}>
           <SidebarHeader className="min-h-16 border-b border-sidebar-border justify-center px-4 py-3">
             <Logo size="header" className="shrink-0" />
