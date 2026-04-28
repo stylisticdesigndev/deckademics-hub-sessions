@@ -22,7 +22,6 @@ const DEVICE_OPTIONS = [
   'Mobile',
   'iPad/Tablet',
   'Desktop',
-  'Other',
 ];
 
 export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogProps) => {
