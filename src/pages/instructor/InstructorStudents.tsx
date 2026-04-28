@@ -453,17 +453,24 @@ const InstructorStudents = () => {
                           </div>
                           
                           <div className="col-span-1 flex justify-center">
-                            {isEditingLevel === student.id ? (
-                              <Select 
-                                defaultValue={student.level} 
+                            <div
+                              className="relative z-10 touch-manipulation"
+                              onClick={(e) => e.stopPropagation()}
+                              onPointerDown={(e) => e.stopPropagation()}
+                            >
+                              <Select
+                                value={student.level}
                                 onValueChange={(value) => handleLevelChange(student.id, value)}
-                                onOpenChange={(open) => {
-                                  if (!open && isEditingLevel === student.id) {
-                                    setIsEditingLevel(null);
-                                  }
-                                }}
                               >
-                                <SelectTrigger className="w-[100px] h-8 text-xs">
+                                <SelectTrigger
+                                  className={cn(
+                                    "w-[110px] h-8 text-xs touch-manipulation",
+                                    student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                                    student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
+                                    student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                                    student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
+                                  )}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -473,21 +480,7 @@ const InstructorStudents = () => {
                                   <SelectItem value="advanced">Advanced</SelectItem>
                                 </SelectContent>
                               </Select>
-                            ) : (
-                              <div className="flex items-center justify-center gap-2">
-                                <Badge variant="outline" className={cn(
-                                  student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
-                                  student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
-                                  student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
-                                  student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
-                                )}>
-                                  {student.level.charAt(0).toUpperCase() + student.level.slice(1)}
-                                </Badge>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6" 
-                                  onClick={() => setIsEditingLevel(student.id)}
+                            </div>
                                 >
                                   <Edit className="h-3 w-3" />
                                 </Button>
