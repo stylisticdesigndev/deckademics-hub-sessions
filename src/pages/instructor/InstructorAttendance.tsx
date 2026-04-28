@@ -25,7 +25,7 @@ const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 
 export default function InstructorAttendance() {
   const { userData } = useAuth();
-  const instructorId = userData.user?.id;
+  const instructorId = userData.user?.id || userData.profile?.id;
   const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students } = useInstructorAttendance(instructorId);
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [demoMode, setDemoMode] = useState(false);
