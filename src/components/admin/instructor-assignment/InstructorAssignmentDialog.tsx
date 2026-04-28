@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -41,8 +43,45 @@ export const InstructorAssignmentDialog: React.FC<InstructorAssignmentDialogProp
   const {
     activeInstructors,
     isLoadingInstructors,
-    assignInstructorToStudent
+    assignInstructorToStudent,
+    setSecondaryInstructor,
   } = useInstructorAssignment();
+
+  const [secondaryIds, setSecondaryIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase
+        .from('student_instructors' as any)
+        .select('instructor_id, role')
+        .eq('student_id', studentId);
+      const sec = new Set<string>(
+        ((data as any[]) || [])
+          .filter(r => r.role === 'secondary')
+          .map(r => r.instructor_id)
+      );
+      setSecondaryIds(sec);
+    })();
+  }, [open, studentId]);
+
+  const toggleSecondary = async (instructorId: string, makeSecondary: boolean) => {
+    if (instructorId === selectedInstructorId) {
+      toast.error('This instructor is already assigned as primary.');
+      return;
+    }
+    await setSecondaryInstructor.mutateAsync({
+      studentId,
+      instructorId,
+      action: makeSecondary ? 'add' : 'remove',
+    });
+    setSecondaryIds(prev => {
+      const next = new Set(prev);
+      if (makeSecondary) next.add(instructorId);
+      else next.delete(instructorId);
+      return next;
+    });
+  };
 
   const handleAssignInstructor = async () => {
     if (!selectedInstructorId) {
