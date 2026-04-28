@@ -11,6 +11,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { useInstructorMakeups, type MakeupRow, type MakeupStatus } from '@/hooks/instructor/useInstructorMakeups';
 import { MakeupControl } from '@/components/instructor/attendance/MakeupControl';
+import { AddCoverSessionDialog } from '@/components/instructor/attendance/AddCoverSessionDialog';
 import { format, startOfDay, getDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +27,7 @@ const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 export default function InstructorAttendance() {
   const { userData } = useAuth();
   const instructorId = userData.user?.id || userData.profile?.id;
-  const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students } = useInstructorAttendance(instructorId);
+  const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students, refetch } = useInstructorAttendance(instructorId);
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [demoMode, setDemoMode] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
@@ -88,15 +89,20 @@ export default function InstructorAttendance() {
           <h1 className="text-2xl font-bold">Attendance</h1>
           <p className="text-muted-foreground">Mark and review student attendance</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setDemoMode(!demoMode)}
-          className="gap-1.5"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {instructorId && !demoMode && (
+            <AddCoverSessionDialog instructorId={instructorId} onCreated={refetch} />
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDemoMode(!demoMode)}
+            className="gap-1.5"
+          >
+            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {demoMode ? 'Live Data' : 'Demo'}
+          </Button>
+        </div>
       </div>
 
       {demoMode && (
