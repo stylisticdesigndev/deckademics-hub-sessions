@@ -4,9 +4,27 @@ import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay, addDays, subDays, getDay, isBefore } from 'date-fns';
 
 const DAY_NAME_TO_NUMBER: Record<string, number> = {
-  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
-  Thursday: 4, Friday: 5, Saturday: 6,
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
 };
+
+const DAY_DISPLAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const CLASS_TIME_ORDER = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
+
+function normalizeClassDay(day?: string | null): string {
+  const normalized = (day || '').trim().toLowerCase().replace(/s$/, '');
+  const dayNumber = DAY_NAME_TO_NUMBER[normalized];
+  return dayNumber === undefined ? (day || '').trim() : DAY_DISPLAY_NAMES[dayNumber];
+}
+
+function getClassDayNumber(day: string): number {
+  return DAY_NAME_TO_NUMBER[day.trim().toLowerCase()] ?? -1;
+}
+
+function getClassTimeSortValue(time: string): number {
+  const index = CLASS_TIME_ORDER.indexOf(time);
+  return index === -1 ? 999 : index;
+}
 
 interface StudentSchedule {
   id: string;
@@ -83,8 +101,8 @@ export function useInstructorAttendance(instructorId: string | undefined) {
           initials: (fn[0] || '') + (ln[0] || ''),
           avatar: p?.avatar_url,
           level: s.level || 'novice',
-          classDay: s.class_day || '',
-          classTime: s.class_time || '',
+          classDay: normalizeClassDay(s.class_day),
+          classTime: (s.class_time || '').trim(),
         };
       });
       setStudents(formatted);
@@ -164,7 +182,7 @@ export function useInstructorAttendance(instructorId: string | undefined) {
   const currentWeekStudents = students
     .filter(s => s.classDay)
     .map(s => {
-      const dow = DAY_NAME_TO_NUMBER[s.classDay] ?? -1;
+      const dow = getClassDayNumber(s.classDay);
       if (dow === -1) return null;
       const classDate = getClassDateForCurrentWeek(dow, startOfWeekDate);
       const dateStr = format(classDate, 'yyyy-MM-dd');
@@ -178,7 +196,12 @@ export function useInstructorAttendance(instructorId: string | undefined) {
         status: attendanceMap[s.id]?.[dateStr] || null,
       };
     })
-    .filter(Boolean) as Array<{
+    .filter(Boolean)
+    .sort((a: any, b: any) => {
+      const dateDiff = a.classDate.getTime() - b.classDate.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return getClassTimeSortValue(a.student.classTime) - getClassTimeSortValue(b.student.classTime);
+    }) as Array<{
       student: StudentSchedule;
       classDate: Date;
       dateStr: string;
@@ -191,7 +214,7 @@ export function useInstructorAttendance(instructorId: string | undefined) {
   const pastWeeksData = students
     .filter(s => s.classDay)
     .flatMap(s => {
-      const dow = DAY_NAME_TO_NUMBER[s.classDay] ?? -1;
+      const dow = getClassDayNumber(s.classDay);
       if (dow === -1) return [];
       const dates = getPastClassDates(dow, 9); // get 9 to skip current
       return dates
