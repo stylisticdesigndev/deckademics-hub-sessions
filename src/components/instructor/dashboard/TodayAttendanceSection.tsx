@@ -38,21 +38,22 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
         <div className="space-y-2">
           {items.map(item => (
             <Card key={item.student.id} className="p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  {item.student.avatar && <AvatarImage src={item.student.avatar} />}
-                  <AvatarFallback className="text-sm">{item.student.initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{item.student.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {capitalizeLevel(item.student.level)} · {item.student.classTime}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                {/* Identity row */}
+                <div className="flex items-center gap-3 min-w-0 sm:flex-1">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    {item.student.avatar && <AvatarImage src={item.student.avatar} />}
+                    <AvatarFallback className="text-sm">{item.student.initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{item.student.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {capitalizeLevel(item.student.level)} · {item.student.classTime}
+                    </p>
+                  </div>
                   {item.status !== null ? (
                     <Badge className={cn(
-                      'text-xs',
+                      'text-xs shrink-0',
                       item.status === 'present'
                         ? 'bg-green-600/20 text-green-400 border-green-600/30'
                         : 'bg-red-600/20 text-red-400 border-red-600/30'
@@ -60,38 +61,39 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
                       {item.status === 'present' ? 'Present' : 'Absent'}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs bg-muted-foreground/20 text-muted-foreground">
+                    <Badge variant="secondary" className="text-xs shrink-0 bg-muted-foreground/20 text-muted-foreground">
                       Not Recorded
                     </Badge>
                   )}
-                  <div className="flex gap-1.5">
-                    <Button
-                      size="sm"
-                      variant={item.status === 'present' ? 'default' : 'outline'}
-                      className={cn(
-                        'h-8 gap-1',
-                        item.status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
-                      )}
-                      disabled={saving || demoMode}
-                      onClick={() => markAttendance(item.student.id, item.dateStr, 'present')}
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      Present
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={item.status === 'absent' ? 'default' : 'outline'}
-                      className={cn(
-                        'h-8 gap-1',
-                        item.status === 'absent' && 'bg-red-600 hover:bg-red-700 text-white'
-                      )}
-                      disabled={saving || demoMode}
-                      onClick={() => markAttendance(item.student.id, item.dateStr, 'absent')}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Absent
-                    </Button>
-                  </div>
+                </div>
+                {/* Action buttons: full-width grid on mobile, inline on sm+ */}
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={item.status === 'present' ? 'default' : 'outline'}
+                    className={cn(
+                      'h-9 gap-1 sm:h-8',
+                      item.status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
+                    )}
+                    disabled={saving || demoMode}
+                    onClick={() => markAttendance(item.student.id, item.dateStr, 'present')}
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Present
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={item.status === 'absent' ? 'default' : 'outline'}
+                    className={cn(
+                      'h-9 gap-1 sm:h-8',
+                      item.status === 'absent' && 'bg-red-600 hover:bg-red-700 text-white'
+                    )}
+                    disabled={saving || demoMode}
+                    onClick={() => markAttendance(item.student.id, item.dateStr, 'absent')}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Absent
+                  </Button>
                 </div>
               </div>
             </Card>
