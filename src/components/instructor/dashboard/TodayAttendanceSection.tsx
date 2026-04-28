@@ -12,7 +12,7 @@ const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 
 export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
   const { userData } = useAuth();
-  const instructorId = userData.user?.id;
+  const instructorId = userData.user?.id || userData.profile?.id;
   const { todayStudents, currentWeekStudents, saving, markAttendance, loading } = useInstructorAttendance(instructorId);
 
   if (loading) return null;
