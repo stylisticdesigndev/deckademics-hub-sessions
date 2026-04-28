@@ -169,34 +169,23 @@ export default function InstructorAttendance() {
               <div key={weekLabel} className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">{weekLabel}</h3>
                 {items.map(item => (
-                  <Card key={`${item.student.id}-${item.dateStr}`} className="p-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Avatar className="h-8 w-8">
-                        {item.student.avatar && <AvatarImage src={item.student.avatar} />}
-                        <AvatarFallback className="text-xs">{item.student.initials}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.student.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.student.classDay} · {format(item.classDate, 'MMM d')}
-                        </p>
-                      </div>
-                      <StatusBadge status={item.status} />
-                      {item.status === 'absent' && (
-                        <div className="w-full flex justify-end">
-                          <MakeupControl
-                            makeup={getMakeup(item.student.id, item.dateStr)}
-                            disabled={makeupSaving}
-                            onSchedule={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
-                            onSetStatus={(s) => {
-                              const m = getMakeup(item.student.id, item.dateStr);
-                              if (m) setMakeupStatus(m.id, s);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+                  <StudentAttendanceRow
+                    key={`${item.student.id}-${item.dateStr}`}
+                    student={item.student}
+                    dateStr={item.dateStr}
+                    status={item.status}
+                    isPast={true}
+                    saving={saving}
+                    demoMode={demoMode}
+                    onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
+                    makeup={getMakeup(item.student.id, item.dateStr)}
+                    makeupSaving={makeupSaving}
+                    onScheduleMakeup={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
+                    onSetMakeupStatus={(s) => {
+                      const m = getMakeup(item.student.id, item.dateStr);
+                      if (m) setMakeupStatus(m.id, s);
+                    }}
+                  />
                 ))}
               </div>
             ))}
