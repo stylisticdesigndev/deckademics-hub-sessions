@@ -21,8 +21,7 @@ interface FeatureRequestDialogProps {
 const DEVICE_OPTIONS = [
   'Mobile',
   'iPad/Tablet',
-  'Desktop (Mac)',
-  'Desktop (Windows)',
+  'Desktop',
   'Other',
 ];
 
