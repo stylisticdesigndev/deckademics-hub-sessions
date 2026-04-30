@@ -1,8 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, ShieldCheck, Settings, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,8 +70,59 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     </>
   );
 
-  // Desktop only (expanded or slim).
-  if (isMobile) return null;
+  // Mobile/tablet: restore the original SidebarFooter layout
+  // (avatar + name + role label, with a settings-gear dropdown on the right).
+  if (isMobile) {
+    const roleLabel = userType.charAt(0).toUpperCase() + userType.slice(1);
+    return (
+      <div className="p-4 border-t border-sidebar-border">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Avatar>
+              <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
+              <AvatarFallback className="bg-deckademics-primary/20 text-deckademics-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">{fullName}</p>
+              <p className="text-xs text-muted-foreground">{roleLabel}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Profile menu">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(profileHref)}>
+                <User className="mr-2 h-4 w-4" />
+                View Profile
+              </DropdownMenuItem>
+              {showAdminPortal && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Admin Portal
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    );
+  }
 
   if (state === 'collapsed') {
     return (
