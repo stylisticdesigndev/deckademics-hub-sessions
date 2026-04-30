@@ -112,6 +112,8 @@ export const AdminNavigation = () => {
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];
 
+  if (!isMobile && state === 'collapsed') return null;
+
   return (
     <div className="space-y-1.5">
       {/* Return to Teaching View button */}
