@@ -133,6 +133,25 @@ const StudentMessages = () => {
     }
   }, [isDemoMode]);
 
+  // Realtime: keep two_way_messaging in sync when instructor flips the toggle
+  useEffect(() => {
+    if (isDemoMode || !userId) return;
+    const channel = supabase
+      .channel(`student-two-way-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'students', filter: `id=eq.${userId}` },
+        (payload: any) => {
+          const next = payload?.new?.two_way_messaging;
+          if (typeof next === 'boolean') setTwoWayEnabled(next);
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, isDemoMode]);
+
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
