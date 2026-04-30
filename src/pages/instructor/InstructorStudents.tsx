@@ -408,8 +408,8 @@ const InstructorStudents = () => {
                 <div className="rounded-md border hidden md:block">
                   <div className="grid grid-cols-12 gap-4 p-4 font-medium border-b text-sm items-center">
                     <div className="col-span-4">STUDENT</div>
-                    <div className="col-span-4">PROGRESS</div>
-                    <div className="col-span-2 text-center">LEVEL</div>
+                    <div className="col-span-3">PROGRESS</div>
+                    <div className="col-span-3 text-center">LEVEL</div>
                     <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
@@ -445,14 +445,14 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-4 flex items-center gap-2">
-                            <Progress value={student.progress} className="h-2 flex-grow" />
-                            <span className="text-xs font-medium ml-2 w-8 text-right">
+                          <div className="col-span-3 flex items-center gap-3 min-w-0">
+                            <Progress value={student.progress} className="h-2 flex-1 min-w-0" />
+                            <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
                               {student.progress}%
                             </span>
                           </div>
                           
-                          <div className="col-span-2 flex justify-center">
+                          <div className="col-span-3 flex justify-center">
                             <div
                               className="relative z-10 touch-manipulation"
                               onClick={(e) => e.stopPropagation()}
