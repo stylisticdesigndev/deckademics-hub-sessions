@@ -80,7 +80,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-[calc(100vh-8rem)] min-h-[500px]">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b">
         <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
