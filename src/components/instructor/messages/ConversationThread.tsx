@@ -3,6 +3,8 @@ import { ArrowLeft, Send, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { formatDateTimeUS } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +28,9 @@ interface ConversationThreadProps {
   onSendReply: (content: string, imageUrl?: string) => Promise<void>;
   onBack: () => void;
   sending?: boolean;
+  twoWayMessaging?: boolean;
+  onToggleTwoWayMessaging?: (next: boolean) => Promise<void> | void;
+  canToggleTwoWayMessaging?: boolean;
 }
 
 const ConversationThread: React.FC<ConversationThreadProps> = ({
@@ -37,11 +42,15 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   onSendReply,
   onBack,
   sending = false,
+  twoWayMessaging = true,
+  onToggleTwoWayMessaging,
+  canToggleTwoWayMessaging = true,
 }) => {
   const [replyText, setReplyText] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [savingToggle, setSavingToggle] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -109,6 +118,18 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   };
 
   const isBusy = sending || uploading;
+  const instructorHasSent = messages.some((m) => m.sender_id === currentUserId);
+  const showReplyToggle = instructorHasSent && !!onToggleTwoWayMessaging;
+
+  const handleToggle = async (checked: boolean) => {
+    if (!onToggleTwoWayMessaging) return;
+    setSavingToggle(true);
+    try {
+      await onToggleTwoWayMessaging(checked);
+    } finally {
+      setSavingToggle(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)]">
@@ -123,7 +144,20 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
             {studentInitials}
           </AvatarFallback>
         </Avatar>
-        <span className="font-semibold">{studentName}</span>
+        <span className="font-semibold truncate">{studentName}</span>
+        {showReplyToggle && (
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+            <Label htmlFor="two-way-msg-thread" className="text-xs text-muted-foreground cursor-pointer">
+              Allow replies
+            </Label>
+            <Switch
+              id="two-way-msg-thread"
+              checked={twoWayMessaging}
+              onCheckedChange={handleToggle}
+              disabled={savingToggle || !canToggleTwoWayMessaging}
+            />
+          </div>
+        )}
       </div>
 
       {/* Messages */}
