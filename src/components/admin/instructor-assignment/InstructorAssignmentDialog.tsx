@@ -23,6 +23,7 @@ import {
 import { UserRound, Loader2 } from 'lucide-react';
 import { useInstructorAssignment } from '@/hooks/useInstructorAssignment';
 import { toast } from 'sonner';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 
 interface InstructorAssignmentDialogProps {
   studentId: string;
@@ -196,7 +197,8 @@ export const InstructorAssignmentDialog: React.FC<InstructorAssignmentDialogProp
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {instructor.profile.first_name} {instructor.profile.last_name}
+                        {getInstructorDisplayName(instructor.profile) ||
+                          `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {instructor.profile.email}

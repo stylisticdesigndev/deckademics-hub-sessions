@@ -6,6 +6,7 @@ import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useMockUsers } from '@/hooks/useMockUsers';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useStudentAssignment } from '@/hooks/useStudentAssignment';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 import {
   Card,
   CardContent,
@@ -117,6 +118,7 @@ const AdminInstructors = () => {
       (
         instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.dj_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (!hideMocks || !instructor.profile.is_mock)
     )
@@ -127,6 +129,7 @@ const AdminInstructors = () => {
       (
         instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.dj_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (!hideMocks || !instructor.profile.is_mock)
     )
@@ -137,6 +140,7 @@ const AdminInstructors = () => {
       (
         instructor.profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructor.profile.dj_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         instructor.profile.email.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (!hideMocks || !instructor.profile.is_mock)
     )
@@ -313,7 +317,7 @@ const AdminInstructors = () => {
             <DialogTitle>Deactivate Instructor</DialogTitle>
             <DialogDescription>
               Are you sure you want to deactivate{' '}
-              {deactivatingInstructor ? `${deactivatingInstructor.profile.first_name} ${deactivatingInstructor.profile.last_name}` : 'this instructor'}?
+              {deactivatingInstructor ? (getInstructorDisplayName(deactivatingInstructor.profile) || `${deactivatingInstructor.profile.first_name} ${deactivatingInstructor.profile.last_name}`) : 'this instructor'}?
               They will no longer be able to access the system.
             </DialogDescription>
           </DialogHeader>
@@ -545,10 +549,13 @@ const AdminInstructors = () => {
                   </Avatar>
                   <div>
                     <SheetTitle>
-                      {viewedInstructor ? `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}` : 'Instructor Details'}
+                      {viewedInstructor ? (getInstructorDisplayName(viewedInstructor.profile) || `${viewedInstructor.profile.first_name} ${viewedInstructor.profile.last_name}`) : 'Instructor Details'}
                     </SheetTitle>
-                    <SheetDescription>
-                      {viewedInstructor?.profile.email}
+                    <SheetDescription className="flex flex-col gap-0.5">
+                      {viewedInstructor?.profile.dj_name && (
+                        <span>{viewedInstructor.profile.first_name} {viewedInstructor.profile.last_name}</span>
+                      )}
+                      <span>{viewedInstructor?.profile.email}</span>
                     </SheetDescription>
                   </div>
                 </div>
@@ -747,7 +754,12 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                                  <span className="flex flex-col">
+                                    <span>{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                    {instructor.profile.dj_name && (
+                                      <span className="text-xs text-muted-foreground font-normal">{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                    )}
+                                  </span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -855,7 +867,12 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                                  <span className="flex flex-col">
+                                    <span>{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                    {instructor.profile.dj_name && (
+                                      <span className="text-xs text-muted-foreground font-normal">{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                    )}
+                                  </span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -963,7 +980,12 @@ const AdminInstructors = () => {
                                       {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span>{instructor.profile.first_name} {instructor.profile.last_name}</span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                                  <span className="flex flex-col">
+                                    <span>{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                    {instructor.profile.dj_name && (
+                                      <span className="text-xs text-muted-foreground font-normal">{instructor.profile.first_name} {instructor.profile.last_name}</span>
+                                    )}
+                                  </span>{instructor.profile.is_mock && (<Badge variant="outline" className="ml-2 text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-muted-foreground">
@@ -1059,6 +1081,7 @@ interface InstructorWithProfile {
   profile: {
     first_name: string | null;
     last_name: string | null;
+    dj_name?: string | null;
     email: string;
     avatar_url?: string | null;
     is_mock?: boolean;
