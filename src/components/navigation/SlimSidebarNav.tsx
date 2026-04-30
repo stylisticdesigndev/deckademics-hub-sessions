@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShieldCheck, UserCog, Menu } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -12,7 +12,7 @@ interface SlimSidebarNavProps {
 }
 
 export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
-  const { state, isMobile, toggleSidebar } = useSidebar();
+  const { state, isMobile } = useSidebar();
   const { pathname } = useLocation();
   const { userData } = useAuth();
   const userEmail = userData.profile?.email;
@@ -33,18 +33,7 @@ export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
     );
 
   return (
-    <div className="flex flex-col items-center h-full gap-2 px-1 py-1">
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        aria-label="Expand sidebar"
-        className="flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary transition-colors"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
-      <div className="h-px w-6 bg-sidebar-border my-1" />
-
+    <div className="flex flex-col items-center h-full gap-1.5 px-1">
       <Link to={dashboardHref} className={itemClass(pathname === dashboardHref)} aria-label="Dashboard">
         <LayoutDashboard className="h-5 w-5" />
       </Link>

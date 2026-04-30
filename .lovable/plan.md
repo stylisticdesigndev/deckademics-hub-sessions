@@ -1,59 +1,62 @@
 ## Goal
 
-Restructure the desktop chrome so it mirrors a Gemini-style flow: logo lives in the header next to the hamburger, and the sidebar collapses to a narrow icon rail showing only Dashboard, Profile, and (for admins) the Admin Portal. Mobile/tablet behavior stays exactly as it is today.
+Match the Gemini-style layout for the **expanded** sidebar: place the hamburger menu *inside* the sidebar at the top, alongside the existing nav. Reorganize the top header bar so the hamburger sits on the far left and the logo is pushed to the right of the nav bar area (i.e. only visible/anchored when the sidebar is collapsed/slim — no duplicate hamburger in the header when the sidebar is expanded).
+
+Slim sidebar should go back to the previous clean version (Dashboard up top, Admin Portal + Profile pinned to bottom) — **no hamburger inside the slim rail**, since the toggle now lives in the header when collapsed.
 
 ## Changes
 
 ### 1. `src/components/layout/DashboardLayout.tsx`
 
-- Remove the `<SidebarHeader>` containing the `<Logo />` from inside `<Sidebar>`.
-- Switch `<Sidebar>` to `collapsible="icon"` so the desktop "collapsed" state renders a narrow rail (~3rem wide) instead of disappearing offcanvas. Mobile remains the Sheet drawer (unchanged — `isMobile` branch in the Sidebar component already handles this).
-- In the sticky header, place the `<Logo size="header" />` immediately to the right of the existing hamburger/`MobileMenuButton` + desktop `SidebarTrigger`.
-- Right-side header actions remain exactly four icons in this order: BugReportDialog, FeatureRequestDialog, Notifications (UserNotificationDropdown for student/instructor, NotificationDropdown for admin), Logout. The current admin-only suppression of bug/feature icons stays as-is — this still yields four icons for admins (Notifications + Logout + the two admin-mode bar items aren't counted; on admin pages the right side will show Notifications, Logout). Confirm with the user if admin needs the bug/feature icons too — current spec says "exactly four" which matches student/instructor layout.
-- The footer block in the sidebar (avatar + settings dropdown) is removed since Profile now lives in the slim rail and Logout already lives in the header. This keeps the slim rail clean.
+- Header layout becomes: `[Hamburger]  [Logo]   ...spacer...   [Bug] [Feature] [Notifications] [Logout]`
+- The hamburger in the header is **only rendered when the sidebar is collapsed (desktop) or on mobile**. When the desktop sidebar is expanded, the header hamburger is hidden because the in-sidebar hamburger takes over.
+- Logo stays immediately to the right of where the hamburger would sit. When the header hamburger is hidden (expanded state), the logo aligns flush to the left edge of the main content area — visually it appears "pushed to the right of the nav bar" because the expanded sidebar now occupies that left strip.
+- Implementation: wrap `HamburgerButton` with `useSidebar()` and render conditionally:
+  ```tsx
+  const { state, isMobile } = useSidebar();
+  const showHeaderHamburger = isMobile || state === 'collapsed';
+  {showHeaderHamburger && <HamburgerButton />}
+  ```
+  Since `useSidebar` only works inside `SidebarProvider`, extract the header into a small inner component.
 
-### 2. New component: `src/components/navigation/SlimSidebarNav.tsx`
+### 2. `src/components/layout/DashboardLayout.tsx` — sidebar content
 
-A small wrapper rendered inside `<SidebarContent>` alongside the full nav. It uses `useSidebar()` to read `state` and `isMobile`:
+Add a small header row inside `<SidebarContent>` that's only visible in the **expanded desktop** state, containing just the hamburger toggle aligned to the left:
 
-- When desktop + `state === "collapsed"`: render a vertical stack of icon-only buttons:
-  - Dashboard → `/{userType}/dashboard` (admin → `/admin/dashboard`)
-  - Admin Portal (red) → `/admin/dashboard` — only if `isAdminUser(userData.profile?.email)` and current userType is instructor
-  - Profile → `/{userType}/profile` (admin → `/admin/settings`), pinned to the bottom via `mt-auto`
-- Otherwise (desktop expanded OR mobile): render `null` and let the existing full navigation render.
-
-The full nav (`StudentNavigation` / `InstructorNavigation` / `AdminNavigation`) gets a sibling check: when desktop + collapsed, hide it. Simplest implementation is to wrap them in a `<div className="group-data-[state=collapsed]:hidden md:group-data-[state=collapsed]:hidden">` inside `DashboardLayout`, or have each nav early-return when `useSidebar().state === "collapsed" && !isMobile`. Plan: do the early-return inside each existing nav file — three small edits, no new wrapper needed.
-
-### 3. Each navigation file (`StudentNavigation.tsx`, `InstructorNavigation.tsx`, `AdminNavigation.tsx`)
-
-- Pull `state` from `useSidebar()`.
-- If `!isMobile && state === "collapsed"`, return `null` (the SlimSidebarNav handles that case).
-
-### 4. `DashboardLayout.tsx` sidebar content
-
-```
+```tsx
 <SidebarContent className="py-4">
-  <SlimSidebarNav userType={userType} userEmail={userData.profile?.email} />
+  <SlimSidebarNav userType={userType} />
+  <ExpandedSidebarHeader />   {/* new: hamburger inside sidebar, only when expanded */}
   {sidebarContent}
 </SidebarContent>
 ```
 
-### Visual notes
+`ExpandedSidebarHeader` returns `null` on mobile or when collapsed; otherwise renders a single `Menu` icon button (ghost, h-9 w-9) in a `px-2 pb-3 mb-1 border-b border-sidebar-border` row. This visually anchors the top of the expanded sidebar similar to Gemini, without disrupting the existing nav typography or spacing below.
 
-- Slim rail width comes from `SIDEBAR_WIDTH_ICON = "3rem"` already defined in `sidebar.tsx` — no change needed.
-- Slim icons use `Button variant="ghost" size="icon"` with `Link` via `asChild`. Active route gets `bg-deckademics-primary/10 text-deckademics-primary`.
-- Admin Portal slim icon uses `text-red-400 hover:bg-red-500/10` to match existing styling in `InstructorNavigation`.
-- Hamburger toggle: the existing desktop `<SidebarTrigger className="hidden md:flex" />` in the header already toggles between expanded and collapsed — no new control needed. The SidebarTrigger stays in the header (top of the slim rail visually aligns with the header hamburger, satisfying the "Hamburger Menu (at the top)" requirement).
+### 3. `src/components/navigation/SlimSidebarNav.tsx`
 
-### Files touched
+Revert the recent change — remove the in-rail hamburger and the divider. Restore:
+- Dashboard at top
+- Admin Portal (red) + Profile pinned to bottom (Admin above Profile, as already implemented)
 
-- `src/components/layout/DashboardLayout.tsx` — remove SidebarHeader, add Logo to header, wire SlimSidebarNav, switch to `collapsible="icon"`, drop SidebarFooter.
-- `src/components/navigation/SlimSidebarNav.tsx` — new.
-- `src/components/navigation/StudentNavigation.tsx` — early-return when desktop-collapsed.
-- `src/components/navigation/InstructorNavigation.tsx` — same.
-- `src/components/navigation/AdminNavigation.tsx` — same.
+The header hamburger handles toggling from the slim state.
 
-### Out of scope
+## Behavior summary
 
-- No changes to routes, auth, or any page content.
-- Mobile sheet drawer behavior is untouched.
+| State | Header left | Sidebar top |
+|---|---|---|
+| Desktop expanded | Logo only (flush left of main area) | Hamburger inside sidebar |
+| Desktop collapsed (slim) | Hamburger + Logo | Dashboard icon (no hamburger) |
+| Mobile | Hamburger + Logo | Sheet drawer (unchanged) |
+
+Right-side header actions (Bug, Feature, Notifications, Logout) remain unchanged in all states.
+
+## Files touched
+
+- `src/components/layout/DashboardLayout.tsx` — split header into inner component using `useSidebar`, conditional hamburger, add `ExpandedSidebarHeader` inside `SidebarContent`.
+- `src/components/navigation/SlimSidebarNav.tsx` — revert to pre-hamburger version (Dashboard top; Admin + Profile bottom).
+
+## Out of scope
+
+- No changes to nav items, routes, or mobile sheet behavior.
+- No changes to `StudentNavigation` / `InstructorNavigation` / `AdminNavigation`.
