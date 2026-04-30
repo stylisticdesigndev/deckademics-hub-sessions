@@ -10,19 +10,9 @@ import {
   BookOpen,
   Calendar,
   Music,
-  LogOut,
   UserCog,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
@@ -30,12 +20,8 @@ import { useSidebar } from '@/components/ui/sidebar';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { userData, signOut } = useAuth();
+  const { userData } = useAuth();
   const studentId = userData.user?.id;
-  const profile = userData.profile;
-  const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student';
-  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() || 'S';
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
@@ -68,8 +54,7 @@ export const StudentNavigation = () => {
   if (!isMobile && state === 'collapsed') return null;
 
   return (
-    <div className={cn(isMobile ? "space-y-1.5" : "flex flex-col flex-1 min-h-0 space-y-1.5")}>
-      <div className="space-y-1.5">
+    <div className="space-y-1.5">
       {navItems.map((item) =>
         item.external ? (
           <a
@@ -99,43 +84,6 @@ export const StudentNavigation = () => {
             )}
           </Link>
         )
-      )}
-      </div>
-
-      {/* Desktop only: profile avatar pinned at the very bottom of the expanded sidebar */}
-      {!isMobile && (
-        <div className="mt-auto pt-3 border-t border-sidebar-border">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  "w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
-                  pathname === '/student/profile'
-                    ? "bg-deckademics-primary/10 text-deckademics-primary"
-                    : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
-                )}
-              >
-                <Avatar className="h-7 w-7 -ml-0.5">
-                  <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
-                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                </Avatar>
-                <span className="flex-1 text-left truncate">{fullName}</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="right" className="w-48">
-              <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/student/profile')}>
-                View Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       )}
     </div>
   );
