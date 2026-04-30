@@ -47,7 +47,7 @@ const ExpandedSidebarHeader = () => {
   // Mobile sheet: show the logo at the top of the sidebar (no hamburger — sheet has its own close).
   if (isMobile) {
     return (
-      <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
+      <div className="p-3 flex items-center justify-center">
         <Logo size="header" />
       </div>
     );
