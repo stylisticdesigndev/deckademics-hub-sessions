@@ -133,7 +133,7 @@ const AdminInstructorPayments = () => {
     const fetchInstructors = async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, session_fee, specialties, profiles (first_name, last_name, email)')
+        .select('id, session_fee, specialties, profiles (first_name, last_name, dj_name, email)')
         .eq('status', 'active' as any);
       
       if (error) {
@@ -143,7 +143,10 @@ const AdminInstructorPayments = () => {
       
       const list: Instructor[] = (data || []).map((inst: any) => ({
         id: inst.id,
-        name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
+        name:
+          (inst.profiles?.dj_name || '').trim() ||
+          `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() ||
+          'Unknown',
         email: inst.profiles?.email || '',
         sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
         specialization: inst.specialties?.join(', ') || 'DJ Instruction',
