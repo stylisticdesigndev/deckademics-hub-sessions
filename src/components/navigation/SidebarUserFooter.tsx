@@ -70,7 +70,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
         </>
       )}
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => signOut()}>
+      <DropdownMenuItem onClick={() => setTimeout(() => signOut(), 0)}>
         <LogOut className="h-4 w-4 mr-2" />
         Logout
       </DropdownMenuItem>
