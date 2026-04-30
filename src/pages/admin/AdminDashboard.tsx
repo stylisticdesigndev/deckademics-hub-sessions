@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { canAccessPayroll } from '@/constants/adminPermissions';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 
 interface AdminDashboardProps {
   dashboardData: any;
@@ -121,7 +122,10 @@ const AdminDashboard = ({ dashboardData, pendingInstructors, paymentStats, pendi
                   pendingInstructors.map((instructor) => (
                     <div key={instructor.id} className="py-3 flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{instructor.profile.first_name} {instructor.profile.last_name}</p>
+                        <p className="font-medium">
+                          {getInstructorDisplayName(instructor.profile) ||
+                            `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}
+                        </p>
                         <p className="text-sm text-muted-foreground">{instructor.profile.email}</p>
                       </div>
                       <Button size="sm" variant="outline" onClick={() => navigate('/admin/instructors?tab=pending')}>
