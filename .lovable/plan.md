@@ -1,75 +1,43 @@
-## Three changes to instructor experience
+## Goal
 
-### 1. Show Class Room in instructor's student dialog
+Three small, related polish updates so the DJ name is consistently primary for instructors, and the student profile shows complete enrollment info.
 
-In `src/components/instructor/students/InstructorStudentDetailDialog.tsx`, the Enrollment grid currently shows Status, Start Date, Class Day, Class Time. Add a fifth field for **Class Room** (read-only display — admins still control assignment from `/admin/students`).
+## 1. Student Profile → Enrollment Details: add Classroom
 
-Required supporting changes:
-- `src/hooks/instructor/useInstructorStudentsSimple.ts` — add `class_room` to the `StudentWithProfile` interface, include it in the `students` SELECT, and pass it through into the formatted `Student` object.
-- `src/hooks/instructor/useInstructorStudentsSimple.ts` — extend the exported `Student` interface with `classRoom?: string | null`.
+File: `src/pages/student/StudentProfile.tsx`
 
-### 2. Remove status badges from Today's Attendance
+- The Course grid already shows Level, Status, Class Day, Class Time, Start Date.
+- Add a new "Classroom" cell pulling from `studentData?.class_room` (column already exists on `students`). In demo mode, show a sample value like "Classroom 1".
+- Place it next to Class Time so the schedule reads: Class Day → Class Time → Classroom. Keep Start Date on its own full-width row.
 
-In `src/components/instructor/dashboard/TodayAttendanceSection.tsx`, remove the Present / Absent / Not Recorded `<Badge>` block (lines ~57–70). The colored Present/Absent buttons already convey state. The unused `Badge` and `cn` imports for badges can stay for the button styling.
+No DB change required — `class_room` is already selected via `select('*')`.
 
-### 3. DJ Name as the instructor's primary display name
+## 2. Student Profile → Instructor Dialog: show DJ name + legal name
 
-This is the largest change. Add an optional `dj_name` field on `profiles` (instructor-only usage) and surface it as the canonical name shown to students and elsewhere in the app.
+File: `src/pages/student/StudentProfile.tsx` (instructor dialog block, lines ~454-470)
 
-**Database (migration):**
-- `ALTER TABLE public.profiles ADD COLUMN dj_name text;`
-- Update `handle_new_user()` to also read `raw_user_meta_data->>'dj_name'` and persist it on the new profile row.
+- The instructor object already includes `dj_name` (fetched on line 122).
+- Update the dialog header so it shows:
+  - Primary line (large, semibold): the DJ name (fallback to "First Last" if no DJ name).
+  - Secondary line (small, muted): "First Last" legal name (only shown when a DJ name exists, so we don't duplicate).
+- Update the avatar fallback initials to prefer DJ name initials, falling back to legal-name initials (mirrors the trigger button logic on lines 414-421).
 
-**Signup (required for instructors):**
-- `src/components/auth/SignupForm.tsx` — add a `djName` field. Show it only when `userType === 'instructor'` (pass `userType` as a new prop, or create a small conditional block). Required for instructors.
-- `src/components/auth/AuthForm.tsx` — add `djName: ''` to `formData` state, validate it for instructors, and include `dj_name: formData.djName` in the `signUp(...)` metadata payload.
+This is the only place students see the instructor's legal name, matching the existing rule.
 
-**Instructor profile (editable field):**
-- `src/pages/instructor/InstructorProfile.tsx` — add a "DJ Name" Input next to First/Last Name, load it from `userData.profile.dj_name`, save it via `updateProfile({ dj_name: ... })`.
-- `src/pages/instructor/InstructorProfileSetup.tsx` — add the same DJ Name input (required) and include it in the profile update.
+## 3. Instructor side: use DJ name as the in-app username
 
-**Display "DJ Name" everywhere students see the instructor:**
-The rule: if `dj_name` is present, use it; otherwise fall back to `first_name + last_name`. Apply in:
-- `src/hooks/student/useStudentDashboardCore.ts` (Next Class instructor name) — select `dj_name` and prefer it.
-- `src/pages/student/StudentNotes.tsx` (note author labels — both list and detail) — fetch and prefer `dj_name`.
-- `src/hooks/student/useStudentNotes.ts` — include `dj_name` in the joined select and pass through.
-- `src/pages/student/StudentMessages.tsx` — fetch instructor `dj_name` when building conversation list and prefer it for `name` / `instructorName`.
-- `src/components/student/RunningLateButton.tsx` — include `dj_name` in the instructor profile select.
-- `src/hooks/useStudentAssignment.ts` — include `dj_name` in instructor profile select so any consumer can prefer it.
-- `src/pages/student/StudentClasses.tsx` — when wiring up real instructor data from the assignment, prefer `dj_name`.
+The instructor's own first/last name still appears in two chrome spots. Switch both to use `getInstructorDisplayName` (already exists in `src/utils/instructorName.ts`):
 
-A small helper `src/utils/instructorName.ts` exporting `getInstructorDisplayName({ dj_name, first_name, last_name })` will be added so every consumer uses one rule.
+a. **Sidebar footer** — `src/components/navigation/SidebarUserFooter.tsx`
+- When `userType === 'instructor'`, derive `fullName` and `initials` from `profile.dj_name` first, then fall back to first/last. Student and admin behavior unchanged.
 
-**Out of scope for this pass (to keep diff focused):**
-- Admin-side instructor list (`AdminInstructors`) and instructor profile dropdowns — admins can keep seeing the legal name there.
-- Instructor dashboard "Welcome, {name}" — keeps using the instructor's own first name (their own greeting, not what students see).
+b. **Dashboard welcome** — `src/components/instructor/dashboard/WelcomeSection.tsx`
+- Replace the `getInstructorName` helper to prefer `userData.profile.dj_name` (and `session.user.user_metadata.dj_name` as a session fallback) before first/last name.
+- Result: "Welcome, DJ Stagename".
 
-### Why this approach
+Spot-checked the other instructor pages (`InstructorProfile`, `InstructorMessages`, `InstructorClasses`, etc.) — they already either show the editable `dj_name` field, or they display student names (not the instructor's own name), so no change is needed there.
 
-- Class Room stays admin-managed (per your earlier direction); the dialog just surfaces it.
-- Removing the badges follows your "buttons already show state" preference and matches the messaging-UI minimalism we've used elsewhere.
-- A single helper plus a `dj_name` column means we can later add it to admin surfaces or signage without touching every call site again.
+## Out of scope / no DB changes
 
-### Files changed (summary)
-
-```text
-NEW migration: add dj_name to profiles + update handle_new_user
-NEW src/utils/instructorName.ts
-
-EDIT src/components/instructor/students/InstructorStudentDetailDialog.tsx  (Class Room)
-EDIT src/hooks/instructor/useInstructorStudentsSimple.ts                   (class_room passthrough)
-EDIT src/components/instructor/dashboard/TodayAttendanceSection.tsx        (remove badges)
-
-EDIT src/components/auth/SignupForm.tsx                                    (DJ Name field, instructor only, required)
-EDIT src/components/auth/AuthForm.tsx                                      (validate + send dj_name)
-EDIT src/pages/instructor/InstructorProfile.tsx                            (DJ Name input + save)
-EDIT src/pages/instructor/InstructorProfileSetup.tsx                       (DJ Name input + save)
-
-EDIT src/hooks/student/useStudentDashboardCore.ts
-EDIT src/hooks/student/useStudentNotes.ts
-EDIT src/pages/student/StudentNotes.tsx
-EDIT src/pages/student/StudentMessages.tsx
-EDIT src/components/student/RunningLateButton.tsx
-EDIT src/hooks/useStudentAssignment.ts
-EDIT src/pages/student/StudentClasses.tsx
-```
+- No migration needed. `dj_name` already exists on `profiles`, and `class_room` already exists on `students`.
+- `getInstructorDisplayName` utility already exists and is reused.

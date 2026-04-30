@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
 import { isAdminUser } from '@/constants/adminPermissions';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 
 interface SidebarUserFooterProps {
   userType: 'student' | 'instructor' | 'admin';
@@ -35,10 +36,16 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
   const showAdminPortal = userType !== 'admin' && isAdminUser(userEmail);
   const fallbackName =
     userType === 'admin' ? 'Admin' : userType === 'instructor' ? 'Instructor' : 'Student';
+  const djName = ((profile as any)?.dj_name || '').trim();
+  const legalName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
   const fullName =
-    `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || fallbackName;
+    (userType === 'instructor' && djName ? djName : legalName) || fallbackName;
+  const initialsSource =
+    userType === 'instructor' && djName
+      ? djName.split(/\s+/).filter(Boolean)
+      : [profile?.first_name || '', profile?.last_name || ''];
   const initials =
-    `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() ||
+    ((initialsSource[0]?.[0] || '') + (initialsSource[1]?.[0] || '')).toUpperCase() ||
     fallbackName[0];
   const profileHref = `/${userType}/profile`;
 
