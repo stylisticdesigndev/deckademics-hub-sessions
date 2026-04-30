@@ -30,6 +30,7 @@ interface StudentWithProfile {
   start_date?: string | null;
   class_day?: string | null;
   class_time?: string | null;
+  class_room?: string | null;
   profile: {
     first_name: string | null;
     last_name: string | null;
@@ -48,6 +49,7 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
   const start_date = studentObj.start_date;
   const class_day = studentObj.class_day;
   const class_time = studentObj.class_time;
+  const class_room = studentObj.class_room;
   const profiles = studentObj.profiles;
   const instructors = studentObj.instructors;
 
@@ -61,6 +63,7 @@ const mapStudentData = (studentObj: any): StudentWithProfile | null => {
     start_date,
     class_day,
     class_time,
+    class_room,
     profile: {
       first_name: profiles.first_name,
       last_name: profiles.last_name,
@@ -87,8 +90,8 @@ export const useAdminStudents = () => {
   const fetchStudentsByStatus = async (statuses: string[], includeInstructor = false): Promise<StudentWithProfile[]> => {
     try {
       const selectQuery = includeInstructor
-        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email, avatar_url, is_mock), instructors (id, status, profiles (first_name, last_name, email))`
-        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, profiles (first_name, last_name, email, avatar_url, is_mock)`;
+        ? `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, class_room, profiles (first_name, last_name, email, avatar_url, is_mock), instructors (id, status, profiles (first_name, last_name, email))`
+        : `id, level, enrollment_status, instructor_id, start_date, class_day, class_time, class_room, profiles (first_name, last_name, email, avatar_url, is_mock)`;
 
       let query = supabase.from('students').select(selectQuery);
 
@@ -228,16 +231,18 @@ export const useAdminStudents = () => {
   });
 
   const updateStudentSchedule = useMutation({
-    mutationFn: async ({ studentId, start_date, class_day, class_time }: {
+    mutationFn: async ({ studentId, start_date, class_day, class_time, class_room }: {
       studentId: string;
       start_date?: string | null;
       class_day?: string | null;
       class_time?: string | null;
+      class_room?: string | null;
     }) => {
       const updates: any = {};
       if (start_date !== undefined) updates.start_date = start_date;
       if (class_day !== undefined) updates.class_day = class_day;
       if (class_time !== undefined) updates.class_time = class_time;
+      if (class_room !== undefined) updates.class_room = class_room;
 
       const { error } = await supabase
         .from('students')
