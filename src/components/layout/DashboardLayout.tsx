@@ -105,11 +105,11 @@ export const DashboardLayout = ({
                 </Button>
               </div>
             )}
-            <header className="h-16 flex items-center justify-between px-4 md:pl-3 md:pr-6">
+            <header className="h-16 flex items-center justify-between px-4 lg:pl-3 lg:pr-6">
               <div className="flex items-center gap-2">
                 <HeaderHamburger />
-                {/* Logo only in the desktop header — on mobile it lives inside the sidebar sheet */}
-                <Logo size="header" className="shrink-0 -ml-2 md:-ml-1 hidden md:block" />
+                {/* Logo only in the desktop header — on mobile/tablet it lives inside the sidebar sheet */}
+                <Logo size="header" className="shrink-0 -ml-2 lg:-ml-1 hidden lg:block" />
               </div>
               <div className="flex items-center gap-2">
                 {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
