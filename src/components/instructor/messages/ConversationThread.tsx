@@ -118,8 +118,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   };
 
   const isBusy = sending || uploading;
-  const instructorHasSent = messages.some((m) => m.sender_id === currentUserId);
-  const showReplyToggle = instructorHasSent && !!onToggleTwoWayMessaging;
+  const showReplyToggle = !!onToggleTwoWayMessaging;
 
   const handleToggle = async (checked: boolean) => {
     if (!onToggleTwoWayMessaging) return;
