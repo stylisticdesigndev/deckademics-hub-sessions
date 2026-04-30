@@ -22,8 +22,11 @@ export const StudentNavigation = () => {
   const { pathname } = useLocation();
   const { userData } = useAuth();
   const studentId = userData.user?.id;
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
+
+  // In desktop slim mode, SlimSidebarNav handles rendering
+  if (!isMobile && state === 'collapsed') return null;
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);

@@ -37,7 +37,7 @@ export const AdminNavigation = () => {
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
   const showPayroll = canAccessPayroll(userEmail);
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: studentCounts } = useQuery({
