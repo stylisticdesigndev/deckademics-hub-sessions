@@ -7,7 +7,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -24,10 +23,10 @@ interface DashboardLayoutProps {
   userType: 'student' | 'instructor' | 'admin';
 }
 
-const MobileMenuButton = () => {
+const HamburgerButton = () => {
   const { toggleSidebar } = useSidebar();
   return (
-    <Button variant="ghost" size="icon" className="md:hidden h-7 w-7" onClick={toggleSidebar}>
+    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleSidebar} aria-label="Toggle navigation">
       <Menu className="h-5 w-5" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
@@ -79,8 +78,7 @@ export const DashboardLayout = ({
             )}
             <header className="h-16 flex items-center justify-between px-4 md:px-6">
               <div className="flex items-center gap-2">
-                <SidebarTrigger className="hidden md:flex" />
-                <MobileMenuButton />
+                <HamburgerButton />
                 <Logo size="header" className="shrink-0" />
               </div>
               <div className="flex items-center gap-2">
