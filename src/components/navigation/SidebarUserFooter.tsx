@@ -38,11 +38,48 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     fallbackName[0];
   const profileHref = `/${userType}/profile`;
 
-  // Desktop expanded only.
-  if (isMobile || state !== 'expanded') return null;
+  // Desktop only (expanded or slim).
+  if (isMobile) return null;
+
+  if (state === 'collapsed') {
+    return (
+      <div className="px-1 py-3 flex justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Profile menu"
+              className={cn(
+                'flex items-center justify-center h-9 w-9 rounded-md transition-colors',
+                pathname === profileHref
+                  ? 'bg-deckademics-primary/10'
+                  : 'hover:bg-deckademics-primary/5'
+              )}
+            >
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
+                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="right" className="w-48">
+            <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(profileHref)}>
+              View Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut()}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
 
   return (
-    <div className="border-t border-sidebar-border px-2 py-3">
+    <div className="px-2 py-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
