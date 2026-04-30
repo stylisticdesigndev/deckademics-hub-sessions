@@ -62,7 +62,8 @@ export const StudentNavigation = () => {
   if (!isMobile && state === 'collapsed') return null;
 
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col flex-1 min-h-0 space-y-1.5">
+      <div className="space-y-1.5">
       {navItems.map((item) =>
         item.external ? (
           <a
@@ -93,14 +94,16 @@ export const StudentNavigation = () => {
           </Link>
         )
       )}
+      </div>
 
       {/* Profile avatar — replaces the Profile nav item in expanded view */}
       <DropdownMenu>
+        {/* Pushed to the bottom of the expanded sidebar */}
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             className={cn(
-              "w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+              "mt-auto w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md border-t border-sidebar-border pt-3",
               pathname === '/student/profile'
                 ? "bg-deckademics-primary/10 text-deckademics-primary"
                 : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
