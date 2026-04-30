@@ -1081,6 +1081,7 @@ interface InstructorWithProfile {
   profile: {
     first_name: string | null;
     last_name: string | null;
+    dj_name?: string | null;
     email: string;
     avatar_url?: string | null;
     is_mock?: boolean;
