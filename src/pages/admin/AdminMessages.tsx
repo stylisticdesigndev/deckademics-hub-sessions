@@ -55,17 +55,28 @@ const AdminMessages = () => {
       // Fetch all non-admin profiles as potential recipients
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar_url, role')
+        .select('id, first_name, last_name, dj_name, avatar_url, role')
         .neq('id', session.user.id);
 
       if (profiles) {
-        setUsers(profiles.map(p => ({
-          id: p.id,
-          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
-          initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
-          avatarUrl: p.avatar_url,
-          role: p.role,
-        })));
+        setUsers(profiles.map((p: any) => {
+          const dj = (p.dj_name || '').trim();
+          const isInstructor = p.role === 'instructor';
+          const displayName = isInstructor && dj
+            ? dj
+            : (`${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown');
+          const initialsParts = isInstructor && dj
+            ? dj.split(/\s+/).filter(Boolean)
+            : [p.first_name || ' ', p.last_name || ' '];
+          const initials = `${(initialsParts[0] || ' ')[0]}${(initialsParts[1] || ' ')[0]}`.toUpperCase();
+          return {
+            id: p.id,
+            name: displayName,
+            initials,
+            avatarUrl: p.avatar_url,
+            role: p.role,
+          };
+        }));
       }
 
       const { data: messages } = await supabase
