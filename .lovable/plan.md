@@ -1,73 +1,56 @@
 ## Goal
 
-Two changes:
-1. On the student dashboard's "Today's Class" card, replace the "Add to Calendar" button with a "Mark Absent" button (with the same confirmation dialog used elsewhere).
-2. Replace the hardcoded "Main Studio" location with a real, instructor-assigned classroom. Instructors can pick **Room One**, **Room Two**, or **Room Three** for each student from the Instructor → Student Detail page.
+Unify the student-detail experience in the instructor app. Today there are two different views:
 
----
+- **Dashboard → Today's Students table** → navigates to a separate page (`/instructor/students/:studentId`) showing a stripped-down profile.
+- **Sidebar → Students → click a student** → opens a rich in-page dialog with contact, schedule, bio, progress %, skills, notes, tasks, and a "Request Schedule Change" action.
 
-## Part 1 — Dashboard "Today's Class" card
+We'll standardize on the **rich dialog** version (the one in the Students nav page) for both entry points so instructors always see the same info in the same layout.
 
-**File:** `src/components/cards/UpcomingClassCard.tsx`
+## Approach
 
-- Remove the "Add to Calendar" button in the footer.
-- Add a destructive "Mark Absent" button that opens the same confirmation dialog used in `ClassAttendanceCard` (date + optional reason textarea, Cancel / Confirm Absent).
-- On confirm, call `supabase.from('attendance').insert({ student_id, status: 'absent', date, notes: reason })`. The existing RLS policy "Students can mark themselves absent" already allows this.
-- Only show the button when `session.isUpcoming` is true and a `studentId` is provided.
-- Disable in demo mode.
+Reuse the existing rich dialog in `InstructorStudents.tsx` rather than duplicating ~700 lines. The dashboard table will route the user to the Students page with a query parameter that auto-opens the matching student's detail dialog.
 
-**File:** `src/components/student/dashboard/UpcomingClassesSection.tsx`
-
-- Pass `studentId` and `demoMode` down to `UpcomingClassCard`.
-- Drop the now-unused `onAddToCalendar` prop chain (or leave the prop for compatibility but stop using it).
-
----
-
-## Part 2 — Classroom assignment
-
-### Database (schema migration)
-
-Add a `class_room` column to the `students` table:
-
-```sql
-ALTER TABLE public.students
-ADD COLUMN class_room text;
+```text
+[Dashboard StudentTable row click]
+            │
+            ▼
+   navigate('/instructor/students?student=<id>')
+            │
+            ▼
+[InstructorStudents page reads ?student=<id>]
+            │
+            ▼
+   auto-call openStudentDetails(id) on mount/data-load
+            │
+            ▼
+   Same rich Dialog as the regular Students page
 ```
 
-No default — null means "not assigned". Existing RLS already allows instructors to update assigned students.
+The standalone `/instructor/students/:studentId` route and `InstructorStudentDetail.tsx` page become obsolete and will be removed so there's only one canonical detail UI.
 
-### Instructor UI — assign the room
+## Changes
 
-**File:** `src/pages/instructor/InstructorStudentDetail.tsx`
+1. **`src/components/instructor/dashboard/StudentTable.tsx`**
+   - Replace the two `navigate(\`/instructor/students/${student.id}\`)` calls with `navigate(\`/instructor/students?student=${student.id}\`)`.
+   - Update the "View All" button target if needed (already points at `/instructor/students`).
 
-- Add `class_room` to the `DetailData` interface and the select query.
-- Add a new "Classroom" row in the details grid showing the current value (or "Not assigned").
-- Add an editable `<Select>` with three options: **Room One**, **Room Two**, **Room Three**, plus an "Unassigned" option.
-- On change, update via `supabase.from('students').update({ class_room: value }).eq('id', studentId)` and refresh local state with a success toast.
+2. **`src/pages/instructor/InstructorStudents.tsx`**
+   - Read `?student=<id>` from the URL on mount.
+   - After the students list loads, if a matching student exists, call `openStudentDetails(id)` once to open the dialog automatically.
+   - Clear the query param after opening so refresh/back behaves predictably.
 
-### Student dashboard — show the assigned room
+3. **`src/App.tsx`** (or wherever routes are declared)
+   - Remove the `/instructor/students/:studentId` route entry.
 
-**File:** `src/hooks/student/useStudentDashboardCore.ts`
+4. **`src/pages/instructor/InstructorStudentDetail.tsx`**
+   - Delete the file (no longer referenced).
 
-- Add `class_room` to the student select query.
-- Use it as the `location` on the synthetic "Today's Class" entry instead of the hardcoded `'Main Studio'` (fall back to `'Not assigned'` if null).
+5. **Memory**
+   - Add a small note to `mem://index.md` Core: "Instructor student detail uses a single rich dialog opened from `/instructor/students` (deep-linkable via `?student=<id>`)."
 
-**File:** `src/hooks/student/dashboard/useUpcomingClasses.ts`
+## Out of Scope
 
-- Change the fallback from `'Main Studio'` to `'Not assigned'` so real classes without a `location` don't show stale copy.
-
----
-
-## Out of scope
-
-- The instructor-side mock dashboard already uses "Classroom 1/2/3" labels — no change needed there.
-- No changes to admin pages; instructors own this assignment per the existing student detail page.
-
-## Files touched
-
-- Migration: add `students.class_room`
-- `src/components/cards/UpcomingClassCard.tsx`
-- `src/components/student/dashboard/UpcomingClassesSection.tsx`
-- `src/pages/instructor/InstructorStudentDetail.tsx`
-- `src/hooks/student/useStudentDashboardCore.ts`
-- `src/hooks/student/dashboard/useUpcomingClasses.ts`
+- No changes to the dialog's contents — we're not redesigning the rich view, just making it the only one.
+- No changes to admin or student portals.
+- The "Today's Attendance" cards on the dashboard remain non-clickable (Present/Absent buttons only) — same as today.

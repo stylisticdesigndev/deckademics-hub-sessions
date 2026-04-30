@@ -12,6 +12,7 @@
 - Parse Supabase Edge Function JSON body for error strings to avoid generic non-2xx messages.
 - Disable success toasts for auth/profile flows to reduce UI noise.
 - Capitalize proficiency levels globally using `capitalizeLevel` utility.
+- Instructor student detail uses a single rich dialog opened from `/instructor/students` (deep-linkable via `?student=<id>`).
 - Unified login: no separate admin auth page. Admins login via instructor auth, land on teaching view first.
 - Admin access gated by hardcoded emails in `src/constants/adminPermissions.ts`. Payroll owner-only.
 
