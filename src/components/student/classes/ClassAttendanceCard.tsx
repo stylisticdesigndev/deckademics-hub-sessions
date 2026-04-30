@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, MapPin, XCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, XCircle, RotateCcw } from 'lucide-react';
 import { cn, formatDateUS } from '@/lib/utils';
 
 interface ClassAttendanceCardProps {
@@ -17,6 +17,7 @@ interface ClassAttendanceCardProps {
   isNext?: boolean;
   status?: 'present' | 'absent' | 'upcoming' | 'unmarked';
   onMarkAbsent?: (date: Date, reason?: string) => void;
+  onUndoAbsent?: (date: Date) => void;
   marking?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
   isNext = false,
   status = 'upcoming',
   onMarkAbsent,
+  onUndoAbsent,
   marking = false,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -100,6 +102,19 @@ export const ClassAttendanceCard: React.FC<ClassAttendanceCardProps> = ({
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Mark Absent
+              </Button>
+            )}
+
+            {status === 'absent' && onUndoAbsent && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => onUndoAbsent(date)}
+                disabled={marking}
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                I can make it
               </Button>
             )}
           </div>
