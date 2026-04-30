@@ -242,6 +242,10 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                       <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
                       <p className="text-sm font-medium">{detailedStudent.classTime || 'Not assigned'}</p>
                     </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><BookOpen className="h-3 w-3" /> Classroom</p>
+                      <p className="text-sm font-medium">{detailedStudent.classRoom || 'Not assigned'}</p>
+                    </div>
                     {detailedStudent.nextClass && (
                       <div className="col-span-2">
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Next Class</p>
