@@ -16,6 +16,7 @@ import { LogOut, ShieldAlert, Menu } from 'lucide-react';
 import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
+import { SidebarUserFooter } from '@/components/navigation/SidebarUserFooter';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -70,11 +71,12 @@ export const DashboardLayout = ({
           collapsible="icon"
           className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}
         >
-          <SidebarContent className="py-4 md:pb-0">
+          <SidebarContent className="pt-4 pb-0">
             <SlimSidebarNav userType={userType} />
             <ExpandedSidebarHeader />
             {sidebarContent}
           </SidebarContent>
+          <SidebarUserFooter userType={userType} />
         </Sidebar>
         <div className="flex-1 overflow-auto">
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
