@@ -316,12 +316,100 @@ export function useStudentClassAttendance() {
     }
   };
 
+  const undoAbsent = async (classId: string, absenceDate: Date) => {
+    if (!studentId) return;
+    setMarking(true);
+
+    try {
+      const dateStr = absenceDate.toISOString().split('T')[0];
+      const realClassId = classId && classId !== 'schedule' ? classId : null;
+
+      // Remove the absence record
+      if (realClassId) {
+        await supabase
+          .from('student_absences' as any)
+          .delete()
+          .eq('student_id', studentId)
+          .eq('class_id', realClassId)
+          .eq('absence_date', dateStr);
+      }
+
+      // Remove the absent attendance row(s) for that date
+      let attendanceQuery = supabase
+        .from('attendance')
+        .delete()
+        .eq('student_id', studentId)
+        .eq('date', dateStr)
+        .eq('status', 'absent');
+      if (realClassId) attendanceQuery = attendanceQuery.eq('class_id', realClassId);
+      const { error: attendanceError } = await attendanceQuery;
+      if (attendanceError) throw attendanceError;
+
+      // Notify instructor — message + push (best-effort)
+      try {
+        const { data: studentRow } = await supabase
+          .from('students')
+          .select('instructor_id, profiles!inner(first_name, last_name)')
+          .eq('id', studentId)
+          .maybeSingle() as any;
+
+        const instructorId = studentRow?.instructor_id;
+        const studentName = `${studentRow?.profiles?.first_name ?? ''} ${studentRow?.profiles?.last_name ?? ''}`.trim() || 'Your student';
+        const friendlyDate = formatDateUS(absenceDate);
+
+        if (instructorId) {
+          await supabase.from('messages').insert({
+            sender_id: studentId,
+            receiver_id: instructorId,
+            subject: 'Absence Cancelled',
+            content: `Update — I'll be at class on ${friendlyDate} after all. See you then!`,
+          });
+
+          try {
+            await supabase.functions.invoke('notify-instructor-absence', {
+              body: {
+                instructor_id: instructorId,
+                student_id: studentId,
+                student_name: studentName,
+                absence_date: dateStr,
+                reason: 'cancelled',
+                undo: true,
+              },
+            });
+          } catch (pushErr) {
+            if (import.meta.env.DEV) console.warn('undo push failed:', pushErr);
+          }
+        }
+      } catch (notifyErr) {
+        if (import.meta.env.DEV) console.warn('undo notify failed:', notifyErr);
+      }
+
+      // Update local state — drop the absent record for that date
+      setAttendanceRecords(prev => prev.filter(r => !(r.date === dateStr && r.status === 'absent')));
+
+      toast({
+        title: 'Absence cancelled',
+        description: "Your instructor has been notified that you'll be attending after all.",
+      });
+    } catch (error: any) {
+      if (import.meta.env.DEV) console.error('undoAbsent error:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setMarking(false);
+    }
+  };
+
   return {
     classInfo,
     attendanceRecords,
     loading,
     marking,
     markAbsent,
+    undoAbsent,
     refetch: fetchData,
   };
 }
