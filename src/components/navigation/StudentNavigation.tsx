@@ -38,10 +38,8 @@ export const StudentNavigation = () => {
     { title: "Sunday Practice", icon: Music, href: "https://deckademics.com/sunday-practice", external: true },
   ];
 
-  // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
-  const navItems = isMobile
-    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/student/profile" }]
-    : baseNavItems;
+  // Profile is accessed via the avatar dropdown in the footer on all viewports
+  const navItems = baseNavItems;
 
   const linkClasses = (href: string) => cn(
     "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",

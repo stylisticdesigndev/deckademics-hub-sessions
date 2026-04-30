@@ -38,10 +38,8 @@ export const InstructorNavigation = () => {
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
   ];
 
-  // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
-  const navItems = isMobile
-    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/instructor/profile" }]
-    : baseNavItems;
+  // Profile is accessed via the avatar dropdown in the footer on all viewports
+  const navItems = baseNavItems;
 
   if (!isMobile && state === 'collapsed') return null;
 
