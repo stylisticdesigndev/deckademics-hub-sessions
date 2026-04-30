@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
-interface StudentNote {
+export interface StudentNote {
   id: string;
   content: string;
   title?: string | null;
@@ -17,7 +17,7 @@ export interface SkillProgress {
   progressRecordId?: string;
 }
 
-interface Student {
+export interface Student {
   id: string;
   name: string;
   level: string;

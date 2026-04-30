@@ -29,9 +29,10 @@ interface Student {
 
 interface StudentTableProps {
   students: Student[];
+  onSelectStudent?: (id: string) => void;
 }
 
-export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
+export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectStudent }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -86,7 +87,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                       <TableRow 
                         key={student.id}
                         className="cursor-pointer hover:bg-muted/60"
-                        onClick={() => navigate(`/instructor/students?student=${student.id}`)}
+                        onClick={() => onSelectStudent ? onSelectStudent(student.id) : navigate(`/instructor/students?student=${student.id}`)}
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -133,7 +134,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students }) => {
                   <div
                     key={student.id}
                     className="p-3 rounded-lg border cursor-pointer hover:bg-muted/60"
-                    onClick={() => navigate(`/instructor/students?student=${student.id}`)}
+                    onClick={() => onSelectStudent ? onSelectStudent(student.id) : navigate(`/instructor/students?student=${student.id}`)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
