@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +143,25 @@ const InstructorStudents = () => {
       }
     }
   }, [fetchedStudents, demoMode]);
+
+  // Auto-open student detail dialog when ?student=<id> is present in URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
+  useEffect(() => {
+    const requestedId = searchParams.get('student');
+    if (!requestedId || autoOpenedFor === requestedId) return;
+    const match = students.find(s => s.id === requestedId);
+    if (match) {
+      setDetailedStudent(match);
+      setShowStudentDetails(true);
+      fetchStudentTasks(requestedId);
+      setAutoOpenedFor(requestedId);
+      // Clear the query param so refresh/back behaves predictably
+      const next = new URLSearchParams(searchParams);
+      next.delete('student');
+      setSearchParams(next, { replace: true });
+    }
+  }, [students, searchParams, autoOpenedFor, setSearchParams]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
