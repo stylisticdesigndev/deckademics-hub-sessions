@@ -28,6 +28,7 @@ import {
   Lightbulb,
   ArrowLeft,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -101,7 +102,7 @@ export const AdminNavigation = () => {
   const pendingStudentsCount = studentCounts?.pending || 0;
   const pendingInstructorsCount = instructorCounts?.pending || 0;
 
-  const navItems = [
+  const baseNavItems: { title: string; icon: any; href: string; badge?: number }[] = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
     { title: "Instructors", icon: Users, href: "/admin/instructors", badge: pendingInstructorsCount },
     { title: "Students", icon: GraduationCap, href: "/admin/students", badge: pendingStudentsCount },
@@ -123,10 +124,15 @@ export const AdminNavigation = () => {
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];
 
+  // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
+  const navItems = isMobile
+    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/admin/profile" }]
+    : baseNavItems;
+
   if (!isMobile && state === 'collapsed') return null;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-1.5">
+    <div className={cn(isMobile ? "space-y-1.5" : "flex flex-col flex-1 min-h-0 space-y-1.5")}>
       {/* Return to Teaching View button */}
       <div className="pb-3 mb-3 border-b border-sidebar-border">
         <Button
@@ -163,39 +169,41 @@ export const AdminNavigation = () => {
       ))}
       </div>
 
-      {/* Profile avatar — at the very bottom of the expanded sidebar */}
-      <div className="mt-auto pt-3 border-t border-sidebar-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
-                pathname === '/admin/profile'
-                  ? "bg-deckademics-primary/10 text-deckademics-primary"
-                  : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
-              )}
-            >
-              <Avatar className="h-7 w-7 -ml-0.5">
-                <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-              </Avatar>
-              <span className="flex-1 text-left truncate">{fullName}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="right" className="w-48">
-            <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { closeMobileNav(); navigate('/admin/profile'); }}>
-              View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { closeMobileNav(); signOut(); }}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Desktop only: profile avatar pinned at the very bottom */}
+      {!isMobile && (
+        <div className="mt-auto pt-3 border-t border-sidebar-border">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+                  pathname === '/admin/profile'
+                    ? "bg-deckademics-primary/10 text-deckademics-primary"
+                    : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
+                )}
+              >
+                <Avatar className="h-7 w-7 -ml-0.5">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <span className="flex-1 text-left truncate">{fullName}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="right" className="w-48">
+              <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
+                View Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 };

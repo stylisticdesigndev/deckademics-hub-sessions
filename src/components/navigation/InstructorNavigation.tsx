@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Wallet,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,7 @@ export const InstructorNavigation = () => {
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
-  const navItems = [
+  const baseNavItems: { title: string; icon: any; href: string; badge?: number }[] = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/instructor/dashboard" },
     { title: "Students", icon: Users, href: "/instructor/students" },
     { title: "Classes", icon: Calendar, href: "/instructor/classes" },
@@ -55,10 +56,15 @@ export const InstructorNavigation = () => {
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
   ];
 
+  // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
+  const navItems = isMobile
+    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/instructor/profile" }]
+    : baseNavItems;
+
   if (!isMobile && state === 'collapsed') return null;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-1.5">
+    <div className={cn(isMobile ? "space-y-1.5" : "flex flex-col flex-1 min-h-0 space-y-1.5")}>
       <div className="space-y-1.5">
       {navItems.map((item) => (
         <Link
@@ -83,9 +89,9 @@ export const InstructorNavigation = () => {
       ))}
       </div>
 
-      <div className="mt-auto space-y-3">
-        {/* Admin Portal button — only visible for authorized admin users */}
-        {isAdminUser(userEmail) && (
+      {/* Admin Portal button — original placement, all viewports */}
+      {isAdminUser(userEmail) && (
+        <div className="pt-4 mt-4 border-t border-sidebar-border">
           <Button
             variant="outline"
             className="w-full justify-start gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
@@ -94,10 +100,12 @@ export const InstructorNavigation = () => {
             <ShieldCheck className="h-5 w-5" />
             Admin Portal
           </Button>
-        )}
+        </div>
+      )}
 
-        {/* Profile avatar — at the very bottom of the expanded sidebar */}
-        <div className="pt-3 border-t border-sidebar-border">
+      {/* Desktop only: profile avatar pinned at the very bottom */}
+      {!isMobile && (
+        <div className="mt-auto pt-3 border-t border-sidebar-border">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -119,17 +127,17 @@ export const InstructorNavigation = () => {
             <DropdownMenuContent align="end" side="right" className="w-48">
               <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { closeMobileNav(); navigate('/instructor/profile'); }}>
+              <DropdownMenuItem onClick={() => navigate('/instructor/profile')}>
                 View Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { closeMobileNav(); signOut(); }}>
+              <DropdownMenuItem onClick={() => signOut()}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      )}
     </div>
   );
 };
