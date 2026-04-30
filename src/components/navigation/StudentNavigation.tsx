@@ -10,10 +10,12 @@ import {
   BookOpen,
   Calendar,
   Music,
+  Megaphone,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
+import { useUnreadAnnouncementsCount } from '@/hooks/student/useUnreadAnnouncementsCount';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
 
@@ -26,6 +28,7 @@ export const StudentNavigation = () => {
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
+  const { data: unreadAnnouncementsCount = 0 } = useUnreadAnnouncementsCount(studentId);
 
   const baseNavItems: { title: string; icon: any; href: string; badge?: number; external?: boolean }[] = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
@@ -34,6 +37,7 @@ export const StudentNavigation = () => {
     { title: "Classes", icon: Calendar, href: "/student/classes" },
     { title: "Notes", icon: StickyNote, href: "/student/notes", badge: unreadNotesCount },
     { title: "Messages", icon: MessageSquare, href: "/student/messages", badge: unreadMsgCount },
+    { title: "Announcements", icon: Megaphone, href: "/student/announcements", badge: unreadAnnouncementsCount },
     { title: "Sunday Practice", icon: Music, href: "https://deckademics.com/sunday-practice", external: true },
   ];
 
