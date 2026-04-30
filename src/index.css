@@ -76,6 +76,19 @@
   }
 }
 
+/* Prevent iOS Safari from auto-zooming into form controls.
+   iOS zooms when the focused control's font-size is < 16px.
+   This rule only applies below the md breakpoint, so desktop
+   styling (md:text-sm, etc.) is unaffected. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px;
+  }
+}
+
 @keyframes spin-vinyl {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
