@@ -311,7 +311,7 @@ const AdminLedgerPreview = () => {
     (async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select('id, session_fee, profiles (first_name, last_name, email)')
+        .select('id, session_fee, profiles (first_name, last_name, dj_name, email)')
         .eq('status', 'active' as any);
       if (error) {
         console.error('Preview: failed to fetch instructors', error);
@@ -319,7 +319,10 @@ const AdminLedgerPreview = () => {
       }
       const list = (data || []).map((inst: any) => ({
         id: inst.id,
-        name: `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() || 'Unknown',
+        name:
+          (inst.profiles?.dj_name || '').trim() ||
+          `${inst.profiles?.first_name || ''} ${inst.profiles?.last_name || ''}`.trim() ||
+          'Unknown',
         email: inst.profiles?.email || '',
         sessionFee: typeof inst.session_fee === 'number' ? inst.session_fee : 50,
       }));
