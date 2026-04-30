@@ -1,38 +1,54 @@
 ## Goal
 
-In the desktop sidebar, make the slim-view Dashboard icon sit at the exact same vertical position as the Dashboard icon in the expanded view, so toggling between expanded and slim does not visually shift the icon.
+Move the "Allow this student to reply" toggle into the instructor's conversation view (the chat thread with a specific student), and remove/hide it from the student detail page. The toggle only appears once the instructor has initiated the conversation (i.e. there is at least one message sent by the instructor in this thread).
 
-Only the slim Dashboard item position changes. No other icons, no dividers, no expanded-view changes.
+## Where it lives
 
-## Why it's currently misaligned
+- **Shown in:** `src/components/instructor/messages/ConversationThread.tsx` — in the thread header, to the right of the student's name.
+- **Removed from:** `src/pages/instructor/InstructorStudentDetail.tsx` (the existing toggle block + its handler).
 
-Both views share the same `SidebarContent` wrapper (`pt-4`) and the same hamburger button (`h-9 w-9`). The drift comes from what's between the hamburger and the Dashboard link:
+## Visibility rule
 
-- **Expanded** (`ExpandedSidebarHeader` + `InstructorNavigation`):
-  - Hamburger wrapper: `pb-3 mb-1 border-b` → 12px padding + 1px border + 4px margin = **17px** gap
-  - Dashboard `<Link>`: `py-2` (8px top padding) + `h-5` icon
-  - Icon top edge sits at: 16 (pt-4) + 36 (button) + 17 + 8 = **77px**
+The toggle renders only when `messages.some(m => m.sender_id === currentUserId)` is true — meaning the instructor has sent at least one message in this thread. Until then, the header shows just the avatar + name (current behavior).
 
-- **Slim** (`SlimSidebarNav`):
-  - Hamburger has `mb-[14px]` = **14px** gap
-  - Dashboard link is `h-9 w-9` flex-centered → icon (`h-5`) has 8px top inside it
-  - Icon top edge sits at: 16 + 36 + 14 + 8 = **74px**
+## UI in the thread header
 
-Math says slim should be 3px higher, but the screenshots show it visibly lower. The discrepancy is from `space-y-1.5` in `InstructorNavigation` not adding to the first child (so that's not it) — the real issue is likely the `border-b` line itself and its 1px adding visual weight that the slim view doesn't account for, plus subpixel rendering. Regardless of cause, the fix is to match the spacing math exactly.
+```text
+[← back] [avatar] Student Name                    [Switch] Allow replies
+```
 
-## Fix
+- Use the existing `Switch` + small `Label` pattern from the student detail page.
+- Compact form: small label "Allow replies" + `Switch`, right-aligned via `ml-auto`.
+- On mobile (390px), label stays visible but truncates if needed; Switch never wraps.
 
-Update only `src/components/navigation/SlimSidebarNav.tsx`:
+## Data + behavior
 
-1. Change the hamburger button's bottom spacing from `mb-[14px]` to `mb-[17px]` so the gap between the hamburger and the Dashboard link's top edge is identical to the expanded view (12 + 1 + 4 = 17px, matching `pb-3 mb-1 border-b`).
-2. Keep the Dashboard link as `h-9 w-9` flex-centered — that already matches the expanded link's `py-2 + h-5 icon` height (36px) and centers the icon at the same vertical offset.
+`ConversationThread` needs three new props:
+- `studentId: string`
+- `twoWayMessaging: boolean`
+- `onToggleTwoWayMessaging: (next: boolean) => Promise<void>`
+- `canToggle: boolean` (already derivable from `instructorHasSent`, but pass it for clarity and to support demo mode read-only)
 
-No divider line is added. No other icons or items are touched. No changes to `InstructorNavigation`, `StudentNavigation`, `AdminNavigation`, or `DashboardLayout`.
+`InstructorMessages.tsx` will:
+1. Fetch each conversation's `two_way_messaging` value alongside the student profile (extend the `students` select to include `id, two_way_messaging`).
+2. Store it in the `StudentOption` shape (add `twoWayMessaging: boolean`).
+3. Pass current value + handler into `ConversationThread`.
+4. Handler calls `supabase.from('students').update({ two_way_messaging: next }).eq('id', activeStudentId)`, then optimistically updates local `students` state and shows a toast (matching the wording used today on the detail page).
+5. In demo mode the Switch is disabled (no DB write).
 
-## Files changed
+## Cleanup of student detail page
 
-- `src/components/navigation/SlimSidebarNav.tsx` — update one className value (`mb-[14px]` → `mb-[17px]`)
+In `src/pages/instructor/InstructorStudentDetail.tsx`:
+- Remove the entire "Allow this student to reply" `<div>` block, the `Switch`/`Label` imports if unused elsewhere on the page, the `MessageSquare` import (if only used here), `savingToggle` state, and `handleToggleMessaging`.
+- Keep `two_way_messaging` in the fetched data object only if still referenced; otherwise drop it from the select to keep the page lean.
 
-## Verification
+## Files to modify
 
-After the change, toggling the desktop sidebar between expanded and slim should keep the Dashboard icon's center fixed at the same y-coordinate. If a 1–2px drift remains due to the border line's visual weight, fine-tune the value (e.g., `mb-[16px]` or `mb-[18px]`) — only this one number changes.
+- `src/components/instructor/messages/ConversationThread.tsx` — add Switch in header, gated by `instructorHasSent`.
+- `src/pages/instructor/InstructorMessages.tsx` — fetch `two_way_messaging`, pass props + handler to thread.
+- `src/pages/instructor/InstructorStudentDetail.tsx` — remove the toggle block and its handler.
+
+## Out of scope
+
+- No DB schema or RLS changes (the column and `protect_two_way_messaging` trigger already exist).
+- Student-side read-only banner behavior is unchanged.
