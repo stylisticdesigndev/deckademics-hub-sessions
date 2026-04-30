@@ -94,10 +94,10 @@ export const DashboardLayout = ({
                 </Button>
               </div>
             )}
-            <header className="h-16 flex items-center justify-between px-4 md:px-6">
+            <header className="h-16 flex items-center justify-between px-4 md:pl-3 md:pr-6">
               <div className="flex items-center gap-2">
                 <HeaderHamburger />
-                <Logo size="header" className="shrink-0" />
+                <Logo size="header" className="shrink-0 -ml-2 md:-ml-1" />
               </div>
               <div className="flex items-center gap-2">
                 {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
