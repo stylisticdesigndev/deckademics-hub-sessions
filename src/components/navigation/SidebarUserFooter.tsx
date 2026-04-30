@@ -28,7 +28,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { userData, signOut } = useAuth();
-  const { isMobile, state } = useSidebar();
+  const { isMobile, state, setOpenMobile } = useSidebar();
   const profile = userData.profile;
   const userEmail = profile?.email;
   // Show "Admin Portal" entry only for instructor-admins (not when already in admin view).
@@ -42,18 +42,26 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     fallbackName[0];
   const profileHref = `/${userType}/profile`;
 
+  // On mobile/tablet the dropdown lives inside the off-canvas Sheet.
+  // Closing the sheet AND deferring navigation prevents Radix from leaving
+  // `pointer-events: none` on <body>, which would freeze the destination page.
+  const goTo = (href: string) => {
+    if (isMobile) setOpenMobile(false);
+    setTimeout(() => navigate(href), 0);
+  };
+
   const menuItems = (
     <>
       <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => navigate(profileHref)}>
+      <DropdownMenuItem onClick={() => goTo(profileHref)}>
         View Profile
       </DropdownMenuItem>
       {showAdminPortal && (
         <>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => navigate('/admin/dashboard')}
+            onClick={() => goTo('/admin/dashboard')}
             className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
