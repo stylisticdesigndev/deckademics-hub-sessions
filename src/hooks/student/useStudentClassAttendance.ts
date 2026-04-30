@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { formatDateUS } from '@/lib/utils';
 
 /** Parse "3:30 PM" → hours (0-23) */
 function parseTimeToHours(timeStr: string): number {
@@ -250,6 +251,49 @@ export function useStudentClassAttendance() {
 
       if (attendanceError) throw attendanceError;
 
+      // Notify instructor — message into inbox + alert push (best-effort)
+      try {
+        const { data: studentRow } = await supabase
+          .from('students')
+          .select('instructor_id, profiles!inner(first_name, last_name)')
+          .eq('id', studentId)
+          .maybeSingle() as any;
+
+        const instructorId = studentRow?.instructor_id;
+        const studentName = `${studentRow?.profiles?.first_name ?? ''} ${studentRow?.profiles?.last_name ?? ''}`.trim() || 'Your student';
+        const friendlyDate = formatDateUS(absenceDate);
+
+        if (instructorId) {
+          const content = reason
+            ? `Heads up — I won't be at class on ${friendlyDate}. Reason: ${reason}`
+            : `Heads up — I won't be at class on ${friendlyDate}.`;
+
+          await supabase.from('messages').insert({
+            sender_id: studentId,
+            receiver_id: instructorId,
+            subject: 'Marked Absent',
+            content,
+          });
+
+          try {
+            await supabase.functions.invoke('notify-instructor-absence', {
+              body: {
+                instructor_id: instructorId,
+                student_id: studentId,
+                student_name: studentName,
+                absence_date: dateStr,
+                reason: reason || null,
+              },
+            });
+          } catch (pushErr) {
+            // Push is best-effort
+            if (import.meta.env.DEV) console.warn('absence push failed:', pushErr);
+          }
+        }
+      } catch (notifyErr) {
+        if (import.meta.env.DEV) console.warn('absence notify failed:', notifyErr);
+      }
+
       // Update local state
       setAttendanceRecords(prev => [
         ...prev,
@@ -258,7 +302,7 @@ export function useStudentClassAttendance() {
 
       toast({
         title: 'Marked absent',
-        description: 'Your instructor has been notified. This class will be available for makeup.',
+        description: 'Your instructor has been notified and messaged. This class will be available for makeup.',
       });
     } catch (error: any) {
       if (import.meta.env.DEV) console.error('markAbsent error:', error);
