@@ -24,6 +24,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
     password: '',
     firstName: '',
     lastName: '',
+    djName: '',
     phone: '',
     pronouns: '',
   });
@@ -121,6 +122,14 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         setSignupLoading(false);
         return;
       }
+
+      if (userType === 'instructor' && !formData.djName.trim()) {
+        const msg = 'DJ Name is required.';
+        toast({ title: 'Missing information', description: msg, variant: 'destructive' });
+        setSignupError(msg);
+        setSignupLoading(false);
+        return;
+      }
       
       if (!formData.email || !formData.password) {
         toast({
@@ -159,6 +168,7 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
         {
           first_name: formData.firstName,
           last_name: formData.lastName,
+          dj_name: formData.djName || null,
           phone: formData.phone,
           pronouns: formData.pronouns,
         }
@@ -270,9 +280,11 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
                 password: formData.password,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
+                djName: formData.djName,
                 phone: formData.phone,
                 pronouns: formData.pronouns,
               }}
+              userType={userType}
               isLoading={signupLoading}
               handleChange={handleChange}
               handleSubmit={handleSignUp}
