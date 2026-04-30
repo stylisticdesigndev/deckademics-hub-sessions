@@ -406,10 +406,10 @@ const InstructorStudents = () => {
               <TabsContent value="list">
                 {/* Desktop table view */}
                 <div className="rounded-md border hidden md:block">
-                  <div className="grid grid-cols-8 p-4 font-medium border-b text-sm">
+                  <div className="grid grid-cols-9 gap-3 p-4 font-medium border-b text-sm">
                     <div className="col-span-3">STUDENT</div>
                     <div className="col-span-2 pl-0 pr-4">PROGRESS</div>
-                    <div className="col-span-1 text-center">LEVEL</div>
+                    <div className="col-span-2 text-center">LEVEL</div>
                     <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
@@ -422,7 +422,7 @@ const InstructorStudents = () => {
                       {filteredStudents.map((student) => (
                         <div 
                           key={student.id}
-                          className="grid grid-cols-8 p-4 border-b last:border-b-0 items-center text-sm hover:bg-muted/30"
+                          className="grid grid-cols-9 gap-3 p-4 border-b last:border-b-0 items-center text-sm hover:bg-muted/30"
                         >
                           <div 
                             className="col-span-3 flex items-center gap-3 cursor-pointer"
@@ -452,19 +452,19 @@ const InstructorStudents = () => {
                             </span>
                           </div>
                           
-                          <div className="col-span-1 flex justify-center">
+                          <div className="col-span-2 flex justify-center">
                             <div
                               className="relative z-10 touch-manipulation"
                               onClick={(e) => e.stopPropagation()}
                               onPointerDown={(e) => e.stopPropagation()}
                             >
                               <Select
-                                value={student.level}
+                                value={student.level.toLowerCase()}
                                 onValueChange={(value) => handleLevelChange(student.id, value)}
                               >
                                 <SelectTrigger
                                   className={cn(
-                                    "w-[110px] h-8 text-xs touch-manipulation",
+                                    "w-[140px] h-8 text-xs touch-manipulation capitalize",
                                     student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
                                     student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
                                     student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
