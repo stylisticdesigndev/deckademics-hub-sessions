@@ -553,14 +553,34 @@ const InstructorStudents = () => {
                             >
                               Add Note
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setIsEditingLevel(student.id)}
-                              className="text-xs"
+                            <div
+                              className="relative z-10 touch-manipulation"
+                              onClick={(e) => e.stopPropagation()}
+                              onPointerDown={(e) => e.stopPropagation()}
                             >
-                              <Edit className="h-3 w-3 mr-1" /> Level
-                            </Button>
+                              <Select
+                                value={student.level.toLowerCase()}
+                                onValueChange={(value) => handleLevelChange(student.id, value)}
+                              >
+                                <SelectTrigger
+                                  className={cn(
+                                    "w-[120px] h-9 text-xs touch-manipulation",
+                                    student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
+                                    student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
+                                    student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
+                                    student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
+                                  )}
+                                >
+                                  <SelectValue placeholder="Level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="novice">Novice</SelectItem>
+                                  <SelectItem value="amateur">Amateur</SelectItem>
+                                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="advanced">Advanced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
