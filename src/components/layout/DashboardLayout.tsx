@@ -17,6 +17,7 @@ import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
 import { SidebarUserFooter } from '@/components/navigation/SidebarUserFooter';
+import { useIsDesktop } from '@/hooks/use-desktop';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -35,15 +36,16 @@ const HamburgerButton = () => {
 };
 
 const HeaderHamburger = () => {
-  const { isMobile } = useSidebar();
-  // Only show in the header on mobile — desktop expanded/slim both have an in-sidebar hamburger
-  if (!isMobile) return null;
+  const isDesktop = useIsDesktop();
+  // Show in header on mobile and tablet (production behavior). Desktop expanded/slim has its own in-sidebar hamburger.
+  if (isDesktop) return null;
   return <HamburgerButton />;
 };
 
 const ExpandedSidebarHeader = () => {
-  const { state, isMobile } = useSidebar();
-  if (isMobile || state !== 'expanded') return null;
+  const { state } = useSidebar();
+  const isDesktop = useIsDesktop();
+  if (!isDesktop || state !== 'expanded') return null;
   return (
     <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
       <HamburgerButton />

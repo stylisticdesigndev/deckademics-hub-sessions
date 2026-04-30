@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
 import { isAdminUser } from '@/constants/adminPermissions';
+import { useIsDesktop } from '@/hooks/use-desktop';
 
 interface SidebarUserFooterProps {
   userType: 'student' | 'instructor' | 'admin';
@@ -28,7 +29,8 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { userData, signOut } = useAuth();
-  const { isMobile, state } = useSidebar();
+  const { state } = useSidebar();
+  const isDesktop = useIsDesktop();
   const profile = userData.profile;
   const userEmail = profile?.email;
   // Show "Admin Portal" entry only for instructor-admins (not when already in admin view).
@@ -69,8 +71,8 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     </>
   );
 
-  // Desktop only (expanded or slim).
-  if (isMobile) return null;
+  // Desktop only (expanded or slim). Tablet & mobile keep production look.
+  if (!isDesktop) return null;
 
   if (state === 'collapsed') {
     return (

@@ -3,17 +3,19 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useIsDesktop } from '@/hooks/use-desktop';
 
 interface SlimSidebarNavProps {
   userType: 'student' | 'instructor' | 'admin';
 }
 
 export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
-  const { state, isMobile, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
+  const isDesktop = useIsDesktop();
   const { pathname } = useLocation();
 
-  // Only render in slim mode (desktop + collapsed)
-  if (isMobile || state !== 'collapsed') return null;
+  // Only render in slim mode (true desktop + collapsed). Tablet keeps production look.
+  if (!isDesktop || state !== 'collapsed') return null;
 
   const dashboardHref = `/${userType}/dashboard`;
 
