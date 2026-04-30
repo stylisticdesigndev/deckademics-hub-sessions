@@ -38,12 +38,12 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     userType === 'admin' ? 'Admin' : userType === 'instructor' ? 'Instructor' : 'Student';
   const djName = ((profile as any)?.dj_name || '').trim();
   const legalName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
-  const fullName =
-    (userType === 'instructor' && djName ? djName : legalName) || fallbackName;
-  const initialsSource =
-    userType === 'instructor' && djName
-      ? djName.split(/\s+/).filter(Boolean)
-      : [profile?.first_name || '', profile?.last_name || ''];
+  // Prefer DJ name whenever it's set (instructors and instructor-admins).
+  // Students don't have a DJ name, so they fall back to legal name automatically.
+  const fullName = (djName || legalName) || fallbackName;
+  const initialsSource = djName
+    ? djName.split(/\s+/).filter(Boolean)
+    : [profile?.first_name || '', profile?.last_name || ''];
   const initials =
     ((initialsSource[0]?.[0] || '') + (initialsSource[1]?.[0] || '')).toUpperCase() ||
     fallbackName[0];
