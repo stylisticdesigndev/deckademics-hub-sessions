@@ -70,7 +70,7 @@ export const DashboardLayout = ({
           collapsible="icon"
           className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}
         >
-          <SidebarContent className="py-4">
+          <SidebarContent className="py-4 md:pb-0">
             <SlimSidebarNav userType={userType} />
             <ExpandedSidebarHeader />
             {sidebarContent}
