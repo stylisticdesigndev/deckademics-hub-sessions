@@ -12,26 +12,17 @@ import {
   BookOpen,
   Wallet,
   UserCog,
-  ShieldCheck,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useIsDesktop } from '@/hooks/use-desktop';
-import { isAdminUser } from '@/constants/adminPermissions';
-import { useNavigate } from 'react-router-dom';
 
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const { userData } = useAuth();
   const userId = userData.user?.id;
-  const userEmail = userData.profile?.email;
-  const showAdminPortal = isAdminUser(userEmail);
   const { setOpenMobile, isMobile, state } = useSidebar();
-  const isDesktop = useIsDesktop();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
@@ -48,11 +39,9 @@ export const InstructorNavigation = () => {
   ];
 
   // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
-  const navItems = isDesktop
-    ? baseNavItems
-    : [...baseNavItems, { title: "Profile", icon: UserCog, href: "/instructor/profile" }];
-
-  if (isDesktop && state === 'collapsed') return null;
+  const navItems = isMobile
+    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/instructor/profile" }]
+    : baseNavItems;
 
   if (!isMobile && state === 'collapsed') return null;
 
@@ -79,19 +68,6 @@ export const InstructorNavigation = () => {
           )}
         </Link>
       ))}
-      {/* Tablet/mobile: keep the standalone Admin Portal button (production behavior). On desktop it lives in the avatar dropdown. */}
-      {!isDesktop && showAdminPortal && (
-        <div className="pt-3 mt-3 border-t border-sidebar-border">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            onClick={() => { closeMobileNav(); navigate('/admin/dashboard'); }}
-          >
-            <ShieldCheck className="h-4 w-4" />
-            Admin Portal
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

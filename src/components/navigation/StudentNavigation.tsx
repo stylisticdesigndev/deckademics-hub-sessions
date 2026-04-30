@@ -17,14 +17,12 @@ import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useIsDesktop } from '@/hooks/use-desktop';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
   const { userData } = useAuth();
   const studentId = userData.user?.id;
   const { setOpenMobile, isMobile, state } = useSidebar();
-  const isDesktop = useIsDesktop();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
@@ -41,9 +39,9 @@ export const StudentNavigation = () => {
   ];
 
   // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
-  const navItems = isDesktop
-    ? baseNavItems
-    : [...baseNavItems, { title: "Profile", icon: UserCog, href: "/student/profile" }];
+  const navItems = isMobile
+    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/student/profile" }]
+    : baseNavItems;
 
   const linkClasses = (href: string) => cn(
     "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
@@ -53,7 +51,7 @@ export const StudentNavigation = () => {
   );
 
   // In desktop slim mode, SlimSidebarNav handles rendering
-  if (isDesktop && state === 'collapsed') return null;
+  if (!isMobile && state === 'collapsed') return null;
 
   return (
     <div className="space-y-1.5">

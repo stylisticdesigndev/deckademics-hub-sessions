@@ -10,7 +10,6 @@ import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { canAccessPayroll } from '@/constants/adminPermissions';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useIsDesktop } from '@/hooks/use-desktop';
 import {
   LayoutDashboard,
   Users,
@@ -39,7 +38,6 @@ export const AdminNavigation = () => {
   const userEmail = userData.profile?.email;
   const showPayroll = canAccessPayroll(userEmail);
   const { setOpenMobile, isMobile, state } = useSidebar();
-  const isDesktop = useIsDesktop();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: studentCounts } = useQuery({
@@ -114,11 +112,11 @@ export const AdminNavigation = () => {
   ];
 
   // Mobile/tablet keeps the original Profile nav item; desktop replaces it with the avatar dropdown at the bottom
-  const navItems = isDesktop
-    ? baseNavItems
-    : [...baseNavItems, { title: "Profile", icon: UserCog, href: "/admin/profile" }];
+  const navItems = isMobile
+    ? [...baseNavItems, { title: "Profile", icon: UserCog, href: "/admin/profile" }]
+    : baseNavItems;
 
-  if (isDesktop && state === 'collapsed') return null;
+  if (!isMobile && state === 'collapsed') return null;
 
   return (
     <div className="space-y-1.5">
