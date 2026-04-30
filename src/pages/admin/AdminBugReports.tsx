@@ -77,7 +77,7 @@ const AdminBugReports = () => {
       if (reporterIds.length === 0) return [];
       const { data } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
+        .select('id, first_name, last_name, dj_name, email, role')
         .in('id', reporterIds);
       return data || [];
     },
@@ -104,9 +104,11 @@ const AdminBugReports = () => {
   });
 
   const getReporterName = (reporterId: string) => {
-    const profile = profiles.find((p: any) => p.id === reporterId);
+    const profile: any = profiles.find((p: any) => p.id === reporterId);
     if (!profile) return 'Unknown';
-    return `${(profile as any).first_name || ''} ${(profile as any).last_name || ''}`.trim() || (profile as any).email;
+    const dj = (profile.dj_name || '').trim();
+    if (profile.role === 'instructor' && dj) return dj;
+    return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
   };
 
   const handleCopy = (report: BugReport) => {
