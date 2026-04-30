@@ -510,6 +510,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Navigate after everything else has been cleared
       // Add a slight delay to ensure state updates have processed
       setTimeout(() => {
+        // Defensive: clear any stuck pointer-events lock left behind by a
+        // closing Radix overlay (DropdownMenu/Dialog) when navigating.
+        if (typeof document !== 'undefined') {
+          document.body.style.pointerEvents = '';
+          document.body.style.removeProperty('pointer-events');
+        }
         navigate('/', { replace: true });
         
         if (import.meta.env.DEV) console.log('Logged out successfully');
@@ -524,6 +530,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       // Force navigate to home page even if there was an error
+      if (typeof document !== 'undefined') {
+        document.body.style.pointerEvents = '';
+        document.body.style.removeProperty('pointer-events');
+      }
       navigate('/', { replace: true });
     }
   };
