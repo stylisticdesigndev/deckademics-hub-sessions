@@ -24,6 +24,7 @@ export function useStudentDashboardCore() {
   const [assignedInstructor, setAssignedInstructor] = useState<string | null>(null);
   const [classDay, setClassDay] = useState<string | null>(null);
   const [classTime, setClassTime] = useState<string | null>(null);
+  const [classRoom, setClassRoom] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
   const dataFetchedRef = useRef(false);
@@ -53,7 +54,7 @@ export function useStudentDashboardCore() {
 
       const { data: studentInfo, error: studentError } = await supabase
         .from('students')
-        .select('level, enrollment_status, notes, instructor_id, class_day, class_time')
+        .select('level, enrollment_status, notes, instructor_id, class_day, class_time, class_room')
         .eq('id', userId as any)
         .maybeSingle();
 
@@ -76,6 +77,7 @@ export function useStudentDashboardCore() {
         setStudentLevel(rawLevel.charAt(0).toUpperCase() + rawLevel.slice(1));
         setClassDay(studentInfo.class_day || null);
         setClassTime(studentInfo.class_time || null);
+        setClassRoom((studentInfo as any).class_room || null);
         // Fetch assigned instructor name
         if (studentInfo.instructor_id) {
           const { data: instructorProfile } = await supabase
@@ -199,7 +201,7 @@ export function useStudentDashboardCore() {
       date: dateStr,
       time: startStr || classTime,
       duration,
-      location: 'Main Studio',
+      location: classRoom || 'Not assigned',
       attendees: 0,
       isUpcoming: true,
     };
@@ -209,7 +211,7 @@ export function useStudentDashboardCore() {
       (c) => !(c.date === synthetic.date && c.time === synthetic.time)
     );
     return [synthetic, ...dedup];
-  }, [classDay, classTime, assignedInstructor, upcomingClasses]);
+  }, [classDay, classTime, classRoom, assignedInstructor, upcomingClasses]);
 
   // Derive first-time user status
   useEffect(() => {

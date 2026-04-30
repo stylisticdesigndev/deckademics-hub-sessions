@@ -1299,6 +1299,7 @@ export type Database = {
       students: {
         Row: {
           class_day: string | null
+          class_room: string | null
           class_time: string | null
           enrollment_status: string | null
           id: string
@@ -1310,6 +1311,7 @@ export type Database = {
         }
         Insert: {
           class_day?: string | null
+          class_room?: string | null
           class_time?: string | null
           enrollment_status?: string | null
           id: string
@@ -1321,6 +1323,7 @@ export type Database = {
         }
         Update: {
           class_day?: string | null
+          class_room?: string | null
           class_time?: string | null
           enrollment_status?: string | null
           id?: string
