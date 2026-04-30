@@ -8,6 +8,7 @@ export interface InstructorProfile {
   id?: string;
   first_name?: string | null;
   last_name?: string | null;
+  dj_name?: string | null;
   avatar_url?: string | null;
 }
 
@@ -72,7 +73,7 @@ export function useUpcomingClasses() {
             // Use the 'in' filter with array of values, not the array itself
             const { data: profiles, error: profilesError } = await supabase
               .from('profiles')
-              .select('id, first_name, last_name')
+              .select('id, first_name, last_name, dj_name')
               .in('id', instructorIds as any);
               
             if (profilesError) {
@@ -84,7 +85,8 @@ export function useUpcomingClasses() {
                   const safeProfile = {
                     id: profile.id as string,
                     first_name: profile.first_name as string | null,
-                    last_name: profile.last_name as string | null
+                    last_name: profile.last_name as string | null,
+                    dj_name: (profile as any).dj_name as string | null
                   };
                   
                   instructorProfiles[safeProfile.id] = safeProfile;
@@ -107,8 +109,9 @@ export function useUpcomingClasses() {
             
             const instructorId = cls.instructor_id as string;
             const instructorProfile = instructorId ? instructorProfiles[instructorId] : null;
+            const dj = (instructorProfile?.dj_name || '').trim();
             const instructorName = instructorProfile 
-              ? `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim()
+              ? (dj || `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim())
               : 'Not assigned';
               
             return {

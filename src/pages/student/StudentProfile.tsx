@@ -119,7 +119,7 @@ const StudentProfile = () => {
           if (student.instructor_id) {
             const { data: instructor, error: instructorError } = await supabase
               .from('profiles')
-              .select('first_name, last_name, avatar_url, email, phone, bio, pronouns')
+              .select('first_name, last_name, dj_name, avatar_url, email, phone, bio, pronouns')
               .eq('id', student.instructor_id)
               .single();
             let merged: any = (!instructorError && instructor) ? instructor : null;
@@ -411,11 +411,21 @@ const StudentProfile = () => {
                         <Avatar className="h-10 w-10">
                           {displayInstructor.avatar_url && <AvatarImage src={displayInstructor.avatar_url} alt={`${displayInstructor.first_name} ${displayInstructor.last_name}`} />}
                           <AvatarFallback className="bg-accent text-accent-foreground text-sm">
-                            {`${displayInstructor.first_name?.[0] || ''}${displayInstructor.last_name?.[0] || ''}`.toUpperCase()}
+                            {(() => {
+                              const dj = ((displayInstructor as any).dj_name || '').trim();
+                              if (dj) {
+                                const parts = dj.split(/\s+/).filter(Boolean);
+                                return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+                              }
+                              return `${displayInstructor.first_name?.[0] || ''}${displayInstructor.last_name?.[0] || ''}`.toUpperCase();
+                            })()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium hover:underline">{`${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}</p>
+                          <p className="text-sm font-medium hover:underline">
+                            {((displayInstructor as any).dj_name || '').trim() ||
+                              `${displayInstructor.first_name || ''} ${displayInstructor.last_name || ''}`.trim()}
+                          </p>
                           <p className="text-xs text-muted-foreground">DJ Instructor · View profile</p>
                         </div>
                       </button>

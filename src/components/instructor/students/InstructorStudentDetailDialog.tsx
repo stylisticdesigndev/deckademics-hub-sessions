@@ -227,10 +227,6 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3 pl-6">
                     <div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Status</p>
-                      <p className="text-sm font-medium capitalize">{detailedStudent.enrollmentStatus || 'Pending'}</p>
-                    </div>
-                    <div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Start Date</p>
                       <p className="text-sm font-medium">{detailedStudent.enrollmentDate || 'Not set'}</p>
                     </div>
@@ -239,12 +235,12 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                       <p className="text-sm font-medium">{detailedStudent.classDay || 'Not assigned'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
-                      <p className="text-sm font-medium">{detailedStudent.classTime || 'Not assigned'}</p>
-                    </div>
-                    <div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1"><BookOpen className="h-3 w-3" /> Classroom</p>
                       <p className="text-sm font-medium">{detailedStudent.classRoom || 'Not assigned'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
+                      <p className="text-sm font-medium">{detailedStudent.classTime || 'Not assigned'}</p>
                     </div>
                     {detailedStudent.nextClass && (
                       <div className="col-span-2">

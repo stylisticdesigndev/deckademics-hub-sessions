@@ -14,6 +14,7 @@ import { formatDateUS } from '@/lib/utils';
 interface AuthorProfile {
   first_name?: string;
   last_name?: string;
+  dj_name?: string;
 }
 
 interface AnnouncementReadRecord {
@@ -84,7 +85,7 @@ const StudentAnnouncements = () => {
         .from('announcements')
         .select(`
           id, title, content, published_at, author_id, type,
-          profiles:author_id (first_name, last_name),
+          profiles:author_id (first_name, last_name, dj_name),
           announcement_reads!left (id, read_at, user_id, dismissed)
         `)
         .contains('target_role', ['student'])
@@ -95,6 +96,8 @@ const StudentAnnouncements = () => {
       if (annData && annData.length > 0) {
         const visible = annData.reduce((items: StudentAnnouncement[], ann: any) => {
           const author = ann.profiles as AuthorProfile;
+          const authorDj = (author?.dj_name || '').trim();
+          const authorDisplay = authorDj || (author ? `${author.first_name || ''} ${author.last_name || ''}`.trim() : '');
           const reads: AnnouncementReadRecord[] = Array.isArray(ann.announcement_reads)
             ? ann.announcement_reads.filter((r: AnnouncementReadRecord) => r.user_id === user.id)
             : [];
@@ -107,10 +110,16 @@ const StudentAnnouncements = () => {
             date: formatDateUS(ann.published_at),
             publishedAt: ann.published_at,
             instructor: {
-              name: author ? `${author.first_name || ''} ${author.last_name || ''}`.trim() : 'Admin',
-              initials: author
-                ? `${(author.first_name || ' ')[0]}${(author.last_name || ' ')[0]}`.trim().toUpperCase()
-                : 'A',
+              name: authorDisplay || 'Admin',
+              initials: (() => {
+                if (authorDj) {
+                  const parts = authorDj.split(/\s+/).filter(Boolean);
+                  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'I';
+                }
+                return author
+                  ? `${(author.first_name || ' ')[0]}${(author.last_name || ' ')[0]}`.trim().toUpperCase() || 'A'
+                  : 'A';
+              })(),
             },
             isNew: reads.length === 0,
             type: ann.type || 'announcement',
