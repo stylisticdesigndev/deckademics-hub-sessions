@@ -76,7 +76,7 @@ const LEVEL_DISPLAY: Record<string, string> = {
 
 const StudentClasses = () => {
   const { userData, session } = useAuth();
-  const { classInfo, attendanceRecords, loading, marking, markAbsent } = useStudentClassAttendance();
+  const { classInfo, attendanceRecords, loading, marking, markAbsent, undoAbsent } = useStudentClassAttendance();
   const [demoMode, setDemoMode] = useState(false);
   const [studentLevel, setStudentLevel] = useState('');
 
@@ -135,6 +135,12 @@ const StudentClasses = () => {
   const handleMarkAbsent = (date: Date, reason?: string) => {
     if (activeClassInfo) {
       markAbsent(activeClassInfo.id, date, reason);
+    }
+  };
+
+  const handleUndoAbsent = (date: Date) => {
+    if (activeClassInfo) {
+      undoAbsent(activeClassInfo.id, date);
     }
   };
 
@@ -273,6 +279,7 @@ const StudentClasses = () => {
                             isNext={i === 0}
                             status={record || 'upcoming'}
                             onMarkAbsent={!record ? handleMarkAbsent : undefined}
+                            onUndoAbsent={record === 'absent' ? handleUndoAbsent : undefined}
                             marking={marking}
                           />
                         );
