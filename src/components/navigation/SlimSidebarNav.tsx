@@ -26,17 +26,19 @@ export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
     );
 
   return (
-    <div className="flex flex-col items-center h-full gap-1.5 px-1">
+    <div className="flex flex-col items-center h-full px-1">
       <button
         type="button"
         onClick={toggleSidebar}
         aria-label="Expand sidebar"
-        className="flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary transition-colors"
+        className="flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary transition-colors mb-[13px] pb-0"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      <Link to={dashboardHref} className={cn(itemClass(pathname === dashboardHref), 'mt-3')} aria-label="Dashboard">
+      <div className="w-full border-b border-sidebar-border mb-1" />
+
+      <Link to={dashboardHref} className={cn(itemClass(pathname === dashboardHref))} aria-label="Dashboard">
         <LayoutDashboard className="h-5 w-5" />
       </Link>
     </div>
