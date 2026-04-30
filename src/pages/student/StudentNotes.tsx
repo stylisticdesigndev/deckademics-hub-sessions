@@ -139,7 +139,7 @@ export default function StudentNotes() {
             {note.title && <CardTitle className="text-lg">{note.title}</CardTitle>}
             <CardDescription className="flex items-center gap-2 mt-1">
               <User className="h-3 w-3" />
-              {note.instructor?.first_name} {note.instructor?.last_name}
+              {(note.instructor as any)?.dj_name || `${note.instructor?.first_name || ''} ${note.instructor?.last_name || ''}`.trim()}
               <Calendar className="h-3 w-3 ml-2" />
               {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
             </CardDescription>
@@ -244,7 +244,7 @@ export default function StudentNotes() {
               {isInstructor && (
                 <>
                   <User className="h-3 w-3" />
-                  {(note as StudentNote).instructor?.first_name} {(note as StudentNote).instructor?.last_name}
+                  {((note as StudentNote).instructor as any)?.dj_name || `${(note as StudentNote).instructor?.first_name || ''} ${(note as StudentNote).instructor?.last_name || ''}`.trim()}
                 </>
               )}
               <Calendar className="h-3 w-3" />

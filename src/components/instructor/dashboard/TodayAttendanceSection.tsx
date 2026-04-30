@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CheckCircle, XCircle, ClipboardCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -54,20 +53,6 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
                       {capitalizeLevel(item.student.level)} · {item.student.classTime}
                     </p>
                   </div>
-                  {item.status !== null ? (
-                    <Badge className={cn(
-                      'text-xs shrink-0',
-                      item.status === 'present'
-                        ? 'bg-green-600/20 text-green-400 border-green-600/30'
-                        : 'bg-red-600/20 text-red-400 border-red-600/30'
-                    )}>
-                      {item.status === 'present' ? 'Present' : 'Absent'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs shrink-0 bg-muted-foreground/20 text-muted-foreground">
-                      Not Recorded
-                    </Badge>
-                  )}
                 </div>
                 {/* Action buttons: full-width grid on mobile, inline on sm+ */}
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-1.5">

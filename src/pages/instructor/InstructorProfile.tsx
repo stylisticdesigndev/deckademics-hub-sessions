@@ -33,7 +33,7 @@ const InstructorProfile = () => {
   const [demoMode, setDemoMode] = useState(false);
 
   const [profile, setProfile] = useState({
-    firstName: '', lastName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
+    firstName: '', lastName: '', djName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
   });
   const [formData, setFormData] = useState({ ...profile });
   const [privacy, setPrivacy] = useState({ hidePhone: false, hideEmail: false });
@@ -44,7 +44,7 @@ const InstructorProfile = () => {
       const mockFirst = mockNameParts[0] || '';
       const mockLast = mockNameParts.slice(1).join(' ') || '';
       setProfile({
-        firstName: mockFirst, lastName: mockLast,
+        firstName: mockFirst, lastName: mockLast, djName: 'DJ Demo',
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
         pronouns: '',
@@ -53,7 +53,7 @@ const InstructorProfile = () => {
         expertiseAreas: mockInstructorProfile.expertiseAreas,
       });
       setFormData({
-        firstName: mockFirst, lastName: mockLast,
+        firstName: mockFirst, lastName: mockLast, djName: 'DJ Demo',
         email: mockInstructorProfile.email,
         phone: mockInstructorProfile.phone,
         pronouns: '',
@@ -110,6 +110,7 @@ const InstructorProfile = () => {
         const profileObj = {
           firstName: userData?.profile?.first_name || session.user?.user_metadata?.first_name || '',
           lastName: userData?.profile?.last_name || session.user?.user_metadata?.last_name || '',
+          djName: (userData?.profile as any)?.dj_name || session.user?.user_metadata?.dj_name || '',
           email: userData?.profile?.email || session.user?.email || '',
           phone: (userData?.profile as any)?.phone || '',
           pronouns: (userData?.profile as any)?.pronouns || '',
@@ -140,7 +141,13 @@ const InstructorProfile = () => {
       return;
     }
     try {
-      await updateProfile({ first_name: formData.firstName, last_name: formData.lastName, phone: formData.phone, pronouns: formData.pronouns });
+      await updateProfile({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        dj_name: formData.djName.trim() || null,
+        phone: formData.phone,
+        pronouns: formData.pronouns,
+      } as any);
       if (session?.user?.id) {
         const { error } = await supabase.from('instructors').update({
           bio: formData.bio,
@@ -230,6 +237,14 @@ const InstructorProfile = () => {
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                           <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={formData.lastName} onChange={handleChange} disabled={!isEditing || demoMode} />
                         </div>
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="djName">DJ Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input id="djName" name="djName" placeholder="DJ Stagename" className="pl-10" value={formData.djName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">This is the name students will see across the app.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>

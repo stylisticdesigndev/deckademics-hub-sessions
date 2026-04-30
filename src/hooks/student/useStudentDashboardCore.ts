@@ -82,14 +82,14 @@ export function useStudentDashboardCore() {
         if (studentInfo.instructor_id) {
           const { data: instructorProfile } = await supabase
             .from('profiles')
-            .select('first_name, last_name')
+            .select('first_name, last_name, dj_name')
             .eq('id', studentInfo.instructor_id)
             .single();
           
           if (isMountedRef.current && instructorProfile) {
-            setAssignedInstructor(
-              `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim() || null
-            );
+            const dj = ((instructorProfile as any).dj_name || '').trim();
+            const full = `${instructorProfile.first_name || ''} ${instructorProfile.last_name || ''}`.trim();
+            setAssignedInstructor(dj || full || null);
           }
         }
       }

@@ -31,6 +31,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  dj_name?: string | null;
   email: string;
   avatar_url: string | null;
   role: UserRole;
@@ -420,6 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role,
             first_name: metadata.first_name || metadata.firstName || '',
             last_name: metadata.last_name || metadata.lastName || '',
+            dj_name: metadata.dj_name || metadata.djName || null,
             phone: metadata.phone || '',
             pronouns: metadata.pronouns || '',
           },

@@ -20,6 +20,7 @@ const InstructorProfileSetup = () => {
   const [formData, setFormData] = useState({
     first_name: userData.profile?.first_name || '',
     last_name: userData.profile?.last_name || '',
+    dj_name: (userData.profile as any)?.dj_name || '',
     email: userData.profile?.email || '',
     bio: '',
     phone: '',
@@ -39,15 +40,21 @@ const InstructorProfileSetup = () => {
       setShowAvatarError(true);
       return;
     }
+
+    if (!formData.dj_name.trim()) {
+      toast({ title: 'Missing DJ Name', description: 'Please enter your DJ name. This is what students will see.', variant: 'destructive' });
+      return;
+    }
     
     try {
       await updateProfile({
         first_name: formData.first_name,
         last_name: formData.last_name,
+        dj_name: formData.dj_name.trim(),
         phone: formData.phone,
         bio: formData.bio,
         avatar_url: avatarUrl,
-      });
+      } as any);
       
       toast({ title: 'Profile updated', description: 'Your instructor profile has been set up successfully!' });
       navigate('/instructor/dashboard');
@@ -94,6 +101,12 @@ const InstructorProfileSetup = () => {
                     <Label htmlFor="last_name">Last Name</Label>
                     <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Your last name" required />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dj_name">DJ Name</Label>
+                  <Input id="dj_name" name="dj_name" value={formData.dj_name} onChange={handleChange} placeholder="DJ Stagename" required />
+                  <p className="text-xs text-muted-foreground">This is the name students will see throughout the app.</p>
                 </div>
                 
                 <div className="space-y-2">

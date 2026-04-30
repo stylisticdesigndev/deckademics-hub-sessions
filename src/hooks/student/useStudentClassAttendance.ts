@@ -98,11 +98,12 @@ export function useStudentClassAttendance() {
         if (cls.instructor_id) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('first_name, last_name')
+            .select('first_name, last_name, dj_name')
             .eq('id', cls.instructor_id)
             .single();
           if (profile) {
-            instructorName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor';
+            const dj = ((profile as any).dj_name || '').trim();
+            instructorName = dj || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor';
           }
         }
 
@@ -163,11 +164,12 @@ export function useStudentClassAttendance() {
       if (studentData.instructor_id) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, dj_name')
           .eq('id', studentData.instructor_id)
           .single();
         if (profile) {
-          instructorName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor';
+          const dj = ((profile as any).dj_name || '').trim();
+          instructorName = dj || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor';
         }
       }
 
