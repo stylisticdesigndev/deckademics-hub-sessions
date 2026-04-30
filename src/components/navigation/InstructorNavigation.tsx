@@ -30,8 +30,6 @@ export const InstructorNavigation = () => {
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
-  if (!isMobile && state === 'collapsed') return null;
-
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
   const navItems = [
@@ -45,6 +43,8 @@ export const InstructorNavigation = () => {
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
     { title: "Profile", icon: UserCog, href: "/instructor/profile" },
   ];
+
+  if (!isMobile && state === 'collapsed') return null;
 
   return (
     <div className="space-y-1.5">

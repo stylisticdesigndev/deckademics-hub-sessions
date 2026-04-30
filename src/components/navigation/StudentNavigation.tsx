@@ -25,9 +25,6 @@ export const StudentNavigation = () => {
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
-  // In desktop slim mode, SlimSidebarNav handles rendering
-  if (!isMobile && state === 'collapsed') return null;
-
   const { data: unreadNotesCount = 0 } = useUnreadNotesCount(studentId);
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(studentId);
 
@@ -48,6 +45,9 @@ export const StudentNavigation = () => {
       ? "bg-deckademics-primary/10 text-deckademics-primary"
       : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
   );
+
+  // In desktop slim mode, SlimSidebarNav handles rendering
+  if (!isMobile && state === 'collapsed') return null;
 
   return (
     <div className="space-y-1.5">
