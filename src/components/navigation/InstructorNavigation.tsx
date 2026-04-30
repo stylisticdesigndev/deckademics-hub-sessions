@@ -11,7 +11,6 @@ import {
   Bell,
   BookOpen,
   Wallet,
-  UserCog,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';

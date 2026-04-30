@@ -10,7 +10,6 @@ import {
   BookOpen,
   Calendar,
   Music,
-  UserCog,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadNotesCount } from '@/hooks/student/useStudentNotes';
