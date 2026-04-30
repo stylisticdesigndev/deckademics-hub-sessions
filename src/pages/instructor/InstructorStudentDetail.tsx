@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, User, Calendar, Clock, DoorOpen } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, User, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -38,7 +37,6 @@ const InstructorStudentDetail = () => {
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingRoom, setSavingRoom] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,23 +79,6 @@ const InstructorStudentDetail = () => {
     })();
     return () => { cancelled = true; };
   }, [studentId]);
-
-  const handleRoomChange = async (value: string) => {
-    if (!studentId || !data) return;
-    const newRoom = value === 'unassigned' ? null : value;
-    setSavingRoom(true);
-    const { error: updateError } = await supabase
-      .from('students')
-      .update({ class_room: newRoom } as any)
-      .eq('id', studentId);
-    setSavingRoom(false);
-    if (updateError) {
-      toast({ title: 'Could not update classroom', description: updateError.message, variant: 'destructive' });
-      return;
-    }
-    setData({ ...data, class_room: newRoom });
-    toast({ title: 'Classroom updated', description: newRoom ? `Assigned to ${newRoom}` : 'Classroom unassigned' });
-  };
 
   if (loading) {
     return (
@@ -167,28 +148,6 @@ const InstructorStudentDetail = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>{data.class_time || 'No class time'}</span>
             </div>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <DoorOpen className="h-4 w-4 text-muted-foreground" />
-              <span>Classroom Assignment</span>
-            </div>
-            <Select
-              value={data.class_room ?? 'unassigned'}
-              onValueChange={handleRoomChange}
-              disabled={savingRoom}
-            >
-              <SelectTrigger className="w-full sm:w-64">
-                <SelectValue placeholder="Select a classroom" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                <SelectItem value="Room One">Room One</SelectItem>
-                <SelectItem value="Room Two">Room Two</SelectItem>
-                <SelectItem value="Room Three">Room Three</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {data.bio && (

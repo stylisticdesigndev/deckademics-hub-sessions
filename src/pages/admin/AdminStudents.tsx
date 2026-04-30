@@ -833,6 +833,24 @@ const AdminStudents = () => {
                   </Select>
                 </div>
                 <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Classroom</p>
+                  <Select
+                    value={(viewedStudent as any).class_room || 'unassigned'}
+                    onValueChange={(value) => updateStudentSchedule.mutate({ studentId: viewedStudent.id, class_room: value === 'unassigned' ? null : value })}
+                    disabled={updateStudentSchedule.isPending}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select classroom" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      <SelectItem value="Room One">Room One</SelectItem>
+                      <SelectItem value="Room Two">Room Two</SelectItem>
+                      <SelectItem value="Room Three">Room Three</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Instructor</p>
                   <p className="text-sm font-medium">
                     {viewedStudent.instructor
