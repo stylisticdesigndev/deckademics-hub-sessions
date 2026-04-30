@@ -1,0 +1,78 @@
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/providers/AuthProvider';
+import { useSidebar } from '@/components/ui/sidebar';
+
+interface SidebarUserFooterProps {
+  userType: 'student' | 'instructor' | 'admin';
+}
+
+/**
+ * Shared avatar footer pinned to the very bottom of the expanded desktop sidebar.
+ * Hidden on mobile/tablet (those views keep the in-list "Profile" nav item) and
+ * hidden in slim/collapsed desktop mode (SlimSidebarNav owns the avatar there).
+ */
+export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }) => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { userData, signOut } = useAuth();
+  const { isMobile, state } = useSidebar();
+  const profile = userData.profile;
+  const fallbackName =
+    userType === 'admin' ? 'Admin' : userType === 'instructor' ? 'Instructor' : 'Student';
+  const fullName =
+    `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || fallbackName;
+  const initials =
+    `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() ||
+    fallbackName[0];
+  const profileHref = `/${userType}/profile`;
+
+  // Desktop expanded only.
+  if (isMobile || state !== 'expanded') return null;
+
+  return (
+    <div className="border-t border-sidebar-border px-2 py-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md',
+              pathname === profileHref
+                ? 'bg-deckademics-primary/10 text-deckademics-primary'
+                : 'text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary'
+            )}
+          >
+            <Avatar className="h-7 w-7 -ml-0.5">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
+              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            </Avatar>
+            <span className="flex-1 text-left truncate">{fullName}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="right" className="w-48">
+          <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate(profileHref)}>
+            View Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => signOut()}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
