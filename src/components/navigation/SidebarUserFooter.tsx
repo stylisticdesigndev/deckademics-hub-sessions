@@ -126,7 +126,12 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
             <span className="flex-1 text-left truncate">{fullName}</span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="right" className="w-48">
+        <DropdownMenuContent
+          align={isMobile ? 'start' : 'end'}
+          side={isMobile ? 'top' : 'right'}
+          sideOffset={isMobile ? 8 : 4}
+          className="w-[calc(100vw-2rem)] max-w-xs sm:w-56"
+        >
           {menuItems}
         </DropdownMenuContent>
       </DropdownMenu>
