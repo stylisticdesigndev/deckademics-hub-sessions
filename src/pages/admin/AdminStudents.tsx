@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { useMockUsers } from '@/hooks/useMockUsers';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 import { InstructorAssignmentDialog } from '@/components/admin/instructor-assignment/InstructorAssignmentDialog';
 import ScheduleRequestsList from '@/components/admin/schedule-requests/ScheduleRequestsList';
 import { useScheduleChangeRequests } from '@/hooks/useScheduleChangeRequests';
@@ -402,9 +403,12 @@ const AdminStudents = () => {
                             {student.profile?.email}
                           </TableCell>
                           <TableCell>
-                            {student.instructor ?
-                              `${student.instructor.profile?.first_name} ${student.instructor.profile?.last_name}` :
-                              <span className="text-muted-foreground">Unassigned</span>}
+                            {student.instructor ? (
+                              getInstructorDisplayName(student.instructor.profile) ||
+                              `${student.instructor.profile?.first_name || ''} ${student.instructor.profile?.last_name || ''}`.trim()
+                            ) : (
+                              <span className="text-muted-foreground">Unassigned</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">{student.level}</Badge>
@@ -854,7 +858,8 @@ const AdminStudents = () => {
                   <p className="text-xs text-muted-foreground">Instructor</p>
                   <p className="text-sm font-medium">
                     {viewedStudent.instructor
-                      ? `${viewedStudent.instructor.profile?.first_name} ${viewedStudent.instructor.profile?.last_name}`
+                      ? (getInstructorDisplayName(viewedStudent.instructor.profile) ||
+                         `${viewedStudent.instructor.profile?.first_name || ''} ${viewedStudent.instructor.profile?.last_name || ''}`.trim())
                       : 'Unassigned'}
                   </p>
                 </div>
