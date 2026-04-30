@@ -119,7 +119,7 @@ const StudentProfile = () => {
           if (student.instructor_id) {
             const { data: instructor, error: instructorError } = await supabase
               .from('profiles')
-              .select('first_name, last_name, avatar_url, email, phone, bio, pronouns')
+              .select('first_name, last_name, dj_name, avatar_url, email, phone, bio, pronouns')
               .eq('id', student.instructor_id)
               .single();
             let merged: any = (!instructorError && instructor) ? instructor : null;
