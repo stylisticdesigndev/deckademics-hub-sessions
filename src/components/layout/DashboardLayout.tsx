@@ -33,6 +33,23 @@ const HamburgerButton = () => {
   );
 };
 
+const HeaderHamburger = () => {
+  const { state, isMobile } = useSidebar();
+  // Hide in the header when desktop sidebar is expanded — the in-sidebar hamburger takes over
+  if (!isMobile && state === 'expanded') return null;
+  return <HamburgerButton />;
+};
+
+const ExpandedSidebarHeader = () => {
+  const { state, isMobile } = useSidebar();
+  if (isMobile || state !== 'expanded') return null;
+  return (
+    <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
+      <HamburgerButton />
+    </div>
+  );
+};
+
 export const DashboardLayout = ({ 
   children, 
   sidebarContent,
@@ -55,6 +72,7 @@ export const DashboardLayout = ({
         >
           <SidebarContent className="py-4">
             <SlimSidebarNav userType={userType} />
+            <ExpandedSidebarHeader />
             {sidebarContent}
           </SidebarContent>
         </Sidebar>
@@ -78,7 +96,7 @@ export const DashboardLayout = ({
             )}
             <header className="h-16 flex items-center justify-between px-4 md:px-6">
               <div className="flex items-center gap-2">
-                <HamburgerButton />
+                <HeaderHamburger />
                 <Logo size="header" className="shrink-0" />
               </div>
               <div className="flex items-center gap-2">
