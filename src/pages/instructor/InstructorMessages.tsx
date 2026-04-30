@@ -32,6 +32,7 @@ interface StudentOption {
   name: string;
   initials: string;
   avatarUrl?: string | null;
+  twoWayMessaging?: boolean;
 }
 
 const InstructorMessages = () => {
@@ -69,11 +70,12 @@ const InstructorMessages = () => {
       // Fetch assigned students
       const { data: studentData } = await supabase
         .from('students')
-        .select('id')
+        .select('id, two_way_messaging')
         .eq('instructor_id', session.user.id);
 
       if (studentData && studentData.length > 0) {
         const studentIds = studentData.map(s => s.id);
+        const twoWayMap = new Map(studentData.map((s: any) => [s.id, s.two_way_messaging ?? true]));
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, avatar_url')
@@ -85,6 +87,7 @@ const InstructorMessages = () => {
             name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
             initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
             avatarUrl: p.avatar_url,
+            twoWayMessaging: twoWayMap.get(p.id) ?? true,
           })));
         }
       }
@@ -248,6 +251,29 @@ const InstructorMessages = () => {
   const isLoading = !demoMode && loading;
 
   const activeConvo = activeStudentId ? conversations.find(c => c.studentId === activeStudentId) : null;
+  const activeStudent = activeStudentId ? students.find(s => s.id === activeStudentId) : null;
+
+  const handleToggleTwoWayMessaging = async (next: boolean) => {
+    if (demoMode || !activeStudentId) {
+      toast({ title: 'Demo Mode', description: 'Cannot change settings in demo mode.' });
+      return;
+    }
+    const { error } = await supabase
+      .from('students')
+      .update({ two_way_messaging: next } as any)
+      .eq('id', activeStudentId);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Could not save', description: error.message });
+      return;
+    }
+    setStudents(prev => prev.map(s => s.id === activeStudentId ? { ...s, twoWayMessaging: next } : s));
+    toast({
+      title: next ? 'Replies enabled' : 'Replies disabled',
+      description: next
+        ? 'This student can now reply to your messages.'
+        : 'This student is now read-only — they can receive but not send messages.',
+    });
+  };
 
   // Thread view
   if (activeStudentId && activeConvo) {
@@ -269,6 +295,9 @@ const InstructorMessages = () => {
           onSendReply={handleSendReply}
           onBack={() => setActiveStudentId(null)}
           sending={sending}
+          twoWayMessaging={activeStudent?.twoWayMessaging ?? true}
+          onToggleTwoWayMessaging={handleToggleTwoWayMessaging}
+          canToggleTwoWayMessaging={!demoMode}
         />
       </div>
     );
