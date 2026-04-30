@@ -62,7 +62,8 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
     ? differenceInDays(new Date(), new Date(lastInstructorMsg.sent_at))
     : Infinity;
 
-  const canReply = daysSinceLastInstructor < REPLY_WINDOW_DAYS;
+  const replyWindowOpen = daysSinceLastInstructor < REPLY_WINDOW_DAYS;
+  const canReply = !replyDisabled && (replyWindowOpen || !lastInstructorMsg);
   const daysRemaining = REPLY_WINDOW_DAYS - daysSinceLastInstructor;
 
   const handleSend = async () => {
@@ -200,10 +201,14 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground flex items-center gap-1 px-1">
-            <Clock className="h-3 w-3" />
-            {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left to reply
-          </p>
+          {replyWindowOpen ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 px-1">
+              <Clock className="h-3 w-3" />
+              {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left to reply
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground px-1">Two-way conversations enabled</p>
+          )}
         </div>
       ) : (
         <div className="border-t pt-3">
