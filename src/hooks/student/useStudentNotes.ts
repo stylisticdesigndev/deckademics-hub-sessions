@@ -14,6 +14,7 @@ export interface StudentNote {
   instructor?: {
     first_name: string | null;
     last_name: string | null;
+    dj_name?: string | null;
   };
 }
 
@@ -33,7 +34,8 @@ export const useStudentNotes = (studentId: string | undefined) => {
             id,
             profile:profiles!id (
               first_name,
-              last_name
+              last_name,
+              dj_name
             )
           )
         `)
@@ -48,6 +50,7 @@ export const useStudentNotes = (studentId: string | undefined) => {
         instructor: {
           first_name: note.instructor?.profile?.first_name || null,
           last_name: note.instructor?.profile?.last_name || null,
+          dj_name: (note.instructor?.profile as any)?.dj_name || null,
         }
       })) as StudentNote[];
     },
