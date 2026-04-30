@@ -11,9 +11,11 @@ interface SignupFormProps {
     password: string;
     firstName: string;
     lastName: string;
+    djName: string;
     phone: string;
     pronouns: string;
   };
+  userType?: 'student' | 'instructor' | 'admin';
   isLoading: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
@@ -29,6 +31,7 @@ const PASSWORD_REQUIREMENTS = [
 
 export const SignupForm = ({ 
   formData, 
+  userType,
   isLoading, 
   handleChange, 
   handleSubmit 
@@ -41,7 +44,9 @@ export const SignupForm = ({
   const allPassed = passedCount === PASSWORD_REQUIREMENTS.length;
   const passwordsMatch = formData.password === confirmPassword && confirmPassword.length > 0;
   const hasContact = formData.phone.trim().length > 0 && formData.pronouns.trim().length > 0;
-  const canSubmit = allPassed && passwordsMatch && hasContact && !isLoading;
+  const isInstructor = userType === 'instructor';
+  const hasDjName = !isInstructor || formData.djName.trim().length > 0;
+  const canSubmit = allPassed && passwordsMatch && hasContact && hasDjName && !isLoading;
 
   const getStrengthLabel = () => {
     if (passedCount <= 1) return { label: 'Weak', color: 'text-red-500' };
@@ -101,6 +106,26 @@ export const SignupForm = ({
           </div>
         </div>
       </div>
+
+      {isInstructor && (
+        <div className="space-y-2">
+          <Label htmlFor="djName">DJ Name</Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              id="djName"
+              name="djName"
+              placeholder="DJ Stagename"
+              type="text"
+              required
+              className="pl-10"
+              value={formData.djName}
+              onChange={handleChange}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">This is the name students will see throughout the app.</p>
+        </div>
+      )}
       
       <div className="space-y-2">
         <Label htmlFor="signup-email">Email</Label>
