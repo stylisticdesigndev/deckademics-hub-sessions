@@ -71,11 +71,16 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
     });
   };
 
-  // Suggest students whose normal slot matches the picked date + time
+  // Only show students whose normal class day matches the picked date,
+  // grouped by their time slot. (Cover sessions are logged after the class,
+  // so the instructor only needs to see who normally attends that day.)
   const pickedDayName = date ? DAY_DISPLAY[date.getDay()] : '';
-  const suggested = students.filter(s => s.classDay === pickedDayName && s.classTime === classTime);
-  const suggestedIds = new Set(suggested.map(s => s.id));
-  const others = students.filter(s => !suggestedIds.has(s.id));
+  const studentsForDay = students.filter(s => s.classDay === pickedDayName);
+  const studentsBySlot: Record<string, StudentRow[]> = {};
+  TIME_SLOTS.forEach(slot => {
+    studentsBySlot[slot] = studentsForDay.filter(s => s.classTime === slot);
+  });
+  const unscheduled = studentsForDay.filter(s => !TIME_SLOTS.includes(s.classTime));
 
   const submit = async () => {
     if (!date || !classTime) {
@@ -169,16 +174,36 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Check every student who attended this slot. Even one is fine.
+              Showing students who normally have class on {pickedDayName || 'this day'}.
+              Check off whoever attended.
             </p>
             <ScrollArea className="h-56 rounded-md border">
               <div className="p-2 space-y-1">
-                {suggested.length > 0 && (
-                  <>
-                    <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Suggested for this slot
+                {TIME_SLOTS.map(slot => {
+                  const slotStudents = studentsBySlot[slot];
+                  if (!slotStudents.length) return null;
+                  return (
+                    <div key={slot} className="space-y-0.5">
+                      <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {slot}
+                      </div>
+                      {slotStudents.map(s => (
+                        <StudentCheckRow
+                          key={s.id}
+                          student={s}
+                          checked={selectedIds.has(s.id)}
+                          onToggle={() => toggleStudent(s.id)}
+                        />
+                      ))}
                     </div>
-                    {suggested.map(s => (
+                  );
+                })}
+                {unscheduled.length > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Other
+                    </div>
+                    {unscheduled.map(s => (
                       <StudentCheckRow
                         key={s.id}
                         student={s}
@@ -186,22 +211,11 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
                         onToggle={() => toggleStudent(s.id)}
                       />
                     ))}
-                    <div className="px-2 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      All other students
-                    </div>
-                  </>
+                  </div>
                 )}
-                {others.map(s => (
-                  <StudentCheckRow
-                    key={s.id}
-                    student={s}
-                    checked={selectedIds.has(s.id)}
-                    onToggle={() => toggleStudent(s.id)}
-                  />
-                ))}
-                {students.length === 0 && (
+                {studentsForDay.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-6">
-                    No active students found.
+                    No students normally attend on {pickedDayName || 'this day'}.
                   </div>
                 )}
               </div>
