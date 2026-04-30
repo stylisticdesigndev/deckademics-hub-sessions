@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,7 +42,6 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [classTime, setClassTime] = useState<string>(TIME_SLOTS[0]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -83,8 +81,8 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
   const unscheduled = studentsForDay.filter(s => !TIME_SLOTS.includes(s.classTime));
 
   const submit = async () => {
-    if (!date || !classTime) {
-      toast({ variant: 'destructive', title: 'Missing fields', description: 'Pick a date and time slot.' });
+    if (!date) {
+      toast({ variant: 'destructive', title: 'Missing date', description: 'Pick the date you covered.' });
       return;
     }
     if (selectedIds.size === 0) {
@@ -96,11 +94,12 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
       return;
     }
     setSaving(true);
+    const studentById = new Map(students.map(s => [s.id, s]));
     const rows = Array.from(selectedIds).map(sid => ({
       student_id: sid,
       cover_instructor_id: instructorId,
       class_date: format(date, 'yyyy-MM-dd'),
-      class_time: classTime,
+      class_time: studentById.get(sid)?.classTime || '',
       created_by: instructorId,
     }));
     const { error } = await supabase
@@ -156,15 +155,6 @@ export function AddCoverSessionDialog({ instructorId, onCreated }: AddCoverSessi
                 }}
               />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Time slot</Label>
-            <Select value={classTime} onValueChange={setClassTime}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIME_SLOTS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
-            </Select>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
