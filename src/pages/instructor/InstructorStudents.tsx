@@ -406,11 +406,11 @@ const InstructorStudents = () => {
               <TabsContent value="list">
                 {/* Desktop table view */}
                 <div className="rounded-md border hidden md:block">
-                  <div className="grid grid-cols-9 gap-3 p-4 font-medium border-b text-sm">
+                  <div className="grid grid-cols-12 gap-3 p-4 font-medium border-b text-sm">
                     <div className="col-span-3">STUDENT</div>
-                    <div className="col-span-2 pl-0 pr-4">PROGRESS</div>
-                    <div className="col-span-2 text-center">LEVEL</div>
-                    <div className="col-span-2 text-center">ACTIONS</div>
+                    <div className="col-span-5 pl-0 pr-4">PROGRESS</div>
+                    <div className="col-span-2 text-right pr-2">LEVEL</div>
+                    <div className="col-span-2 text-right pr-2">ACTIONS</div>
                   </div>
                   
                   {!demoMode && loading ? (
@@ -422,7 +422,7 @@ const InstructorStudents = () => {
                       {filteredStudents.map((student) => (
                         <div 
                           key={student.id}
-                          className="grid grid-cols-9 gap-3 p-4 border-b last:border-b-0 items-center text-sm hover:bg-muted/30"
+                          className="grid grid-cols-12 gap-3 p-4 border-b last:border-b-0 items-center text-sm hover:bg-muted/30"
                         >
                           <div 
                             className="col-span-3 flex items-center gap-3 cursor-pointer"
@@ -445,14 +445,14 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-2 flex items-center gap-2 pl-0 pr-4">
+                          <div className="col-span-5 flex items-center gap-2 pl-0 pr-4">
                             <Progress value={student.progress} className="h-2 flex-grow" />
                             <span className="text-xs font-medium ml-2 w-8 text-right">
                               {student.progress}%
                             </span>
                           </div>
                           
-                          <div className="col-span-2 flex justify-center">
+                          <div className="col-span-2 flex justify-end pr-2">
                             <div
                               className="relative z-10 touch-manipulation"
                               onClick={(e) => e.stopPropagation()}
@@ -483,7 +483,7 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-2 flex justify-center">
+                          <div className="col-span-2 flex justify-end pr-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
