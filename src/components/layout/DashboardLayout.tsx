@@ -34,9 +34,9 @@ const HamburgerButton = () => {
 };
 
 const HeaderHamburger = () => {
-  const { state, isMobile } = useSidebar();
-  // Hide in the header when desktop sidebar is expanded — the in-sidebar hamburger takes over
-  if (!isMobile && state === 'expanded') return null;
+  const { isMobile } = useSidebar();
+  // Only show in the header on mobile — desktop expanded/slim both have an in-sidebar hamburger
+  if (!isMobile) return null;
   return <HamburgerButton />;
 };
 
