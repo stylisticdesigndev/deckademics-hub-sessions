@@ -118,7 +118,7 @@ export function useUpcomingClasses() {
               date: formatDateUS(startTime),
               time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               duration: `${durationHours}h ${durationMinutes}m`,
-              location: cls.location || 'Main Studio',
+              location: cls.location || 'Not assigned',
               attendees: 0,
               isUpcoming: true,
             };
