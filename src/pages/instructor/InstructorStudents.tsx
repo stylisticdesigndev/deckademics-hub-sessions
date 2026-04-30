@@ -530,15 +530,6 @@ const InstructorStudents = () => {
                               <div className="font-medium truncate">{student.name}</div>
                               <div className="text-muted-foreground text-xs truncate">{student.email}</div>
                             </div>
-                            <Badge variant="outline" className={cn(
-                              "shrink-0",
-                              student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
-                              student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
-                              student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
-                              student.level.toLowerCase() === 'advanced' && "border-purple-500/50 text-purple-500"
-                            )}>
-                              {student.level.charAt(0).toUpperCase() + student.level.slice(1)}
-                            </Badge>
                           </div>
                           <div className="flex items-center gap-2">
                             <Progress value={student.progress} className="h-2 flex-grow" />
