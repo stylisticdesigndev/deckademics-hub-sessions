@@ -28,6 +28,7 @@ import StudentDashboardGate from "./pages/student/StudentDashboardGate";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentClasses from "./pages/student/StudentClasses";
 import StudentMessages from "./pages/student/StudentMessages";
+import StudentAnnouncements from "./pages/student/StudentAnnouncements";
 import StudentProfile from "./pages/student/StudentProfile";
 import StudentNotes from "./pages/student/StudentNotes";
 
@@ -112,6 +113,7 @@ const App = () => (
             <Route path="/student/notes" element={<StudentNotes />} />
             <Route path="/student/classes" element={<StudentClasses />} />
             <Route path="/student/messages" element={<StudentMessages />} />
+            <Route path="/student/announcements" element={<StudentAnnouncements />} />
             <Route path="/student/profile" element={<StudentProfile />} />
           </Route>
         </Route>
