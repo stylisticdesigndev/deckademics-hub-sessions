@@ -217,24 +217,30 @@ export function useStudentClassAttendance() {
     try {
       const dateStr = absenceDate.toISOString().split('T')[0];
 
-      // Insert into student_absences
-      const { error: absenceError } = await supabase
-        .from('student_absences' as any)
-        .insert({
-          student_id: studentId,
-          class_id: classId,
-          absence_date: dateStr,
-          reason: reason || null,
-        });
+      // The synthetic 'schedule' id is not a real UUID — don't send it to UUID columns.
+      const realClassId = classId && classId !== 'schedule' ? classId : null;
 
-      if (absenceError) throw absenceError;
+      // Insert into student_absences
+      // student_absences.class_id is NOT NULL, so only insert there if we have a real class id.
+      if (realClassId) {
+        const { error: absenceError } = await supabase
+          .from('student_absences' as any)
+          .insert({
+            student_id: studentId,
+            class_id: realClassId,
+            absence_date: dateStr,
+            reason: reason || null,
+          });
+
+        if (absenceError) throw absenceError;
+      }
 
       // Insert into attendance table so instructor/admin see it
       const { error: attendanceError } = await supabase
         .from('attendance')
         .insert({
           student_id: studentId,
-          class_id: classId,
+          class_id: realClassId,
           date: dateStr,
           status: 'absent',
           notes: reason ? `Student marked absent: ${reason}` : 'Student marked absent',
@@ -245,7 +251,7 @@ export function useStudentClassAttendance() {
       // Update local state
       setAttendanceRecords(prev => [
         ...prev,
-        { date: dateStr, status: 'absent', classId },
+        { date: dateStr, status: 'absent', classId: realClassId || classId },
       ]);
 
       toast({
@@ -253,9 +259,10 @@ export function useStudentClassAttendance() {
         description: 'Your instructor has been notified. This class will be available for makeup.',
       });
     } catch (error: any) {
+      if (import.meta.env.DEV) console.error('markAbsent error:', error);
       toast({
         title: 'Error',
-        description: 'Something went wrong. Please try again.',
+        description: error?.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
