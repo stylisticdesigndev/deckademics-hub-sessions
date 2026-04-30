@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, EyeOff, Mail, Megaphone, Inbox } from 'lucide-react';
+import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { AnnouncementCard, type Announcement } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
-import { formatDateUS, formatDateTimeUS } from '@/lib/utils';
+import { formatDateUS } from '@/lib/utils';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
 import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
 import { mockStudentConversations, mockStudentMessages } from '@/data/mockDashboardData';
@@ -44,61 +41,15 @@ interface Conversation {
   unreadCount: number;
 }
 
-interface AuthorProfile {
-  first_name?: string;
-  last_name?: string;
-}
-
-interface AnnouncementReadRecord {
-  id: string;
-  read_at: string | null;
-  user_id: string;
-  dismissed?: boolean;
-}
-
-type StudentAnnouncement = Announcement & {
-  publishedAt: string;
-};
-
-type RecentFeedItem =
-  | { type: 'conversation'; data: Conversation; sortDate: Date }
-  | { type: 'announcement'; data: StudentAnnouncement; sortDate: Date };
-
-const demoAnnouncements: StudentAnnouncement[] = [
-  {
-    id: 'demo-1',
-    title: 'Spring Showcase Performance — Sign Up Now!',
-    content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set.',
-    date: formatDateUS(new Date()),
-    publishedAt: new Date().toISOString(),
-    instructor: { name: 'Admin', initials: 'DA' },
-    isNew: true,
-    type: 'event',
-  },
-  {
-    id: 'demo-2',
-    title: 'New Equipment in Classroom B',
-    content: "We've upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.",
-    date: formatDateUS(new Date(Date.now() - 2 * 86400000)),
-    publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    instructor: { name: 'DJ Marcus', initials: 'DM' },
-    isNew: true,
-    type: 'announcement',
-  },
-];
-
 const StudentMessages = () => {
   const { session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
-  const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
   const [demoMode, setDemoMode] = useState(false);
-  const [announcementFilter, setAnnouncementFilter] = useState('all');
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
   const [twoWayEnabled, setTwoWayEnabled] = useState<boolean>(true);
 
@@ -109,10 +60,7 @@ const StudentMessages = () => {
 
   useEffect(() => {
     if (isDemoMode) {
-      setAnnouncements(demoAnnouncements);
-      setAllMessages(
-        Object.values(mockStudentMessages).flat() as Message[]
-      );
+      setAllMessages(Object.values(mockStudentMessages).flat() as Message[]);
       setInstructors(
         mockStudentConversations.map(c => ({
           id: c.instructorId,
@@ -131,6 +79,7 @@ const StudentMessages = () => {
           if (data) setTwoWayEnabled(data.two_way_messaging !== false);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemoMode]);
 
   // Realtime: keep two_way_messaging in sync when instructor flips the toggle
@@ -161,49 +110,6 @@ const StudentMessages = () => {
 
     try {
       setLoading(true);
-
-      const { data: annData } = await supabase
-        .from('announcements')
-        .select(`
-          id, title, content, published_at, author_id, type,
-          profiles:author_id (first_name, last_name),
-          announcement_reads!left (id, read_at, user_id, dismissed)
-        `)
-        .contains('target_role', ['student'])
-        .order('published_at', { ascending: false });
-
-      if (annData && annData.length > 0) {
-        const visibleAnnouncements = annData.reduce((items: StudentAnnouncement[], ann: any) => {
-          const authorProfile = ann.profiles as AuthorProfile;
-          const readRecords: AnnouncementReadRecord[] = Array.isArray(ann.announcement_reads)
-            ? ann.announcement_reads.filter((record: AnnouncementReadRecord) => record.user_id === user.id)
-            : [];
-
-          if (readRecords.some(record => record.dismissed)) {
-            return items;
-          }
-
-          items.push({
-            id: ann.id,
-            title: ann.title || 'Announcement',
-            content: ann.content || '',
-            date: formatDateUS(ann.published_at),
-            publishedAt: ann.published_at,
-            instructor: {
-              name: authorProfile ? `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() : 'Admin',
-              initials: authorProfile ? `${(authorProfile.first_name || ' ')[0]}${(authorProfile.last_name || ' ')[0]}`.trim().toUpperCase() : 'A',
-            },
-            isNew: readRecords.length === 0,
-            type: ann.type || 'announcement',
-          });
-
-          return items;
-        }, []);
-
-        setAnnouncements(visibleAnnouncements);
-      } else {
-        setAnnouncements([]);
-      }
 
       const { data: msgData } = await supabase
         .from('messages')
@@ -279,23 +185,6 @@ const StudentMessages = () => {
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
   }, [allMessages, instructors, userId, isDemoMode]);
 
-  const recentItems = useMemo((): RecentFeedItem[] => {
-    return [
-      ...conversations.map(conversation => ({
-        type: 'conversation' as const,
-        data: conversation,
-        sortDate: new Date(conversation.lastMessageAt),
-      })),
-      ...announcements.map(announcement => ({
-        type: 'announcement' as const,
-        data: announcement,
-        sortDate: new Date(announcement.publishedAt),
-      })),
-    ]
-      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
-      .slice(0, 5);
-  }, [announcements, conversations]);
-
   const threadMessages = useMemo(() => {
     if (!activeInstructorId || !userId) return [];
 
@@ -324,45 +213,6 @@ const StudentMessages = () => {
 
     markRead();
   }, [activeInstructorId, isDemoMode, queryClient, threadMessages, userId]);
-
-  const saveAnnouncementReadState = async (
-    announcementId: string,
-    values: { read_at?: string; dismissed?: boolean },
-  ) => {
-    if (!userId) return;
-
-    const { data: existingRecords, error: existingError } = await supabase
-      .from('announcement_reads')
-      .select('id')
-      .eq('announcement_id', announcementId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (existingError) throw existingError;
-
-    const existingRecord = existingRecords?.[0];
-
-    if (existingRecord) {
-      const { error: updateError } = await supabase
-        .from('announcement_reads')
-        .update(values)
-        .eq('id', existingRecord.id);
-
-      if (updateError) throw updateError;
-      return;
-    }
-
-    const { error: insertError } = await supabase
-      .from('announcement_reads')
-      .insert({
-        announcement_id: announcementId,
-        user_id: userId,
-        ...values,
-      });
-
-    if (insertError) throw insertError;
-  };
 
   const handleSaveToNotes = (msg: { id: string; content: string; sent_at: string; image_url?: string | null }) => {
     if (isDemoMode) {
@@ -406,46 +256,6 @@ const StudentMessages = () => {
     }
   };
 
-  const handleMarkAnnouncementAsRead = async (id: string) => {
-    if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => prev.map(announcement => announcement.id === id ? { ...announcement, isNew: false } : announcement));
-      toast({ title: 'Marked as read' });
-      return;
-    }
-
-    try {
-      await saveAnnouncementReadState(id, { read_at: new Date().toISOString(), dismissed: false });
-      setAnnouncements(prev => prev.map(announcement => announcement.id === id ? { ...announcement, isNew: false } : announcement));
-      toast({ title: 'Marked as read' });
-    } catch {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark announcement as read.' });
-    }
-  };
-
-  const handleDismissAnnouncement = async (id: string) => {
-    if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
-      toast({ title: 'Announcement removed' });
-      return;
-    }
-
-    try {
-      await saveAnnouncementReadState(id, {
-        read_at: new Date().toISOString(),
-        dismissed: true,
-      });
-      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
-      toast({ title: 'Announcement removed' });
-    } catch {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove announcement.' });
-    }
-  };
-
-  const filteredAnnouncements = announcementFilter === 'all'
-    ? announcements
-    : announcements.filter(announcement => announcement.type === announcementFilter);
-
-  const totalUnread = conversations.reduce((sum, conversation) => sum + conversation.unreadCount, 0);
   const activeConvo = activeInstructorId ? conversations.find(conversation => conversation.instructorId === activeInstructorId) : null;
 
   if (activeInstructorId && activeConvo) {
@@ -478,9 +288,9 @@ const StudentMessages = () => {
     <div className="space-y-6">
       <section className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Messages & Updates</h1>
+          <h1 className="text-2xl font-bold">Messages</h1>
           <p className="text-muted-foreground mt-1">
-            View messages from your instructors and school announcements
+            Conversations with your instructors
           </p>
         </div>
         {session && (
@@ -508,109 +318,22 @@ const StudentMessages = () => {
         <div className="text-center py-12">
           <p className="text-muted-foreground">Loading messages...</p>
         </div>
+      ) : conversations.length > 0 ? (
+        <div className="space-y-3">
+          {conversations.map(conversation => (
+            <ConversationItem
+              key={conversation.instructorId}
+              conversation={conversation}
+              onClick={() => setActiveInstructorId(conversation.instructorId)}
+            />
+          ))}
+        </div>
       ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <Inbox className="h-4 w-4" />
-              All
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Messages
-              {totalUnread > 0 && (
-                <Badge variant="default" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1.5 text-xs">
-                  {totalUnread}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="announcements" className="flex items-center gap-2">
-              <Megaphone className="h-4 w-4" />
-              Announcements
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all">
-            {recentItems.length > 0 ? (
-              <div className="space-y-3 mt-4">
-                {recentItems.map(item =>
-                  item.type === 'conversation' ? (
-                    <ConversationItem
-                      key={item.data.instructorId}
-                      conversation={item.data}
-                      onClick={() => setActiveInstructorId(item.data.instructorId)}
-                    />
-                  ) : (
-                    <AnnouncementCard
-                      key={item.data.id}
-                      announcement={item.data}
-                      onAcknowledge={handleMarkAnnouncementAsRead}
-                      onDismiss={handleDismissAnnouncement}
-                    />
-                  )
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium">No messages or announcements yet</h3>
-                <p className="text-muted-foreground mt-2">Updates from your instructors and school will appear here.</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="messages">
-            {conversations.length > 0 ? (
-              <div className="space-y-3 mt-4">
-                {conversations.map(conversation => (
-                  <ConversationItem
-                    key={conversation.instructorId}
-                    conversation={conversation}
-                    onClick={() => setActiveInstructorId(conversation.instructorId)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Mail className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium">No conversations yet</h3>
-                <p className="text-muted-foreground mt-2">Messages from your instructor will appear here.</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="announcements">
-            <div className="mt-4 space-y-4">
-              <Tabs value={announcementFilter} onValueChange={setAnnouncementFilter}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="event">Events</TabsTrigger>
-                  <TabsTrigger value="announcement">Announcements</TabsTrigger>
-                  <TabsTrigger value="update">Updates</TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {filteredAnnouncements.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredAnnouncements.map(announcement => (
-                    <AnnouncementCard
-                      key={announcement.id}
-                      announcement={announcement}
-                      onAcknowledge={handleMarkAnnouncementAsRead}
-                      onDismiss={handleDismissAnnouncement}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-medium">No announcements yet</h3>
-                  <p className="text-muted-foreground mt-2">School announcements will appear here.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-xl font-medium">No conversations yet</h3>
+          <p className="text-muted-foreground mt-2">Messages from your instructor will appear here.</p>
+        </div>
       )}
     </div>
   );
