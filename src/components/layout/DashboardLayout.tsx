@@ -43,7 +43,16 @@ const HeaderHamburger = () => {
 
 const ExpandedSidebarHeader = () => {
   const { state, isMobile } = useSidebar();
-  if (isMobile || state !== 'expanded') return null;
+  if (state !== 'expanded' && !isMobile) return null;
+  // Mobile sheet: show the logo at the top of the sidebar (no hamburger — sheet has its own close).
+  if (isMobile) {
+    return (
+      <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
+        <Logo size="header" />
+      </div>
+    );
+  }
+  // Desktop expanded: in-sidebar hamburger to collapse to slim mode.
   return (
     <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
       <HamburgerButton />
@@ -99,7 +108,8 @@ export const DashboardLayout = ({
             <header className="h-16 flex items-center justify-between px-4 md:pl-3 md:pr-6">
               <div className="flex items-center gap-2">
                 <HeaderHamburger />
-                <Logo size="header" className="shrink-0 -ml-2 md:-ml-1" />
+                {/* Logo only in the desktop header — on mobile it lives inside the sidebar sheet */}
+                <Logo size="header" className="shrink-0 -ml-2 md:-ml-1 hidden md:block" />
               </div>
               <div className="flex items-center gap-2">
                 {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
