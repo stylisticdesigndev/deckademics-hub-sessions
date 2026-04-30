@@ -8,14 +8,23 @@ import {
   Calendar,
   ClipboardCheck,
   MessageSquare,
-  UserCog,
   Bell,
   BookOpen,
   ShieldCheck,
-  Wallet
+  Wallet,
+  LogOut,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useAuth } from '@/providers/AuthProvider';
 import { isAdminUser } from '@/constants/adminPermissions';
@@ -24,9 +33,12 @@ import { useSidebar } from '@/components/ui/sidebar';
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { userData } = useAuth();
+  const { userData, signOut } = useAuth();
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
+  const profile = userData.profile;
+  const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Instructor';
+  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() || 'I';
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
@@ -41,7 +53,6 @@ export const InstructorNavigation = () => {
     { title: "My Payment", icon: Wallet, href: "/instructor/ledger" },
     { title: "Messages", icon: MessageSquare, href: "/instructor/messages", badge: unreadMsgCount },
     { title: "Announcements", icon: Bell, href: "/instructor/announcements" },
-    { title: "Profile", icon: UserCog, href: "/instructor/profile" },
   ];
 
   if (!isMobile && state === 'collapsed') return null;
@@ -69,6 +80,38 @@ export const InstructorNavigation = () => {
           )}
         </Link>
       ))}
+
+      {/* Profile avatar — replaces the Profile nav item in expanded view */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md",
+              pathname === '/instructor/profile'
+                ? "bg-deckademics-primary/10 text-deckademics-primary"
+                : "text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary"
+            )}
+          >
+            <Avatar className="h-7 w-7 -ml-0.5">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
+              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            </Avatar>
+            <span className="flex-1 text-left truncate">{fullName}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="right" className="w-48">
+          <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => { closeMobileNav(); navigate('/instructor/profile'); }}>
+            View Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { closeMobileNav(); signOut(); }}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Admin Portal button — only visible for authorized admin users */}
       {isAdminUser(userEmail) && (
