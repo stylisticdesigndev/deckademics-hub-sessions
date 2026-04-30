@@ -12,7 +12,7 @@ interface DemoNote {
   content: string;
   is_read: boolean;
   created_at: string;
-  instructor?: { first_name: string | null; last_name: string | null };
+  instructor?: { first_name: string | null; last_name: string | null; dj_name?: string | null };
 }
 
 interface NotesSectionProps {
@@ -112,11 +112,13 @@ export const NotesSection = ({ studentId, demoNotes }: NotesSectionProps) => {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
-                  {note.instructor?.first_name && (
+                  {(note.instructor?.dj_name || note.instructor?.first_name) && (
                     <>
                       <span>•</span>
                       <span>
-                        {note.instructor.first_name} {note.instructor.last_name}
+                        {note.instructor?.dj_name?.trim()
+                          ? note.instructor.dj_name
+                          : `${note.instructor?.first_name || ''} ${note.instructor?.last_name || ''}`.trim()}
                       </span>
                     </>
                   )}
