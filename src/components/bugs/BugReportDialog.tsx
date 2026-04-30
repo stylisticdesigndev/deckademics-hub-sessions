@@ -205,7 +205,7 @@ export const BugReportDialog = ({ triggerVariant = 'button' }: BugReportDialogPr
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={submitting || !title.trim() || !description.trim()}>
               {submitting ? 'Submitting...' : 'Submit Report'}
