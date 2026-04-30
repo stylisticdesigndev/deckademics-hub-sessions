@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
+import { isAdminUser } from '@/constants/adminPermissions';
 
 interface SidebarUserFooterProps {
   userType: 'student' | 'instructor' | 'admin';
@@ -29,6 +30,9 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
   const { userData, signOut } = useAuth();
   const { isMobile, state } = useSidebar();
   const profile = userData.profile;
+  const userEmail = profile?.email;
+  // Show "Admin Portal" entry only for instructor-admins (not when already in admin view).
+  const showAdminPortal = userType !== 'admin' && isAdminUser(userEmail);
   const fallbackName =
     userType === 'admin' ? 'Admin' : userType === 'instructor' ? 'Instructor' : 'Student';
   const fullName =
@@ -37,6 +41,33 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
     `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() ||
     fallbackName[0];
   const profileHref = `/${userType}/profile`;
+
+  const menuItems = (
+    <>
+      <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => navigate(profileHref)}>
+        View Profile
+      </DropdownMenuItem>
+      {showAdminPortal && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => navigate('/admin/dashboard')}
+            className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+          >
+            <ShieldCheck className="h-4 w-4 mr-2" />
+            Admin Portal
+          </DropdownMenuItem>
+        </>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => signOut()}>
+        <LogOut className="h-4 w-4 mr-2" />
+        Logout
+      </DropdownMenuItem>
+    </>
+  );
 
   // Desktop only (expanded or slim).
   if (isMobile) return null;
@@ -63,15 +94,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="right" className="w-48">
-            <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate(profileHref)}>
-              View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => signOut()}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
+            {menuItems}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -99,15 +122,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="right" className="w-48">
-          <DropdownMenuLabel className="truncate">{fullName}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate(profileHref)}>
-            View Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => signOut()}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </DropdownMenuItem>
+          {menuItems}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
