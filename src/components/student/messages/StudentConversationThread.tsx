@@ -178,7 +178,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
         <div className="border-t pt-3">
           <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-muted-foreground text-sm">
             <Lock className="h-4 w-4" />
-            <span>Read-only — your instructor has disabled replies. You'll still receive their messages.</span>
+            <span>Replies aren't enabled for this thread. You'll still receive messages from your instructor.</span>
           </div>
         </div>
       ) : canReply ? (
