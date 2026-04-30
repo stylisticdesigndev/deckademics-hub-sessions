@@ -32,6 +32,7 @@ export interface Student {
   skillProgress?: SkillProgress[];
   classDay?: string;
   classTime?: string;
+  classRoom?: string | null;
   phone?: string | null;
   pronouns?: string | null;
   bio?: string | null;
@@ -46,6 +47,7 @@ interface StudentWithProfile {
   notes: string | null;
   class_day: string | null;
   class_time: string | null;
+  class_room: string | null;
   enrollment_status: string | null;
   profiles: {
     first_name: string;
@@ -96,6 +98,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             notes,
             class_day,
             class_time,
+            class_room,
             enrollment_status,
             profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns, bio)
           `)
@@ -222,6 +225,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             skillProgress,
             classDay: student.class_day || undefined,
             classTime: student.class_time || undefined,
+            classRoom: student.class_room || null,
             phone: profile?.phone || null,
             pronouns: profile?.pronouns || null,
             bio: profile?.bio || null,
