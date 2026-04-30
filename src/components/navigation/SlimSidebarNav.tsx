@@ -43,7 +43,7 @@ export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
         <Menu className="h-5 w-5" />
       </button>
 
-      <Link to={dashboardHref} className={itemClass(pathname === dashboardHref)} aria-label="Dashboard">
+      <Link to={dashboardHref} className={cn(itemClass(pathname === dashboardHref), 'mt-3')} aria-label="Dashboard">
         <LayoutDashboard className="h-5 w-5" />
       </Link>
 
