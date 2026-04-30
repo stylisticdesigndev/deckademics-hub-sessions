@@ -37,7 +37,7 @@ export const AdminNavigation = () => {
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
   const showPayroll = canAccessPayroll(userEmail);
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
 
   const { data: studentCounts } = useQuery({
@@ -111,6 +111,8 @@ export const AdminNavigation = () => {
     { title: "Profile", icon: UserCog, href: "/admin/profile" },
     { title: "Settings", icon: Settings, href: "/admin/settings" },
   ];
+
+  if (!isMobile && state === 'collapsed') return null;
 
   return (
     <div className="space-y-1.5">

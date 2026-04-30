@@ -6,8 +6,6 @@ import { FeatureRequestDialog } from '@/components/features/FeatureRequestDialog
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
@@ -15,11 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo/Logo';
 import { useAuth } from '@/providers/AuthProvider';
-import { LogOut, Settings, User, ShieldAlert, Menu } from 'lucide-react';
+import { LogOut, ShieldAlert, Menu } from 'lucide-react';
 import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -50,74 +47,17 @@ export const DashboardLayout = ({
     signOut();
   };
 
-  const getUserInitials = () => {
-    if (userData.profile) {
-      const first = userData.profile.first_name?.charAt(0) || '';
-      const last = userData.profile.last_name?.charAt(0) || '';
-      return (first + last).toUpperCase();
-    }
-    return userType?.charAt(0).toUpperCase() || 'U';
-  };
-
-  const getUserName = () => {
-    if (userData.profile) {
-      return `${userData.profile.first_name || ''} ${userData.profile.last_name || ''}`.trim();
-    }
-    return userType ? `${userType.charAt(0).toUpperCase() + userType.slice(1)} User` : 'User';
-  };
-
-  const handleProfileClick = () => {
-    if (userType === 'admin') {
-      navigate('/admin/settings');
-    } else {
-      navigate(`/${userType}/profile`);
-    }
-  };
-
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full overflow-hidden">
-        <Sidebar className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}>
-          <SidebarHeader className="min-h-16 border-b border-sidebar-border justify-center px-4 py-3">
-            <Logo size="header" className="shrink-0" />
-          </SidebarHeader>
+        <Sidebar
+          collapsible="icon"
+          className={isAdminMode ? '[&>div]:bg-red-950/40 [&>div]:border-red-900/30' : ''}
+        >
           <SidebarContent className="py-4">
+            <SlimSidebarNav userType={userType} />
             {sidebarContent}
           </SidebarContent>
-          <SidebarFooter className="p-4 border-t border-sidebar-border">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Avatar>
-                  <AvatarImage src={userData.profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-deckademics-primary/20 text-deckademics-primary">
-                    {getUserInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{getUserName()}</p>
-                  <p className="text-xs text-muted-foreground">{userType.charAt(0).toUpperCase() + userType.slice(1)}</p>
-                </div>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleProfileClick}>
-                    <User className="mr-2 h-4 w-4" />
-                    {userType === 'admin' ? 'Settings' : 'Profile'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </SidebarFooter>
         </Sidebar>
         <div className="flex-1 overflow-auto">
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
@@ -141,6 +81,7 @@ export const DashboardLayout = ({
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />
                 <MobileMenuButton />
+                <Logo size="header" className="shrink-0" />
               </div>
               <div className="flex items-center gap-2">
                 {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}

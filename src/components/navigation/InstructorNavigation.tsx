@@ -27,8 +27,10 @@ export const InstructorNavigation = () => {
   const { userData } = useAuth();
   const userId = userData.user?.id;
   const userEmail = userData.profile?.email;
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
+
+  if (!isMobile && state === 'collapsed') return null;
 
   const { data: unreadMsgCount = 0 } = useUnreadMessagesCount(userId);
 
