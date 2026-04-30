@@ -1,62 +1,58 @@
 ## Goal
 
-Stop iOS Safari from auto-zooming when the user taps an input, textarea, or select anywhere in the app — student, instructor, and admin sides.
+When a student marks themselves absent, mirror the "I'm Running Late" pattern:
+1. Save the absence (already happens).
+2. Send an automated message into the instructor's Messages with the student's reason.
+3. Trigger an in-app alert/push to the instructor via an edge function.
 
-## Why this happens
+## Behavior
 
-iOS Safari auto-zooms into any focused form control whose computed font size is **smaller than 16px**. Several of our base UI components currently render at 14px (`text-sm`) on mobile:
+- Toast to student updates to: *"Instructor notified. Your absence and message have been sent."*
+- Instructor receives a new message in their Messages inbox titled **"Marked Absent"** with content:
+  - With reason: `Heads up — I won't be at class on MM/DD/YYYY. Reason: <reason>`
+  - Without reason: `Heads up — I won't be at class on MM/DD/YYYY.`
+- Instructor's notification badge increments (it already polls unread messages, so no extra wiring needed there).
+- Edge function logs the dispatch and is wired for future FCM/APNs push.
 
-- `Textarea` — always `text-sm` (this matches the Bug Report screen recording you sent)
-- `Select` trigger — always `text-sm`
-- `Input` — already correct on mobile (`text-base` then `md:text-sm`), but a few places override it with `text-sm` directly
+## Technical changes
 
-The viewport meta tag is fine and we will **not** lock zoom with `maximum-scale=1` — that's an accessibility anti-pattern and breaks pinch-to-zoom for users who need it. The real fix is making the controls themselves big enough that iOS has no reason to zoom.
+**1. `src/hooks/student/useStudentClassAttendance.ts` — `markAbsent`**
 
-## Changes
+After the existing `attendance` insert succeeds:
+- Look up the student's `instructor_id` and profile name from the `students` + `profiles` tables (same query shape as `RunningLateButton`).
+- If instructor exists, insert into `messages`:
+  ```ts
+  { sender_id: studentId, receiver_id: instructorId,
+    subject: 'Marked Absent',
+    content: reason
+      ? `Heads up — I won't be at class on ${formatDateUS(absenceDate)}. Reason: ${reason}`
+      : `Heads up — I won't be at class on ${formatDateUS(absenceDate)}.` }
+  ```
+- Best-effort `supabase.functions.invoke('notify-instructor-absence', { body: { instructor_id, student_id, student_name, absence_date, reason } })` wrapped in try/catch (don't fail the flow if push fails).
+- Update toast copy.
 
-### 1. Base UI primitives (the bulk of the fix)
+**2. New edge function `supabase/functions/notify-instructor-absence/index.ts`**
 
-Update three files so they render 16px on mobile and 14px from the `md` breakpoint up — same pattern `Input` already uses:
+Clone of `notify-instructor-late`:
+- Verify auth bearer.
+- Read instructor `notification_preferences`.
+- Log dispatch with student name, date, reason.
+- Returns `{ ok: true, delivered: ['in_app_message'], pending: ['os_push_notification'] }`.
+- Auto-deployed; no secrets needed (uses existing `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_ANON_KEY`).
+- Add to `supabase/config.toml` if needed (check existing entries pattern).
 
-- `src/components/ui/textarea.tsx` — change `text-sm` → `text-base md:text-sm`
-- `src/components/ui/select.tsx` — change `SelectTrigger` `text-sm` → `text-base md:text-sm`
-- `src/components/ui/input.tsx` — already correct, leave alone
+**3. RLS — no changes needed**
 
-This single change fixes the vast majority of inputs across student, instructor, and admin pages because nearly everything uses these primitives.
+- `messages` already allows `sender_id = auth.uid()` insert.
+- `student_absences` / `attendance` insert policies already in place.
 
-### 2. Direct overrides that re-introduce the bug
+## Files modified / created
 
-Audit the handful of places that override the primitive with `text-sm` or `text-xs` and apply the same `text-base md:text-sm` pattern (or remove the override):
+- Modify: `src/hooks/student/useStudentClassAttendance.ts`
+- Create: `supabase/functions/notify-instructor-absence/index.ts`
+- Modify (if needed): `supabase/config.toml` to register the new function
 
-- `src/components/instructor/students/InstructorStudentDetailDialog.tsx` — task title `Input` and description `Textarea` (`text-sm`)
-- `src/pages/admin/AdminBugReports.tsx` — `SelectTrigger` `text-xs`
-- `src/pages/admin/AdminFeatureRequests.tsx` — `SelectTrigger` `text-xs`
-- `src/pages/admin/AdminSkills.tsx` — raw `<input>` styled with `text-sm`
+## Out of scope
 
-(Plain text labels using `text-sm` are not affected — only editable form controls trigger the zoom.)
-
-### 3. Quick sweep for any `<input>` / `<textarea>` / `<select>` not using the primitives
-
-Scan once for raw HTML form elements with small text classes and fix any stragglers the same way.
-
-### 4. Optional safety net (CSS)
-
-Add a single utility rule in `src/index.css` so any future input that slips through still won't trigger zoom:
-
-```css
-@media (max-width: 767px) {
-  input, textarea, select { font-size: 16px; }
-}
-```
-
-Desktop styling (`md:text-sm` etc.) remains unaffected because the rule only applies below the `md` breakpoint.
-
-## What stays the same
-
-- No change to the viewport meta tag — pinch-to-zoom remains enabled for accessibility.
-- No visual change on desktop — all controls still render at 14px from `md` up.
-- No change to non-editable text (labels, badges, table cells) — those don't cause zoom and shrinking them keeps mobile density.
-
-## Verification
-
-After the change I'll spot-check the two flows from your recordings (Bug Report textarea, login/auth inputs) plus a representative form on each side: instructor Add Cover Session dialog, admin Create Payment dialog, student Profile.
+- Real OS push notifications (FCM/APNs) — same future hook as running-late.
+- Notifying cover instructors or secondary instructors — only the primary `students.instructor_id` is messaged, matching the running-late behavior.
