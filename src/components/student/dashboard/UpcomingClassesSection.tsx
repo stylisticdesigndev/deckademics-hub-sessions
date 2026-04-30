@@ -7,7 +7,7 @@ import { formatDateUS } from '@/lib/utils';
 
 interface UpcomingClassesSectionProps {
   classes: ClassSession[];
-  onAddToCalendar: (id: string) => void;
+  onAddToCalendar?: (id: string) => void;
   studentId?: string;
   demoMode?: boolean;
 }
@@ -46,7 +46,7 @@ const isWithinLateWindow = (session: ClassSession): boolean => {
   return nowMin >= startMin - 60 && nowMin <= startMin + durMin;
 };
 
-export const UpcomingClassesSection = ({ classes, onAddToCalendar, studentId, demoMode }: UpcomingClassesSectionProps) => {
+export const UpcomingClassesSection = ({ classes, studentId, demoMode }: UpcomingClassesSectionProps) => {
   const today = formatDateUS(new Date());
   const todaysClasses = classes.filter(c => c.date === today);
   const lateEligible = todaysClasses.some(isWithinLateWindow);
@@ -65,8 +65,9 @@ export const UpcomingClassesSection = ({ classes, onAddToCalendar, studentId, de
             {todaysClasses.map(session => (
               <UpcomingClassCard 
                 key={session.id} 
-                session={session} 
-                onAddToCalendar={onAddToCalendar} 
+                session={session}
+                studentId={studentId}
+                demoMode={demoMode}
               />
             ))}
           </div>
