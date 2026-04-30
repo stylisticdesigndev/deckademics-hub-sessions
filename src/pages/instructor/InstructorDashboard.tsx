@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,9 @@ import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
 import { TodayAttendanceSection } from '@/components/instructor/dashboard/TodayAttendanceSection';
 import { mockInstructorDashboard } from '@/data/mockInstructorData';
+import { InstructorStudentDetailDialog } from '@/components/instructor/students/InstructorStudentDetailDialog';
+import { useAuth } from '@/providers/AuthProvider';
+import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 
 interface Student {
   id: string;
@@ -35,6 +38,12 @@ interface InstructorDashboardProps {
 
 const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: InstructorDashboardProps) => {
   const { students, todayClasses, averageProgress, totalStudents, fetchError } = dashboardData;
+  const { session } = useAuth();
+  const instructorId = session?.user?.id;
+  const { students: richStudents, refetch: refetchRich } = useInstructorStudentsSimple(instructorId);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const selectedStudent = selectedStudentId ? richStudents.find(s => s.id === selectedStudentId) ?? null : null;
 
   // ===== DEMO MODE START =====
   // Swap live data for mock data when demoMode is active.
@@ -96,8 +105,19 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
       <TodayAttendanceSection demoMode={demoMode} />
 
       <section>
-        <StudentTable students={activeStudents} />
+        <StudentTable
+          students={activeStudents}
+          onSelectStudent={(id) => { setSelectedStudentId(id); setDetailOpen(true); }}
+        />
       </section>
+
+      <InstructorStudentDetailDialog
+        open={detailOpen}
+        onOpenChange={(o) => { setDetailOpen(o); if (!o) setSelectedStudentId(null); }}
+        student={selectedStudent}
+        instructorId={instructorId}
+        refetch={refetchRich}
+      />
     </div>
   );
 };
