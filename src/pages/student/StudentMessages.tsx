@@ -129,16 +129,24 @@ const StudentMessages = () => {
         if (otherIds.size > 0) {
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, first_name, last_name, avatar_url')
+            .select('id, first_name, last_name, dj_name, avatar_url')
             .in('id', Array.from(otherIds));
 
           if (profiles) {
-            setInstructors(profiles.map(profile => ({
-              id: profile.id,
-              name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Instructor',
-              initials: `${(profile.first_name || ' ')[0]}${(profile.last_name || ' ')[0]}`.toUpperCase(),
-              avatarUrl: profile.avatar_url,
-            })));
+            setInstructors(profiles.map((profile: any) => {
+              const dj = (profile.dj_name || '').trim();
+              const full = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+              const display = dj || full || 'Instructor';
+              const initialsSrc = dj || full || ' ';
+              const parts = initialsSrc.split(/\s+/).filter(Boolean);
+              const initials = ((parts[0]?.[0] || ' ') + (parts[1]?.[0] || '')).toUpperCase();
+              return {
+                id: profile.id,
+                name: display,
+                initials,
+                avatarUrl: profile.avatar_url,
+              };
+            }));
           }
         }
       } else {
