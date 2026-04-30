@@ -238,6 +238,14 @@ const InstructorProfile = () => {
                           <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={formData.lastName} onChange={handleChange} disabled={!isEditing || demoMode} />
                         </div>
                       </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="djName">DJ Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input id="djName" name="djName" placeholder="DJ Stagename" className="pl-10" value={formData.djName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">This is the name students will see across the app.</p>
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
                         <div className="relative">
