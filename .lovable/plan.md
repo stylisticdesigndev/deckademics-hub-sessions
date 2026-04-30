@@ -1,54 +1,73 @@
 ## Goal
 
-Move the "Allow this student to reply" toggle into the instructor's conversation view (the chat thread with a specific student), and remove/hide it from the student detail page. The toggle only appears once the instructor has initiated the conversation (i.e. there is at least one message sent by the instructor in this thread).
+Two changes:
+1. On the student dashboard's "Today's Class" card, replace the "Add to Calendar" button with a "Mark Absent" button (with the same confirmation dialog used elsewhere).
+2. Replace the hardcoded "Main Studio" location with a real, instructor-assigned classroom. Instructors can pick **Room One**, **Room Two**, or **Room Three** for each student from the Instructor → Student Detail page.
 
-## Where it lives
+---
 
-- **Shown in:** `src/components/instructor/messages/ConversationThread.tsx` — in the thread header, to the right of the student's name.
-- **Removed from:** `src/pages/instructor/InstructorStudentDetail.tsx` (the existing toggle block + its handler).
+## Part 1 — Dashboard "Today's Class" card
 
-## Visibility rule
+**File:** `src/components/cards/UpcomingClassCard.tsx`
 
-The toggle renders only when `messages.some(m => m.sender_id === currentUserId)` is true — meaning the instructor has sent at least one message in this thread. Until then, the header shows just the avatar + name (current behavior).
+- Remove the "Add to Calendar" button in the footer.
+- Add a destructive "Mark Absent" button that opens the same confirmation dialog used in `ClassAttendanceCard` (date + optional reason textarea, Cancel / Confirm Absent).
+- On confirm, call `supabase.from('attendance').insert({ student_id, status: 'absent', date, notes: reason })`. The existing RLS policy "Students can mark themselves absent" already allows this.
+- Only show the button when `session.isUpcoming` is true and a `studentId` is provided.
+- Disable in demo mode.
 
-## UI in the thread header
+**File:** `src/components/student/dashboard/UpcomingClassesSection.tsx`
 
-```text
-[← back] [avatar] Student Name                    [Switch] Allow replies
+- Pass `studentId` and `demoMode` down to `UpcomingClassCard`.
+- Drop the now-unused `onAddToCalendar` prop chain (or leave the prop for compatibility but stop using it).
+
+---
+
+## Part 2 — Classroom assignment
+
+### Database (schema migration)
+
+Add a `class_room` column to the `students` table:
+
+```sql
+ALTER TABLE public.students
+ADD COLUMN class_room text;
 ```
 
-- Use the existing `Switch` + small `Label` pattern from the student detail page.
-- Compact form: small label "Allow replies" + `Switch`, right-aligned via `ml-auto`.
-- On mobile (390px), label stays visible but truncates if needed; Switch never wraps.
+No default — null means "not assigned". Existing RLS already allows instructors to update assigned students.
 
-## Data + behavior
+### Instructor UI — assign the room
 
-`ConversationThread` needs three new props:
-- `studentId: string`
-- `twoWayMessaging: boolean`
-- `onToggleTwoWayMessaging: (next: boolean) => Promise<void>`
-- `canToggle: boolean` (already derivable from `instructorHasSent`, but pass it for clarity and to support demo mode read-only)
+**File:** `src/pages/instructor/InstructorStudentDetail.tsx`
 
-`InstructorMessages.tsx` will:
-1. Fetch each conversation's `two_way_messaging` value alongside the student profile (extend the `students` select to include `id, two_way_messaging`).
-2. Store it in the `StudentOption` shape (add `twoWayMessaging: boolean`).
-3. Pass current value + handler into `ConversationThread`.
-4. Handler calls `supabase.from('students').update({ two_way_messaging: next }).eq('id', activeStudentId)`, then optimistically updates local `students` state and shows a toast (matching the wording used today on the detail page).
-5. In demo mode the Switch is disabled (no DB write).
+- Add `class_room` to the `DetailData` interface and the select query.
+- Add a new "Classroom" row in the details grid showing the current value (or "Not assigned").
+- Add an editable `<Select>` with three options: **Room One**, **Room Two**, **Room Three**, plus an "Unassigned" option.
+- On change, update via `supabase.from('students').update({ class_room: value }).eq('id', studentId)` and refresh local state with a success toast.
 
-## Cleanup of student detail page
+### Student dashboard — show the assigned room
 
-In `src/pages/instructor/InstructorStudentDetail.tsx`:
-- Remove the entire "Allow this student to reply" `<div>` block, the `Switch`/`Label` imports if unused elsewhere on the page, the `MessageSquare` import (if only used here), `savingToggle` state, and `handleToggleMessaging`.
-- Keep `two_way_messaging` in the fetched data object only if still referenced; otherwise drop it from the select to keep the page lean.
+**File:** `src/hooks/student/useStudentDashboardCore.ts`
 
-## Files to modify
+- Add `class_room` to the student select query.
+- Use it as the `location` on the synthetic "Today's Class" entry instead of the hardcoded `'Main Studio'` (fall back to `'Not assigned'` if null).
 
-- `src/components/instructor/messages/ConversationThread.tsx` — add Switch in header, gated by `instructorHasSent`.
-- `src/pages/instructor/InstructorMessages.tsx` — fetch `two_way_messaging`, pass props + handler to thread.
-- `src/pages/instructor/InstructorStudentDetail.tsx` — remove the toggle block and its handler.
+**File:** `src/hooks/student/dashboard/useUpcomingClasses.ts`
+
+- Change the fallback from `'Main Studio'` to `'Not assigned'` so real classes without a `location` don't show stale copy.
+
+---
 
 ## Out of scope
 
-- No DB schema or RLS changes (the column and `protect_two_way_messaging` trigger already exist).
-- Student-side read-only banner behavior is unchanged.
+- The instructor-side mock dashboard already uses "Classroom 1/2/3" labels — no change needed there.
+- No changes to admin pages; instructors own this assignment per the existing student detail page.
+
+## Files touched
+
+- Migration: add `students.class_room`
+- `src/components/cards/UpcomingClassCard.tsx`
+- `src/components/student/dashboard/UpcomingClassesSection.tsx`
+- `src/pages/instructor/InstructorStudentDetail.tsx`
+- `src/hooks/student/useStudentDashboardCore.ts`
+- `src/hooks/student/dashboard/useUpcomingClasses.ts`
