@@ -1,71 +1,57 @@
-## Why the previous fix didn't work
+## Mobile audit results (Admin pages)
 
-The earlier pass added `overflow-x-auto` around individual tables, but the screenshots show the **entire page** still scrolls sideways — including the red "ADMINISTRATION MODE" banner, the page title, and the search bar. That means the overflow is happening at the layout level, not inside the tables.
+I scanned every admin page. Below is the verdict, then the targeted fix plan. Pages already responsive are left untouched per your rule.
 
-Two root causes:
+### ✅ Already responsive — no changes
+- `AdminDashboard` — uses `md:grid-cols-3`, single-column stack on mobile.
+- `AdminAttendance` — header is a single column; stats use `md:grid-cols-2 lg:grid-cols-3`. **However** its data table overflows (see fixes).
+- `AdminProfile`, `AdminProfileSetup`, `AdminAnnouncements` (mostly fine, see one tiny fix).
+- `AdminSettings` — uses card-based forms, dialogs are mobile-friendly.
 
-1. **`DashboardLayout` doesn't constrain its main column.** `<div className="flex-1 overflow-auto">` and `<main className="p-4 md:p-6">` have no `min-w-0` / `max-w-full`. In a flex row, a flex child defaults to `min-width: auto`, so any wide descendant (a table, a long header, a fixed-width input) makes the whole right column grow past the viewport and scroll horizontally.
-2. **Inner pages still have `min-w-[180px]` / `min-w-[200px]` cells, fixed-width selects, and wide tables that aren't truly contained** — wrapping them in `overflow-x-auto` only helps if the parent is actually clipped to the viewport width. It isn't.
+### ❌ Pages causing horizontal scroll on mobile
+Confirmed issues from code inspection:
 
-The fix has two layers: lock the layout to the viewport width, then redesign the worst tables so they don't need horizontal scrolling at all on mobile.
+1. **`AdminInstructors`** — Header uses `flex justify-between items-center` (no wrap). Page wraps everything in `TooltipProvider` with no overflow guards.
+2. **`AdminStudents`** — Three full-width data tables (Active/Pending/Inactive) with 9 columns. No `overflow-x-auto` wrapper. Bulk-action toolbar is a non-wrapping flex row of 5+ buttons.
+3. **`AdminCurriculum`** — Header is `flex justify-between items-center`. `TabsList grid-cols-4` with long labels.
+4. **`AdminSkills`** — `TabsList grid-cols-4` ("Novice/Amateur/Intermediate/Advanced") with counts overflows at 375px.
+5. **`AdminProgress`** — Filter row uses two `Select` triggers fixed at `w-[160px]` and `w-[200px]` plus a min-200px search input → forces horizontal scroll. Table has 4 columns including a `min-w-[180px]` progress cell.
+6. **`AdminPayments`** — Header `flex justify-between items-start` with a "Create Payment" button. Stats and tables (in child components) likely overflow; need to confirm child component too.
+7. **`AdminInstructorPayments`** — Header packs title + help button + 2 action buttons (`Generate All`, `Generate Selected min-w-[200px]`) in a single `flex justify-between` row → strong horizontal overflow. Multiple wide tables (5–7 columns) with no `overflow-x-auto`.
+8. **`AdminLedgerPreview`** — Header has wrap, but inner sub-headers don't. Some tables already wrapped; others not. Also `min-w-[180px]` button.
+9. **`AdminMessages`** — Generally fine, but the recipient picker uses `grid-cols-2 md:grid-cols-3` which is OK; the Tabs row + Compose form can overflow on tiny screens.
+10. **`AdminBugReports`** / **`AdminFeatureRequests`** — Card rows use `flex items-start justify-between gap-4` with `SelectTrigger w-[130px]/w-[140px]` inside; on 320–375px the status select can push off-screen.
 
-## Plan
+### Fix plan (only the broken pages)
 
-### 1. Fix the layout root (the real bug)
+For each fix I'll apply the same minimal pattern:
+- **Headers**: `flex justify-between items-center` → `flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start`. Add `min-w-0` to title block. Action button cluster gets `flex flex-wrap items-center gap-2`.
+- **Wide tables**: wrap the `<Table>` in `<div className="overflow-x-auto">` (or upgrade existing `rounded-md border` to also include `overflow-x-auto`).
+- **Tabs with many items**: change `grid-cols-4` (or 3) to be horizontally scrollable on mobile by using `w-full overflow-x-auto` and removing the rigid grid at small screens, or stack to 2 rows: `grid-cols-2 sm:grid-cols-4`.
+- **Filter rows**: change fixed-width `Select`s to `w-full sm:w-[160px]`. Remove `min-w-[200px]` on search and use `flex-1 min-w-0`. Wrap in `flex flex-col sm:flex-row`.
+- **Bulk-action toolbars**: add `flex-wrap` so buttons stack.
+- **Buttons**: remove `min-w-[200px]` / `min-w-[180px]` on mobile (`sm:min-w-[200px]`).
 
-**`src/components/layout/DashboardLayout.tsx`**
-- Change the main scroll column to `flex-1 min-w-0 overflow-x-hidden overflow-y-auto` so it can't grow past the available width.
-- Add `min-w-0` and `max-w-full` to `<main>`.
-- Add `min-w-0` to the sticky header inner wrappers and let the admin banner's "Return to Teaching View" button shrink (`shrink` + `truncate`) so the banner itself wraps cleanly on 390px.
+#### Pages I will edit
+- `src/pages/admin/AdminInstructors.tsx` — header wrap.
+- `src/pages/admin/AdminStudents.tsx` — header (already partly OK), bulk-action toolbar `flex-wrap`, wrap each `<Table>` in `overflow-x-auto`.
+- `src/pages/admin/AdminCurriculum.tsx` — header wrap; make TabsList scrollable on mobile.
+- `src/pages/admin/AdminSkills.tsx` — TabsList responsive (`grid-cols-2 sm:grid-cols-4`).
+- `src/pages/admin/AdminProgress.tsx` — filter row stacks on mobile; table wrapped in `overflow-x-auto`.
+- `src/pages/admin/AdminPayments.tsx` — header wrap; check child `PaymentsTable`/`PaymentStatsCards` and add `overflow-x-auto` where needed.
+- `src/pages/admin/AdminInstructorPayments.tsx` — header restructured into stacked title + wrapping action cluster; `min-w-[200px]` becomes `sm:min-w-[200px]`; all 3 tables wrapped in `overflow-x-auto`.
+- `src/pages/admin/AdminLedgerPreview.tsx` — sub-section headers (Student Payments / Instructor Payments) get the same wrap treatment; `min-w-[180px]` button becomes `sm:min-w-[180px]`; remaining unwrapped tables get `overflow-x-auto`.
+- `src/pages/admin/AdminBugReports.tsx` — `SelectTrigger w-[130px]` becomes `w-full sm:w-[130px]`; row containers get `flex-col sm:flex-row`.
+- `src/pages/admin/AdminFeatureRequests.tsx` — same as above with `w-[140px]`.
+- `src/pages/admin/AdminMessages.tsx` — TabsList allowed to wrap; recipient picker keeps current responsive grid.
 
-This single change stops the page from scrolling horizontally regardless of what any child page does.
+#### Pages I will NOT touch (verified responsive)
+- `AdminDashboard`, `AdminAttendance` (page shell only; its inner table will be wrapped in `overflow-x-auto` as part of fix #5 above), `AdminAnnouncements`, `AdminSettings`, `AdminProfile`, `AdminProfileSetup`, `AdminDashboardGate`.
 
-### 2. Redesign the wide admin tables as mobile-friendly cards
+Note: I will keep "Demo" buttons untouched per your future-removal note — only the layout around them changes so they don't push the viewport.
 
-Per your guidance ("redesign things so they live in containers that don't need to be side scrolling"), the tables with 7–9 columns will get a **mobile card view** while keeping the desktop table intact. Pattern:
-
-```text
-md:hidden  → stacked card list (one card per row, key fields only)
-hidden md:block → existing data table (with overflow-x-auto as a fallback)
-```
-
-Pages getting the dual layout:
-
-- **`AdminStudents.tsx`** — Active/Pending/Inactive tables (9 cols). Mobile card shows: avatar + name, email, level badge, instructor, status, action menu. Bulk-action toolbar already wraps; keep it.
-- **`AdminInstructors.tsx`** — instructor list. Mobile card: avatar + name, email, student count, status, actions.
-- **`AdminProgress.tsx`** — student progress table (4 cols incl. progress bar). Mobile card: name + email, level badge, instructor line, full-width progress bar underneath. Removes the `min-w-[180px]` that's forcing the page wide.
-- **`AdminInstructorPayments.tsx`** — three wide payroll tables (5–7 cols). Mobile card per instructor/payment with the key amounts and a single action button.
-- **`AdminLedgerPreview.tsx`** — pending / upcoming / all payment tables. Mobile card: student + amount as the headline, then date/status, then action.
-- **`AdminPayments.tsx`** (`PaymentsTable.tsx` component) — same card pattern for the three payment tabs.
-- **`AdminAttendance.tsx`** — "Missed Classes This Week" table (the one in your screenshot). Mobile card: student + email, missed-class count, last-class date, action.
-
-For the simpler offenders, no card redesign is needed once the layout root is fixed — only small tightening:
-
-- **`AdminBugReports.tsx`** / **`AdminFeatureRequests.tsx`** — already mostly fine; verify status `Select` is `w-full sm:w-[130px]`.
-- **`AdminCurriculum.tsx`** / **`AdminSkills.tsx`** — Tabs already responsive; verify long labels truncate.
-- **`AdminMessages.tsx`** — recipient picker already responsive; no changes.
-
-### 3. QA pass
-
-After the changes, walk through each admin route at 390px:
-`/admin/dashboard`, `/admin/instructors`, `/admin/students`, `/admin/curriculum`, `/admin/skills`, `/admin/progress`, `/admin/attendance`, `/admin/payments`, `/admin/instructor-payments`, `/admin/ledger-preview`, `/admin/messages`, `/admin/announcements`, `/admin/bug-reports`, `/admin/feature-requests`, `/admin/settings`.
-
-For each, confirm: no horizontal page scroll, the admin banner fits, headers wrap, and the data is reachable without sideways swipe.
-
-## Files to edit
-
-- `src/components/layout/DashboardLayout.tsx` — root overflow + min-w-0 fix (the key change).
-- `src/pages/admin/AdminStudents.tsx` — add mobile card view for the 3 student tables.
-- `src/pages/admin/AdminInstructors.tsx` — add mobile card view.
-- `src/pages/admin/AdminProgress.tsx` — add mobile card view; remove `min-w-[180px]`.
-- `src/pages/admin/AdminInstructorPayments.tsx` — add mobile card view for all 3 tables.
-- `src/pages/admin/AdminLedgerPreview.tsx` — add mobile card view for payment tables.
-- `src/components/admin/payments/PaymentsTable.tsx` — add mobile card view.
-- `src/pages/admin/AdminAttendance.tsx` — add mobile card view for the missed-classes table.
-- Minor verification on `AdminBugReports.tsx`, `AdminFeatureRequests.tsx`, `AdminCurriculum.tsx`, `AdminSkills.tsx`.
-
-## Out of scope
-
-- No business-logic changes; pure layout / responsive presentation.
-- No desktop changes — desktop continues to use the existing tables.
-- No design-system / color changes.
+### Out of scope
+- No content/feature changes.
+- No design-system color changes.
+- Desktop layout stays identical (all changes are `sm:` upward).
+- I will not run a real device QA (browser preview requires login); changes are CSS-only and follow the pattern already used successfully on `InstructorAttendance`.

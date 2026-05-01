@@ -37,79 +37,7 @@ export const PaymentsTable = ({
       </CardHeader>
       <CardContent>
         {payments.length > 0 ? (
-          <>
-          {/* Mobile card list */}
-          <div className="md:hidden space-y-3">
-            {payments.map((payment) => (
-              <div key={payment.id} className="rounded-lg border bg-card p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{payment.studentName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{payment.email}</p>
-                  </div>
-                  <p className="text-base font-semibold shrink-0">${payment.amount}</p>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>Due {payment.dueDate}</span>
-                  <Badge
-                    variant={
-                      payment.status === 'completed' ? 'default' :
-                      payment.status === 'pending' ? 'secondary' :
-                      payment.status === 'partial' ? 'outline' :
-                      payment.status === 'failed' ? 'destructive' : 'outline'
-                    }
-                  >
-                    {payment.status}
-                  </Badge>
-                </div>
-                {(showActions && onMarkAsPaid) || showEditDelete ? (
-                  <div className="flex items-center gap-2 pt-1">
-                    {showActions && onMarkAsPaid && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => onMarkAsPaid(payment.id, 'full')}
-                      >
-                        <Check className="h-3 w-3 mr-1" /> Mark Paid
-                      </Button>
-                    )}
-                    {showEditDelete && (
-                      <>
-                        <EditPaymentDialog payment={payment} students={students} />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Payment</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this payment for {payment.studentName}? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deletePayment(payment.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -193,7 +121,6 @@ export const PaymentsTable = ({
             </TableBody>
           </Table>
           </div>
-          </>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
             No payments found matching your search.

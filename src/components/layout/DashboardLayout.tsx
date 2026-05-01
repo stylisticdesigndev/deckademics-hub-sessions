@@ -87,44 +87,43 @@ export const DashboardLayout = ({
           </SidebarContent>
           <SidebarUserFooter userType={userType} />
         </Sidebar>
-        <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
+        <div className="flex-1 overflow-auto">
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
             {isAdminMode && (
-              <div className="bg-red-900/80 text-red-100 px-3 py-2 flex items-center justify-between gap-2 text-xs sm:text-sm font-semibold">
-                <div className="flex items-center gap-2 min-w-0">
-                  <ShieldAlert className="h-4 w-4 shrink-0" />
-                  <span className="truncate">ADMINISTRATION MODE</span>
+              <div className="bg-red-900/80 text-red-100 px-4 py-2 flex items-center justify-between text-sm font-semibold">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  ADMINISTRATION MODE
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-100 hover:text-white hover:bg-red-800/50 shrink-0 px-2 whitespace-nowrap"
+                  className="text-red-100 hover:text-white hover:bg-red-800/50"
                   onClick={() => navigate('/instructor/dashboard')}
                 >
-                  <span className="hidden sm:inline">Return to Teaching View</span>
-                  <span className="sm:hidden">Exit</span>
+                  Return to Teaching View
                 </Button>
               </div>
             )}
-            <header className="h-16 flex items-center justify-between gap-2 px-4 lg:pl-3 lg:pr-6 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
+            <header className="h-16 flex items-center justify-between px-4 lg:pl-3 lg:pr-6">
+              <div className="flex items-center gap-2">
                 <HeaderHamburger />
                 {/* Logo only in the desktop header — on mobile/tablet it lives inside the sidebar sheet */}
                 <Logo size="header" className="shrink-0 -ml-2 lg:-ml-1 hidden lg:block" />
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2">
                 {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
                 {userType !== 'admin' && <FeatureRequestDialog triggerVariant="icon" />}
                 {userType === 'admin' && <NotificationDropdown />}
                 {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
                 <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
                 </Button>
               </div>
             </header>
           </div>
-          <main className="p-4 md:p-6 min-w-0 max-w-full">
+          <main className="p-4 md:p-6">
             {children}
           </main>
         </div>
