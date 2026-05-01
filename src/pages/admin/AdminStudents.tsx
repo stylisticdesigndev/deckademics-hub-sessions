@@ -333,7 +333,7 @@ const AdminStudents = () => {
         {/* Active Students Tab */}
         <TabsContent value="active" className="space-y-4 pt-4">
           {selectedIds.length > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg">
               <span className="text-sm font-medium">{selectedIds.length} selected</span>
               <Button size="sm" variant="outline" onClick={() => setShowBulkLevelDialog(true)}>
                 Change Level
@@ -358,7 +358,7 @@ const AdminStudents = () => {
               <CardDescription>Currently enrolled students.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
