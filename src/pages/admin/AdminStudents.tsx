@@ -524,7 +524,7 @@ const AdminStudents = () => {
               <CardDescription>Review and approve student registration requests.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -633,7 +633,7 @@ const AdminStudents = () => {
               <CardDescription>Deactivated and declined students. You can reactivate them.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
