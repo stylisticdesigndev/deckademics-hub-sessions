@@ -141,7 +141,33 @@ const AdminProgress = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.length > 0 ? filtered.map(student => (
+              <div key={student.id} className="rounded-lg border bg-card p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                  </div>
+                  <Badge variant="outline" className="capitalize shrink-0">{student.level}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Instructor: {student.instructorName || 'Unassigned'}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Progress value={student.overallProgress} className="flex-1" />
+                  <span className="text-sm font-medium w-10 text-right">{student.overallProgress}%</span>
+                </div>
+              </div>
+            )) : (
+              <p className="text-center py-6 text-muted-foreground text-sm">
+                No students found matching your filters.
+              </p>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
