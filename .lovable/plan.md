@@ -1,21 +1,24 @@
-# Fix Instructor Attendance Header Overflow on Mobile
+I found the mismatch: the dashboard’s “Today’s Students” table is using a separate fetch/format path from the “Today’s Attendance” widget. The attendance widget is showing the correct students for the day, but the dashboard table can still end up with only one because it filters/derives its own `students` array separately.
 
-## Problem
+Plan:
 
-On mobile (390px), the Instructor Attendance page header places the title block and two action buttons ("Add Cover Session", "Demo") in a single horizontal row. The combined width exceeds the viewport, which forces the entire page to scroll sideways and pushes the Demo button off-screen.
+1. Make Today’s Attendance the source of truth on the instructor dashboard
+   - In `src/pages/instructor/InstructorDashboard.tsx`, use `useInstructorAttendance(instructorId)` directly for the dashboard page.
+   - Build the “Today’s Students” table from `todayStudents` returned by that hook, so it matches the exact list displayed in the “Today’s Attendance” module.
 
-## Fix
+2. Preserve progress/notes/profile formatting from the existing dashboard data
+   - Keep the dashboard hook’s per-student progress data where available.
+   - Merge attendance-hook students with dashboard-hook students by `studentId` so the table still shows progress, level, avatar, initials, notes status, and class time.
+   - If a student is present in attendance but missing from dashboard progress data, show them with safe defaults instead of dropping them.
 
-Restructure the header in `src/pages/instructor/InstructorAttendance.tsx` so that on small screens the title and the action buttons stack vertically, and the action buttons themselves wrap onto multiple lines if needed. On larger screens, keep the existing side-by-side layout.
+3. Fix the top stat so it communicates the correct count
+   - The “Today’s Classes” stat currently counts unique class time slots, so two students in the same time slot display as `1` class today.
+   - Update the stat text to avoid confusion by adding/using the actual today student count, e.g. `2 students today`, while preserving the existing class/session count if needed.
 
-Specifically:
+4. Keep demo mode behavior intact
+   - Demo mode will continue to use `mockInstructorDashboard` data.
+   - Live mode will use the attendance hook for the day-specific student list/count.
 
-- Change the outer header wrapper from `flex items-start justify-between` to a column-on-mobile, row-on-desktop layout (`flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between`).
-- Allow the action button group to wrap (`flex flex-wrap items-center gap-2`) so "Add Cover Session" and "Demo" can sit on a second line if both don't fit.
-- Add `min-w-0` to the title block so long subtitle text doesn't push siblings.
-
-This keeps the page within the viewport width on mobile, eliminates the horizontal scroll, and preserves the current desktop appearance. No logic changes — the Demo button will be removed later as the user noted, and that future cleanup will not conflict with this layout fix.
-
-## Files to edit
-
-- `src/pages/instructor/InstructorAttendance.tsx` — header `<div>` block (around lines 110–130).
+5. Verify with the current data pattern
+   - The database currently shows DJ Stylistic has two active Thursday students at `5:30 PM - 7:00 PM`, which explains why “Today’s Classes” can say `1` while today’s attendance lists two students.
+   - After the change, the “Today’s Students” module should list both students, matching the attendance module.
