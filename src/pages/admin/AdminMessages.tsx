@@ -228,7 +228,7 @@ const AdminMessages = () => {
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="conversations" className="flex items-center gap-1.5">
             <MessageSquare className="h-3.5 w-3.5" /> Conversations
           </TabsTrigger>
