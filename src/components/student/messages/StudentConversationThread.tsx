@@ -82,7 +82,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] min-h-[500px]">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b">
+      <div className="flex items-center gap-3 py-3 border-b">
         <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
