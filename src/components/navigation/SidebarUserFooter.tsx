@@ -93,15 +93,15 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
               type="button"
               aria-label="Profile menu"
               className={cn(
-                'flex items-center justify-center h-9 w-9 rounded-md transition-colors',
+                'flex items-center justify-center h-11 w-11 rounded-md transition-colors',
                 pathname === profileHref
                   ? 'bg-deckademics-primary/10'
                   : 'hover:bg-deckademics-primary/5'
               )}
             >
-              <Avatar className="h-7 w-7">
+              <Avatar className="h-9 w-9">
                 <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                <AvatarFallback className="text-sm">{initials}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
@@ -120,17 +120,17 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
           <button
             type="button"
             className={cn(
-              'w-full flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md',
+              'w-full flex items-center gap-x-3 px-3 py-2.5 text-base font-semibold rounded-md',
               pathname === profileHref
                 ? 'bg-deckademics-primary/10 text-deckademics-primary'
                 : 'text-muted-foreground hover:bg-deckademics-primary/5 hover:text-deckademics-primary'
             )}
           >
-            <Avatar className="h-7 w-7 -ml-0.5">
+            <Avatar className="h-9 w-9 shrink-0">
               <AvatarImage src={profile?.avatar_url || undefined} alt={fullName} />
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+              <AvatarFallback className="text-sm">{initials}</AvatarFallback>
             </Avatar>
-            <span className="flex-1 text-left truncate">{fullName}</span>
+            <span className="flex-1 min-w-0 text-left truncate">{fullName}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
