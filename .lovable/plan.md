@@ -1,58 +1,21 @@
-## Goal
+# Fix Instructor Attendance Header Overflow on Mobile
 
-When a student marks themselves absent, mirror the "I'm Running Late" pattern:
-1. Save the absence (already happens).
-2. Send an automated message into the instructor's Messages with the student's reason.
-3. Trigger an in-app alert/push to the instructor via an edge function.
+## Problem
 
-## Behavior
+On mobile (390px), the Instructor Attendance page header places the title block and two action buttons ("Add Cover Session", "Demo") in a single horizontal row. The combined width exceeds the viewport, which forces the entire page to scroll sideways and pushes the Demo button off-screen.
 
-- Toast to student updates to: *"Instructor notified. Your absence and message have been sent."*
-- Instructor receives a new message in their Messages inbox titled **"Marked Absent"** with content:
-  - With reason: `Heads up — I won't be at class on MM/DD/YYYY. Reason: <reason>`
-  - Without reason: `Heads up — I won't be at class on MM/DD/YYYY.`
-- Instructor's notification badge increments (it already polls unread messages, so no extra wiring needed there).
-- Edge function logs the dispatch and is wired for future FCM/APNs push.
+## Fix
 
-## Technical changes
+Restructure the header in `src/pages/instructor/InstructorAttendance.tsx` so that on small screens the title and the action buttons stack vertically, and the action buttons themselves wrap onto multiple lines if needed. On larger screens, keep the existing side-by-side layout.
 
-**1. `src/hooks/student/useStudentClassAttendance.ts` — `markAbsent`**
+Specifically:
 
-After the existing `attendance` insert succeeds:
-- Look up the student's `instructor_id` and profile name from the `students` + `profiles` tables (same query shape as `RunningLateButton`).
-- If instructor exists, insert into `messages`:
-  ```ts
-  { sender_id: studentId, receiver_id: instructorId,
-    subject: 'Marked Absent',
-    content: reason
-      ? `Heads up — I won't be at class on ${formatDateUS(absenceDate)}. Reason: ${reason}`
-      : `Heads up — I won't be at class on ${formatDateUS(absenceDate)}.` }
-  ```
-- Best-effort `supabase.functions.invoke('notify-instructor-absence', { body: { instructor_id, student_id, student_name, absence_date, reason } })` wrapped in try/catch (don't fail the flow if push fails).
-- Update toast copy.
+- Change the outer header wrapper from `flex items-start justify-between` to a column-on-mobile, row-on-desktop layout (`flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between`).
+- Allow the action button group to wrap (`flex flex-wrap items-center gap-2`) so "Add Cover Session" and "Demo" can sit on a second line if both don't fit.
+- Add `min-w-0` to the title block so long subtitle text doesn't push siblings.
 
-**2. New edge function `supabase/functions/notify-instructor-absence/index.ts`**
+This keeps the page within the viewport width on mobile, eliminates the horizontal scroll, and preserves the current desktop appearance. No logic changes — the Demo button will be removed later as the user noted, and that future cleanup will not conflict with this layout fix.
 
-Clone of `notify-instructor-late`:
-- Verify auth bearer.
-- Read instructor `notification_preferences`.
-- Log dispatch with student name, date, reason.
-- Returns `{ ok: true, delivered: ['in_app_message'], pending: ['os_push_notification'] }`.
-- Auto-deployed; no secrets needed (uses existing `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_ANON_KEY`).
-- Add to `supabase/config.toml` if needed (check existing entries pattern).
+## Files to edit
 
-**3. RLS — no changes needed**
-
-- `messages` already allows `sender_id = auth.uid()` insert.
-- `student_absences` / `attendance` insert policies already in place.
-
-## Files modified / created
-
-- Modify: `src/hooks/student/useStudentClassAttendance.ts`
-- Create: `supabase/functions/notify-instructor-absence/index.ts`
-- Modify (if needed): `supabase/config.toml` to register the new function
-
-## Out of scope
-
-- Real OS push notifications (FCM/APNs) — same future hook as running-late.
-- Notifying cover instructors or secondary instructors — only the primary `students.instructor_id` is messaged, matching the running-late behavior.
+- `src/pages/instructor/InstructorAttendance.tsx` — header `<div>` block (around lines 110–130).
