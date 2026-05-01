@@ -756,6 +756,7 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -788,6 +789,7 @@ const AdminInstructorPayments = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No instructors found.</p>
             )}
@@ -802,6 +804,7 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             {pendingPayments.length > 0 ? (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -910,6 +913,7 @@ const AdminInstructorPayments = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No pending payments.</p>
             )}
@@ -925,6 +929,7 @@ const AdminInstructorPayments = () => {
           <CardContent>
             {completedPayments.length > 0 ? (
               <>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1013,6 +1018,7 @@ const AdminInstructorPayments = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
                 {totalHistoryPages > 1 && (
                   <Pagination className="mt-4">
                     <PaginationContent>
