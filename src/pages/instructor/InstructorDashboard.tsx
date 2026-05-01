@@ -11,6 +11,7 @@ import { mockInstructorDashboard } from '@/data/mockInstructorData';
 import { InstructorStudentDetailDialog } from '@/components/instructor/students/InstructorStudentDetailDialog';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
+import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 
 interface Student {
   id: string;
@@ -41,15 +42,37 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
   const { session } = useAuth();
   const instructorId = session?.user?.id;
   const { students: richStudents, refetch: refetchRich } = useInstructorStudentsSimple(instructorId);
+  const { todayStudents: attendanceTodayStudents } = useInstructorAttendance(instructorId);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const selectedStudent = selectedStudentId ? richStudents.find(s => s.id === selectedStudentId) ?? null : null;
 
+  // Build Today's Students list from the same source as Today's Attendance, so
+  // the two modules always agree on the count. Merge progress/notes data from
+  // the dashboard hook when available; fall back to safe defaults otherwise.
+  const studentsById = new Map(students.map(s => [s.id, s]));
+  const liveTodayStudents = attendanceTodayStudents.map(({ student }) => {
+    const enriched = studentsById.get(student.id);
+    return enriched ?? {
+      id: student.id,
+      name: student.name,
+      progress: 0,
+      level: student.level || 'Novice',
+      hasNotes: false,
+      avatar: student.avatar || undefined,
+      initials: (student.initials || '').toUpperCase(),
+      classTime: student.classTime || undefined,
+    };
+  });
+  const liveTodayClasses = new Set(
+    attendanceTodayStudents.map(s => s.student.classTime).filter(Boolean)
+  ).size || attendanceTodayStudents.length;
+
   // ===== DEMO MODE START =====
   // Swap live data for mock data when demoMode is active.
   // To remove demo mode, delete this block and the mockInstructorData import.
-  const activeStudents = demoMode ? mockInstructorDashboard.students : students;
-  const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : todayClasses;
+  const activeStudents = demoMode ? mockInstructorDashboard.students : liveTodayStudents;
+  const activeTodayClasses = demoMode ? mockInstructorDashboard.todayClasses : liveTodayClasses;
   const activeAverageProgress = demoMode ? mockInstructorDashboard.averageProgress : averageProgress;
   const activeTotalStudents = demoMode ? mockInstructorDashboard.totalStudents : totalStudents;
   // ===== DEMO MODE END =====
@@ -86,7 +109,7 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
         </Alert>
       )}
 
-      {!demoMode && students.length === 0 && (
+      {!demoMode && liveTodayStudents.length === 0 && totalStudents === 0 && (
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertTitle>Getting Started</AlertTitle>
