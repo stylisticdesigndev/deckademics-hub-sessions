@@ -129,8 +129,8 @@ const AdminBugReports = () => {
     return (
       <Card key={report.id}>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
               <CardTitle className="text-base">{report.title}</CardTitle>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
                 <span>{getReporterName(report.reporter_id)}</span>
@@ -157,7 +157,7 @@ const AdminBugReports = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={config.variant} className="flex items-center gap-1">
                 {config.icon}
                 {config.label}
@@ -166,7 +166,7 @@ const AdminBugReports = () => {
                 value={report.status}
                 onValueChange={(status) => updateMutation.mutate({ id: report.id, status })}
               >
-                <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[130px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
