@@ -605,9 +605,9 @@ const AdminInstructorPayments = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-2 min-w-0">
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold tracking-tight">Instructor Payments</h1>
               <p className="text-muted-foreground mt-1">
                 Manage instructor compensation and payment records
@@ -624,14 +624,14 @@ const AdminInstructorPayments = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => { resetGenerateForm(); setShowGenerateDialog(true); }}>
               <Zap className="mr-1 h-4 w-4" />
               Generate All
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="min-w-[200px] justify-between">
+                <Button variant="outline" className="w-full sm:w-auto sm:min-w-[200px] justify-between">
                   <span className="flex items-center">
                     <UserIcon className="mr-1 h-4 w-4" />
                     Generate Selected
