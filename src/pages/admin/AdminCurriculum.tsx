@@ -129,8 +129,8 @@ const AdminCurriculum = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold">Curriculum Management</h1>
             <p className="text-muted-foreground">Manage modules and lessons for different experience levels</p>
           </div>
