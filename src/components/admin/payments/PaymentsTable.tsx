@@ -37,6 +37,7 @@ export const PaymentsTable = ({
       </CardHeader>
       <CardContent>
         {payments.length > 0 ? (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -119,6 +120,7 @@ export const PaymentsTable = ({
               ))}
             </TableBody>
           </Table>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
             No payments found matching your search.
