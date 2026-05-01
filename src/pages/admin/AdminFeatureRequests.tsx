@@ -132,8 +132,8 @@ const AdminFeatureRequests = () => {
     return (
       <Card key={req.id}>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
               <CardTitle className="text-base">{req.title}</CardTitle>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
                 <span>{getRequesterName(req.requester_id)}</span>
@@ -160,7 +160,7 @@ const AdminFeatureRequests = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={config.variant} className="flex items-center gap-1">
                 {config.icon}
                 {config.label}
@@ -169,7 +169,7 @@ const AdminFeatureRequests = () => {
                 value={req.status}
                 onValueChange={(status) => updateMutation.mutate({ id: req.id, status })}
               >
-                <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
