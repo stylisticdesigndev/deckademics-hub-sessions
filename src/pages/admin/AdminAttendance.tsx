@@ -67,6 +67,7 @@ const AdminAttendance = () => {
             <CardDescription>Students who missed classes and require follow-up</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -146,6 +147,7 @@ const AdminAttendance = () => {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

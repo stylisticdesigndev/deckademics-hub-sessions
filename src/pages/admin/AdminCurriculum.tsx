@@ -129,8 +129,8 @@ const AdminCurriculum = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold">Curriculum Management</h1>
             <p className="text-muted-foreground">Manage modules and lessons for different experience levels</p>
           </div>
@@ -320,7 +320,7 @@ const AdminCurriculum = () => {
         </Dialog>
 
         <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
             <TabsTrigger value="novice">Novice</TabsTrigger>
             <TabsTrigger value="amateur">Amateur</TabsTrigger>
             <TabsTrigger value="intermediate">Intermediate</TabsTrigger>

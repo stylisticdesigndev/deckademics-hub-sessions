@@ -673,8 +673,8 @@ const AdminLedgerPreview = () => {
 
         {/* ──────────── TAB 1: STUDENT PAYMENTS ──────────── */}
         <TabsContent value="student-payments" className="space-y-4 mt-4">
-          <div className="flex justify-between items-start">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+            <div className="min-w-0">
               <h2 className="text-xl font-bold">Payment Management</h2>
               <p className="text-sm text-muted-foreground">Track and manage student payments</p>
             </div>
@@ -753,8 +753,8 @@ const AdminLedgerPreview = () => {
 
         {/* ──────────── TAB 2: INSTRUCTOR PAYMENTS ──────────── */}
         <TabsContent value="instructor-payments" className="space-y-4 mt-4">
-          <div className="flex justify-between items-start flex-wrap gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-start">
+            <div className="flex items-start gap-2 min-w-0">
               <div>
                 <h2 className="text-xl font-bold">Instructor Payroll</h2>
                 <p className="text-sm text-muted-foreground">Generate and manage payroll for active instructors</p>
@@ -775,10 +775,10 @@ const AdminLedgerPreview = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="min-w-[180px] justify-between">
+                  <Button variant="outline" className="w-full sm:w-auto sm:min-w-[180px] justify-between">
                     <span className="flex items-center">
                       <UserIcon className="h-4 w-4 mr-1" />
                       Pick Instructors
