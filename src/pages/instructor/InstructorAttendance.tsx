@@ -108,12 +108,12 @@ export default function InstructorAttendance() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Attendance</h1>
           <p className="text-muted-foreground">Mark and review student attendance</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {instructorId && !demoMode && (
             <AddCoverSessionDialog instructorId={instructorId} onCreated={refetch} />
           )}
