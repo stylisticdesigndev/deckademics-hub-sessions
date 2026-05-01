@@ -2,11 +2,13 @@
  * useInstructorDashboard — Fetches all dashboard data for an instructor.
  *
  * Data flow:
- * 1. Resolves `instructorId` from AuthProvider (only when role === 'instructor').
- * 2. Queries `students` table (with inner join to `profiles`) for assigned students.
+ * 1. Resolves `instructorId` from AuthProvider (only when role === 'instructor' or 'admin').
+ * 2. Resolves assigned student IDs via `student_instructors` (primary + secondary)
+ *    plus any cover-session students, matching the source of truth used by the
+ *    Today's Attendance widget.
  * 3. Fetches `student_progress` for those students and cross-references against
  *    admin-defined `progress_skills` to compute per-student average proficiency.
- * 4. Counts today's classes from the `classes` table.
+ * 4. Counts today's classes from class_time slots scheduled today.
  * 5. Returns formatted student list, stats, and loading/error state.
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -49,23 +51,21 @@ interface InstructorDashboardData {
 export const useInstructorDashboard = (): InstructorDashboardData => {
   const { userData } = useAuth();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<Student[]>([]);
   const [todayClasses, setTodayClasses] = useState(0);
   const [averageProgress, setAverageProgress] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  
-  // Use ref to track if request is in progress to prevent multiple simultaneous requests
+
   const requestInProgress = useRef(false);
-  
-  // Resolve instructor ID — allow admin users viewing instructor dashboard
+
   const instructorId = useMemo(() => {
     if (userData?.role !== 'instructor' && userData?.role !== 'admin') return null;
     return userData?.user?.id || userData?.profile?.id;
   }, [userData?.role, userData?.user?.id, userData?.profile?.id]);
-  
+
   const fetchDashboardData = useCallback(async () => {
     if (!instructorId || requestInProgress.current) {
       return;
@@ -75,89 +75,108 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       requestInProgress.current = true;
       setLoading(true);
       setFetchError(null);
-      
-      if (import.meta.env.DEV) console.log("Fetching dashboard data for instructor:", instructorId);
-      
-      // Determine today's day name for filtering
+
+      if (import.meta.env.DEV) console.log('Fetching dashboard data for instructor:', instructorId);
+
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const todayDayName = dayNames[new Date().getDay()];
 
-      // Fetch assigned active students, then normalize class_day in JS so values like
-      // "Tuesday" and "Tuesdays" both match today's schedule.
-      const { data: assignedStudents, error: studentsError } = await supabase
-        .from('students')
-        .select(`
-          id,
-          level,
-          notes,
-          class_day,
-          class_time,
-          profiles!inner(first_name, last_name, avatar_url)
-        `)
-        .eq('instructor_id', instructorId)
-        .eq('enrollment_status', 'active');
-        
-      if (studentsError) {
-        console.error("Error fetching assigned students:", studentsError);
-        throw studentsError;
+      // Resolve assigned student IDs via student_instructors (primary + secondary)
+      // — same source the Today's Attendance widget uses, so counts agree.
+      const { data: links, error: linksError } = await supabase
+        .from('student_instructors' as any)
+        .select('student_id')
+        .eq('instructor_id', instructorId);
+      if (linksError) {
+        console.error('Error fetching student_instructors:', linksError);
+        throw linksError;
       }
-      
-      if (import.meta.env.DEV) console.log("Assigned students raw data:", assignedStudents);
-      
-      const todayAssignedStudents = (assignedStudents || []).filter((student: any) =>
+      const assignedIds = new Set<string>(((links as any[]) || []).map((l: any) => l.student_id));
+
+      // Include cover-session students as well.
+      const { data: covers } = await supabase
+        .from('cover_sessions' as any)
+        .select('student_id')
+        .eq('cover_instructor_id', instructorId);
+      ((covers as any[]) || []).forEach((c: any) => assignedIds.add(c.student_id));
+
+      const allIds = Array.from(assignedIds);
+
+      let assignedStudents: any[] = [];
+      if (allIds.length > 0) {
+        const { data, error: studentsError } = await supabase
+          .from('students')
+          .select(`
+            id,
+            level,
+            notes,
+            class_day,
+            class_time,
+            profiles!inner(first_name, last_name, avatar_url)
+          `)
+          .in('id', allIds)
+          .eq('enrollment_status', 'active');
+
+        if (studentsError) {
+          console.error('Error fetching assigned students:', studentsError);
+          throw studentsError;
+        }
+        assignedStudents = data || [];
+      }
+
+      if (import.meta.env.DEV) console.log('Assigned students raw data:', assignedStudents);
+
+      const todayAssignedStudents = assignedStudents.filter((student: any) =>
         normalizeClassDay(student?.class_day) === normalizeClassDay(todayDayName)
       );
 
-      if (todayAssignedStudents && Array.isArray(todayAssignedStudents) && todayAssignedStudents.length > 0) {
+      if (todayAssignedStudents.length > 0) {
         const todayClassSlots = new Set(
           todayAssignedStudents.map((student: any) => student?.class_time).filter(Boolean)
         );
         setTodayClasses(todayClassSlots.size || todayAssignedStudents.length);
 
-        // Get progress data for these students
         const studentIds = todayAssignedStudents
-          .filter(student => 
-            isDataObject(student) && 
+          .filter(student =>
+            isDataObject(student) &&
             hasProperty(student, 'id')
           )
           .map(student => student.id as string)
           .filter(Boolean);
-        
-        if (import.meta.env.DEV) console.log("Student IDs to fetch progress for:", studentIds);
-        
+
+        if (import.meta.env.DEV) console.log('Student IDs to fetch progress for:', studentIds);
+
         let progressData: any[] = [];
         if (studentIds.length > 0) {
           const { data: progress, error: progressError } = await supabase
             .from('student_progress')
             .select('student_id, skill_name, proficiency')
             .in('student_id', studentIds);
-            
+
           if (progressError) {
-            console.error("Error fetching student progress:", progressError);
+            console.error('Error fetching student progress:', progressError);
           } else {
             progressData = progress || [];
           }
         }
-        
-        // Fetch admin-defined progress skills
+
         const { data: allProgressSkills } = await supabase
           .from('progress_skills' as any)
           .select('name, level');
-        
+
         const skillsByLevel = new Map<string, string[]>();
         (allProgressSkills || []).forEach((s: any) => {
           const existing = skillsByLevel.get(s.level) || [];
           existing.push(s.name);
           skillsByLevel.set(s.level, existing);
         });
-        
-        if (import.meta.env.DEV) console.log("Progress data:", progressData);
-        
-        // Process and format student data
+
+        if (import.meta.env.DEV) console.log('Progress data:', progressData);
+
         const formattedStudents = todayAssignedStudents
-          .filter(student => 
-            isDataObject(student) && 
-            hasProperty(student, 'id') && 
+          .filter(student =>
+            isDataObject(student) &&
+            hasProperty(student, 'id') &&
             hasProperty(student, 'profiles')
           )
           .map(student => {
@@ -165,13 +184,12 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             const studentLevel = (studentData?.level || 'novice').toLowerCase();
             const adminSkills = skillsByLevel.get(studentLevel) || [];
             const adminSkillSet = new Set(adminSkills);
-            
-            // Build a map of proficiency for admin-defined skills only
+
             const proficiencyMap = new Map<string, number>();
             progressData
-              .filter(p => 
-                isDataObject(p) && 
-                hasProperty(p, 'student_id') && 
+              .filter(p =>
+                isDataObject(p) &&
+                hasProperty(p, 'student_id') &&
                 p.student_id === student.id &&
                 hasProperty(p, 'skill_name') &&
                 adminSkillSet.has(p.skill_name as string)
@@ -179,16 +197,15 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
               .forEach(p => {
                 proficiencyMap.set(p.skill_name as string, Number(p.proficiency) || 0);
               });
-            
-            // Average across ALL admin skills (missing = 0%)
+
             const averageStudentProgress = adminSkills.length > 0
               ? Math.round(adminSkills.reduce((sum, skillName) => sum + (proficiencyMap.get(skillName) || 0), 0) / adminSkills.length)
               : 0;
-              
+
             const studentProfile = studentData?.profiles;
             const firstName = studentProfile?.first_name || '';
             const lastName = studentProfile?.last_name || '';
-            
+
             return {
               id: student.id as string,
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
@@ -202,18 +219,17 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           })
           .filter(Boolean) as Student[];
 
-        // Sort by class time
         const timeOrder = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
         formattedStudents.sort((a, b) => {
           const aIdx = timeOrder.indexOf(a.classTime || '');
           const bIdx = timeOrder.indexOf(b.classTime || '');
           return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
         });
-        
-        if (import.meta.env.DEV) console.log("Formatted students:", formattedStudents);
-        
+
+        if (import.meta.env.DEV) console.log('Formatted students:', formattedStudents);
+
         setStudents(formattedStudents);
-        
+
         if (formattedStudents.length > 0) {
           const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
           setAverageProgress(Math.round(totalProgress / formattedStudents.length));
@@ -221,23 +237,28 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           setAverageProgress(0);
         }
       } else {
-        if (import.meta.env.DEV) console.log("No students scheduled for today");
+        if (import.meta.env.DEV) console.log('No students scheduled for today');
         setStudents([]);
         setTodayClasses(0);
         setAverageProgress(0);
       }
 
-      // Fetch total student count (all days) separately for the stats card
-      const { count: allStudentCount, error: countError } = await supabase
-        .from('students')
-        .select('id', { count: 'exact', head: true })
-        .eq('instructor_id', instructorId);
-
-      if (countError) {
-        console.error("Error counting total students:", countError);
+      // Total students count = unique active students linked to this instructor
+      // via student_instructors (primary + secondary).
+      let totalActive = 0;
+      if (allIds.length > 0) {
+        const { count, error: countError } = await supabase
+          .from('students')
+          .select('id', { count: 'exact', head: true })
+          .in('id', allIds)
+          .eq('enrollment_status', 'active');
+        if (countError) {
+          console.error('Error counting total students:', countError);
+        }
+        totalActive = count || 0;
       }
-      setTotalStudents(allStudentCount || 0);
-      
+      setTotalStudents(totalActive);
+
     } catch (error: any) {
       console.error('Error fetching instructor dashboard data:', error);
       setFetchError('Failed to load dashboard data');
@@ -252,17 +273,15 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [instructorId]); // Only depend on instructorId, not toast
-  
+  }, [instructorId]);
+
   useEffect(() => {
     if (instructorId) {
       fetchDashboardData();
     } else if (userData?.role === 'instructor' || userData?.role === 'admin') {
-      // Role is confirmed but no instructor record — stop loading
       setLoading(false);
     }
-    
-    // Cleanup function to cancel any pending requests
+
     return () => {
       requestInProgress.current = false;
     };
