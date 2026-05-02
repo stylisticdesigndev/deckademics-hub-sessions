@@ -21,10 +21,9 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
         { student: { id: '1', name: 'Alex Rivera', initials: 'AR', avatar: null, level: 'novice', classDay: 'Wednesday', classTime: '3:30 PM - 5:00 PM' }, dateStr: '', status: null as 'present' | 'absent' | null },
         { student: { id: '2', name: 'Jordan Chen', initials: 'JC', avatar: null, level: 'amateur', classDay: 'Wednesday', classTime: '5:30 PM - 7:00 PM' }, dateStr: '', status: 'present' as const },
       ]
-    : (todayStudents.length > 0 ? todayStudents : currentWeekStudents);
+    : todayStudents;
 
-  const hasToday = demoMode || todayStudents.length > 0;
-  const heading = hasToday ? "Today's Attendance" : "This Week's Attendance";
+  const heading = "Today's Attendance";
 
   return (
     <section className="space-y-3">
@@ -33,7 +32,7 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <ClipboardCheck className="h-8 w-8 mx-auto mb-2 opacity-40" />
-            <p className="text-sm">No classes scheduled this week</p>
+            <p className="text-sm">No classes scheduled today</p>
           </CardContent>
         </Card>
       ) : (
