@@ -11,6 +11,7 @@ import { AtSign, Save, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
+import { PasskeyManager } from '@/components/profile/PasskeyManager';
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -130,6 +131,9 @@ const AdminProfile = () => {
             </CardFooter>
           </Card>
         </form>
+        <div className="mt-6">
+          <PasskeyManager />
+        </div>
       </div>
     </div>
   );
