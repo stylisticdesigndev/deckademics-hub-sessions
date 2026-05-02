@@ -1,6 +1,6 @@
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BugReportDialog } from '@/components/bugs/BugReportDialog';
 import { FeatureRequestDialog } from '@/components/features/FeatureRequestDialog';
 import {
@@ -17,8 +17,6 @@ import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
 import { SidebarUserFooter } from '@/components/navigation/SidebarUserFooter';
-import { PasskeyEnrollmentModal } from '@/components/auth/PasskeyEnrollmentModal';
-import { usePasskeySupport, useUserPasskeys } from '@/hooks/usePasskeys';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -38,7 +36,6 @@ const HamburgerButton = () => {
 
 const HeaderHamburger = () => {
   const { isMobile } = useSidebar();
-  // Only show in the header on mobile — desktop expanded/slim both have an in-sidebar hamburger
   if (!isMobile) return null;
   return <HamburgerButton />;
 };
@@ -46,7 +43,6 @@ const HeaderHamburger = () => {
 const ExpandedSidebarHeader = () => {
   const { state, isMobile } = useSidebar();
   if (state !== 'expanded' && !isMobile) return null;
-  // Mobile sheet: show the logo at the top of the sidebar (no hamburger — sheet has its own close).
   if (isMobile) {
     return (
       <div className="p-3 flex items-center justify-center">
@@ -54,7 +50,6 @@ const ExpandedSidebarHeader = () => {
       </div>
     );
   }
-  // Desktop expanded: in-sidebar hamburger to collapse to slim mode.
   return (
     <div className="px-2 pb-3 mb-1 border-b border-sidebar-border">
       <HamburgerButton />
@@ -62,59 +57,14 @@ const ExpandedSidebarHeader = () => {
   );
 };
 
-export const DashboardLayout = ({ 
-  children, 
+export const DashboardLayout = ({
+  children,
   sidebarContent,
-  userType
+  userType,
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { signOut, session, userData, isLoading: authLoading } = useAuth();
+  const { signOut } = useAuth();
   const isAdminMode = userType === 'admin';
-  const isProfilePage = location.pathname.endsWith('/profile');
-  const [isProfileNavigationPending, setIsProfileNavigationPending] = useState(false);
-  const wasProfilePage = useRef(isProfilePage);
-  const [passkeyOpen, setPasskeyOpen] = useState(false);
-
-  const passkeySupported = usePasskeySupport();
-  const { data: passkeys, isLoading: passkeysLoading } = useUserPasskeys();
-  const passkeyDismissed = (userData?.profile as any)?.passkey_prompt_dismissed === true;
-
-  // Single source of truth for whether the biometric modal is allowed to render.
-  const canShowPasskeyModal =
-    !authLoading &&
-    !!session?.user &&
-    !!userData?.profile &&
-    passkeySupported === true &&
-    !passkeysLoading &&
-    (passkeys?.length ?? 0) === 0 &&
-    !passkeyDismissed &&
-    !isProfilePage &&
-    !isProfileNavigationPending;
-
-  // Open the modal once eligibility is true; never auto-open while ineligible.
-  useEffect(() => {
-    if (canShowPasskeyModal) {
-      setPasskeyOpen(true);
-    } else {
-      setPasskeyOpen(false);
-    }
-  }, [canShowPasskeyModal]);
-
-  useEffect(() => {
-    if (wasProfilePage.current && !isProfilePage) {
-      setIsProfileNavigationPending(false);
-    }
-    wasProfilePage.current = isProfilePage;
-  }, [isProfilePage]);
-
-  useEffect(() => {
-    const handleProfileNavigationStart = () => setIsProfileNavigationPending(true);
-    window.addEventListener('deckademics:profile-navigation-start', handleProfileNavigationStart);
-    return () => {
-      window.removeEventListener('deckademics:profile-navigation-start', handleProfileNavigationStart);
-    };
-  }, []);
 
   const handleLogout = () => {
     signOut();
@@ -132,10 +82,7 @@ export const DashboardLayout = ({
             <ExpandedSidebarHeader />
             {sidebarContent}
           </SidebarContent>
-          <SidebarUserFooter
-            userType={userType}
-            onProfileNavigate={() => setIsProfileNavigationPending(true)}
-          />
+          <SidebarUserFooter userType={userType} />
         </Sidebar>
         <div className="flex-1 overflow-auto">
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
@@ -158,7 +105,6 @@ export const DashboardLayout = ({
             <header className="h-16 flex items-center justify-between px-4 lg:pl-3 lg:pr-6">
               <div className="flex items-center gap-2">
                 <HeaderHamburger />
-                {/* Logo only in the desktop header — on mobile/tablet it lives inside the sidebar sheet */}
                 <Logo size="header" className="shrink-0 -ml-2 lg:-ml-1 hidden lg:block" />
               </div>
               <div className="flex items-center gap-2">
@@ -178,9 +124,6 @@ export const DashboardLayout = ({
           </main>
         </div>
       </div>
-      {canShowPasskeyModal && (
-        <PasskeyEnrollmentModal open={passkeyOpen} onOpenChange={setPasskeyOpen} />
-      )}
     </SidebarProvider>
   );
 };

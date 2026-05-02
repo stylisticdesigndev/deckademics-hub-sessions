@@ -66,22 +66,3 @@ export function useDeletePasskey() {
     },
   });
 }
-
-export function useDismissPasskeyPrompt() {
-  const { session } = useAuth();
-  const userId = session?.user?.id;
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      if (!userId) return;
-      const { error } = await supabase
-        .from('profiles')
-        .update({ passkey_prompt_dismissed: true } as any)
-        .eq('id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['profile'] });
-    },
-  });
-}
