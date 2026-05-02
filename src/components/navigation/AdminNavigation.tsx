@@ -39,6 +39,12 @@ export const AdminNavigation = () => {
   const showPayroll = canAccessPayroll(userEmail);
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
+  const handleNavigate = (href: string) => {
+    if (href.endsWith('/profile')) {
+      window.dispatchEvent(new Event('deckademics:profile-navigation-start'));
+    }
+    closeMobileNav();
+  };
 
   const { data: studentCounts } = useQuery({
     queryKey: ['admin-student-counts-nav'],
@@ -137,7 +143,7 @@ export const AdminNavigation = () => {
         <Link
           key={item.href}
           to={item.href}
-          onClick={closeMobileNav}
+          onClick={() => handleNavigate(item.href)}
           className={cn(
             "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
             pathname === item.href
