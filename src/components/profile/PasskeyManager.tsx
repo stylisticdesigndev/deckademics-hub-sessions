@@ -3,22 +3,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Fingerprint, Trash2, Plus } from 'lucide-react';
 import {
-  usePasskeySupport,
   useUserPasskeys,
   useRegisterPasskey,
   useDeletePasskey,
 } from '@/hooks/usePasskeys';
 import { toast } from '@/hooks/use-toast';
 import { formatDateUS } from '@/lib/utils';
+import { isPasskeySupported } from '@/lib/passkeys';
 
 export const PasskeyManager: React.FC = () => {
-  const supported = usePasskeySupport();
   const { data: passkeys, isLoading } = useUserPasskeys();
   const register = useRegisterPasskey();
   const remove = useDeletePasskey();
 
   const handleAdd = async () => {
+    // Defer ALL WebAuthn API access until the user explicitly clicks the
+    // button. Calling `isUserVerifyingPlatformAuthenticatorAvailable()` on
+    // mount could surface a native biometric/passkey sheet on iOS Safari,
+    // which is exactly what we are trying to prevent.
     try {
+      const supported = await isPasskeySupported();
+      if (!supported) {
+        toast({
+          title: 'Not supported on this device',
+          description: "This device doesn't support biometric sign-in.",
+        });
+        return;
+      }
       const { deviceLabel } = await register.mutateAsync();
       toast({
         title: 'Device registered',
@@ -61,12 +72,6 @@ export const PasskeyManager: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {supported === false && (
-          <p className="text-sm text-muted-foreground">
-            This device doesn't support biometric sign-in.
-          </p>
-        )}
-
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading devices…</p>
         ) : passkeys && passkeys.length > 0 ? (
@@ -102,17 +107,15 @@ export const PasskeyManager: React.FC = () => {
           <p className="text-sm text-muted-foreground">No devices registered yet.</p>
         )}
 
-        {supported === true && (
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={register.isPending}
-            className="w-full gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            {register.isPending ? 'Registering…' : 'Add this device'}
-          </Button>
-        )}
+        <Button
+          type="button"
+          onClick={handleAdd}
+          disabled={register.isPending}
+          className="w-full gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          {register.isPending ? 'Registering…' : 'Add this device'}
+        </Button>
       </CardContent>
     </Card>
   );

@@ -1,27 +1,60 @@
-I’ll remove the Profile-page flash by changing the passkey prompt from a component that opens itself after mount into a parent-controlled modal that is never mounted/opened during Profile navigation.
+## Plan
 
-Plan:
-1. Move the route/auth/loading checks into `DashboardLayout`
-   - Use `useAuth().isLoading`, the current route, and passkey query state before deciding whether the modal should exist.
-   - Do not render the biometric modal while auth/profile data is still loading.
-   - Do not render it on `/student/profile`, `/instructor/profile`, or `/admin/profile`.
-   - Do not render it while a Profile navigation is pending.
+I’ll remove the remaining student-side automatic biometric behavior by changing the Profile Quick Login card so it does **nothing WebAuthn-related on mount**.
 
-2. Make `PasskeyEnrollmentModal` controlled
-   - Replace its internal “setOpen(true)” effect with explicit `open` / `onOpenChange` props from the layout.
-   - This prevents the modal from opening for one frame before route checks settle.
-   - Keep the existing Enable and Maybe Later behavior.
+Right now, the old proactive enrollment modal has already been removed from the app source, but the student Profile still renders `PasskeyManager`, and `PasskeyManager` immediately runs `usePasskeySupport()` when the page loads. That hook calls:
 
-3. Catch all Profile entry points on mobile/tablet/desktop
-   - Keep the immediate suppression when the avatar/Profile button is clicked.
-   - Ensure the admin mobile Profile nav item also triggers the same suppression.
-   - Use route-based protection as the final source of truth so direct URL visits to a Profile page cannot show the modal either.
+```ts
+PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+```
 
-4. Clean up the earlier workaround
-   - Remove any redundant route-checking inside the modal once the layout fully owns whether it can render.
-   - Keep the code simple and avoid relying on timing, `setTimeout`, or one-frame unmount behavior.
+On mobile Safari/iOS, that WebAuthn capability check can surface biometric/passkey UI even though the user did not press “Add this device.” That matches your video: the biometric prompt appears as soon as the student Profile is entered.
 
-Expected result:
-- Clicking Profile on mobile will go straight to the user profile with no biometric modal flash.
-- Same behavior on tablet and desktop.
-- The biometric prompt can still appear on non-profile dashboard/app pages for eligible users who have not dismissed it.
+## What I’ll change
+
+1. **Make `PasskeyManager` lazy/manual only**
+   - Remove the automatic `usePasskeySupport()` call from initial render.
+   - Do not touch `PublicKeyCredential`, Face ID, Touch ID, Fingerprint, or WebAuthn APIs until the user presses `Add this device`.
+
+2. **Move support detection into the button click**
+   - When the user manually taps `Add this device`, then check whether biometrics/passkeys are supported.
+   - If unsupported, show a normal toast/message.
+   - If supported, continue to `registerPasskey()`.
+
+3. **Keep the Quick Login card visible**
+   - The card remains on student/instructor/admin Profile pages.
+   - It still allows manual enrollment exactly as requested.
+   - It just stops doing any background biometric detection.
+
+4. **Add an extra guard for student profile**
+   - Ensure no registration can start unless the click handler is explicitly invoked by the `Add this device` button.
+   - This prevents a mobile tap/navigation/overlay race from accidentally triggering registration.
+
+5. **Verify no proactive biometric entry points remain**
+   - Re-search the codebase for:
+     - `PasskeyEnrollmentModal`
+     - `usePasskeySupport()` auto-mount behavior
+     - `registerPasskey()` outside the manual button
+     - `passkey_prompt_dismissed`
+
+## Files to update
+
+- `src/components/profile/PasskeyManager.tsx`
+  - Remove passive support check on mount.
+  - Run support check only inside `handleAdd()`.
+  - Keep manual “Add this device” behavior.
+
+- `src/hooks/usePasskeys.ts`
+  - Either remove `usePasskeySupport()` if it is no longer needed, or leave it only for sign-in pages where showing/hiding the biometric sign-in button is intentional.
+  - Confirm it is not used by Student Profile anymore.
+
+## Expected result
+
+- Student Profile will load without any biometric modal or native Face ID/passkey sheet flashing.
+- Instructor Profile will continue behaving normally.
+- Biometric registration only starts after the user manually taps `Add this device` in Quick Login.
+- No automatic biometric prompt remains on login, dashboard load, or profile navigation.
+
+## Note
+
+If you are testing from an installed iPhone PWA, after this change is published you may still need to fully close/reopen the PWA or delete/re-add it once, because iOS can keep an older JavaScript bundle alive longer than Safari tabs. But the source-level fix will make the student Profile stop touching biometric APIs on page load.
