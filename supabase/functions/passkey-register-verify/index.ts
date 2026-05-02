@@ -120,11 +120,19 @@ Deno.serve(async (req) => {
     const ua = req.headers.get('user-agent') || ''
     const deviceLabel = deriveDeviceLabel(ua)
 
-    // Convert Uint8Array public key to bytea-compatible insert (supabase-js handles Uint8Array → bytea)
+    // Encode the Uint8Array public key as a Postgres bytea hex literal ('\x...').
+    // supabase-js does NOT auto-serialize Uint8Array → bytea via PostgREST; it would
+    // JSON-stringify the typed array into an object, corrupting the bytes.
+    let hex = ''
+    for (let i = 0; i < publicKey.length; i++) {
+      hex += publicKey[i].toString(16).padStart(2, '0')
+    }
+    const publicKeyHex = '\\x' + hex
+
     const { error: insertErr } = await admin.from('user_passkeys').insert({
       user_id: userId,
       credential_id: credentialId,
-      public_key: publicKey,
+      public_key: publicKeyHex,
       counter,
       transports,
       device_label: deviceLabel,
