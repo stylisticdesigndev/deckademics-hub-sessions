@@ -81,6 +81,9 @@ export const PasskeyEnrollmentModal: React.FC = () => {
             Use your face or fingerprint to sign in faster next time.
           </DialogDescription>
         </DialogHeader>
+      <p className="text-center text-xs text-muted-foreground -mt-2">
+        You can always enable this later from your Profile page under "Quick Login."
+      </p>
         <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
           <Button onClick={handleEnable} disabled={register.isPending} className="w-full">
             {register.isPending ? 'Setting up…' : 'Enable'}
