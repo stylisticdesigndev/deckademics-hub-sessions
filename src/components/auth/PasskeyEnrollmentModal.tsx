@@ -71,7 +71,6 @@ export const PasskeyEnrollmentModal: React.FC = () => {
       title: 'No problem — you can enable it later',
       description:
         'To set up Quick Login later, open your Profile page and find the "Quick Login" section. Click "Add this device" and follow your device\'s prompt to register your fingerprint or face.',
-      duration: 10000,
     });
   };
 
