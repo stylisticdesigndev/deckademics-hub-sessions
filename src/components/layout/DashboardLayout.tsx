@@ -81,6 +81,14 @@ export const DashboardLayout = ({
     wasProfilePage.current = isProfilePage;
   }, [isProfilePage]);
 
+  useEffect(() => {
+    const handleProfileNavigationStart = () => setIsProfileNavigationPending(true);
+    window.addEventListener('deckademics:profile-navigation-start', handleProfileNavigationStart);
+    return () => {
+      window.removeEventListener('deckademics:profile-navigation-start', handleProfileNavigationStart);
+    };
+  }, []);
+
   const handleLogout = () => {
     signOut();
   };

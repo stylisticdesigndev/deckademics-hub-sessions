@@ -54,7 +54,10 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType, 
   // Closing the sheet AND deferring navigation prevents Radix from leaving
   // `pointer-events: none` on <body>, which would freeze the destination page.
   const goTo = (href: string) => {
-    if (href === profileHref) onProfileNavigate?.();
+    if (href === profileHref) {
+      window.dispatchEvent(new Event('deckademics:profile-navigation-start'));
+      onProfileNavigate?.();
+    }
     if (isMobile) setOpenMobile(false);
     setTimeout(() => navigate(href), 0);
   };

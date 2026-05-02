@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Fingerprint } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import {
   usePasskeySupport,
@@ -27,6 +28,7 @@ import { toast } from '@/hooks/use-toast';
  */
 export const PasskeyEnrollmentModal: React.FC = () => {
   const { session, userData } = useAuth();
+  const location = useLocation();
   const supported = usePasskeySupport();
   const { data: passkeys, isLoading: passkeysLoading } = useUserPasskeys();
   const register = useRegisterPasskey();
@@ -34,15 +36,20 @@ export const PasskeyEnrollmentModal: React.FC = () => {
   const [open, setOpen] = useState(false);
 
   const dismissed = (userData.profile as any)?.passkey_prompt_dismissed === true;
+  const isProfilePage = location.pathname.endsWith('/profile');
 
   useEffect(() => {
+    if (isProfilePage) {
+      setOpen(false);
+      return;
+    }
     if (!session?.user) return;
     if (supported !== true) return;
     if (passkeysLoading) return;
     if ((passkeys?.length ?? 0) > 0) return;
     if (dismissed) return;
     setOpen(true);
-  }, [session, supported, passkeysLoading, passkeys, dismissed]);
+  }, [session, supported, passkeysLoading, passkeys, dismissed, isProfilePage]);
 
   const handleEnable = async () => {
     try {
@@ -73,6 +80,8 @@ export const PasskeyEnrollmentModal: React.FC = () => {
         'To set up Quick Login later, open your Profile page and find the "Quick Login" section. Click "Add this device" and follow your device\'s prompt to register your fingerprint or face.',
     });
   };
+
+  if (isProfilePage) return null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleLater()}>
