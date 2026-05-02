@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
 import { DAY_ORDER, sanitizeScheduleItems, CLASS_SLOTS } from '@/utils/instructorSchedule';
+import { PasskeyManager } from '@/components/profile/PasskeyManager';
 
 type TeachingScheduleItem = {
   day: string;
@@ -376,6 +377,9 @@ const InstructorProfile = () => {
           </div>
         </div>
       )}
+      <div className="max-w-2xl">
+        <PasskeyManager />
+      </div>
     </div>
   );
 };
