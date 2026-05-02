@@ -822,6 +822,36 @@ export type Database = {
         }
         Relationships: []
       }
+      passkey_challenges: {
+        Row: {
+          challenge: string
+          created_at: string
+          email: string | null
+          expires_at: string
+          id: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          challenge: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          challenge?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -874,6 +904,7 @@ export type Database = {
           id: string
           is_mock: boolean
           last_name: string | null
+          passkey_prompt_dismissed: boolean
           phone: string | null
           pronouns: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -889,6 +920,7 @@ export type Database = {
           id: string
           is_mock?: boolean
           last_name?: string | null
+          passkey_prompt_dismissed?: boolean
           phone?: string | null
           pronouns?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -904,6 +936,7 @@ export type Database = {
           id?: string
           is_mock?: boolean
           last_name?: string | null
+          passkey_prompt_dismissed?: boolean
           phone?: string | null
           pronouns?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1353,6 +1386,42 @@ export type Database = {
           },
         ]
       }
+      user_passkeys: {
+        Row: {
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          transports: string[]
+          user_id: string
+        }
+        Insert: {
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          transports?: string[]
+          user_id: string
+        }
+        Update: {
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          transports?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1469,6 +1538,7 @@ export type Database = {
           id: string
           is_mock: boolean
           last_name: string | null
+          passkey_prompt_dismissed: boolean
           phone: string | null
           pronouns: string | null
           role: Database["public"]["Enums"]["user_role"]
