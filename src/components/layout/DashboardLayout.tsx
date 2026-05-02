@@ -1,5 +1,5 @@
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BugReportDialog } from '@/components/bugs/BugReportDialog';
 import { FeatureRequestDialog } from '@/components/features/FeatureRequestDialog';
@@ -72,6 +72,14 @@ export const DashboardLayout = ({
   const isAdminMode = userType === 'admin';
   const isProfilePage = location.pathname.endsWith('/profile');
   const [isProfileNavigationPending, setIsProfileNavigationPending] = useState(false);
+  const wasProfilePage = useRef(isProfilePage);
+
+  useEffect(() => {
+    if (wasProfilePage.current && !isProfilePage) {
+      setIsProfileNavigationPending(false);
+    }
+    wasProfilePage.current = isProfilePage;
+  }, [isProfilePage]);
 
   const handleLogout = () => {
     signOut();
