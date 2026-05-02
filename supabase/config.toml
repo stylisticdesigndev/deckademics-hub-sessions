@@ -26,3 +26,15 @@ port = 54326
 [functions]
 [functions.create-demo-student]
 verify_jwt = false
+
+[functions.passkey-register-options]
+verify_jwt = false
+
+[functions.passkey-register-verify]
+verify_jwt = false
+
+[functions.passkey-auth-options]
+verify_jwt = false
+
+[functions.passkey-auth-verify]
+verify_jwt = false
