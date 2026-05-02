@@ -68,7 +68,7 @@ export const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut, userData } = useAuth();
+  const { signOut } = useAuth();
   const isAdminMode = userType === 'admin';
   const isProfilePage = location.pathname.endsWith('/profile');
 
