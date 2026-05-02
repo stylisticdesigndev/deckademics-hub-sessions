@@ -1,6 +1,6 @@
 
 import { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BugReportDialog } from '@/components/bugs/BugReportDialog';
 import { FeatureRequestDialog } from '@/components/features/FeatureRequestDialog';
 import {
@@ -67,8 +67,10 @@ export const DashboardLayout = ({
   userType
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut, userData } = useAuth();
   const isAdminMode = userType === 'admin';
+  const isProfilePage = location.pathname.endsWith('/profile');
 
   const handleLogout = () => {
     signOut();
@@ -129,7 +131,7 @@ export const DashboardLayout = ({
           </main>
         </div>
       </div>
-      <PasskeyEnrollmentModal />
+      {!isProfilePage && <PasskeyEnrollmentModal />}
     </SidebarProvider>
   );
 };
