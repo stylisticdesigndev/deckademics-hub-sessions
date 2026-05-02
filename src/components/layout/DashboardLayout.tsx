@@ -1,5 +1,5 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BugReportDialog } from '@/components/bugs/BugReportDialog';
 import { FeatureRequestDialog } from '@/components/features/FeatureRequestDialog';
@@ -71,6 +71,7 @@ export const DashboardLayout = ({
   const { signOut } = useAuth();
   const isAdminMode = userType === 'admin';
   const isProfilePage = location.pathname.endsWith('/profile');
+  const [isProfileNavigationPending, setIsProfileNavigationPending] = useState(false);
 
   const handleLogout = () => {
     signOut();
@@ -88,7 +89,10 @@ export const DashboardLayout = ({
             <ExpandedSidebarHeader />
             {sidebarContent}
           </SidebarContent>
-          <SidebarUserFooter userType={userType} />
+          <SidebarUserFooter
+            userType={userType}
+            onProfileNavigate={() => setIsProfileNavigationPending(true)}
+          />
         </Sidebar>
         <div className="flex-1 overflow-auto">
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border shadow-sm">
@@ -131,7 +135,7 @@ export const DashboardLayout = ({
           </main>
         </div>
       </div>
-      {!isProfilePage && <PasskeyEnrollmentModal />}
+      {!isProfilePage && !isProfileNavigationPending && <PasskeyEnrollmentModal />}
     </SidebarProvider>
   );
 };
