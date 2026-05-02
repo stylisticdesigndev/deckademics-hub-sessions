@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,52 +9,34 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Fingerprint } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
 import {
-  usePasskeySupport,
-  useUserPasskeys,
   useRegisterPasskey,
   useDismissPasskeyPrompt,
 } from '@/hooks/usePasskeys';
 import { toast } from '@/hooks/use-toast';
 
 /**
- * One-time proactive enrollment modal. Shows once per user when:
- * - logged in
- * - device supports platform authenticator
- * - user has zero registered passkeys
- * - user hasn't clicked "Maybe Later" before
+ * Controlled one-time proactive enrollment modal.
+ * The parent (DashboardLayout) decides whether this modal exists at all,
+ * based on route, auth-loading, and passkey eligibility. This avoids the
+ * brief flash that occurred when the modal mounted, then closed itself.
  */
-export const PasskeyEnrollmentModal: React.FC = () => {
-  const { session, userData } = useAuth();
-  const location = useLocation();
-  const supported = usePasskeySupport();
-  const { data: passkeys, isLoading: passkeysLoading } = useUserPasskeys();
+interface PasskeyEnrollmentModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const PasskeyEnrollmentModal: React.FC<PasskeyEnrollmentModalProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const register = useRegisterPasskey();
   const dismiss = useDismissPasskeyPrompt();
-  const [open, setOpen] = useState(false);
-
-  const dismissed = (userData.profile as any)?.passkey_prompt_dismissed === true;
-  const isProfilePage = location.pathname.endsWith('/profile');
-
-  useEffect(() => {
-    if (isProfilePage) {
-      setOpen(false);
-      return;
-    }
-    if (!session?.user) return;
-    if (supported !== true) return;
-    if (passkeysLoading) return;
-    if ((passkeys?.length ?? 0) > 0) return;
-    if (dismissed) return;
-    setOpen(true);
-  }, [session, supported, passkeysLoading, passkeys, dismissed, isProfilePage]);
 
   const handleEnable = async () => {
     try {
       await register.mutateAsync();
-      setOpen(false);
+      onOpenChange(false);
       toast({
         title: 'Quick Login enabled',
         description: 'You can now sign in with your fingerprint or face.',
@@ -68,7 +50,7 @@ export const PasskeyEnrollmentModal: React.FC = () => {
   };
 
   const handleLater = async () => {
-    setOpen(false);
+    onOpenChange(false);
     try {
       await dismiss.mutateAsync();
     } catch {
@@ -80,8 +62,6 @@ export const PasskeyEnrollmentModal: React.FC = () => {
         'To set up Quick Login later, open your Profile page and find the "Quick Login" section. Click "Add this device" and follow your device\'s prompt to register your fingerprint or face.',
     });
   };
-
-  if (isProfilePage) return null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleLater()}>

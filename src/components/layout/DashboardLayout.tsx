@@ -18,6 +18,7 @@ import { UserNotificationDropdown } from '@/components/notifications/UserNotific
 import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
 import { SidebarUserFooter } from '@/components/navigation/SidebarUserFooter';
 import { PasskeyEnrollmentModal } from '@/components/auth/PasskeyEnrollmentModal';
+import { usePasskeySupport, useUserPasskeys } from '@/hooks/usePasskeys';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -68,11 +69,37 @@ export const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, session, userData, isLoading: authLoading } = useAuth();
   const isAdminMode = userType === 'admin';
   const isProfilePage = location.pathname.endsWith('/profile');
   const [isProfileNavigationPending, setIsProfileNavigationPending] = useState(false);
   const wasProfilePage = useRef(isProfilePage);
+  const [passkeyOpen, setPasskeyOpen] = useState(false);
+
+  const passkeySupported = usePasskeySupport();
+  const { data: passkeys, isLoading: passkeysLoading } = useUserPasskeys();
+  const passkeyDismissed = (userData?.profile as any)?.passkey_prompt_dismissed === true;
+
+  // Single source of truth for whether the biometric modal is allowed to render.
+  const canShowPasskeyModal =
+    !authLoading &&
+    !!session?.user &&
+    !!userData?.profile &&
+    passkeySupported === true &&
+    !passkeysLoading &&
+    (passkeys?.length ?? 0) === 0 &&
+    !passkeyDismissed &&
+    !isProfilePage &&
+    !isProfileNavigationPending;
+
+  // Open the modal once eligibility is true; never auto-open while ineligible.
+  useEffect(() => {
+    if (canShowPasskeyModal) {
+      setPasskeyOpen(true);
+    } else {
+      setPasskeyOpen(false);
+    }
+  }, [canShowPasskeyModal]);
 
   useEffect(() => {
     if (wasProfilePage.current && !isProfilePage) {
@@ -151,7 +178,9 @@ export const DashboardLayout = ({
           </main>
         </div>
       </div>
-      {!isProfilePage && !isProfileNavigationPending && <PasskeyEnrollmentModal />}
+      {canShowPasskeyModal && (
+        <PasskeyEnrollmentModal open={passkeyOpen} onOpenChange={setPasskeyOpen} />
+      )}
     </SidebarProvider>
   );
 };
