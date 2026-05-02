@@ -17,6 +17,7 @@ import { mockProfileData } from '@/data/mockDashboardData';
 import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PasskeyManager } from '@/components/profile/PasskeyManager';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -537,6 +538,9 @@ const StudentProfile = () => {
             )}
           </DialogContent>
         </Dialog>
+        <div className="mt-6 max-w-2xl">
+          <PasskeyManager />
+        </div>
       </div>
     </>
   );

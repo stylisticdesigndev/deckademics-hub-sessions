@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { BiometricSignInButton } from './BiometricSignInButton';
 
 interface LoginFormProps {
   userType: 'student' | 'instructor' | 'admin';
@@ -127,6 +128,7 @@ export const LoginForm = ({
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
+          <BiometricSignInButton email={formData.email} redirectRole={userType} />
         </div>
       </form>
 

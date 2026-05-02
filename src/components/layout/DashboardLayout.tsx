@@ -17,6 +17,7 @@ import { NotificationDropdown } from '@/components/admin/NotificationDropdown';
 import { UserNotificationDropdown } from '@/components/notifications/UserNotificationDropdown';
 import { SlimSidebarNav } from '@/components/navigation/SlimSidebarNav';
 import { SidebarUserFooter } from '@/components/navigation/SidebarUserFooter';
+import { PasskeyEnrollmentModal } from '@/components/auth/PasskeyEnrollmentModal';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -128,6 +129,7 @@ export const DashboardLayout = ({
           </main>
         </div>
       </div>
+      <PasskeyEnrollmentModal />
     </SidebarProvider>
   );
 };
