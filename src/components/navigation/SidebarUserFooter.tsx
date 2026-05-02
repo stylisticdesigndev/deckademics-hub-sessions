@@ -18,6 +18,7 @@ import { getInstructorDisplayName } from '@/utils/instructorName';
 
 interface SidebarUserFooterProps {
   userType: 'student' | 'instructor' | 'admin';
+  onProfileNavigate?: () => void;
 }
 
 /**
@@ -25,7 +26,7 @@ interface SidebarUserFooterProps {
  * Hidden on mobile/tablet (those views keep the in-list "Profile" nav item) and
  * hidden in slim/collapsed desktop mode (SlimSidebarNav owns the avatar there).
  */
-export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }) => {
+export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType, onProfileNavigate }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { userData, signOut } = useAuth();
@@ -53,6 +54,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
   // Closing the sheet AND deferring navigation prevents Radix from leaving
   // `pointer-events: none` on <body>, which would freeze the destination page.
   const goTo = (href: string) => {
+    if (href === profileHref) onProfileNavigate?.();
     if (isMobile) setOpenMobile(false);
     setTimeout(() => navigate(href), 0);
   };
