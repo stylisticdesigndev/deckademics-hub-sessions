@@ -49,6 +49,7 @@ const AdminMessages = () => {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [instructorStudentIds, setInstructorStudentIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchData(); }, [session]);
 
@@ -82,6 +83,15 @@ const AdminMessages = () => {
           };
         }));
       }
+
+      // Pull the set of students assigned to this user as an instructor.
+      // Conversations with those students are instructor↔student threads and
+      // must be hidden from the admin Messages view.
+      const { data: assignments } = await supabase
+        .from('student_instructors')
+        .select('student_id')
+        .eq('instructor_id', session.user.id);
+      setInstructorStudentIds(new Set((assignments || []).map((a: any) => a.student_id)));
 
       const { data: messages } = await supabase
         .from('messages')
@@ -117,6 +127,9 @@ const AdminMessages = () => {
 
     const result: Conversation[] = [];
     for (const [otherUserId, msgs] of grouped) {
+      // Hide threads with students assigned to this user as an instructor —
+      // those belong to the instructor view, not the admin view.
+      if (instructorStudentIds.has(otherUserId)) continue;
       const user = userMap.get(otherUserId);
       const sorted = msgs.sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
       const last = sorted[sorted.length - 1];
@@ -134,7 +147,7 @@ const AdminMessages = () => {
     }
 
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-  }, [allMessages, users, session]);
+  }, [allMessages, users, session, instructorStudentIds]);
 
   const threadMessages = useMemo(() => {
     if (!activeUserId || !session?.user?.id) return [];
