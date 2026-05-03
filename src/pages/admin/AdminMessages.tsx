@@ -33,6 +33,10 @@ interface UserOption {
   role: string;
 }
 
+// Subjects used by automated student→instructor flows. Hidden from the admin
+// Messages view since they are intended for the instructor role only.
+const AUTOMATED_SUBJECTS = new Set(['Running Late', 'Marked Absent', 'Absence Cancelled']);
+
 const AdminMessages = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -85,7 +89,12 @@ const AdminMessages = () => {
         .or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
         .order('sent_at', { ascending: true });
 
-      if (messages) setAllMessages(messages);
+      if (messages) {
+        const filtered = (messages as Message[]).filter(
+          m => !m.subject || !AUTOMATED_SUBJECTS.has(m.subject)
+        );
+        setAllMessages(filtered);
+      }
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
