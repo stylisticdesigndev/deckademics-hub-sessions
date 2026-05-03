@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -43,9 +43,9 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectSt
   );
 
   return (
-    <Card>
-      <CardHeader className="flex-row justify-between items-center pb-4">
-        <CardTitle>Today's Students</CardTitle>
+    <section className="space-y-3">
+      <div className="flex flex-row justify-between items-center gap-3">
+        <h2 className="text-lg font-semibold">Today's Students</h2>
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -66,9 +66,10 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectSt
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent>
-        {students.length > 0 ? (
+      </div>
+      <Card>
+        <CardContent className="pt-6">
+          {students.length > 0 ? (
           <>
             {/* Desktop table */}
             <div className="hidden sm:block">
@@ -164,18 +165,19 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectSt
               )}
             </div>
           </>
-        ) : (
-          <div className="p-6 text-center text-muted-foreground">
-            No students scheduled for today.
+          ) : (
+            <div className="p-6 text-center text-muted-foreground">
+              No students scheduled for today.
+            </div>
+          )}
+
+          <div className="mt-4 text-right">
+            <Button onClick={() => navigate('/instructor/students')}>
+              View All Students
+            </Button>
           </div>
-        )}
-        
-        <div className="mt-4 text-right">
-          <Button onClick={() => navigate('/instructor/students')}>
-            View All Students
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </section>
   );
 };
