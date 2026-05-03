@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
