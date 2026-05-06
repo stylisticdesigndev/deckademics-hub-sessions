@@ -38,6 +38,8 @@ const InstructorProfile = () => {
   });
   const [formData, setFormData] = useState({ ...profile });
   const [privacy, setPrivacy] = useState({ hidePhone: false, hideEmail: false });
+  const [initialPrivacy, setInitialPrivacy] = useState({ hidePhone: false, hideEmail: false });
+  const privacyDirty = privacy.hidePhone !== initialPrivacy.hidePhone || privacy.hideEmail !== initialPrivacy.hideEmail;
 
   useEffect(() => {
     if (demoMode) {
@@ -77,10 +79,12 @@ const InstructorProfile = () => {
           console.error('Error fetching instructor data:', instructorError);
         }
         setInstructorData(instrData);
-        setPrivacy({
+        const loadedPrivacy = {
           hidePhone: !!(instrData as any)?.hide_phone,
           hideEmail: !!(instrData as any)?.hide_email,
-        });
+        };
+        setPrivacy(loadedPrivacy);
+        setInitialPrivacy(loadedPrivacy);
 
         try {
           // Derive teaching schedule from assigned students' class_day/class_time
@@ -356,6 +360,7 @@ const InstructorProfile = () => {
                   <Button
                     type="button"
                     size="sm"
+                    disabled={!privacyDirty}
                     onClick={async () => {
                       if (!session?.user?.id) return;
                       const { error } = await supabase.from('instructors').update({
@@ -365,6 +370,7 @@ const InstructorProfile = () => {
                       if (error) {
                         toast({ title: 'Error', description: 'Could not save privacy settings.', variant: 'destructive' });
                       } else {
+                        setInitialPrivacy({ hidePhone: privacy.hidePhone, hideEmail: privacy.hideEmail });
                         toast({ title: 'Privacy updated', description: 'Your visibility settings have been saved.' });
                       }
                     }}
