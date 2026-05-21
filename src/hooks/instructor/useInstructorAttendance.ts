@@ -104,7 +104,8 @@ export function useInstructorAttendance(instructorId: string | undefined) {
         .from('students')
         .select('id, level, class_day, class_time, profiles!inner(first_name, last_name, avatar_url)')
         .in('id', allIds)
-        .eq('enrollment_status', 'active') as any;
+        .eq('enrollment_status', 'active')
+        .eq('profiles.is_mock', false) as any;
 
       if (error) { console.error(error); setLoading(false); return; }
       if (!assignedStudents?.length) { setStudents([]); setLoading(false); return; }
