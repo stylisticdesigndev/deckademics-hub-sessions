@@ -102,7 +102,9 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             enrollment_status,
             profiles!inner(first_name, last_name, email, avatar_url, phone, pronouns, bio)
           `)
-          .in('id', ids) as { data: StudentWithProfile[] | null, error: any };
+          .in('id', ids)
+          .neq('enrollment_status', 'inactive')
+          .eq('profiles.is_mock', false) as { data: StudentWithProfile[] | null, error: any };
           
         if (studentsError) {
           console.error('Error fetching students:', studentsError);
