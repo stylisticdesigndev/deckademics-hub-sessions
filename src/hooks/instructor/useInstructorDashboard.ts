@@ -115,7 +115,8 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             profiles!inner(first_name, last_name, avatar_url)
           `)
           .in('id', allIds)
-          .eq('enrollment_status', 'active');
+          .eq('enrollment_status', 'active')
+          .eq('profiles.is_mock', false);
 
         if (studentsError) {
           console.error('Error fetching assigned students:', studentsError);
@@ -249,9 +250,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
       if (allIds.length > 0) {
         const { count, error: countError } = await supabase
           .from('students')
-          .select('id', { count: 'exact', head: true })
+          .select('id, profiles!inner(is_mock)', { count: 'exact', head: true })
           .in('id', allIds)
-          .eq('enrollment_status', 'active');
+          .eq('enrollment_status', 'active')
+          .eq('profiles.is_mock', false);
         if (countError) {
           console.error('Error counting total students:', countError);
         }
