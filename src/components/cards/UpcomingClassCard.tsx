@@ -54,6 +54,48 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
         notes: reason || null,
       });
       if (error) throw error;
+
+      // Auto-message instructor + push hook (best-effort, mirrors useStudentClassAttendance.markAbsent)
+      try {
+        const { data: studentRow } = await supabase
+          .from('students')
+          .select('instructor_id, profiles!inner(first_name, last_name)')
+          .eq('id', studentId)
+          .maybeSingle() as any;
+
+        const instructorId = studentRow?.instructor_id;
+        const studentName = `${studentRow?.profiles?.first_name ?? ''} ${studentRow?.profiles?.last_name ?? ''}`.trim() || 'Your student';
+
+        if (instructorId) {
+          const content = reason
+            ? `Heads up — I won't be at class on ${session.date}. Reason: ${reason}`
+            : `Heads up — I won't be at class on ${session.date}.`;
+
+          await supabase.from('messages').insert({
+            sender_id: studentId,
+            receiver_id: instructorId,
+            subject: 'Marked Absent',
+            content,
+          });
+
+          try {
+            await supabase.functions.invoke('notify-instructor-absence', {
+              body: {
+                instructor_id: instructorId,
+                student_id: studentId,
+                student_name: studentName,
+                absence_date: isoDate,
+                reason: reason || null,
+              },
+            });
+          } catch (pushErr) {
+            console.warn('absence push failed:', pushErr);
+          }
+        }
+      } catch (notifyErr) {
+        console.warn('absence notify failed:', notifyErr);
+      }
+
       toast.success('Marked absent. Your instructor has been notified.');
       setDialogOpen(false);
       setReason('');
