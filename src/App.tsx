@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { useBuildVersionCheck } from "@/hooks/useBuildVersionCheck";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -64,7 +65,9 @@ import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useBuildVersionCheck();
+  return (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
     <TooltipProvider>
@@ -158,6 +161,7 @@ const App = () => (
     </TooltipProvider>
     </ErrorBoundary>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
