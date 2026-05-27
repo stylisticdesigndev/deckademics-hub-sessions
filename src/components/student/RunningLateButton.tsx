@@ -29,20 +29,26 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
       // Action 2: Automated message to instructor
       const { data: studentRow } = await supabase
         .from('students')
-        .select('instructor_id, profiles!inner(first_name, last_name)')
+        .select('instructor_id')
         .eq('id', studentId)
-        .maybeSingle() as any;
-
+        .maybeSingle();
       const instructorId = studentRow?.instructor_id;
-      const studentName = `${studentRow?.profiles?.first_name ?? ''} ${studentRow?.profiles?.last_name ?? ''}`.trim() || 'Your student';
+
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', studentId)
+        .maybeSingle();
+      const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
 
       if (instructorId) {
-        await supabase.from('messages').insert({
+        const { error: msgErr } = await supabase.from('messages').insert({
           sender_id: studentId,
           receiver_id: instructorId,
           subject: 'Running Late',
           content: `Heads up — I'm running late to today's class.`,
         });
+        if (msgErr) console.error('running-late message insert failed:', msgErr);
 
         // Action 3: Push notification — invoke edge function (in-app + future FCM hook)
         try {

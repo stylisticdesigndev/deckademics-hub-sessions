@@ -59,24 +59,30 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
       try {
         const { data: studentRow } = await supabase
           .from('students')
-          .select('instructor_id, profiles!inner(first_name, last_name)')
+          .select('instructor_id')
           .eq('id', studentId)
-          .maybeSingle() as any;
+          .maybeSingle();
 
         const instructorId = studentRow?.instructor_id;
-        const studentName = `${studentRow?.profiles?.first_name ?? ''} ${studentRow?.profiles?.last_name ?? ''}`.trim() || 'Your student';
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', studentId)
+          .maybeSingle();
+        const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
 
         if (instructorId) {
           const content = reason
             ? `Heads up — I won't be at class on ${session.date}. Reason: ${reason}`
             : `Heads up — I won't be at class on ${session.date}.`;
 
-          await supabase.from('messages').insert({
+          const { error: msgErr } = await supabase.from('messages').insert({
             sender_id: studentId,
             receiver_id: instructorId,
             subject: 'Marked Absent',
             content,
           });
+          if (msgErr) console.error('absence message insert failed:', msgErr);
 
           try {
             await supabase.functions.invoke('notify-instructor-absence', {
@@ -91,6 +97,8 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
           } catch (pushErr) {
             console.warn('absence push failed:', pushErr);
           }
+        } else {
+          console.warn('absence notify: no instructor assigned to student', studentId);
         }
       } catch (notifyErr) {
         console.warn('absence notify failed:', notifyErr);
