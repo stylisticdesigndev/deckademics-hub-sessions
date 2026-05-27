@@ -16,6 +16,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { mockInstructorProfile } from '@/data/mockInstructorData';
 import { DAY_ORDER, sanitizeScheduleItems, CLASS_SLOTS } from '@/utils/instructorSchedule';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
+import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 
 type TeachingScheduleItem = {
   day: string;
