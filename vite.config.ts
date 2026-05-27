@@ -8,7 +8,7 @@ const BUILD_ID = Date.now().toString();
 function emitBuildId() {
   return {
     name: "emit-build-id",
-    generateBundle() {
+    generateBundle(this: any) {
       this.emitFile({
         type: "asset",
         fileName: "build-id.json",
