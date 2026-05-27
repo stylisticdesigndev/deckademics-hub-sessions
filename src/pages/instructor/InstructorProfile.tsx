@@ -387,6 +387,9 @@ const InstructorProfile = () => {
       <div className="max-w-2xl">
         <PasskeyManager />
       </div>
+      <div className="max-w-2xl">
+        <NotificationPreferencesCard />
+      </div>
     </div>
   );
 };
