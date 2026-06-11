@@ -265,6 +265,7 @@ const InstructorStudents = () => {
       if (import.meta.env.DEV) console.log('Note saved successfully to student_notes table');
       
       setShowNoteDialog(false);
+      notifyPush(selectedStudent, 'New note from your instructor', noteText.trim().slice(0, 140), '/student/notes');
       setSelectedStudent(null);
       setNoteText('');
       
