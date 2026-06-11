@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Bell, Mail, Phone } from 'lucide-react';
+import { Bell, Mail, Phone, Smartphone } from 'lucide-react';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const NotificationPreferencesCard = () => {
   const { preferences, loading, updatePreferences } = useNotificationPreferences();
+  const push = usePushNotifications();
 
   if (loading) {
     return (
@@ -37,6 +39,38 @@ const NotificationPreferencesCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="push-notifications" className="text-sm font-medium">
+                  Push Notifications
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Get instant alerts on this device, even when the app is closed
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="push-notifications"
+              checked={push.enabled}
+              disabled={!push.supported || push.loading || push.busy}
+              onCheckedChange={(checked) => push.toggle(checked)}
+            />
+          </div>
+          {!push.supported && (
+            <p className="ml-7 text-xs text-muted-foreground">
+              This browser doesn't support push notifications.
+            </p>
+          )}
+          {push.supported && push.needsHomeScreen && (
+            <p className="ml-7 text-xs text-muted-foreground">
+              On iPhone, first add this app to your Home Screen (Share → Add to Home Screen), then turn this on.
+            </p>
+          )}
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Mail className="h-4 w-4 text-muted-foreground" />
