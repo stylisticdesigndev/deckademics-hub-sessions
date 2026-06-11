@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Public VAPID key — safe to ship in the client.
 const VAPID_PUBLIC_KEY =
-  'BO9Kg3ieRZmMDu9APMyufFA3LytAjGBiIrDjtjFnMftNDJBuooRnAVL0oWADrlKjTMpBSQVmXqBGC1LJ-z69FB0';
+  'BHCXfNGWHrl1oFBpTCQm-J6s8sTOB7OTeLNCnkuostP6nXEYKzipfWak9touj8AgNKsPbL-imwyYzn5T_MIXmCk';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);

@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Public VAPID key is safe to keep in code; private key comes from a secret.
 const VAPID_PUBLIC_KEY =
-  'BO9Kg3ieRZmMDu9APMyufFA3LytAjGBiIrDjtjFnMftNDJBuooRnAVL0oWADrlKjTMpBSQVmXqBGC1LJ-z69FB0';
+  'BHCXfNGWHrl1oFBpTCQm-J6s8sTOB7OTeLNCnkuostP6nXEYKzipfWak9touj8AgNKsPbL-imwyYzn5T_MIXmCk';
 const VAPID_SUBJECT = 'mailto:notify@deckademics.com';
 
 Deno.serve(async (req: Request) => {
