@@ -400,6 +400,12 @@ export function useStudentClassAttendance() {
           } catch (pushErr) {
             if (import.meta.env.DEV) console.warn('undo push failed:', pushErr);
           }
+          notifyPush(
+            instructorId,
+            'Absence cancelled',
+            `${studentName} will attend class on ${friendlyDate} after all.`,
+            '/instructor/attendance'
+          );
         }
       } catch (notifyErr) {
         if (import.meta.env.DEV) console.warn('undo notify failed:', notifyErr);
