@@ -66,18 +66,6 @@ const InstructorMessages = () => {
     fetchData();
   }, [demoMode, session]);
 
-  // Deep-link: open a specific thread when arriving from a push notification
-  useEffect(() => {
-    const from = searchParams.get('from');
-    if (!from || demoMode) return;
-    if (conversations.some(c => c.studentId === from)) {
-      setActiveStudentId(from);
-      setActiveTab('conversations');
-      searchParams.delete('from');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [conversations, searchParams, demoMode, setSearchParams]);
-
   const fetchData = async () => {
     if (!session?.user?.id) return;
     setLoading(true);
