@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
+import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -133,6 +134,9 @@ const AdminProfile = () => {
         </form>
         <div className="mt-6">
           <PasskeyManager />
+        </div>
+        <div className="mt-6">
+          <NotificationPreferencesCard />
         </div>
       </div>
     </div>
