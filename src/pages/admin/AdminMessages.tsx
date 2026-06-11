@@ -185,7 +185,7 @@ const AdminMessages = () => {
       });
       if (error) throw error;
       await fetchData();
-      notifyPush(activeUserId, 'New message', (content || 'Photo').slice(0, 140), '/');
+      notifyPush(activeUserId, 'New message', (content || 'Photo').slice(0, 140), messagesPathFor(activeUserId));
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
     } finally {
@@ -210,7 +210,7 @@ const AdminMessages = () => {
       if (error) throw error;
       toast({ title: 'Sent!', description: `Message sent to ${selectedUsers.length} user(s).` });
       selectedUsers.forEach((userId) =>
-        notifyPush(userId, 'New message', messageBody.trim().slice(0, 140), '/')
+        notifyPush(userId, 'New message', messageBody.trim().slice(0, 140), messagesPathFor(userId))
       );
       setSelectedUsers([]);
       setSubject('');
@@ -226,6 +226,13 @@ const AdminMessages = () => {
 
   const toggleUser = (id: string) => {
     setSelectedUsers(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  };
+
+  // Route a recipient's push to their own messages thread with the admin pre-opened.
+  const messagesPathFor = (userId: string) => {
+    const role = users.find(u => u.id === userId)?.role;
+    const base = role === 'instructor' ? '/instructor/messages' : '/student/messages';
+    return `${base}?from=${session?.user?.id}`;
   };
 
   const activeConvo = activeUserId ? conversations.find(c => c.studentId === activeUserId) : null;

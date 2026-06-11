@@ -49,13 +49,13 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
         .single();
 
       if (error) throw error;
-      // Best-effort push to every targeted role (students, instructors, admins).
-      notifyPushRoles(
-        ['student', 'instructor', 'admin'],
-        title || 'New announcement',
-        content.slice(0, 140),
-        '/'
-      );
+      // Best-effort push to every targeted role, each routed to its own
+      // role-specific announcements page.
+      const announcementTitle = title || 'New announcement';
+      const announcementBody = content.slice(0, 140);
+      notifyPushRoles(['student'], announcementTitle, announcementBody, '/student/announcements');
+      notifyPushRoles(['instructor'], announcementTitle, announcementBody, '/instructor/announcements');
+      notifyPushRoles(['admin'], announcementTitle, announcementBody, '/admin/announcements');
       return data;
     },
     onSuccess: () => {
