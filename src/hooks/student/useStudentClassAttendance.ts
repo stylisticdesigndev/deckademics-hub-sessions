@@ -297,6 +297,12 @@ export function useStudentClassAttendance() {
             // Push is best-effort
             if (import.meta.env.DEV) console.warn('absence push failed:', pushErr);
           }
+          notifyPush(
+            instructorId,
+            'Student marked absent',
+            `${studentName} won't be at class on ${friendlyDate}.`,
+            '/instructor/attendance'
+          );
         } else {
           console.warn('absence notify: no instructor assigned to student', studentId);
         }
