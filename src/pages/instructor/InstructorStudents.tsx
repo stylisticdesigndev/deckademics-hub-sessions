@@ -31,6 +31,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyPush } from "@/lib/notifyPush";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import { capitalizeLevel, formatDateUS } from "@/lib/utils";
 
@@ -264,6 +265,7 @@ const InstructorStudents = () => {
       if (import.meta.env.DEV) console.log('Note saved successfully to student_notes table');
       
       setShowNoteDialog(false);
+      notifyPush(selectedStudent, 'New note from your instructor', noteText.trim().slice(0, 140), '/student/notes');
       setSelectedStudent(null);
       setNoteText('');
       
@@ -1029,6 +1031,7 @@ const InstructorStudents = () => {
                                 return;
                               }
                               toast({ title: "Task added", description: "Task has been assigned to the student." });
+                              notifyPush(detailedStudent.id, 'New task assigned', newTaskTitle.trim().slice(0, 140), '/student/notes');
                               setNewTaskTitle('');
                               setNewTaskDescription('');
                               setShowAddTask(false);

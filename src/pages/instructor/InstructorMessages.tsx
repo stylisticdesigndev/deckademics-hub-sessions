@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyPush } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 import { mockInstructorDirectMessages, mockInstructorStudentList } from '@/data/mockInstructorData';
 import ConversationList, { Conversation } from '@/components/instructor/messages/ConversationList';
@@ -196,6 +197,7 @@ const InstructorMessages = () => {
       });
       if (error) throw error;
       await fetchData();
+      notifyPush(activeStudentId, 'New message', (content || 'Photo').slice(0, 140), '/student/messages');
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
     } finally {
@@ -226,6 +228,9 @@ const InstructorMessages = () => {
       if (error) throw error;
 
       toast({ title: 'Sent!', description: `Message sent to ${selectedStudents.length} student(s).` });
+      selectedStudents.forEach((studentId) =>
+        notifyPush(studentId, 'New message', messageBody.trim().slice(0, 140), '/student/messages')
+      );
       setSelectedStudents([]);
       setSubject('');
       setMessageBody('');

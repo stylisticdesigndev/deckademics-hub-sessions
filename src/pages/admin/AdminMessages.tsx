@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyPush } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 import ConversationList, { Conversation } from '@/components/instructor/messages/ConversationList';
 import ConversationThread from '@/components/instructor/messages/ConversationThread';
@@ -184,6 +185,7 @@ const AdminMessages = () => {
       });
       if (error) throw error;
       await fetchData();
+      notifyPush(activeUserId, 'New message', (content || 'Photo').slice(0, 140), '/');
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
     } finally {
@@ -207,6 +209,9 @@ const AdminMessages = () => {
       const { error } = await supabase.from('messages').insert(rows);
       if (error) throw error;
       toast({ title: 'Sent!', description: `Message sent to ${selectedUsers.length} user(s).` });
+      selectedUsers.forEach((userId) =>
+        notifyPush(userId, 'New message', messageBody.trim().slice(0, 140), '/')
+      );
       setSelectedUsers([]);
       setSubject('');
       setMessageBody('');

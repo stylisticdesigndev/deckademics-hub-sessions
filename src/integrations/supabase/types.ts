@@ -798,6 +798,7 @@ export type Database = {
           email_notifications: boolean
           id: string
           phone_number: string | null
+          push_notifications: boolean
           sms_notifications: boolean
           updated_at: string | null
           user_id: string
@@ -807,6 +808,7 @@ export type Database = {
           email_notifications?: boolean
           id?: string
           phone_number?: string | null
+          push_notifications?: boolean
           sms_notifications?: boolean
           updated_at?: string | null
           user_id: string
@@ -816,6 +818,7 @@ export type Database = {
           email_notifications?: boolean
           id?: string
           phone_number?: string | null
+          push_notifications?: boolean
           sms_notifications?: boolean
           updated_at?: string | null
           user_id?: string
@@ -971,6 +974,39 @@ export type Database = {
           name?: string
           order_index?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

@@ -23,6 +23,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { format } from "date-fns";
 import { cn, capitalizeLevel } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyPush } from "@/lib/notifyPush";
 import { useToast } from "@/hooks/use-toast";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import type { Student, StudentNote } from "@/hooks/instructor/useInstructorStudentsSimple";
@@ -398,6 +399,7 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                         } as any);
                         if (error) { toast({ title: "Error adding task", description: error.message, variant: "destructive" }); return; }
                         toast({ title: "Task added" });
+                        notifyPush(detailedStudent.id, 'New task assigned', newTaskTitle.trim().slice(0, 140), '/student/notes');
                         setNewTaskTitle(''); setNewTaskDescription(''); setShowAddTask(false);
                         fetchStudentTasks(detailedStudent.id);
                       }}>Add Task</Button>

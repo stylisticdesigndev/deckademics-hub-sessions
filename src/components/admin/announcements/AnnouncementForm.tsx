@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { asDatabaseParam } from '@/utils/supabaseHelpers';
+import { notifyPushRoles } from '@/lib/notifyPush';
 
 interface AnnouncementFormProps {
   isOpen: boolean;
@@ -48,6 +49,13 @@ export const AnnouncementForm = ({ isOpen, onClose, authorId }: AnnouncementForm
         .single();
 
       if (error) throw error;
+      // Best-effort push to every targeted role (students, instructors, admins).
+      notifyPushRoles(
+        ['student', 'instructor', 'admin'],
+        title || 'New announcement',
+        content.slice(0, 140),
+        '/'
+      );
       return data;
     },
     onSuccess: () => {

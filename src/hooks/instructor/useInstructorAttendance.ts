@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyPush } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay, addDays, subDays, getDay, isBefore } from 'date-fns';
 
@@ -183,6 +184,14 @@ export function useInstructorAttendance(instructorId: string | undefined) {
         ...prev,
         [studentId]: { ...prev[studentId], [date]: status },
       }));
+
+      // Best-effort push to the student
+      notifyPush(
+        studentId,
+        status === 'present' ? 'Marked present' : 'Marked absent',
+        `Your instructor marked you ${status} for ${date}.`,
+        '/student/classes'
+      );
     } catch (err: any) {
       console.error('Error marking attendance:', err);
       toast({

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyPush } from '@/lib/notifyPush';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateUS } from '@/lib/utils';
@@ -296,6 +297,12 @@ export function useStudentClassAttendance() {
             // Push is best-effort
             if (import.meta.env.DEV) console.warn('absence push failed:', pushErr);
           }
+          notifyPush(
+            instructorId,
+            'Student marked absent',
+            `${studentName} won't be at class on ${friendlyDate}.`,
+            '/instructor/attendance'
+          );
         } else {
           console.warn('absence notify: no instructor assigned to student', studentId);
         }
@@ -393,6 +400,12 @@ export function useStudentClassAttendance() {
           } catch (pushErr) {
             if (import.meta.env.DEV) console.warn('undo push failed:', pushErr);
           }
+          notifyPush(
+            instructorId,
+            'Absence cancelled',
+            `${studentName} will attend class on ${friendlyDate} after all.`,
+            '/instructor/attendance'
+          );
         }
       } catch (notifyErr) {
         if (import.meta.env.DEV) console.warn('undo notify failed:', notifyErr);

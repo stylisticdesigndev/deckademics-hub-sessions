@@ -55,3 +55,4 @@
 - [Resilient Avatar Uploads](mem://ux/resilient-avatar-uploads) — Off-screen JPEG conversion, max 1024px, 1s retry logic for reliability
 - [Mock User Management](mem://features/mock-user-management) — `profiles.is_mock` flag + `app_settings.hide_mock_users` global filter, per-user/bulk toggle, dedicated MockUsersSection with cascading purge RPC
 - [Admin RBAC & Mode Switcher](mem://features/admin-rbac-mode-switcher) — Unified login, hardcoded admin emails, admin mode visual state, payroll owner-only gate
+- [Push Notifications](mem://features/push-notifications) — Free Web Push (VAPID) for all roles; send-push edge fn + notifyPush helpers wired to all major events

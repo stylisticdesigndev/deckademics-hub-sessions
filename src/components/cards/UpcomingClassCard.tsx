@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyPush } from '@/lib/notifyPush';
 import { toast } from '@/hooks/use-toast';
 
 export interface ClassSession {
@@ -97,6 +98,12 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
           } catch (pushErr) {
             console.warn('absence push failed:', pushErr);
           }
+          notifyPush(
+            instructorId,
+            'Student marked absent',
+            `${studentName} won't be at class on ${session.date}.`,
+            '/instructor/attendance'
+          );
         } else {
           console.warn('absence notify: no instructor assigned to student', studentId);
         }
