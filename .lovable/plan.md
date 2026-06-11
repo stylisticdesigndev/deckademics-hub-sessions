@@ -1,94 +1,75 @@
 ## Goal
 
-Until real PWA push is in place, send an automatic email for every "major" event — to both instructors and students. Default **on** for all existing and new users; each user can disable it from their Profile → Notifications card.
+Add real mobile/desktop push notifications (Phase 3) using the free **Web Push** standard — no Twilio, no email domain, no app store, no monthly cost. Works on Android + desktop browsers immediately, and on iPhone (iOS 16.4+) once the app is added to the home screen. Every major event fires a push to opted-in students, instructors, and admins.
 
-## Approach
+## How it works (plain version)
 
-Use **Lovable Emails** (built-in, queued, retry-safe). Wire one shared edge function that every event site calls; the function looks up the recipient's `notification_preferences.email_notifications` flag and skips sending if it's off.
+Each user's device, after they tap "Enable push notifications" and approve the browser prompt, registers a tiny background worker and saves a "subscription" (a device address). When an event happens in the app, the server sends a push to that address, and the phone/computer shows a notification even if the app is closed. Tapping it opens the relevant screen.
 
-## Prerequisite: email sender domain
+## What counts as an event (all of it)
 
-No domain is configured yet. The first step is the standard email domain setup dialog — once the user picks/verifies a sender domain, the rest is automatic (queue infra, deploy, etc.).
+Push is sent to the right recipient for:
+- New message (instructor ↔ student ↔ admin)
+- Student marks absent / "running late" → instructor
+- Instructor marks attendance → student
+- New announcement → each targeted role
+- New task assigned → student
+- New schedule change request → instructor; approve/reject → student
+- New student assignment → instructor + student
+- Payment created / marked overdue → student
 
-## What counts as a "major" event
+## Setup (one-time, automated, $0)
 
-### Student receives email for
-- New message from instructor
-- New announcement targeting students
-- New task assigned by instructor (`student_tasks` insert)
-- Instructor marks them present/absent in attendance
-- Schedule change request approved/rejected
-- New payment created / payment marked overdue
-
-### Instructor receives email for
-- Student marks themselves absent (already auto-messages — also send email)
-- Student "I'm Running Late" (already auto-messages — also send email)
-- New message from student
-- New announcement targeting instructors
-- New student assigned to them
-- New schedule change request for one of their students
-
-Admins are out of scope for v1 (their notification dropdown already covers it).
+- Generate a **VAPID key pair** (the free credential the Web Push standard requires). Public key ships in the client; private key + subject are stored as project secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). No external account.
 
 ## Implementation
 
-### 1. Setup (one-time, automated)
-- Email sender domain (user action — dialog below).
-- Scaffold transactional email infrastructure (queue, dispatcher cron, unsubscribe tokens, send log).
-- Single new edge function `send-event-email` with input `{ recipient_id, event_type, subject, preview, body_md, link_url? }`. It:
-  - Reads `notification_preferences.email_notifications` for `recipient_id` (default true if no row exists).
-  - If off → returns `{ skipped: true }` without sending.
-  - If on → enqueues a transactional email via the standard `send-transactional-email` function with a simple branded HTML template (Deckademics header, the event copy, a CTA link back to the relevant app page, footer with one-click unsubscribe).
-  - All sends logged automatically in `email_send_log`.
+### 1. Database
+New migration:
+- `push_subscriptions` table: `id`, `user_id`, `endpoint` (unique), `p256dh`, `auth`, `user_agent`, `created_at`. One row per device, so a user can be subscribed on phone + laptop. Includes GRANTs + RLS (users manage only their own rows; service_role full access for the edge function).
+- Add `push_notifications boolean default false` to `notification_preferences` (defaults off because it needs explicit browser permission).
 
-### 2. Default-on guarantee
-- DB default for `notification_preferences.email_notifications` is already `true`.
-- New users without a row are treated as opted-in by the edge function (no row read = default true).
-- No backfill migration needed — existing users with no preferences row are already considered opted-in by the lookup logic.
+### 2. Service worker
+- `public/sw.js` — a **messaging-only** worker (push + notificationclick handlers, no app-shell caching). This is the push exception to the no-service-worker preview rule, so it won't serve stale HTML. On `push` it shows the notification; on `notificationclick` it focuses/opens the deep link from the payload.
 
-### 3. Per-user toggle UI
-- Student profile already shows `NotificationPreferencesCard` ✅.
-- Add the same `NotificationPreferencesCard` to `src/pages/instructor/InstructorProfile.tsx`. Existing hook + table already support instructors (table is per-`user_id`, not per-role).
-- Reword the email switch description to: *"Receive an email for new messages, announcements, attendance, tasks, and schedule changes."* So the user understands what "on" actually means.
+### 3. Client subscribe flow
+- `src/hooks/usePushNotifications.ts` — registers `/sw.js`, requests permission, subscribes via `pushManager.subscribe` with the VAPID public key, and upserts the subscription into `push_subscriptions`. Also handles unsubscribe/cleanup of stale endpoints.
+- Update `NotificationPreferencesCard` to add a **Push Notifications** toggle (with an iPhone "add to home screen first" hint). Mount the card on instructor and admin profile pages too (student already has it), so all roles can opt in.
 
-### 4. Event wiring — call `send-event-email` from existing code paths
-Client-side (best-effort, fire-and-forget — never block the user action):
+### 4. Edge function
+- `supabase/functions/send-push/index.ts` — input `{ recipient_id, title, body, url? }`. Reads the recipient's `notification_preferences.push_notifications` (skip if off), loads their `push_subscriptions`, and sends a Web Push to each device using `web-push` with the VAPID secrets. Deletes dead subscriptions (410/404 responses). Returns a per-device delivery summary.
+
+### 5. Wiring the events
+Fire-and-forget `supabase.functions.invoke('send-push', …)` at each existing event site (same pattern as the current `notify-instructor-absence` calls), never blocking the user action:
 
 | Event | File | Recipient |
 |---|---|---|
-| Student marks absent (dashboard card) | `src/components/cards/UpcomingClassCard.tsx` | instructor |
-| Student marks absent (classes page) | `src/hooks/student/useStudentClassAttendance.ts` | instructor |
-| Student "I'm Running Late" | `src/components/student/RunningLateButton.tsx` | instructor |
+| Student marks absent (dashboard) | `src/components/cards/UpcomingClassCard.tsx` | instructor |
+| Student marks absent (classes) | `src/hooks/student/useStudentClassAttendance.ts` | instructor |
+| Student running late | `src/components/student/RunningLateButton.tsx` | instructor |
 | Instructor marks attendance | `src/hooks/instructor/useInstructorAttendance.ts` | student |
-| Send a message | wherever `messages` insert happens (instructor + student message composers) | the receiver |
-| New announcement published | `src/components/admin/announcements/AnnouncementForm.tsx` (admin save flow) | fan-out to each targeted role |
-| Instructor creates a task | `src/components/notes/StudentNoteDialog.tsx` / task creation hook | student |
-| New schedule change request | `src/hooks/useScheduleChangeRequests.ts` | instructor (and student on review) |
-| New student assignment | `src/hooks/useStudentAssignment.ts` / `assign-student-to-instructor` edge function | instructor + student |
+| New message | student + instructor message composers | the receiver |
+| New announcement | `src/components/admin/announcements/AnnouncementForm.tsx` | each targeted role |
+| New task | task creation hook / `StudentNoteDialog.tsx` | student |
+| Schedule change request | `src/hooks/useScheduleChangeRequests.ts` | instructor / student |
+| New student assignment | `src/hooks/useStudentAssignment.ts` | instructor + student |
 | Payment created/overdue | `src/hooks/useCreatePayment.ts` | student |
 
-For the announcement fan-out (potentially many recipients), the call expands to one edge function invoke per recipient — the queue handles throughput and rate-limit backoff.
+## Notes / limitations
 
-### 5. Future push migration
-When you add a real push provider, replace the `send-event-email` body with a dual dispatch (`email + push`) gated by separate prefs. The call sites stay the same.
+- **iPhone:** push only works after the user installs the app to the home screen (one tap from Safari share menu). The toggle will show this hint. Android, Chrome, Edge, and desktop work without install.
+- **In-app notification dropdowns stay** as-is; push is an additional channel.
+- **Email (Phase 1)** stays parked until DNS is sorted — the `send-push` call sites are structured so a `send-email` call can be added next to each later without rework.
 
 ## Files
 
-- New: `supabase/functions/send-event-email/index.ts`
-- Edit: `src/pages/instructor/InstructorProfile.tsx` (mount existing card)
-- Edit: `src/components/student/profile/NotificationPreferencesCard.tsx` (clearer email copy)
-- Edit: the event sites listed above to fire-and-forget invoke `send-event-email`
+- New migration: `push_subscriptions` table + `notification_preferences.push_notifications`
+- New: `public/sw.js`
+- New: `src/hooks/usePushNotifications.ts`
+- New: `supabase/functions/send-push/index.ts`
+- Edit: `NotificationPreferencesCard.tsx` (+ mount on instructor/admin profiles)
+- Edit: the event sites above to invoke `send-push`
+- Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 
 ## Out of scope
-- Real OS push notifications (tracked separately).
-- Admin email notifications.
-- Granular per-event toggles (single email on/off switch for now; can split later).
-- SMS (existing SMS switch stays, no behavior change in this pass).
-
-## Next step
-
-Setting up your sender domain — this is the address users will see in their inbox (e.g. `notify@yourdomain.com`). Once that's done I'll build everything above end-to-end.
-
-<presentation-actions>
-<presentation-open-email-setup>Set up email domain</presentation-open-email-setup>
-</presentation-actions>
+- SMS/Twilio (Phase 2), email (Phase 1, parked), native app store builds (Phase 4), two-way reply from the notification.
