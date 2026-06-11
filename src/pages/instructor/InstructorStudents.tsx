@@ -31,6 +31,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { SkillProgress } from "@/hooks/instructor/useInstructorStudentsSimple";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyPush } from "@/lib/notifyPush";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import { capitalizeLevel, formatDateUS } from "@/lib/utils";
 
