@@ -64,7 +64,7 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
           instructorId,
           'Student running late',
           `${studentName} is running late to today's class.`,
-          '/instructor/attendance'
+          `/instructor/messages?from=${studentId}`
         );
       }
 
