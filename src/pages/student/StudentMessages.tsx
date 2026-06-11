@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, EyeOff, Mail } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +52,7 @@ const StudentMessages = () => {
   const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
   const [demoMode, setDemoMode] = useState(false);
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
   const [twoWayEnabled, setTwoWayEnabled] = useState<boolean>(true);
 
@@ -194,6 +196,17 @@ const StudentMessages = () => {
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
   }, [allMessages, instructors, userId, isDemoMode]);
 
+  // Deep-link: open a specific thread when arriving from a push notification
+  useEffect(() => {
+    const from = searchParams.get('from');
+    if (!from || isDemoMode) return;
+    if (conversations.some(c => c.instructorId === from)) {
+      setActiveInstructorId(from);
+      searchParams.delete('from');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [conversations, searchParams, isDemoMode, setSearchParams]);
+
   const threadMessages = useMemo(() => {
     if (!activeInstructorId || !userId) return [];
 
@@ -260,7 +273,7 @@ const StudentMessages = () => {
 
       if (error) throw error;
       await fetchData();
-      notifyPush(activeInstructorId, 'New message', content.slice(0, 140), '/instructor/messages');
+      notifyPush(activeInstructorId, 'New message', content.slice(0, 140), `/instructor/messages?from=${userId}`);
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send reply.' });
     }

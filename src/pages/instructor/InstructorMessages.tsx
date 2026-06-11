@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MessageSquare, Send, Eye, EyeOff } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ const InstructorMessages = () => {
 
   // Thread view
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (demoMode) {
@@ -63,6 +65,18 @@ const InstructorMessages = () => {
     }
     fetchData();
   }, [demoMode, session]);
+
+  // Deep-link: open a specific thread when arriving from a push notification
+  useEffect(() => {
+    const from = searchParams.get('from');
+    if (!from || demoMode) return;
+    if (conversations.some(c => c.studentId === from)) {
+      setActiveStudentId(from);
+      setActiveTab('conversations');
+      searchParams.delete('from');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [conversations, searchParams, demoMode, setSearchParams]);
 
   const fetchData = async () => {
     if (!session?.user?.id) return;
@@ -197,7 +211,7 @@ const InstructorMessages = () => {
       });
       if (error) throw error;
       await fetchData();
-      notifyPush(activeStudentId, 'New message', (content || 'Photo').slice(0, 140), '/student/messages');
+      notifyPush(activeStudentId, 'New message', (content || 'Photo').slice(0, 140), `/student/messages?from=${session.user.id}`);
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
     } finally {
@@ -229,7 +243,7 @@ const InstructorMessages = () => {
 
       toast({ title: 'Sent!', description: `Message sent to ${selectedStudents.length} student(s).` });
       selectedStudents.forEach((studentId) =>
-        notifyPush(studentId, 'New message', messageBody.trim().slice(0, 140), '/student/messages')
+        notifyPush(studentId, 'New message', messageBody.trim().slice(0, 140), `/student/messages?from=${session.user.id}`)
       );
       setSelectedStudents([]);
       setSubject('');
