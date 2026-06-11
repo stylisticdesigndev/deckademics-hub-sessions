@@ -1031,6 +1031,7 @@ const InstructorStudents = () => {
                                 return;
                               }
                               toast({ title: "Task added", description: "Task has been assigned to the student." });
+                              notifyPush(detailedStudent.id, 'New task assigned', newTaskTitle.trim().slice(0, 140), '/student/notes');
                               setNewTaskTitle('');
                               setNewTaskDescription('');
                               setShowAddTask(false);
