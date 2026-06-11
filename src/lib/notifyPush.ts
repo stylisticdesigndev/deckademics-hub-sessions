@@ -22,3 +22,25 @@ export function notifyPush(
     console.debug('[notifyPush] failed', err);
   }
 }
+
+/**
+ * Fire-and-forget push to everyone with one of the given roles. The edge
+ * function fans out to opted-in subscribers server-side.
+ */
+export function notifyPushRoles(
+  roles: string[],
+  title: string,
+  body: string,
+  url = '/'
+): void {
+  if (!roles || roles.length === 0) return;
+  try {
+    void supabase.functions
+      .invoke('send-push', {
+        body: { target_roles: roles, title, body, url },
+      })
+      .catch((err) => console.debug('[notifyPushRoles] failed', err));
+  } catch (err) {
+    console.debug('[notifyPushRoles] failed', err);
+  }
+}
