@@ -94,6 +94,23 @@ export const usePushNotifications = () => {
       await navigator.serviceWorker.ready;
 
       let sub = await reg.pushManager.getSubscription();
+      // If an old subscription exists with a different VAPID key, drop it.
+      if (sub) {
+        const currentKey = sub.options?.applicationServerKey
+          ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey as ArrayBuffer)))
+              .replace(/\+/g, '-')
+              .replace(/\//g, '_')
+              .replace(/=+$/, '')
+          : null;
+        if (currentKey !== VAPID_PUBLIC_KEY) {
+          try {
+            await sub.unsubscribe();
+          } catch {
+            /* ignore */
+          }
+          sub = null;
+        }
+      }
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
