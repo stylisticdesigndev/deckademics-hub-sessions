@@ -60,6 +60,12 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
           // Push is best-effort — don't fail the whole flow
           console.warn('Push notification failed:', pushErr);
         }
+        notifyPush(
+          instructorId,
+          'Student running late',
+          `${studentName} is running late to today's class.`,
+          '/instructor/attendance'
+        );
       }
 
       toast({
