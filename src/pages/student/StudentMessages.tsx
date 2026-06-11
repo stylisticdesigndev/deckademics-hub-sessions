@@ -259,6 +259,7 @@ const StudentMessages = () => {
 
       if (error) throw error;
       await fetchData();
+      notifyPush(activeInstructorId, 'New message', content.slice(0, 140), '/instructor/messages');
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send reply.' });
     }
