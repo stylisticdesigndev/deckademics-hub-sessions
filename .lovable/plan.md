@@ -1,75 +1,59 @@
-## Goal
+# Fix Push Notifications (VAPID key + delivery)
 
-Add real mobile/desktop push notifications (Phase 3) using the free **Web Push** standard — no Twilio, no email domain, no app store, no monthly cost. Works on Android + desktop browsers immediately, and on iPhone (iOS 16.4+) once the app is added to the home screen. Every major event fires a push to opted-in students, instructors, and admins.
+## What's actually broken
 
-## How it works (plain version)
+Push notifications are **not** failing on the iPhone — they're failing on the server. Every call to the `send-push` edge function throws:
 
-Each user's device, after they tap "Enable push notifications" and approve the browser prompt, registers a tiny background worker and saves a "subscription" (a device address). When an event happens in the app, the server sends a push to that address, and the phone/computer shows a notification even if the app is closed. Tapping it opens the relevant screen.
+```text
+Vapid private key must be a URL safe Base 64 (without "=")
+```
 
-## What counts as an event (all of it)
+The `VAPID_PRIVATE_KEY` secret was saved in the wrong format. Web Push requires the key as **URL-safe base64** (uses `-` and `_`, no `=` padding). The stored value has standard base64 characters, so `web-push` rejects it before sending anything.
 
-Push is sent to the right recipient for:
-- New message (instructor ↔ student ↔ admin)
-- Student marks absent / "running late" → instructor
-- Instructor marks attendance → student
-- New announcement → each targeted role
-- New task assigned → student
-- New schedule change request → instructor; approve/reject → student
-- New student assignment → instructor + student
-- Payment created / marked overdue → student
+Because this fails for every recipient, no device has ever received a push — the iOS setup is likely fine.
 
-## Setup (one-time, automated, $0)
+## The fix
 
-- Generate a **VAPID key pair** (the free credential the Web Push standard requires). Public key ships in the client; private key + subject are stored as project secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). No external account.
+### 1. Regenerate a matching VAPID key pair
 
-## Implementation
+Generate a fresh, correctly-encoded public/private VAPID pair (URL-safe base64, no padding). Both halves must come from the same pair or encryption fails.
 
-### 1. Database
-New migration:
-- `push_subscriptions` table: `id`, `user_id`, `endpoint` (unique), `p256dh`, `auth`, `user_agent`, `created_at`. One row per device, so a user can be subscribed on phone + laptop. Includes GRANTs + RLS (users manage only their own rows; service_role full access for the edge function).
-- Add `push_notifications boolean default false` to `notification_preferences` (defaults off because it needs explicit browser permission).
+### 2. Update the secret + the public key
 
-### 2. Service worker
-- `public/sw.js` — a **messaging-only** worker (push + notificationclick handlers, no app-shell caching). This is the push exception to the no-service-worker preview rule, so it won't serve stale HTML. On `push` it shows the notification; on `notificationclick` it focuses/opens the deep link from the payload.
+- Store the new **private** key in the `VAPID_PRIVATE_KEY` secret (correct URL-safe encoding).
+- Update the **public** key constant in the two places it lives so they match the new private key:
+  - `src/hooks/usePushNotifications.ts`
+  - `supabase/functions/send-push/index.ts`
 
-### 3. Client subscribe flow
-- `src/hooks/usePushNotifications.ts` — registers `/sw.js`, requests permission, subscribes via `pushManager.subscribe` with the VAPID public key, and upserts the subscription into `push_subscriptions`. Also handles unsubscribe/cleanup of stale endpoints.
-- Update `NotificationPreferencesCard` to add a **Push Notifications** toggle (with an iPhone "add to home screen first" hint). Mount the card on instructor and admin profile pages too (student already has it), so all roles can opt in.
+### 3. Re-subscribe existing devices
 
-### 4. Edge function
-- `supabase/functions/send-push/index.ts` — input `{ recipient_id, title, body, url? }`. Reads the recipient's `notification_preferences.push_notifications` (skip if off), loads their `push_subscriptions`, and sends a Web Push to each device using `web-push` with the VAPID secrets. Deletes dead subscriptions (410/404 responses). Returns a per-device delivery summary.
+Because the public key changes, any device that already subscribed (with the old/broken key) holds a stale subscription. After deploy, those devices need to toggle push **off then on** once to re-register against the new key. Old/stale subscriptions are auto-cleaned by the function on 404/410, so this self-heals over time.
 
-### 5. Wiring the events
-Fire-and-forget `supabase.functions.invoke('send-push', …)` at each existing event site (same pattern as the current `notify-instructor-absence` calls), never blocking the user action:
+### 4. Verify end-to-end
 
-| Event | File | Recipient |
-|---|---|---|
-| Student marks absent (dashboard) | `src/components/cards/UpcomingClassCard.tsx` | instructor |
-| Student marks absent (classes) | `src/hooks/student/useStudentClassAttendance.ts` | instructor |
-| Student running late | `src/components/student/RunningLateButton.tsx` | instructor |
-| Instructor marks attendance | `src/hooks/instructor/useInstructorAttendance.ts` | student |
-| New message | student + instructor message composers | the receiver |
-| New announcement | `src/components/admin/announcements/AnnouncementForm.tsx` | each targeted role |
-| New task | task creation hook / `StudentNoteDialog.tsx` | student |
-| Schedule change request | `src/hooks/useScheduleChangeRequests.ts` | instructor / student |
-| New student assignment | `src/hooks/useStudentAssignment.ts` | instructor + student |
-| Payment created/overdue | `src/hooks/useCreatePayment.ts` | student |
+- Confirm `send-push` logs show a successful `delivered` count instead of the VAPID error.
+- Test the real flow: from **Account A**, send a message to **Account B** whose device has push enabled — confirm the banner appears in B's notification shade.
 
-## Notes / limitations
+### 5. (Optional, recommended) App-icon badge count
 
-- **iPhone:** push only works after the user installs the app to the home screen (one tap from Safari share menu). The toggle will show this hint. Android, Chrome, Edge, and desktop work without install.
-- **In-app notification dropdowns stay** as-is; push is an additional channel.
-- **Email (Phase 1)** stays parked until DNS is sorted — the `send-push` call sites are structured so a `send-email` call can be added next to each later without rework.
+You asked about a number on the icon. Currently there's none. As a small add-on I can have `sw.js` call the **Badging API** (`navigator.setAppBadge`) on incoming push and clear it when the app is opened, so the home-screen icon shows an unread count on supported platforms (Android/desktop Chrome; iOS support is limited). This is optional and can be skipped if you only want the banner.
 
-## Files
+## How push will look after the fix
 
-- New migration: `push_subscriptions` table + `notification_preferences.push_notifications`
-- New: `public/sw.js`
-- New: `src/hooks/usePushNotifications.ts`
-- New: `supabase/functions/send-push/index.ts`
-- Edit: `NotificationPreferencesCard.tsx` (+ mount on instructor/admin profiles)
-- Edit: the event sites above to invoke `send-push`
-- Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+- A banner + an entry in the notification shade with the sender/title and message text, plus your app icon.
+- Tapping it opens the app to the relevant page (messages, announcement, etc.).
+- Icon badge number only if we add step 5.
 
-## Out of scope
-- SMS/Twilio (Phase 2), email (Phase 1, parked), native app store builds (Phase 4), two-way reply from the notification.
+## Testing checklist (post-fix)
+
+1. Publish so the new public key ships to the client.
+2. On the **recipient** device, toggle Push off then on in Profile → Notifications, tap Allow.
+3. From a **second** account, trigger an event (send a message) to the recipient.
+4. Confirm the banner arrives; check `send-push` logs for `delivered > 0`.
+
+## Notes / constraints
+
+- iPhone still requires the app be added to the Home Screen (iOS 16.4+) and opened from that icon for push to work — but that was never the blocker here.
+- No database changes are required.
+
+Add step 5
