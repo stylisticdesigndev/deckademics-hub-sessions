@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notifyPush } from '@/lib/notifyPush';
 
 export interface StudentForAssignment {
   id: string;
@@ -101,6 +102,15 @@ export const useStudentAssignment = (instructorId?: string | null) => {
     },
     onSuccess: (result) => {
       toast.success(`${result.studentIds.length} students assigned to instructor`);
+      notifyPush(
+        result.instructorId,
+        'New student assigned',
+        `${result.studentIds.length} student(s) were assigned to you.`,
+        '/instructor/students'
+      );
+      result.studentIds.forEach((studentId) =>
+        notifyPush(studentId, 'Instructor assigned', 'You have been assigned to an instructor.', '/student/classes')
+      );
       queryClient.invalidateQueries({ queryKey: ['admin', 'unassigned-students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'assigned-students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] });
