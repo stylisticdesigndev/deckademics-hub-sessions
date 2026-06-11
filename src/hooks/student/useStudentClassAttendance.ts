@@ -301,7 +301,7 @@ export function useStudentClassAttendance() {
             instructorId,
             'Student marked absent',
             `${studentName} won't be at class on ${friendlyDate}.`,
-            '/instructor/attendance'
+            `/instructor/messages?from=${studentId}`
           );
         } else {
           console.warn('absence notify: no instructor assigned to student', studentId);
@@ -404,7 +404,7 @@ export function useStudentClassAttendance() {
             instructorId,
             'Absence cancelled',
             `${studentName} will attend class on ${friendlyDate} after all.`,
-            '/instructor/attendance'
+            `/instructor/messages?from=${studentId}`
           );
         }
       } catch (notifyErr) {
