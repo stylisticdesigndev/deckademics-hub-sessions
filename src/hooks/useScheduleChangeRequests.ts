@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
+import { notifyPush, notifyPushRoles } from '@/lib/notifyPush';
 
 export interface ScheduleChangeRequest {
   id: string;
@@ -101,6 +102,12 @@ export const useScheduleChangeRequests = (role: 'admin' | 'instructor') => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule-change-requests'] });
       toast.success('Schedule change request submitted');
+      notifyPushRoles(
+        ['admin'],
+        'New schedule change request',
+        'An instructor requested a schedule change for a student.',
+        '/admin/students'
+      );
     },
     onError: (error: Error) => {
       toast.error(`Failed to submit request: ${error.message}`);
@@ -130,10 +137,16 @@ export const useScheduleChangeRequests = (role: 'admin' | 'instructor') => {
         .eq('id', request.id as any);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, request) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-change-requests'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
       toast.success('Schedule change approved');
+      notifyPush(
+        request.requested_by,
+        'Schedule change approved',
+        `The schedule change to ${request.new_day} ${request.new_time} was approved.`,
+        '/instructor/classes'
+      );
     },
     onError: (error: Error) => {
       toast.error(`Failed to approve: ${error.message}`);
