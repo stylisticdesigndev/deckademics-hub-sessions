@@ -43,12 +43,15 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const recipient_id = body?.recipient_id as string | undefined;
+    const target_roles = Array.isArray(body?.target_roles)
+      ? (body.target_roles as string[]).filter((r) => typeof r === 'string')
+      : undefined;
     const title = (body?.title ?? 'Deckademics').toString().slice(0, 120);
     const message = (body?.body ?? '').toString().slice(0, 300);
     const url = (body?.url ?? '/').toString().slice(0, 500);
 
-    if (!recipient_id) {
-      return new Response(JSON.stringify({ error: 'recipient_id required' }), {
+    if (!recipient_id && (!target_roles || target_roles.length === 0)) {
+      return new Response(JSON.stringify({ error: 'recipient_id or target_roles required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -68,16 +71,32 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Respect the recipient's push toggle (default false — they must opt in).
-    const { data: prefs } = await admin
-      .from('notification_preferences')
-      .select('push_notifications')
-      .eq('user_id', recipient_id)
-      .maybeSingle();
+    // Resolve the set of recipient user ids.
+    let recipientIds: string[] = [];
+    if (recipient_id) {
+      recipientIds.push(recipient_id);
+    }
+    if (target_roles && target_roles.length > 0) {
+      const { data: roleUsers } = await admin
+        .from('profiles')
+        .select('id')
+        .in('role', target_roles);
+      for (const u of roleUsers ?? []) recipientIds.push(u.id);
+    }
+    // De-dupe
+    recipientIds = [...new Set(recipientIds)];
 
-    if (!prefs?.push_notifications) {
+    // Keep only recipients who opted in to push.
+    const { data: optedIn } = await admin
+      .from('notification_preferences')
+      .select('user_id')
+      .in('user_id', recipientIds)
+      .eq('push_notifications', true);
+    const optedInIds = (optedIn ?? []).map((p) => p.user_id);
+
+    if (optedInIds.length === 0) {
       return new Response(
-        JSON.stringify({ ok: true, skipped: true, reason: 'push_disabled' }),
+        JSON.stringify({ ok: true, skipped: true, reason: 'no_opted_in_recipients' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -85,7 +104,7 @@ Deno.serve(async (req: Request) => {
     const { data: subs } = await admin
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
-      .eq('user_id', recipient_id);
+      .in('user_id', optedInIds);
 
     if (!subs || subs.length === 0) {
       return new Response(
