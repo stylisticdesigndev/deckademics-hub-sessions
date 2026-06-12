@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
+import { notifyStudentEvent } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -27,41 +27,9 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
       });
       if (statusErr) throw statusErr;
 
-      // Action 2: Automated message to instructor(s) — primary + secondary
-      const instructorIds = await getStudentInstructorIds(studentId);
-
-      const { data: profileRow } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', studentId)
-        .maybeSingle();
-      const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
-
-      for (const instructorId of instructorIds) {
-        const { error: msgErr } = await supabase.from('messages').insert({
-          sender_id: studentId,
-          receiver_id: instructorId,
-          subject: 'Running Late',
-          content: `Heads up — I'm running late to today's class.`,
-        });
-        if (msgErr) console.error('running-late message insert failed:', msgErr);
-
-        // Action 3: Push notification — invoke edge function (in-app + future FCM hook)
-        try {
-          await supabase.functions.invoke('notify-instructor-late', {
-            body: { instructor_id: instructorId, student_id: studentId, student_name: studentName },
-          });
-        } catch (pushErr) {
-          // Push is best-effort — don't fail the whole flow
-          console.warn('Push notification failed:', pushErr);
-        }
-        notifyPush(
-          instructorId,
-          'Student running late',
-          `${studentName} is running late to today's class.`,
-          `/instructor/messages?from=${studentId}`
-        );
-      }
+      // Action 2: Notify ALL instructors (primary + secondary + cover)
+      // server-side — reliable in-app message + push.
+      await notifyStudentEvent(studentId, 'late');
 
       toast({
         title: 'Instructor notified',

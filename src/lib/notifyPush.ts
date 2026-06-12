@@ -81,3 +81,36 @@ export function notifyPushRoles(
     console.debug('[notifyPushRoles] failed', err);
   }
 }
+
+/**
+ * Server-side fan-out for student-initiated events (absent / running late /
+ * undo absence). The edge function resolves ALL of the student's instructors
+ * (primary + secondary + cover) with the service role, inserts the in-app
+ * messages, and sends push — so it never misses an instructor due to client
+ * RLS visibility. Returns the summary so callers can surface failures.
+ */
+export async function notifyStudentEvent(
+  studentId: string,
+  kind: 'absent' | 'late' | 'undo_absent',
+  opts: { date?: string | null; reason?: string | null } = {}
+): Promise<{ ok: boolean; notified: number; pushed: number } | null> {
+  if (!studentId) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke('notify-student-event', {
+      body: {
+        student_id: studentId,
+        kind,
+        date: opts.date ?? null,
+        reason: opts.reason ?? null,
+      },
+    });
+    if (error) {
+      console.error('[notifyStudentEvent] failed', error);
+      return null;
+    }
+    return data as { ok: boolean; notified: number; pushed: number };
+  } catch (err) {
+    console.error('[notifyStudentEvent] failed', err);
+    return null;
+  }
+}
