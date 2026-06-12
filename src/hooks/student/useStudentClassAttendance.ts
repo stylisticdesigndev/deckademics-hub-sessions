@@ -251,58 +251,9 @@ export function useStudentClassAttendance() {
 
       if (attendanceError) throw attendanceError;
 
-      // Notify instructor(s) — message into inbox + alert push (primary + secondary)
-      try {
-        const instructorIds = await getStudentInstructorIds(studentId);
-
-        const { data: profileRow } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', studentId)
-          .maybeSingle();
-        const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
-        const friendlyDate = formatDateUS(absenceDate);
-
-        if (instructorIds.length === 0) {
-          console.warn('absence notify: no instructor assigned to student', studentId);
-        }
-        for (const instructorId of instructorIds) {
-          const content = reason
-            ? `Heads up — I won't be at class on ${friendlyDate}. Reason: ${reason}`
-            : `Heads up — I won't be at class on ${friendlyDate}.`;
-
-          const { error: msgErr } = await supabase.from('messages').insert({
-            sender_id: studentId,
-            receiver_id: instructorId,
-            subject: 'Marked Absent',
-            content,
-          });
-          if (msgErr) console.error('absence message insert failed:', msgErr);
-
-          try {
-            await supabase.functions.invoke('notify-instructor-absence', {
-              body: {
-                instructor_id: instructorId,
-                student_id: studentId,
-                student_name: studentName,
-                absence_date: dateStr,
-                reason: reason || null,
-              },
-            });
-          } catch (pushErr) {
-            // Push is best-effort
-            if (import.meta.env.DEV) console.warn('absence push failed:', pushErr);
-          }
-          notifyPush(
-            instructorId,
-            'Student marked absent',
-            `${studentName} won't be at class on ${friendlyDate}.`,
-            `/instructor/messages?from=${studentId}`
-          );
-        }
-      } catch (notifyErr) {
-        console.warn('absence notify failed:', notifyErr);
-      }
+      // Notify ALL instructors (primary + secondary + cover) server-side —
+      // reliable in-app message + push, no client RLS blind spots.
+      await notifyStudentEvent(studentId, 'absent', { date: dateStr, reason: reason || null });
 
       // Update local state
       setAttendanceRecords(prev => [
