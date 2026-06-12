@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
+import { notifyStudentEvent } from '@/lib/notifyPush';
 import { toast } from '@/hooks/use-toast';
 
 export interface ClassSession {
@@ -56,55 +56,9 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
       });
       if (error) throw error;
 
-      // Auto-message instructor(s) + push hook — primary + secondary
-      try {
-        const instructorIds = await getStudentInstructorIds(studentId);
-        const { data: profileRow } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', studentId)
-          .maybeSingle();
-        const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
-
-        if (instructorIds.length === 0) {
-          console.warn('absence notify: no instructor assigned to student', studentId);
-        }
-        for (const instructorId of instructorIds) {
-          const content = reason
-            ? `Heads up — I won't be at class on ${session.date}. Reason: ${reason}`
-            : `Heads up — I won't be at class on ${session.date}.`;
-
-          const { error: msgErr } = await supabase.from('messages').insert({
-            sender_id: studentId,
-            receiver_id: instructorId,
-            subject: 'Marked Absent',
-            content,
-          });
-          if (msgErr) console.error('absence message insert failed:', msgErr);
-
-          try {
-            await supabase.functions.invoke('notify-instructor-absence', {
-              body: {
-                instructor_id: instructorId,
-                student_id: studentId,
-                student_name: studentName,
-                absence_date: isoDate,
-                reason: reason || null,
-              },
-            });
-          } catch (pushErr) {
-            console.warn('absence push failed:', pushErr);
-          }
-          notifyPush(
-            instructorId,
-            'Student marked absent',
-            `${studentName} won't be at class on ${session.date}.`,
-            `/instructor/messages?from=${studentId}`
-          );
-        }
-      } catch (notifyErr) {
-        console.warn('absence notify failed:', notifyErr);
-      }
+      // Notify ALL instructors (primary + secondary + cover) server-side —
+      // reliable in-app message + push, no client RLS blind spots.
+      await notifyStudentEvent(studentId, 'absent', { date: isoDate, reason: reason || null });
 
       toast.success('Marked absent. Your instructor has been notified.');
       setDialogOpen(false);
