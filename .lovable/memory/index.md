@@ -58,3 +58,4 @@
 - [Admin RBAC & Mode Switcher](mem://features/admin-rbac-mode-switcher) — Unified login, hardcoded admin emails, admin mode visual state, payroll owner-only gate
 - [Push Notifications](mem://features/push-notifications) — Free Web Push (VAPID) for all roles; send-push edge fn + notifyPush helpers wired to all major events
 - [Push Notification Onboarding Prompt](mem://features/push-onboarding-prompt) — One-time post-onboarding modal inviting students/instructors to enable push notifications
+- [User Guide Docs](mem://features/user-guide-docs) — Living Student/Instructor/Admin PDF manuals generated from docs/user-guide Markdown; keep in sync on feature changes
