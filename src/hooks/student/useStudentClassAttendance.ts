@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush } from '@/lib/notifyPush';
+import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateUS } from '@/lib/utils';
@@ -252,15 +252,9 @@ export function useStudentClassAttendance() {
 
       if (attendanceError) throw attendanceError;
 
-      // Notify instructor — message into inbox + alert push (best-effort)
+      // Notify instructor(s) — message into inbox + alert push (primary + secondary)
       try {
-        const { data: studentRow } = await supabase
-          .from('students')
-          .select('instructor_id')
-          .eq('id', studentId)
-          .maybeSingle();
-
-        const instructorId = studentRow?.instructor_id;
+        const instructorIds = await getStudentInstructorIds(studentId);
 
         const { data: profileRow } = await supabase
           .from('profiles')
@@ -270,7 +264,10 @@ export function useStudentClassAttendance() {
         const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
         const friendlyDate = formatDateUS(absenceDate);
 
-        if (instructorId) {
+        if (instructorIds.length === 0) {
+          console.warn('absence notify: no instructor assigned to student', studentId);
+        }
+        for (const instructorId of instructorIds) {
           const content = reason
             ? `Heads up — I won't be at class on ${friendlyDate}. Reason: ${reason}`
             : `Heads up — I won't be at class on ${friendlyDate}.`;
@@ -303,8 +300,6 @@ export function useStudentClassAttendance() {
             `${studentName} won't be at class on ${friendlyDate}.`,
             `/instructor/messages?from=${studentId}`
           );
-        } else {
-          console.warn('absence notify: no instructor assigned to student', studentId);
         }
       } catch (notifyErr) {
         console.warn('absence notify failed:', notifyErr);
@@ -361,15 +356,9 @@ export function useStudentClassAttendance() {
       const { error: attendanceError } = await attendanceQuery;
       if (attendanceError) throw attendanceError;
 
-      // Notify instructor — message + push (best-effort)
+      // Notify instructor(s) — message + push (primary + secondary)
       try {
-        const { data: studentRow } = await supabase
-          .from('students')
-          .select('instructor_id')
-          .eq('id', studentId)
-          .maybeSingle();
-
-        const instructorId = studentRow?.instructor_id;
+        const instructorIds = await getStudentInstructorIds(studentId);
         const { data: profileRow } = await supabase
           .from('profiles')
           .select('first_name, last_name')
@@ -378,7 +367,7 @@ export function useStudentClassAttendance() {
         const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
         const friendlyDate = formatDateUS(absenceDate);
 
-        if (instructorId) {
+        for (const instructorId of instructorIds) {
           await supabase.from('messages').insert({
             sender_id: studentId,
             receiver_id: instructorId,

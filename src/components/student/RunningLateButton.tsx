@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush } from '@/lib/notifyPush';
+import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -27,13 +27,8 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
       });
       if (statusErr) throw statusErr;
 
-      // Action 2: Automated message to instructor
-      const { data: studentRow } = await supabase
-        .from('students')
-        .select('instructor_id')
-        .eq('id', studentId)
-        .maybeSingle();
-      const instructorId = studentRow?.instructor_id;
+      // Action 2: Automated message to instructor(s) — primary + secondary
+      const instructorIds = await getStudentInstructorIds(studentId);
 
       const { data: profileRow } = await supabase
         .from('profiles')
@@ -42,7 +37,7 @@ export const RunningLateButton = ({ studentId, disabled }: Props) => {
         .maybeSingle();
       const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
 
-      if (instructorId) {
+      for (const instructorId of instructorIds) {
         const { error: msgErr } = await supabase.from('messages').insert({
           sender_id: studentId,
           receiver_id: instructorId,
