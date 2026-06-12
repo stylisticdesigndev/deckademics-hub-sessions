@@ -10,6 +10,9 @@ a guide changes so the PDFs stay in sync.
 """
 import os
 import re
+import sys
+import json
+import hashlib
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
@@ -38,6 +41,7 @@ FONT_BOLD = "Body-Bold"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = "/mnt/documents"
+MANIFEST = os.path.join(HERE, ".pdf-manifest.json")
 
 PRIMARY = HexColor("#40a647")   # deckademics primary green
 ACCENT = HexColor("#307834")    # deckademics accent
