@@ -1,91 +1,60 @@
-# User Guide (PDF Manuals)
+# Fix: student absence/late alerts not reaching instructors
 
-Create plain-language **PDF user manuals** — written so a complete beginner can follow — covering every part of the app for **Students**, **Instructors**, and **Admins**. Three separate PDFs (one per role) so each maps cleanly to a future video tutorial series. The guides stay current: whenever app features change, the source is updated and the PDFs are regenerated.
+## What you reported
+You marked **Future Trunks** absent from the student side. Neither instructor (you, DJ Stylistic = primary; Master Roshi = secondary) got a push **or** an in-app message/notification.
 
-## Deliverables (downloadable PDFs)
+## What I confirmed in your data
+- Both instructors are correctly linked to the student (you primary, Roshi secondary).
+- Both have active push subscriptions (your iPhone via Apple Web Push, Roshi's Android via FCM) and both have push **opted in**.
+- Today's absence created the attendance record, but **no in-app messages were created** for either instructor, and **Master Roshi has never received one**.
+- The notification edge functions show **no recent runs** for this absence.
 
-```text
-/mnt/documents/
-  Deckademics-Student-Guide.pdf
-  Deckademics-Instructor-Guide.pdf
-  Deckademics-Admin-Guide.pdf
-```
+## Root cause
+The "notify my instructors" step runs **in the browser** and is fragile:
 
-Each PDF previewable/downloadable directly in chat.
+1. It loops over instructors one-by-one and inserts messages / calls push from the client. If that block hits a silent error or the instructor list comes back empty, the absence still saves but **no one is notified** — exactly what happened (the attendance row exists, the messages don't).
+2. The helper that figures out "who are this student's instructors" reads the link table through row-level security. That's brittle and is the kind of thing that can return an incomplete list (e.g. miss the newly added secondary, Roshi).
 
-## How it stays a "living document"
+So nothing was "deleted/broken" in your data — the client-side notify step just silently no-op'd.
 
-A PDF can't edit itself, so the real source of truth is kept in the project:
+## The fix (student-initiated flow only — per your choice)
+Move the fan-out to the **server**, so it runs reliably and always sees the full instructor list. The student's app makes **one** call; the server does the rest with elevated privileges (no RLS blind spots).
 
-```text
-docs/user-guide/
-  student-guide.md
-  instructor-guide.md
-  admin-guide.md
-```
+### Scope
+Only the three **student-initiated** actions notify instructors (instructor-side attendance marking stays as-is, notifying only the student):
+- Mark Absent (Today's Class card + Class Attendance page)
+- I'm Running Late
+- Undo absence ("I can make it")
 
-- These Markdown files are the editable source.
-- A small generator script renders each `.md` into a branded PDF.
-- A **project-memory rule** will instruct all future work: whenever a user-facing feature is added, changed, or removed, update the matching `docs/user-guide/*.md` section **and** regenerate the PDF. Since memory is always in context, the manuals stay in sync automatically.
+### Behavior after the fix
+For each action, every assigned instructor (primary **and** secondary, plus any cover instructor) reliably gets:
+- an **in-app message** (shows in their notification bell + Messages), and
+- a **push notification** if they're opted in (best-effort; the in-app message always lands).
 
-## Look & feel
+If the student has no instructors, it's a clean no-op (no crash, no half-finished state).
 
-- Branded cover page per role (app name, guide title, "Deckademics" styling using the app's primary brand color).
-- Clear table of contents with categories.
-- Readable typography, generous spacing, numbered step-by-step instructions.
-- No screenshots for now (these become videos), but structured to read aloud as a script.
+## Technical details
+- **New edge function `notify-student-event`** (service role):
+  - Validates the caller's JWT and requires `caller == student_id` (a student can only fire alerts for themselves).
+  - Accepts `{ student_id, kind: 'absent' | 'late' | 'undo_absent', date?, reason? }`.
+  - Resolves the full instructor set with the service role: `student_instructors` (primary + secondary) with fallback to `students.instructor_id`, plus matching `cover_sessions` for that date.
+  - Inserts the appropriate `messages` row for each instructor (same wording as today).
+  - Sends web-push to each opted-in instructor (same VAPID/web-push logic already used by `send-push`), and prunes stale subscriptions.
+  - Returns a summary `{ notified, pushed }` so the client can surface failures instead of swallowing them.
+- **Client changes** — replace the in-component loops with a single `supabase.functions.invoke('notify-student-event', ...)` call in:
+  - `src/components/cards/UpcomingClassCard.tsx` (handleConfirmAbsent)
+  - `src/hooks/student/useStudentClassAttendance.ts` (markAbsent, undoAbsent)
+  - `src/components/student/RunningLateButton.tsx`
+  - The attendance row insert stays in the client (RLS already allows the student to mark themselves absent); only the notify/messaging/push moves server-side.
+- Keep `getStudentInstructorIds` for any remaining client uses, but the student-event flows no longer depend on client-side RLS visibility.
+- Leave instructor-side `useInstructorAttendance.markAttendance` unchanged (still notifies only the student).
+- Config: `notify-student-event` deploys automatically; secrets needed (`VAPID_PRIVATE_KEY`, service role) already exist.
 
-## Writing style
+## Verification
+1. Log in as Future Trunks, mark absent → confirm a `messages` row appears for **both** you and Master Roshi, and both bells show the alert.
+2. Confirm push arrives on your iPhone and Roshi's Android (push is best-effort; iPhonePWA must be installed to Home Screen, which yours already is).
+3. Repeat for "Running Late" and "I can make it" (undo).
+4. Check the new function's logs show the run and a `notified`/`pushed` count.
 
-- Simple, friendly, jargon-free; assumes no prior app experience.
-- Every feature = **what it is → why you'd use it → step-by-step how to do it.**
-- Uses the app's real terms (Classrooms, Skills, Curriculum, Novice/Amateur/Intermediate/Advanced, DJ Name, etc.).
-
-## Content outline (organized by category)
-
-### Student Guide
-- **Getting Started**: sign up, admin approval wait, first login, profile setup, mandatory photo upload, installing the app to your phone (Add to Home Screen), enabling push notifications.
-- **Dashboard**: reading your overview, next class, skills at a glance.
-- **Skills & Progress**: how proficiency levels work, viewing your skill breakdown.
-- **Curriculum**: browsing what you'll learn at each level.
-- **Classes**: schedule, marking yourself absent, "Running Late" button.
-- **Notes**: personal notes, saving instructor messages/images to notes.
-- **Messages**: chatting with your instructor, the 7-day reply window.
-- **Announcements**: reading, marking as read / dismissing.
-- **Profile & Settings**: editing profile, notification preferences (email/SMS/push).
-- **Help**: reporting a bug, Sunday Practice link.
-
-### Instructor Guide
-- **Getting Started**: sign up, approval, login, profile setup, DJ Name, photo.
-- **Dashboard**: daily overview.
-- **Students**: roster, student detail, primary vs. secondary instructor.
-- **Classes**: schedule, Day/Week/Month filtering.
-- **Attendance**: marking Present/Absent per weekly session in Classrooms 1–3.
-- **Skills & Curriculum**: assessing student skills, viewing curriculum.
-- **Notes & Messages**: student notes, conversational threads, auto-alerts (late/absent) sent to both assigned instructors.
-- **Announcements**: posting/reading.
-- **My Payment**: reading your payment ledger.
-- **Profile & Settings**.
-
-### Admin Guide
-- **Getting Started & Roles**: admin login, "Return to Teaching View," who can see payroll.
-- **Dashboard & Notifications**: overview, unread/critical badges.
-- **Instructor Management**: approve, add, edit, deactivate (reassignment behavior).
-- **Student Management**: approve, add, edit, Active/Pending/Inactive tabs.
-- **Curriculum Management**: rubrics vs. trackable Skills.
-- **Skills & Progress Overview**: monitoring proficiency school-wide.
-- **Attendance**: school-wide attendance.
-- **Payments**: Student Payments (installment plans, tiered pricing), Instructor Payments (payroll history), Payments sandbox preview.
-- **Communication**: Messages, Announcements (categories).
-- **Feedback**: Bug Reports, Feature Requests.
-- **Settings**.
-
-## Technical approach
-- Write the three Markdown source files under `docs/user-guide/`.
-- Use a Python generator (ReportLab) to render branded PDFs into `/mnt/documents/`.
-- Visually QA every page of each PDF (convert to images, inspect) and fix layout issues before delivering.
-- Save the project-memory maintenance rule.
-
-## What this does NOT include
-- No in-app Help page or navigation changes.
-- No database, component, or route changes — documentation only.
+## Note on automatic PDFs (unrelated)
+This change doesn't touch the user-guide PDFs; no guide updates are implied by a notification bug fix.
