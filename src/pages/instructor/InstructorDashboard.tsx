@@ -12,6 +12,7 @@ import { InstructorStudentDetailDialog } from '@/components/instructor/students/
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
+import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 
 interface Student {
   id: string;
@@ -79,6 +80,7 @@ const InstructorDashboard = ({ dashboardData, demoMode, setDemoMode }: Instructo
 
   return (
     <div className="space-y-6">
+      <PushNotificationPrompt />
       {demoMode && (
         <Alert className="bg-warning/10 border-warning/30">
           <Eye className="h-4 w-4 text-warning" />
