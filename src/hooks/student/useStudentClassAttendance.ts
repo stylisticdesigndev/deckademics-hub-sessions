@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
+import { notifyStudentEvent } from '@/lib/notifyPush';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateUS } from '@/lib/utils';
 
 /** Parse "3:30 PM" → hours (0-23) */
 function parseTimeToHours(timeStr: string): number {
