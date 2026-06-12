@@ -255,18 +255,84 @@ def make_doc(path, role_title):
     return doc
 
 
-def main():
+def _md_hash(md_name):
+    with open(os.path.join(HERE, md_name), "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def _load_manifest():
+    if os.path.exists(MANIFEST):
+        try:
+            with open(MANIFEST, encoding="utf-8") as f:
+                return json.load(f)
+        except (ValueError, OSError):
+            return {}
+    return {}
+
+
+def audit():
+    """Return a list of guides whose Markdown no longer matches its built PDF.
+
+    A guide is "stale" if its Markdown hash differs from the hash recorded
+    when the PDF was last generated, or if the PDF file is missing.
+    """
+    manifest = _load_manifest()
+    stale = []
+    for md_name, role_title, pdf_name in GUIDES:
+        current = _md_hash(md_name)
+        recorded = manifest.get(md_name)
+        pdf_exists = os.path.exists(os.path.join(OUT_DIR, pdf_name))
+        if recorded != current or not pdf_exists:
+            reason = "PDF missing" if not pdf_exists else (
+                "never built" if recorded is None else "source changed")
+            stale.append((md_name, pdf_name, reason))
+    return stale
+
+
+def build(only=None):
+    """Generate PDFs (all, or only the given md filenames) and update manifest."""
     os.makedirs(OUT_DIR, exist_ok=True)
     st = styles()
+    manifest = _load_manifest()
     for md_name, role_title, pdf_name in GUIDES:
+        if only is not None and md_name not in only:
+            continue
         with open(os.path.join(HERE, md_name), encoding="utf-8") as f:
             md = f.read()
         doc_title, sections = parse_markdown(md)
         doc = make_doc(os.path.join(OUT_DIR, pdf_name), role_title)
         story = build_story(doc_title, role_title, sections, st)
         doc.build(story)
+        manifest[md_name] = _md_hash(md_name)
         print("Wrote", os.path.join(OUT_DIR, pdf_name))
+    with open(MANIFEST, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+
+
+def main():
+    args = sys.argv[1:]
+    if "--check" in args:
+        stale = audit()
+        if not stale:
+            print("AUDIT OK: all guide PDFs are up to date with their Markdown.")
+            return 0
+        print("AUDIT: %d guide(s) out of sync:" % len(stale))
+        for md_name, pdf_name, reason in stale:
+            print("  - %s -> %s (%s)" % (md_name, pdf_name, reason))
+        print("Run: python docs/user-guide/generate_pdfs.py --sync")
+        return 1
+    if "--sync" in args:
+        stale = audit()
+        if not stale:
+            print("Already in sync. Nothing to regenerate.")
+            return 0
+        build(only={s[0] for s in stale})
+        print("Synced %d guide(s)." % len(stale))
+        return 0
+    # default: rebuild everything
+    build()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
