@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush } from '@/lib/notifyPush';
+import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
 import { toast } from '@/hooks/use-toast';
 
 export interface ClassSession {
@@ -56,15 +56,9 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
       });
       if (error) throw error;
 
-      // Auto-message instructor + push hook (best-effort, mirrors useStudentClassAttendance.markAbsent)
+      // Auto-message instructor(s) + push hook — primary + secondary
       try {
-        const { data: studentRow } = await supabase
-          .from('students')
-          .select('instructor_id')
-          .eq('id', studentId)
-          .maybeSingle();
-
-        const instructorId = studentRow?.instructor_id;
+        const instructorIds = await getStudentInstructorIds(studentId);
         const { data: profileRow } = await supabase
           .from('profiles')
           .select('first_name, last_name')
@@ -72,7 +66,10 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
           .maybeSingle();
         const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
 
-        if (instructorId) {
+        if (instructorIds.length === 0) {
+          console.warn('absence notify: no instructor assigned to student', studentId);
+        }
+        for (const instructorId of instructorIds) {
           const content = reason
             ? `Heads up — I won't be at class on ${session.date}. Reason: ${reason}`
             : `Heads up — I won't be at class on ${session.date}.`;
@@ -104,8 +101,6 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
             `${studentName} won't be at class on ${session.date}.`,
             `/instructor/messages?from=${studentId}`
           );
-        } else {
-          console.warn('absence notify: no instructor assigned to student', studentId);
         }
       } catch (notifyErr) {
         console.warn('absence notify failed:', notifyErr);
