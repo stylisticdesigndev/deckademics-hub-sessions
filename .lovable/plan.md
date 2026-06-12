@@ -1,59 +1,91 @@
-# Fix Push Notifications (VAPID key + delivery)
+# User Guide (PDF Manuals)
 
-## What's actually broken
+Create plain-language **PDF user manuals** — written so a complete beginner can follow — covering every part of the app for **Students**, **Instructors**, and **Admins**. Three separate PDFs (one per role) so each maps cleanly to a future video tutorial series. The guides stay current: whenever app features change, the source is updated and the PDFs are regenerated.
 
-Push notifications are **not** failing on the iPhone — they're failing on the server. Every call to the `send-push` edge function throws:
+## Deliverables (downloadable PDFs)
 
 ```text
-Vapid private key must be a URL safe Base 64 (without "=")
+/mnt/documents/
+  Deckademics-Student-Guide.pdf
+  Deckademics-Instructor-Guide.pdf
+  Deckademics-Admin-Guide.pdf
 ```
 
-The `VAPID_PRIVATE_KEY` secret was saved in the wrong format. Web Push requires the key as **URL-safe base64** (uses `-` and `_`, no `=` padding). The stored value has standard base64 characters, so `web-push` rejects it before sending anything.
+Each PDF previewable/downloadable directly in chat.
 
-Because this fails for every recipient, no device has ever received a push — the iOS setup is likely fine.
+## How it stays a "living document"
 
-## The fix
+A PDF can't edit itself, so the real source of truth is kept in the project:
 
-### 1. Regenerate a matching VAPID key pair
+```text
+docs/user-guide/
+  student-guide.md
+  instructor-guide.md
+  admin-guide.md
+```
 
-Generate a fresh, correctly-encoded public/private VAPID pair (URL-safe base64, no padding). Both halves must come from the same pair or encryption fails.
+- These Markdown files are the editable source.
+- A small generator script renders each `.md` into a branded PDF.
+- A **project-memory rule** will instruct all future work: whenever a user-facing feature is added, changed, or removed, update the matching `docs/user-guide/*.md` section **and** regenerate the PDF. Since memory is always in context, the manuals stay in sync automatically.
 
-### 2. Update the secret + the public key
+## Look & feel
 
-- Store the new **private** key in the `VAPID_PRIVATE_KEY` secret (correct URL-safe encoding).
-- Update the **public** key constant in the two places it lives so they match the new private key:
-  - `src/hooks/usePushNotifications.ts`
-  - `supabase/functions/send-push/index.ts`
+- Branded cover page per role (app name, guide title, "Deckademics" styling using the app's primary brand color).
+- Clear table of contents with categories.
+- Readable typography, generous spacing, numbered step-by-step instructions.
+- No screenshots for now (these become videos), but structured to read aloud as a script.
 
-### 3. Re-subscribe existing devices
+## Writing style
 
-Because the public key changes, any device that already subscribed (with the old/broken key) holds a stale subscription. After deploy, those devices need to toggle push **off then on** once to re-register against the new key. Old/stale subscriptions are auto-cleaned by the function on 404/410, so this self-heals over time.
+- Simple, friendly, jargon-free; assumes no prior app experience.
+- Every feature = **what it is → why you'd use it → step-by-step how to do it.**
+- Uses the app's real terms (Classrooms, Skills, Curriculum, Novice/Amateur/Intermediate/Advanced, DJ Name, etc.).
 
-### 4. Verify end-to-end
+## Content outline (organized by category)
 
-- Confirm `send-push` logs show a successful `delivered` count instead of the VAPID error.
-- Test the real flow: from **Account A**, send a message to **Account B** whose device has push enabled — confirm the banner appears in B's notification shade.
+### Student Guide
+- **Getting Started**: sign up, admin approval wait, first login, profile setup, mandatory photo upload, installing the app to your phone (Add to Home Screen), enabling push notifications.
+- **Dashboard**: reading your overview, next class, skills at a glance.
+- **Skills & Progress**: how proficiency levels work, viewing your skill breakdown.
+- **Curriculum**: browsing what you'll learn at each level.
+- **Classes**: schedule, marking yourself absent, "Running Late" button.
+- **Notes**: personal notes, saving instructor messages/images to notes.
+- **Messages**: chatting with your instructor, the 7-day reply window.
+- **Announcements**: reading, marking as read / dismissing.
+- **Profile & Settings**: editing profile, notification preferences (email/SMS/push).
+- **Help**: reporting a bug, Sunday Practice link.
 
-### 5. (Optional, recommended) App-icon badge count
+### Instructor Guide
+- **Getting Started**: sign up, approval, login, profile setup, DJ Name, photo.
+- **Dashboard**: daily overview.
+- **Students**: roster, student detail, primary vs. secondary instructor.
+- **Classes**: schedule, Day/Week/Month filtering.
+- **Attendance**: marking Present/Absent per weekly session in Classrooms 1–3.
+- **Skills & Curriculum**: assessing student skills, viewing curriculum.
+- **Notes & Messages**: student notes, conversational threads, auto-alerts (late/absent) sent to both assigned instructors.
+- **Announcements**: posting/reading.
+- **My Payment**: reading your payment ledger.
+- **Profile & Settings**.
 
-You asked about a number on the icon. Currently there's none. As a small add-on I can have `sw.js` call the **Badging API** (`navigator.setAppBadge`) on incoming push and clear it when the app is opened, so the home-screen icon shows an unread count on supported platforms (Android/desktop Chrome; iOS support is limited). This is optional and can be skipped if you only want the banner.
+### Admin Guide
+- **Getting Started & Roles**: admin login, "Return to Teaching View," who can see payroll.
+- **Dashboard & Notifications**: overview, unread/critical badges.
+- **Instructor Management**: approve, add, edit, deactivate (reassignment behavior).
+- **Student Management**: approve, add, edit, Active/Pending/Inactive tabs.
+- **Curriculum Management**: rubrics vs. trackable Skills.
+- **Skills & Progress Overview**: monitoring proficiency school-wide.
+- **Attendance**: school-wide attendance.
+- **Payments**: Student Payments (installment plans, tiered pricing), Instructor Payments (payroll history), Payments sandbox preview.
+- **Communication**: Messages, Announcements (categories).
+- **Feedback**: Bug Reports, Feature Requests.
+- **Settings**.
 
-## How push will look after the fix
+## Technical approach
+- Write the three Markdown source files under `docs/user-guide/`.
+- Use a Python generator (ReportLab) to render branded PDFs into `/mnt/documents/`.
+- Visually QA every page of each PDF (convert to images, inspect) and fix layout issues before delivering.
+- Save the project-memory maintenance rule.
 
-- A banner + an entry in the notification shade with the sender/title and message text, plus your app icon.
-- Tapping it opens the app to the relevant page (messages, announcement, etc.).
-- Icon badge number only if we add step 5.
-
-## Testing checklist (post-fix)
-
-1. Publish so the new public key ships to the client.
-2. On the **recipient** device, toggle Push off then on in Profile → Notifications, tap Allow.
-3. From a **second** account, trigger an event (send a message) to the recipient.
-4. Confirm the banner arrives; check `send-push` logs for `delivered > 0`.
-
-## Notes / constraints
-
-- iPhone still requires the app be added to the Home Screen (iOS 16.4+) and opened from that icon for push to work — but that was never the blocker here.
-- No database changes are required.
-
-Add step 5
+## What this does NOT include
+- No in-app Help page or navigation changes.
+- No database, component, or route changes — documentation only.
