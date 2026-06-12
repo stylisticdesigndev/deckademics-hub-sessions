@@ -91,6 +91,8 @@ def styles():
 def inline_md(text):
     # bold
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
+    # replace glyphs the embedded font lacks
+    text = text.replace("\u2192", "&gt;").replace("\u2794", "&gt;")
     # escape stray ampersands
     text = text.replace(" & ", " &amp; ")
     return text
