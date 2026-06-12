@@ -39,7 +39,7 @@ Deckademics works like a normal app once you add it to your home screen. This al
 Notifications let you know about new messages, class reminders, and announcements.
 
 1. From time to time you may see a pop-up asking to **Enable notifications** — tap it and choose **Allow**.
-2. You can also turn notifications on any time from **Profile → Notification Preferences**.
+2. You can also turn notifications on any time from **Profile > Notification Preferences**.
 
 ## Dashboard
 
