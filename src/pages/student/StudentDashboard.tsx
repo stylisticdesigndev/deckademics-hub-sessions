@@ -6,6 +6,7 @@ import { AttendanceChart } from '@/components/student/dashboard/AttendanceChart'
 import { UpcomingClassesSection } from '@/components/student/dashboard/UpcomingClassesSection';
 import { AnnouncementsSection } from '@/components/student/dashboard/AnnouncementsSection';
 import { NotesSection } from '@/components/student/dashboard/NotesSection';
+import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Eye, EyeOff } from 'lucide-react';
@@ -93,6 +94,7 @@ const StudentDashboard = ({
 
   return (
     <div className="space-y-6">
+      <PushNotificationPrompt />
       {demoMode && (
         <Alert className="bg-warning/10 border-warning/30">
           <Eye className="h-4 w-4 text-warning" />
