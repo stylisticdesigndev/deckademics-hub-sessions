@@ -20,6 +20,21 @@ from reportlab.platypus import (
     ListFlowable, ListItem, NextPageTemplate,
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# Register embeddable TrueType fonts (bundled with reportlab) so glyph metrics
+# match exactly in every viewer instead of relying on font substitution.
+_FONT_DIR = os.path.join(os.path.dirname(
+    __import__("reportlab").__file__), "fonts")
+pdfmetrics.registerFont(TTFont("Body", os.path.join(_FONT_DIR, "Vera.ttf")))
+pdfmetrics.registerFont(TTFont("Body-Bold", os.path.join(_FONT_DIR, "VeraBd.ttf")))
+pdfmetrics.registerFont(TTFont("Body-Italic", os.path.join(_FONT_DIR, "VeraIt.ttf")))
+pdfmetrics.registerFontFamily(
+    "Body", normal="Body", bold="Body-Bold", italic="Body-Italic")
+
+FONT = "Body"
+FONT_BOLD = "Body-Bold"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = "/mnt/documents"
@@ -39,18 +54,17 @@ GUIDES = [
 
 def styles():
     ss = getSampleStyleSheet()
-    base = "Helvetica"
     out = {}
     out["h2"] = ParagraphStyle(
-        "h2", parent=ss["Heading1"], fontName="Helvetica-Bold", fontSize=18,
+        "h2", parent=ss["Heading1"], fontName=FONT_BOLD, fontSize=18,
         textColor=PRIMARY, spaceBefore=22, spaceAfter=8, leading=22,
     )
     out["h3"] = ParagraphStyle(
-        "h3", parent=ss["Heading2"], fontName="Helvetica-Bold", fontSize=13,
+        "h3", parent=ss["Heading2"], fontName=FONT_BOLD, fontSize=13,
         textColor=DARK, spaceBefore=12, spaceAfter=4, leading=16,
     )
     out["body"] = ParagraphStyle(
-        "body", parent=ss["BodyText"], fontName=base, fontSize=10.5,
+        "body", parent=ss["BodyText"], fontName=FONT, fontSize=10.5,
         textColor=DARK, leading=15, spaceAfter=6, alignment=TA_LEFT,
     )
     out["bullet"] = ParagraphStyle(
@@ -60,15 +74,15 @@ def styles():
         "num", parent=out["body"], leftIndent=4, spaceAfter=3,
     )
     out["toc"] = ParagraphStyle(
-        "toc", parent=out["body"], fontName="Helvetica-Bold", fontSize=12,
+        "toc", parent=out["body"], fontName=FONT_BOLD, fontSize=12,
         textColor=ACCENT, spaceAfter=6, leftIndent=8,
     )
     out["cover_title"] = ParagraphStyle(
-        "cover_title", parent=ss["Title"], fontName="Helvetica-Bold",
+        "cover_title", parent=ss["Title"], fontName=FONT_BOLD,
         fontSize=40, textColor=white, leading=46, alignment=TA_LEFT,
     )
     out["cover_sub"] = ParagraphStyle(
-        "cover_sub", parent=ss["Title"], fontName="Helvetica",
+        "cover_sub", parent=ss["Title"], fontName=FONT,
         fontSize=16, textColor=white, leading=22, alignment=TA_LEFT,
     )
     return out
@@ -145,7 +159,7 @@ def build_story(doc_title, role_title, sections, st):
     story.append(NextPageTemplate("content"))
     story.append(Spacer(1, 2.2 * inch))
     story.append(Paragraph("DECKADEMICS", ParagraphStyle(
-        "brand", fontName="Helvetica-Bold", fontSize=18, textColor=white,
+        "brand", fontName=FONT_BOLD, fontSize=18, textColor=white,
         leading=22)))
     story.append(Spacer(1, 0.15 * inch))
     story.append(Paragraph(role_title, st["cover_title"]))
@@ -183,7 +197,7 @@ def build_story(doc_title, role_title, sections, st):
                          for t in payload]
                 story.append(ListFlowable(items, bulletType="1",
                                           bulletColor=ACCENT, leftIndent=16,
-                                          bulletFontName="Helvetica-Bold"))
+                                          bulletFontName=FONT_BOLD))
                 story.append(Spacer(1, 4))
     return story
 
@@ -216,14 +230,14 @@ def make_doc(path, role_title):
         canvas.setLineWidth(2)
         canvas.line(0.9 * inch, letter[1] - 0.6 * inch,
                     letter[0] - 0.9 * inch, letter[1] - 0.6 * inch)
-        canvas.setFont("Helvetica-Bold", 9)
+        canvas.setFont(FONT_BOLD, 9)
         canvas.setFillColor(PRIMARY)
         canvas.drawString(0.9 * inch, letter[1] - 0.52 * inch, "DECKADEMICS")
-        canvas.setFont("Helvetica", 9)
+        canvas.setFont(FONT, 9)
         canvas.setFillColor(MUTED)
         canvas.drawRightString(letter[0] - 0.9 * inch, letter[1] - 0.52 * inch, role_title)
         # footer
-        canvas.setFont("Helvetica", 8)
+        canvas.setFont(FONT, 8)
         canvas.setFillColor(MUTED)
         canvas.drawCentredString(letter[0] / 2, 0.5 * inch, "Page %d" % d.page)
         canvas.restoreState()
