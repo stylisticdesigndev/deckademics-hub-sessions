@@ -356,15 +356,9 @@ export function useStudentClassAttendance() {
       const { error: attendanceError } = await attendanceQuery;
       if (attendanceError) throw attendanceError;
 
-      // Notify instructor — message + push (best-effort)
+      // Notify instructor(s) — message + push (primary + secondary)
       try {
-        const { data: studentRow } = await supabase
-          .from('students')
-          .select('instructor_id')
-          .eq('id', studentId)
-          .maybeSingle();
-
-        const instructorId = studentRow?.instructor_id;
+        const instructorIds = await getStudentInstructorIds(studentId);
         const { data: profileRow } = await supabase
           .from('profiles')
           .select('first_name, last_name')
@@ -373,7 +367,7 @@ export function useStudentClassAttendance() {
         const studentName = `${profileRow?.first_name ?? ''} ${profileRow?.last_name ?? ''}`.trim() || 'Your student';
         const friendlyDate = formatDateUS(absenceDate);
 
-        if (instructorId) {
+        for (const instructorId of instructorIds) {
           await supabase.from('messages').insert({
             sender_id: studentId,
             receiver_id: instructorId,
