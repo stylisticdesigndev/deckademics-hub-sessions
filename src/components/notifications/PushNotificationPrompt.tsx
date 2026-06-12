@@ -21,6 +21,10 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
  */
 const flagKey = (userId: string) => `push-prompt-shown:${userId}`;
 
+// Re-prompt cadence: nudge users again a week after they last dismissed it,
+// until they enable notifications.
+const PROMPT_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const PushNotificationPrompt = () => {
   const { session } = useAuth();
   const userId = session?.user?.id;
@@ -29,14 +33,16 @@ export const PushNotificationPrompt = () => {
 
   useEffect(() => {
     if (!userId || push.loading) return;
-    // Already subscribed, unsupported device, or already prompted → never show.
+    // Already subscribed or unsupported device → never show.
     if (push.enabled || !push.supported) return;
-    if (localStorage.getItem(flagKey(userId))) return;
+    // Suppress for a week after the last time it was shown/dismissed.
+    const last = Number(localStorage.getItem(flagKey(userId)) || 0);
+    if (last && Date.now() - last < PROMPT_INTERVAL_MS) return;
     setOpen(true);
   }, [userId, push.loading, push.enabled, push.supported]);
 
   const markShown = () => {
-    if (userId) localStorage.setItem(flagKey(userId), '1');
+    if (userId) localStorage.setItem(flagKey(userId), String(Date.now()));
   };
 
   const handleEnable = async () => {
