@@ -15,6 +15,7 @@
 - Instructor student detail uses a single rich dialog opened from `/instructor/students` (deep-linkable via `?student=<id>`).
 - Unified login: no separate admin auth page. Admins login via instructor auth, land on teaching view first.
 - Admin access gated by hardcoded emails in `src/constants/adminPermissions.ts`. Payroll owner-only.
+- User guides live in docs/user-guide/*.md (PDFs in /mnt/documents). Update the matching guide + rerun generate_pdfs.py whenever a user-facing feature changes.
 
 ## Memories
 - [Video Background](mem://design/video-background) — Unified full-screen muted video background on home screen and all auth pages
