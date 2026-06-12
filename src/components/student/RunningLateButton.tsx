@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyPush } from '@/lib/notifyPush';
-import { getStudentInstructorIds } from '@/lib/notifyPush';
+import { notifyPush, getStudentInstructorIds } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
