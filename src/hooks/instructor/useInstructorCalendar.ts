@@ -69,7 +69,7 @@ async function fetchCalendar(): Promise<CalendarData> {
   const studentIds = studentRows.map((s) => s.id);
 
   // 2. All student/instructor links + instructor display names (in parallel).
-  const [linksResult, instructorsResult] = await Promise.all([
+  const [linksResult, instructorsResult, activeInstructorsResult] = await Promise.all([
     studentIds.length
       ? supabase
           .from('student_instructors' as any)
@@ -77,9 +77,20 @@ async function fetchCalendar(): Promise<CalendarData> {
           .in('student_id', studentIds)
       : Promise.resolve({ data: [], error: null } as any),
     supabase.rpc('get_instructor_display_names' as any),
+    supabase
+      .from('instructors')
+      .select('id, status, profiles!inner(is_mock)')
+      .eq('status', 'active')
+      .eq('profiles.is_mock', false),
   ]);
   if (linksResult.error) throw linksResult.error;
   if (instructorsResult.error) throw instructorsResult.error;
+  if (activeInstructorsResult.error) throw activeInstructorsResult.error;
+
+  // Only instructors that are active AND not mock should ever appear.
+  const activeInstructorIds = new Set<string>(
+    ((activeInstructorsResult.data as any[]) || []).map((i) => i.id),
+  );
 
   const instructorRows = (instructorsResult.data as any[]) || [];
   const nameById = new Map<string, string>();
@@ -90,6 +101,7 @@ async function fetchCalendar(): Promise<CalendarData> {
   // Map student -> instructors.
   const linksByStudent: Record<string, CalendarInstructor[]> = {};
   ((linksResult.data as any[]) || []).forEach((l) => {
+    if (!activeInstructorIds.has(l.instructor_id)) return; // skip deactivated/mock instructors
     if (!linksByStudent[l.student_id]) linksByStudent[l.student_id] = [];
     linksByStudent[l.student_id].push({
       id: l.instructor_id,
