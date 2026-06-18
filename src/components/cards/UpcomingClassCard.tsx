@@ -28,14 +28,12 @@ interface UpcomingClassCardProps {
   session: ClassSession;
   className?: string;
   studentId?: string;
-  demoMode?: boolean;
 }
 
 export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({ 
   session, 
   className,
   studentId,
-  demoMode,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -113,7 +111,7 @@ export const UpcomingClassCard: React.FC<UpcomingClassCardProps> = ({
             size="sm"
             className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
             onClick={() => setDialogOpen(true)}
-            disabled={demoMode || marking}
+            disabled={marking}
           >
             <XCircle className="h-4 w-4" />
             Mark Absent

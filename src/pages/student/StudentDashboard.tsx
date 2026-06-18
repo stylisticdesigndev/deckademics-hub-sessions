@@ -9,16 +9,6 @@ import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  mockStudentData,
-  mockSkills,
-  mockAttendance,
-  mockUpcomingClasses,
-  mockAnnouncements,
-  mockNotes,
-} from '@/data/mockDashboardData';
 
 interface StudentDashboardProps {
   dashboard: {
@@ -34,8 +24,6 @@ interface StudentDashboardProps {
   attendance: { present: number; absent: number; late: number; total: number };
   attendanceLoading: boolean;
   studentId?: string;
-  demoMode: boolean;
-  setDemoMode: (val: boolean) => void;
 }
 
 const StudentDashboard = ({
@@ -43,8 +31,6 @@ const StudentDashboard = ({
   attendance,
   attendanceLoading,
   studentId,
-  demoMode,
-  setDemoMode,
 }: StudentDashboardProps) => {
   const { userData, session } = useAuth();
 
@@ -72,60 +58,31 @@ const StudentDashboard = ({
 
   const studentName = getStudentName();
 
-  // ===== DEMO MODE START =====
-  // When demoMode is true, substitute live Supabase data with static mock data
-  // so stakeholders can see a fully populated dashboard without real records.
-  // To remove demo mode, delete this block and the mockDashboardData import.
-  const activeStudentData = demoMode ? mockStudentData : studentData;
-  const activeSkills = demoMode
-    ? mockSkills
-    : (progressData && Array.isArray(progressData))
-      ? progressData.map((p: any) => ({
-          skill_name: p.skill_name || 'Unknown',
-          proficiency: typeof p.proficiency === 'number' ? p.proficiency : 0,
-        }))
-      : [];
-  const activeAttendance = demoMode
-    ? mockAttendance
-    : attendance;
-  const activeUpcomingClasses = demoMode ? mockUpcomingClasses : upcomingClasses;
-  const activeAnnouncements = demoMode ? mockAnnouncements : announcements;
-  // ===== DEMO MODE END =====
+  const activeStudentData = studentData;
+  const activeSkills = (progressData && Array.isArray(progressData))
+    ? progressData.map((p: any) => ({
+        skill_name: p.skill_name || 'Unknown',
+        proficiency: typeof p.proficiency === 'number' ? p.proficiency : 0,
+      }))
+    : [];
+  const activeAttendance = attendance;
+  const activeUpcomingClasses = upcomingClasses;
+  const activeAnnouncements = announcements;
 
   return (
     <div className="space-y-6">
       <PushNotificationPrompt />
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>
-            Showing sample dashboard data. Click "Live Data" to switch back.
-          </AlertDescription>
-        </Alert>
-      )}
 
-      <section className="space-y-1 flex items-start justify-between">
+      <section className="space-y-1">
         <div>
           <h1 className="text-2xl font-bold">Welcome, {studentName}</h1>
           <p className="text-muted-foreground">
             Your instructor: <span className="text-primary font-medium">{activeStudentData.instructor !== 'Not assigned' ? activeStudentData.instructor : 'Not yet assigned'}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={demoMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
-        </div>
       </section>
 
-      {fetchError && !demoMode && (
+      {fetchError && (
         <Alert variant="destructive">
           <AlertTitle>Error loading dashboard</AlertTitle>
           <AlertDescription>{fetchError}</AlertDescription>
@@ -148,18 +105,17 @@ const StudentDashboard = ({
       <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
         <AttendanceChart
           attendance={activeAttendance}
-          isLoading={!demoMode && attendanceLoading}
+          isLoading={attendanceLoading}
         />
         <UpcomingClassesSection
           classes={activeUpcomingClasses}
           onAddToCalendar={handleAddToCalendar}
           studentId={studentId}
-          demoMode={demoMode}
         />
       </section>
 
       <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
-        <NotesSection studentId={studentId} demoNotes={demoMode ? mockNotes : undefined} />
+        <NotesSection studentId={studentId} />
         <AnnouncementsSection
           announcements={activeAnnouncements}
           onAcknowledge={handleAcknowledgeAnnouncement}
