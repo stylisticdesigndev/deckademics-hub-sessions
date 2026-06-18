@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStudentDashboard } from '@/hooks/student/useStudentDashboard';
 import { useStudentAttendance } from '@/hooks/student/useStudentAttendance';
 import { useAuth } from '@/providers/AuthProvider';
@@ -9,9 +9,6 @@ import StudentDashboard from './StudentDashboard';
 
 const StudentDashboardGate = () => {
   const { userData, session, isLoading: authLoading } = useAuth();
-  // ===== DEMO MODE START =====
-  const [demoMode, setDemoMode] = useState(false);
-  // ===== DEMO MODE END =====
 
   // Derive studentId directly from auth — no secondary getUser() call
   const studentId = session?.user?.id;
@@ -21,8 +18,8 @@ const StudentDashboardGate = () => {
 
   const allLoading = authLoading || dashboard.loading || attendanceLoading;
 
-  // Show full-page loader until everything is ready (unless demo mode)
-  if (allLoading && !demoMode) {
+  // Show full-page loader until everything is ready
+  if (allLoading) {
     return <VinylLoader message="Loading dashboard..." />;
   }
 
@@ -39,8 +36,6 @@ const StudentDashboardGate = () => {
         attendance={attendance ?? { present: 0, absent: 0, late: 0, total: 0 }}
         attendanceLoading={attendanceLoading}
         studentId={studentId}
-        demoMode={demoMode}
-        setDemoMode={setDemoMode}
       />
     </DashboardLayout>
   );

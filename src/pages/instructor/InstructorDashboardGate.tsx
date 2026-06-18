@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useInstructorDashboard } from '@/hooks/instructor/useInstructorDashboard';
 import VinylLoader from '@/components/ui/VinylLoader';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -7,22 +7,15 @@ import InstructorDashboard from './InstructorDashboard';
 
 const InstructorDashboardGate = () => {
   const dashboardData = useInstructorDashboard();
-  // ===== DEMO MODE START =====
-  const [demoMode, setDemoMode] = useState(false);
-  // ===== DEMO MODE END =====
 
-  // Show full-page loader until all data is ready (unless demo mode)
-  if (dashboardData.loading && !demoMode) {
+  // Show full-page loader until all data is ready
+  if (dashboardData.loading) {
     return <VinylLoader message="Loading dashboard..." />;
   }
 
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
-      <InstructorDashboard
-        dashboardData={dashboardData}
-        demoMode={demoMode}
-        setDemoMode={setDemoMode}
-      />
+      <InstructorDashboard dashboardData={dashboardData} />
     </DashboardLayout>
   );
 };
