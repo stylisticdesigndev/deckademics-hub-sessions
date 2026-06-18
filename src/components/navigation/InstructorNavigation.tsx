@@ -6,6 +6,8 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  CalendarDays,
+  List,
   ClipboardCheck,
   MessageSquare,
   Bell,
@@ -29,7 +31,8 @@ export const InstructorNavigation = () => {
   const baseNavItems: { title: string; icon: any; href: string; badge?: number }[] = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/instructor/dashboard" },
     { title: "Students", icon: Users, href: "/instructor/students" },
-    { title: "Classes", icon: Calendar, href: "/instructor/classes" },
+    { title: "Calendar", icon: CalendarDays, href: "/instructor/calendar" },
+    { title: "Classes", icon: List, href: "/instructor/classes" },
     { title: "Attendance", icon: ClipboardCheck, href: "/instructor/attendance" },
     { title: "Curriculum", icon: BookOpen, href: "/instructor/curriculum" },
     { title: "My Payment", icon: Wallet, href: "/instructor/ledger" },
