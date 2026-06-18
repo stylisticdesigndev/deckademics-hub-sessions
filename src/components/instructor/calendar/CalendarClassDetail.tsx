@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BookOpen, StickyNote, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, StickyNote, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn, capitalizeLevel, formatDateUS } from '@/lib/utils';
 import type { CalendarClass } from '@/hooks/instructor/useInstructorCalendar';
 import { useStudentClassDetail } from '@/hooks/instructor/useStudentClassDetail';
@@ -24,8 +25,24 @@ interface CalendarClassDetailProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const NOTES_PER_PAGE = 4;
+
 export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarClassDetailProps) {
   const { data, isLoading } = useStudentClassDetail(classItem?.studentId, classItem?.level);
+  const [notesPage, setNotesPage] = React.useState(0);
+
+  // Reset pagination whenever a different student/class is opened.
+  React.useEffect(() => {
+    setNotesPage(0);
+  }, [classItem?.studentId, classItem?.level]);
+
+  const notes = data?.notes ?? [];
+  const totalNotePages = Math.max(1, Math.ceil(notes.length / NOTES_PER_PAGE));
+  const currentNotePage = Math.min(notesPage, totalNotePages - 1);
+  const paginatedNotes = notes.slice(
+    currentNotePage * NOTES_PER_PAGE,
+    currentNotePage * NOTES_PER_PAGE + NOTES_PER_PAGE,
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -109,14 +126,19 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                   <div className="flex items-center gap-2">
                     <StickyNote className="h-4 w-4 text-deckademics-primary" />
                     <h3 className="font-medium">Instructor Notes</h3>
+                    {!isLoading && notes.length > 0 && (
+                      <span className="ml-auto text-sm text-muted-foreground">
+                        {notes.length} total
+                      </span>
+                    )}
                   </div>
                   {isLoading ? (
                     <div className="space-y-3">
                       {[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
                     </div>
-                  ) : data && data.notes.length > 0 ? (
+                  ) : notes.length > 0 ? (
                     <div className="space-y-3">
-                      {data.notes.map((note) => (
+                      {paginatedNotes.map((note) => (
                         <div key={note.id} className="rounded-md border p-3 space-y-1">
                           {note.title && <p className="text-sm font-medium">{note.title}</p>}
                           <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
@@ -127,6 +149,31 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                           </p>
                         </div>
                       ))}
+                      {totalNotePages > 1 && (
+                        <div className="flex items-center justify-between pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotesPage((p) => Math.max(0, p - 1))}
+                            disabled={currentNotePage === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            Page {currentNotePage + 1} of {totalNotePages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotesPage((p) => Math.min(totalNotePages - 1, p + 1))}
+                            disabled={currentNotePage >= totalNotePages - 1}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">No notes for this student yet.</p>
