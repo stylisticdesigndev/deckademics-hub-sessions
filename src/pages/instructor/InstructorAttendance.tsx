@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Eye, EyeOff, CheckCircle, XCircle, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { useInstructorMakeups, type MakeupRow, type MakeupStatus } from '@/hooks/instructor/useInstructorMakeups';
@@ -15,13 +14,6 @@ import { AddCoverSessionDialog } from '@/components/instructor/attendance/AddCov
 import { format, startOfDay, getDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-const DEMO_STUDENTS = [
-  { student: { id: '1', name: 'Alex Rivera', initials: 'AR', avatar: null, level: 'novice', classDay: 'Monday', classTime: '3:30 PM - 5:00 PM' }, status: 'present' as const },
-  { student: { id: '2', name: 'Jordan Chen', initials: 'JC', avatar: null, level: 'amateur', classDay: 'Monday', classTime: '5:30 PM - 7:00 PM' }, status: null },
-  { student: { id: '3', name: 'Sam Williams', initials: 'SW', avatar: null, level: 'intermediate', classDay: 'Wednesday', classTime: '3:30 PM - 5:00 PM' }, status: 'absent' as const },
-  { student: { id: '4', name: 'Taylor Brooks', initials: 'TB', avatar: null, level: 'novice', classDay: 'Wednesday', classTime: '5:30 PM - 7:00 PM' }, status: null },
-];
-
 const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 
 export default function InstructorAttendance() {
@@ -29,7 +21,6 @@ export default function InstructorAttendance() {
   const instructorId = userData.user?.id || userData.profile?.id;
   const { currentWeekStudents, pastWeeksData, loading, saving, markAttendance, students, refetch } = useInstructorAttendance(instructorId);
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
-  const [demoMode, setDemoMode] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastWeekIndex, setPastWeekIndex] = useState(0);
 
@@ -38,16 +29,7 @@ export default function InstructorAttendance() {
 
   // Group current week by day
   const groupedCurrentWeek = useMemo(() => {
-    const items = demoMode
-      ? DEMO_STUDENTS.map((d, i) => ({
-          student: d.student,
-          classDate: addDays(startOfWeekDate, d.student.classDay === 'Monday' ? 0 : 2),
-          dateStr: format(addDays(startOfWeekDate, d.student.classDay === 'Monday' ? 0 : 2), 'yyyy-MM-dd'),
-          isPast: true,
-          isThisWeek: true,
-          status: d.status,
-        }))
-      : currentWeekStudents;
+    const items = currentWeekStudents;
 
     const grouped: Record<string, typeof items> = {};
     items.forEach(item => {
@@ -56,11 +38,10 @@ export default function InstructorAttendance() {
       grouped[dayLabel].push(item);
     });
     return grouped;
-  }, [demoMode, currentWeekStudents, startOfWeekDate]);
+  }, [currentWeekStudents, startOfWeekDate]);
 
   // Group past data by week
   const groupedPastWeeks = useMemo(() => {
-    if (demoMode) return {};
     const grouped: Record<string, typeof pastWeeksData> = {};
     pastWeeksData.forEach(item => {
       const weekStart = addDays(item.classDate, -(getDay(item.classDate) === 0 ? 6 : getDay(item.classDate) - 1));
@@ -73,7 +54,7 @@ export default function InstructorAttendance() {
       grouped[weekLabel].push(item);
     });
     return grouped;
-  }, [demoMode, pastWeeksData]);
+  }, [pastWeeksData]);
 
   // Sort past weeks chronologically descending (most recent past week first)
   const sortedPastWeeks = useMemo(() => {
@@ -102,8 +83,8 @@ export default function InstructorAttendance() {
     );
   }
 
-  const noStudents = !demoMode && students.length === 0;
-  const noScheduled = !demoMode && Object.keys(groupedCurrentWeek).length === 0 && students.length > 0;
+  const noStudents = students.length === 0;
+  const noScheduled = Object.keys(groupedCurrentWeek).length === 0 && students.length > 0;
 
   return (
     <div className="space-y-6">
@@ -114,28 +95,11 @@ export default function InstructorAttendance() {
           <p className="text-muted-foreground">Mark and review student attendance</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {instructorId && !demoMode && (
+          {instructorId && (
             <AddCoverSessionDialog instructorId={instructorId} onCreated={refetch} />
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="gap-1.5"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
         </div>
       </div>
-
-      {demoMode && (
-        <Alert>
-          <Eye className="h-4 w-4" />
-          <AlertTitle>Demo Mode</AlertTitle>
-          <AlertDescription>Showing sample data. Toggle off to see real attendance.</AlertDescription>
-        </Alert>
-      )}
 
       {/* Empty states */}
       {noStudents && (
@@ -169,9 +133,8 @@ export default function InstructorAttendance() {
                   status={item.status}
                   isPast={item.isPast}
                   saving={saving}
-                  demoMode={demoMode}
                   onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
-                  makeup={demoMode ? null : getMakeup(item.student.id, item.dateStr)}
+                  makeup={getMakeup(item.student.id, item.dateStr)}
                   makeupSaving={makeupSaving}
                   onScheduleMakeup={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
                   onSetMakeupStatus={(s) => {
@@ -206,7 +169,6 @@ export default function InstructorAttendance() {
                     status={item.status}
                     isPast={true}
                     saving={saving}
-                    demoMode={demoMode}
                     onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                     makeup={getMakeup(item.student.id, item.dateStr)}
                     makeupSaving={makeupSaving}
@@ -260,7 +222,6 @@ function StudentAttendanceRow({
   status,
   isPast,
   saving,
-  demoMode,
   onMark,
   makeup,
   makeupSaving,
@@ -272,7 +233,6 @@ function StudentAttendanceRow({
   status: 'present' | 'absent' | null;
   isPast: boolean;
   saving: boolean;
-  demoMode: boolean;
   onMark: (status: 'present' | 'absent') => void;
   makeup: MakeupRow | null;
   makeupSaving: boolean;
@@ -309,7 +269,7 @@ function StudentAttendanceRow({
                   'h-8 gap-1',
                   status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
                 )}
-                disabled={saving || demoMode}
+                disabled={saving}
                 onClick={() => onMark('present')}
               >
                 <CheckCircle className="h-3.5 w-3.5" />
@@ -322,7 +282,7 @@ function StudentAttendanceRow({
                   'h-8 gap-1',
                   status === 'absent' && 'bg-red-600 hover:bg-red-700 text-white'
                 )}
-                disabled={saving || demoMode}
+                disabled={saving}
                 onClick={() => onMark('absent')}
               >
                 <XCircle className="h-3.5 w-3.5" />
@@ -331,7 +291,7 @@ function StudentAttendanceRow({
             </div>
           )}
         </div>
-        {status === 'absent' && !demoMode && (
+        {status === 'absent' && (
           <div className="w-full flex justify-end pt-1">
             <MakeupControl
               makeup={makeup}

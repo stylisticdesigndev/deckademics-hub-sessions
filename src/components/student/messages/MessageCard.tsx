@@ -23,10 +23,9 @@ interface MessageCardProps {
   message: DirectMessage;
   onMarkAsRead: (id: string) => void;
   onReply: (messageId: string, content: string) => Promise<void>;
-  isDemoMode: boolean;
 }
 
-export const MessageCard = ({ message, onMarkAsRead, onReply, isDemoMode }: MessageCardProps) => {
+export const MessageCard = ({ message, onMarkAsRead, onReply }: MessageCardProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = () => {

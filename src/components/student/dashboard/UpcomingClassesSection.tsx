@@ -9,7 +9,6 @@ interface UpcomingClassesSectionProps {
   classes: ClassSession[];
   onAddToCalendar?: (id: string) => void;
   studentId?: string;
-  demoMode?: boolean;
 }
 
 // Parse "3:00 PM" / "03:00 PM" / "15:00" into minutes-since-midnight
@@ -46,7 +45,7 @@ const isWithinLateWindow = (session: ClassSession): boolean => {
   return nowMin >= startMin - 60 && nowMin <= startMin + durMin;
 };
 
-export const UpcomingClassesSection = ({ classes, studentId, demoMode }: UpcomingClassesSectionProps) => {
+export const UpcomingClassesSection = ({ classes, studentId }: UpcomingClassesSectionProps) => {
   const today = formatDateUS(new Date());
   const todaysClasses = classes.filter(c => c.date === today);
   const lateEligible = todaysClasses.some(isWithinLateWindow);
@@ -56,7 +55,7 @@ export const UpcomingClassesSection = ({ classes, studentId, demoMode }: Upcomin
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-sm font-semibold">Today's Class</CardTitle>
         {lateEligible && (
-          <RunningLateButton studentId={studentId} disabled={demoMode} />
+          <RunningLateButton studentId={studentId} />
         )}
       </CardHeader>
       <CardContent>
@@ -67,7 +66,6 @@ export const UpcomingClassesSection = ({ classes, studentId, demoMode }: Upcomin
                 key={session.id} 
                 session={session}
                 studentId={studentId}
-                demoMode={demoMode}
               />
             ))}
           </div>

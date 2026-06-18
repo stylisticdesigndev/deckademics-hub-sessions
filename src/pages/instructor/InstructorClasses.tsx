@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, X, Eye, EyeOff } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -33,14 +32,11 @@ const InstructorClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [schedules, setSchedules] = useState<StudentSchedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const { session } = useAuth();
   
   const instructorId = session?.user?.id;
 
   useEffect(() => {
-    if (demoMode) return;
-
     const fetchSchedules = async () => {
       if (!instructorId) return;
       
@@ -100,17 +96,10 @@ const InstructorClasses = () => {
     };
     
     fetchSchedules();
-  }, [instructorId, demoMode]);
+  }, [instructorId]);
 
-  // Demo data
-  const demoSchedules: StudentSchedule[] = [
-    { id: '1', name: 'Goku Son', initials: 'GS', level: 'intermediate', classDay: 'Monday', classTime: '3:30 PM - 5:00 PM' },
-    { id: '2', name: 'Vegeta Prince', initials: 'VP', level: 'advanced', classDay: 'Wednesday', classTime: '5:30 PM - 7:00 PM' },
-    { id: '3', name: 'Gohan Son', initials: 'GS', level: 'novice', classDay: 'Friday', classTime: '3:30 PM - 5:00 PM' },
-  ];
-
-  const activeSchedules = demoMode ? demoSchedules : schedules;
-  const isLoading = !demoMode && loading;
+  const activeSchedules = schedules;
+  const isLoading = loading;
 
   const filteredSchedules = activeSchedules.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,26 +120,11 @@ const InstructorClasses = () => {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>Showing sample class data. Click "Live Data" to switch back.</AlertDescription>
-          </Alert>
-        )}
-
         <section className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Class Schedule</h1>
             <p className="text-muted-foreground mt-2">Your student class assignments</p>
           </div>
-          <Button
-            variant={demoMode ? "default" : "outline"} size="sm"
-            onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
         </section>
 
         <div className="relative w-full sm:max-w-sm">

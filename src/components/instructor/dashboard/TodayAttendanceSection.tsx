@@ -9,19 +9,14 @@ import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttenda
 
 const capitalizeLevel = (l: string) => l.charAt(0).toUpperCase() + l.slice(1);
 
-export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
+export function TodayAttendanceSection() {
   const { userData } = useAuth();
   const instructorId = userData.user?.id || userData.profile?.id;
   const { todayStudents, currentWeekStudents, saving, markAttendance, loading } = useInstructorAttendance(instructorId);
 
   if (loading) return null;
 
-  const items = demoMode
-    ? [
-        { student: { id: '1', name: 'Alex Rivera', initials: 'AR', avatar: null, level: 'novice', classDay: 'Wednesday', classTime: '3:30 PM - 5:00 PM' }, dateStr: '', status: null as 'present' | 'absent' | null },
-        { student: { id: '2', name: 'Jordan Chen', initials: 'JC', avatar: null, level: 'amateur', classDay: 'Wednesday', classTime: '5:30 PM - 7:00 PM' }, dateStr: '', status: 'present' as const },
-      ]
-    : todayStudents;
+  const items = todayStudents;
 
   const heading = "Today's Attendance";
 
@@ -62,7 +57,7 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
                       'h-9 gap-1 sm:h-8',
                       item.status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
                     )}
-                    disabled={saving || demoMode}
+                    disabled={saving}
                     onClick={() => markAttendance(item.student.id, item.dateStr, 'present')}
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
@@ -75,7 +70,7 @@ export function TodayAttendanceSection({ demoMode }: { demoMode: boolean }) {
                       'h-9 gap-1 sm:h-8',
                       item.status === 'absent' && 'bg-red-600 hover:bg-red-700 text-white'
                     )}
-                    disabled={saving || demoMode}
+                    disabled={saving}
                     onClick={() => markAttendance(item.student.id, item.dateStr, 'absent')}
                   >
                     <XCircle className="h-3.5 w-3.5" />

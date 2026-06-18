@@ -6,14 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle, UserCircle2, Calendar, Clock, CheckCircle2, MapPin } from 'lucide-react';
+import { AtSign, Phone, Save, User, BookOpen, GraduationCap, UserCircle2, Calendar, Clock, CheckCircle2, MapPin } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
-import { mockProfileData } from '@/data/mockDashboardData';
 import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,13 +22,10 @@ const StudentProfile = () => {
   const { userData, updateProfile, session } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
   const [courseData, setCourseData] = useState<any>(null);
   const [instructorData, setInstructorData] = useState<any>(null);
   const [instructorDialogOpen, setInstructorDialogOpen] = useState(false);
-  
-  const isDemoActive = !session || demoMode;
 
   const [profile, setProfile] = useState({
     firstName: userData?.profile?.first_name || session?.user?.user_metadata?.first_name || '',
@@ -45,36 +40,13 @@ const StudentProfile = () => {
   
   const studentId = session?.user?.id;
 
-  // Resolve display data based on demo mode
-  const mockNameParts = (mockProfileData.name || '').split(' ');
-  const mockFirst = mockNameParts[0] || '';
-  const mockLast = mockNameParts.slice(1).join(' ') || '';
-  const displayProfile = isDemoActive ? {
-    firstName: mockFirst, lastName: mockLast,
-    email: mockProfileData.email,
-    phone: mockProfileData.phone,
-    bio: mockProfileData.bio,
-    pronouns: '',
-  } : profile;
-
-  const displayFormData = isDemoActive ? {
-    firstName: mockFirst, lastName: mockLast,
-    email: mockProfileData.email,
-    phone: mockProfileData.phone,
-    bio: mockProfileData.bio,
-    pronouns: '',
-  } : formData;
-
-  const displayCourse = isDemoActive ? mockProfileData.course : courseData;
-  const displayInstructor = isDemoActive ? mockProfileData.instructor : instructorData;
-  const displayLevel = isDemoActive ? mockProfileData.course.level : (courseData?.level || studentData?.level || 'Beginner');
+  const displayProfile = profile;
+  const displayFormData = formData;
+  const displayCourse = courseData;
+  const displayInstructor = instructorData;
+  const displayLevel = courseData?.level || studentData?.level || 'Beginner';
   
   useEffect(() => {
-    if (isDemoActive) {
-      setLoading(false);
-      return;
-    }
-
     const fetchStudentData = async () => {
       if (!studentId) return;
       
@@ -174,7 +146,7 @@ const StudentProfile = () => {
     };
     
     fetchStudentData();
-  }, [studentId, isDemoActive]);
+  }, [studentId]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -225,27 +197,7 @@ const StudentProfile = () => {
               View and manage your personal information
             </p>
           </div>
-          {session && (
-            <Button
-              variant={demoMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDemoMode(!demoMode)}
-            >
-              {demoMode ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-              {demoMode ? 'Live Data' : 'Demo'}
-            </Button>
-          )}
         </section>
-
-        {isDemoActive && (
-          <Alert variant="default" className="border-destructive/50 bg-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <AlertTitle className="text-destructive">Demo Mode</AlertTitle>
-            <AlertDescription className="text-destructive/80">
-              Viewing sample profile data. {session ? 'Toggle off to see your real profile.' : 'Log in to see your real profile.'}
-            </AlertDescription>
-          </Alert>
-        )}
 
         {loading ? (
           <div className="text-center py-8">
@@ -256,31 +208,23 @@ const StudentProfile = () => {
             {/* Row 1: Profile Header */}
             <Card>
               <CardContent className="flex items-center gap-4 py-5">
-                {isDemoActive ? (
-                  <Avatar className="h-20 w-20">
-                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <AvatarUpload
-                    currentUrl={userData?.profile?.avatar_url}
-                    onUpload={async (url) => {
-                      try {
-                        await updateProfile({ avatar_url: url });
-                      } catch (e) {
-                        console.error('Error updating avatar:', e);
-                      }
-                    }}
-                    initials={initials}
-                    size="md"
-                  />
-                )}
+                <AvatarUpload
+                  currentUrl={userData?.profile?.avatar_url}
+                  onUpload={async (url) => {
+                    try {
+                      await updateProfile({ avatar_url: url });
+                    } catch (e) {
+                      console.error('Error updating avatar:', e);
+                    }
+                  }}
+                  initials={initials}
+                  size="md"
+                />
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{displayFullName || 'Student'}</h2>
                   <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
                 </div>
-                {!isEditing && !isDemoActive && (
+                {!isEditing && (
                   <Button type="button" onClick={() => setIsEditing(true)}>
                     Edit Profile
                   </Button>
@@ -303,14 +247,14 @@ const StudentProfile = () => {
                         <Label htmlFor="firstName">First Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={displayFormData.firstName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={displayFormData.firstName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={displayFormData.lastName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={displayFormData.lastName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                     </div>
@@ -327,7 +271,7 @@ const StudentProfile = () => {
                       <Label htmlFor="phone">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
 
@@ -335,16 +279,16 @@ const StudentProfile = () => {
                       <Label htmlFor="pronouns">Pronouns</Label>
                       <div className="relative">
                         <UserCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={(displayFormData as any).pronouns || ''} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={(displayFormData as any).pronouns || ''} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing} />
                     </div>
                   </CardContent>
-                  {isEditing && !isDemoActive && (
+                  {isEditing && (
                     <CardFooter className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => { setIsEditing(false); setFormData({...profile}); }}>
                         Cancel
@@ -379,24 +323,24 @@ const StudentProfile = () => {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Status</p>
-                        <p className="text-sm font-medium capitalize">{isDemoActive ? 'Active' : (studentData?.enrollment_status || 'Pending')}</p>
+                        <p className="text-sm font-medium capitalize">{studentData?.enrollment_status || 'Pending'}</p>
                       </div>
                       {/* Weekly schedule */}
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Class Day</p>
-                        <p className="text-sm font-medium">{isDemoActive ? 'Tuesdays' : (studentData?.class_day || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_day || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
-                        <p className="text-sm font-medium">{isDemoActive ? '6:00 PM' : (studentData?.class_time || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_time || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" /> Classroom</p>
-                        <p className="text-sm font-medium">{isDemoActive ? 'Classroom 1' : (studentData?.class_room || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_room || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Start Date</p>
-                        <p className="text-sm font-medium">{isDemoActive ? formatDateUS(new Date().toISOString()) : (studentData?.start_date ? formatDateUS(studentData.start_date) : 'Not set')}</p>
+                        <p className="text-sm font-medium">{studentData?.start_date ? formatDateUS(studentData.start_date) : 'Not set'}</p>
                       </div>
                     </div>
                   </div>

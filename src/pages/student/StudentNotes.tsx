@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStudentNotes, StudentNote } from '@/hooks/student/useStudentNotes';
@@ -10,11 +9,10 @@ import { useNotesNotifications } from '@/hooks/student/useNotesNotifications';
 import { PersonalNoteDialog } from '@/components/student/notes/PersonalNoteDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-import { StickyNote, Calendar, User, Eye, EyeOff, Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { StickyNote, Calendar, User, Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { mockNotes, mockPersonalNotes } from '@/data/mockDashboardData';
 
 import { renderNoteContent } from '@/utils/renderTextWithLinks';
 
@@ -49,7 +47,6 @@ function groupByDate<T extends { created_at: string }>(items: T[]) {
 
 export default function StudentNotes() {
   const [studentId, setStudentId] = useState<string | undefined>();
-  const [demoMode, setDemoMode] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<PersonalNote | null>(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -66,19 +63,13 @@ export default function StudentNotes() {
   useNotesNotifications(studentId);
 
   useEffect(() => {
-    if (demoMode) return;
     instructorNotes.filter(n => !n.is_read).forEach(n => markAsRead(n.id));
-  }, [instructorNotes, demoMode]);
+  }, [instructorNotes]);
 
   const isLoading = instructorLoading || personalLoading;
 
-  const activeInstructorNotes: StudentNote[] = demoMode
-    ? mockNotes.map(n => ({ ...n, instructor: n.instructor })) as StudentNote[]
-    : instructorNotes;
-
-  const activePersonalNotes: PersonalNote[] = demoMode
-    ? mockPersonalNotes as PersonalNote[]
-    : personalNotes;
+  const activeInstructorNotes: StudentNote[] = instructorNotes;
+  const activePersonalNotes: PersonalNote[] = personalNotes;
 
   const combinedNotes: CombinedNote[] = [
     ...activeInstructorNotes.map(n => ({ type: 'instructor' as const, data: n, created_at: n.created_at })),
@@ -86,10 +77,6 @@ export default function StudentNotes() {
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const handleCreateNote = (data: { title?: string; content: string }) => {
-    if (demoMode) {
-      toast({ title: 'Demo mode', description: 'Creating notes is disabled in demo mode.' });
-      return;
-    }
     createNote.mutate(data, {
       onSuccess: () => toast({ title: 'Note created', description: 'Your note has been saved.' }),
     });
@@ -97,10 +84,6 @@ export default function StudentNotes() {
 
   const handleUpdateNote = (data: { title?: string; content: string }) => {
     if (!editingNote) return;
-    if (demoMode) {
-      toast({ title: 'Demo mode', description: 'Editing notes is disabled in demo mode.' });
-      return;
-    }
     updateNote.mutate({ id: editingNote.id, ...data }, {
       onSuccess: () => {
         toast({ title: 'Note updated' });
@@ -110,10 +93,6 @@ export default function StudentNotes() {
   };
 
   const handleDeleteNote = (id: string) => {
-    if (demoMode) {
-      toast({ title: 'Demo mode', description: 'Deleting notes is disabled in demo mode.' });
-      return;
-    }
     deleteNote.mutate(id, {
       onSuccess: () => toast({ title: 'Note deleted' }),
     });
@@ -301,27 +280,10 @@ export default function StudentNotes() {
               <Plus className="h-4 w-4" />
               New Note
             </Button>
-            <Button
-              variant={demoMode ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setDemoMode(!demoMode)}
-              className="flex items-center gap-2"
-            >
-              {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {demoMode ? 'Live Data' : 'Demo'}
-            </Button>
           </div>
         </section>
 
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
-          </Alert>
-        )}
-
-        {!demoMode && isLoading ? (
+        {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <Card key={i}>
