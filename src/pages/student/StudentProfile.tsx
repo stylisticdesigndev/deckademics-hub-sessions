@@ -247,14 +247,14 @@ const StudentProfile = () => {
                         <Label htmlFor="firstName">First Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={displayFormData.firstName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={displayFormData.firstName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={displayFormData.lastName} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={displayFormData.lastName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                     </div>
@@ -271,7 +271,7 @@ const StudentProfile = () => {
                       <Label htmlFor="phone">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        <Input id="phone" name="phone" placeholder="Your phone number" className="pl-10" value={displayFormData.phone} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
 
@@ -279,16 +279,16 @@ const StudentProfile = () => {
                       <Label htmlFor="pronouns">Pronouns</Label>
                       <div className="relative">
                         <UserCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={(displayFormData as any).pronouns || ''} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={(displayFormData as any).pronouns || ''} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing || isDemoActive} />
+                      <Textarea id="bio" name="bio" placeholder="Tell us about yourself and your DJ interests" rows={3} value={displayFormData.bio} onChange={handleChange} disabled={!isEditing} />
                     </div>
                   </CardContent>
-                  {isEditing && !isDemoActive && (
+                  {isEditing && (
                     <CardFooter className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => { setIsEditing(false); setFormData({...profile}); }}>
                         Cancel
