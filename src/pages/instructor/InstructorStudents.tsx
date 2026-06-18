@@ -414,7 +414,7 @@ const InstructorStudents = () => {
                     <div className="col-span-2 text-center">ACTIONS</div>
                   </div>
                   
-                  {!demoMode && loading ? (
+                  {loading ? (
                     <div className="space-y-3 p-4">
                       {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
                     </div>
@@ -506,7 +506,7 @@ const InstructorStudents = () => {
 
                 {/* Mobile card view */}
                 <div className="md:hidden space-y-3">
-                  {!demoMode && loading ? (
+                  {loading ? (
                     <div className="space-y-3">
                       {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
                     </div>
