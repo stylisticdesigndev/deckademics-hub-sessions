@@ -286,7 +286,6 @@ const InstructorProfile = () => {
                     id="hide-phone"
                     checked={privacy.hidePhone}
                     onCheckedChange={(v) => setPrivacy(p => ({ ...p, hidePhone: !!v }))}
-                    disabled={demoMode}
                   />
                 </div>
                 <div className="flex items-center justify-between gap-4">
@@ -298,11 +297,9 @@ const InstructorProfile = () => {
                     id="hide-email"
                     checked={privacy.hideEmail}
                     onCheckedChange={(v) => setPrivacy(p => ({ ...p, hideEmail: !!v }))}
-                    disabled={demoMode}
                   />
                 </div>
-                {!demoMode && (
-                  <Button
+                <Button
                     type="button"
                     size="sm"
                     disabled={!privacyDirty}
@@ -321,8 +318,7 @@ const InstructorProfile = () => {
                     }}
                   >
                     <Save className="h-4 w-4 mr-2" />Save Privacy
-                  </Button>
-                )}
+                </Button>
               </CardContent>
             </Card>
           </div>
