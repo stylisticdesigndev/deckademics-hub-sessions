@@ -2,13 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/progress/ProgressBar';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
-import { BarChart, PlusCircle, Eye, EyeOff } from 'lucide-react';
+import { BarChart, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { mockSkills } from '@/data/mockDashboardData';
 
 interface SkillWithProficiency {
   skill_name: string;
@@ -20,7 +18,6 @@ const StudentProgress = () => {
   const { userData, session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [skills, setSkills] = useState<SkillWithProficiency[]>([]);
-  const [demoMode, setDemoMode] = useState(false);
   
   const isNewUser = !userData.profile?.first_name || userData.profile?.first_name === '';
   const userId = session?.user?.id;
@@ -77,8 +74,8 @@ const StudentProgress = () => {
     fetchData();
   }, [userId]);
 
-  const activeSkills = demoMode ? mockSkills : skills;
-  const isLoading = !demoMode && loading;
+  const activeSkills = skills;
+  const isLoading = loading;
   
   const averageProgress = activeSkills.length > 0 
     ? Math.round(activeSkills.reduce((sum, item) => sum + (item.proficiency || 0), 0) / activeSkills.length) 
@@ -94,26 +91,7 @@ const StudentProgress = () => {
               Track your progress through the DJ school curriculum
             </p>
           </div>
-          <Button
-            variant={demoMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
         </section>
-
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>
-              Showing sample progress data. Click "Live Data" to switch back.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {isLoading ? (
           <div className="text-center py-12">
