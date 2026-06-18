@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MessageSquare, Send, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { notifyPush } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
-import { mockInstructorDirectMessages, mockInstructorStudentList } from '@/data/mockInstructorData';
 import ConversationList, { Conversation } from '@/components/instructor/messages/ConversationList';
 import ConversationThread from '@/components/instructor/messages/ConversationThread';
 
@@ -40,7 +38,6 @@ interface StudentOption {
 const InstructorMessages = () => {
   const { session } = useAuth();
   const { toast } = useToast();
-  const [demoMode, setDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('conversations');
@@ -59,12 +56,8 @@ const InstructorMessages = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    if (demoMode) {
-      setLoading(false);
-      return;
-    }
     fetchData();
-  }, [demoMode, session]);
+  }, [session]);
 
   const fetchData = async () => {
     if (!session?.user?.id) return;
@@ -114,16 +107,12 @@ const InstructorMessages = () => {
 
   // Build conversations from all messages
   const conversations = useMemo((): Conversation[] => {
-    const userId = demoMode ? 'demo-instructor' : session?.user?.id;
+    const userId = session?.user?.id;
     if (!userId) return [];
 
-    const msgs = demoMode
-      ? [...mockInstructorDirectMessages.inbox, ...mockInstructorDirectMessages.sent]
-      : allMessages;
+    const msgs = allMessages;
 
-    const studentMap = demoMode
-      ? new Map(mockInstructorStudentList.map(s => [s.id, s]))
-      : new Map(students.map(s => [s.id, s]));
+    const studentMap = new Map(students.map(s => [s.id, s]));
 
     // Group by student
     const grouped = new Map<string, Message[]>();
@@ -152,29 +141,27 @@ const InstructorMessages = () => {
     }
 
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-  }, [allMessages, students, demoMode, session]);
+  }, [allMessages, students, session]);
 
   // Deep-link: open a specific thread when arriving from a push notification
   useEffect(() => {
     const from = searchParams.get('from');
-    if (!from || demoMode) return;
+    if (!from) return;
     if (conversations.some(c => c.studentId === from)) {
       setActiveStudentId(from);
       setActiveTab('conversations');
       searchParams.delete('from');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [conversations, searchParams, demoMode, setSearchParams]);
+  }, [conversations, searchParams, setSearchParams]);
 
   // Get messages for the active thread
   const threadMessages = useMemo(() => {
     if (!activeStudentId) return [];
-    const userId = demoMode ? 'demo-instructor' : session?.user?.id;
+    const userId = session?.user?.id;
     if (!userId) return [];
 
-    const msgs = demoMode
-      ? [...mockInstructorDirectMessages.inbox, ...mockInstructorDirectMessages.sent]
-      : allMessages;
+    const msgs = allMessages;
 
     return (msgs as Message[])
       .filter(m =>
@@ -182,11 +169,11 @@ const InstructorMessages = () => {
         (m.sender_id === activeStudentId && m.receiver_id === userId)
       )
       .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
-  }, [activeStudentId, allMessages, demoMode, session]);
+  }, [activeStudentId, allMessages, session]);
 
   // Mark unread messages as read when opening a thread
   useEffect(() => {
-    if (!activeStudentId || demoMode || !session?.user?.id) return;
+    if (!activeStudentId || !session?.user?.id) return;
     const unread = threadMessages.filter(m => m.receiver_id === session.user.id && !m.read_at);
     if (unread.length === 0) return;
 
@@ -199,7 +186,7 @@ const InstructorMessages = () => {
   }, [activeStudentId, threadMessages]);
 
   const handleSendReply = async (content: string, imageUrl?: string) => {
-    if (demoMode || !session?.user?.id || !activeStudentId) return;
+    if (!session?.user?.id || !activeStudentId) return;
     setSending(true);
     try {
       const { error } = await supabase.from('messages').insert({
@@ -220,10 +207,6 @@ const InstructorMessages = () => {
   };
 
   const handleComposeSend = async () => {
-    if (demoMode) {
-      toast({ title: 'Demo Mode', description: 'Cannot send messages in demo mode.' });
-      return;
-    }
     if (!session?.user?.id || selectedStudents.length === 0 || !messageBody.trim()) {
       toast({ variant: 'destructive', title: 'Error', description: 'Select at least one student and write a message.' });
       return;
@@ -262,19 +245,18 @@ const InstructorMessages = () => {
   };
 
   const selectAllStudents = () => {
-    const active = demoMode ? mockInstructorStudentList : students;
+    const active = students;
     setSelectedStudents(prev => prev.length === active.length ? [] : active.map(s => s.id));
   };
 
-  const activeStudents = demoMode ? mockInstructorStudentList : students;
-  const isLoading = !demoMode && loading;
+  const activeStudents = students;
+  const isLoading = loading;
 
   const activeConvo = activeStudentId ? conversations.find(c => c.studentId === activeStudentId) : null;
   const activeStudent = activeStudentId ? students.find(s => s.id === activeStudentId) : null;
 
   const handleToggleTwoWayMessaging = async (next: boolean) => {
-    if (demoMode || !activeStudentId) {
-      toast({ title: 'Demo Mode', description: 'Cannot change settings in demo mode.' });
+    if (!activeStudentId) {
       return;
     }
     const { error } = await supabase
@@ -298,15 +280,8 @@ const InstructorMessages = () => {
   if (activeStudentId && activeConvo) {
     return (
       <div className="space-y-6">
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>Showing sample messages.</AlertDescription>
-          </Alert>
-        )}
         <ConversationThread
-          currentUserId={demoMode ? 'demo-instructor' : session?.user?.id || ''}
+          currentUserId={session?.user?.id || ''}
           studentName={activeConvo.studentName}
           studentInitials={activeConvo.initials}
           studentAvatarUrl={activeConvo.avatarUrl}
@@ -316,7 +291,7 @@ const InstructorMessages = () => {
           sending={sending}
           twoWayMessaging={activeStudent?.twoWayMessaging ?? true}
           onToggleTwoWayMessaging={handleToggleTwoWayMessaging}
-          canToggleTwoWayMessaging={!demoMode}
+          canToggleTwoWayMessaging={true}
         />
       </div>
     );
@@ -324,26 +299,11 @@ const InstructorMessages = () => {
 
   return (
     <div className="space-y-6">
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>Showing sample messages. Click "Live Data" to switch back.</AlertDescription>
-        </Alert>
-      )}
-
       <section className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Messages</h1>
           <p className="text-muted-foreground mt-1">Conversations with your students</p>
         </div>
-        <Button
-          variant={demoMode ? "default" : "outline"} size="sm"
-          onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -370,7 +330,7 @@ const InstructorMessages = () => {
         </TabsContent>
 
         <TabsContent value="compose">
-          <Card className={demoMode ? 'opacity-60 pointer-events-none' : ''}>
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">New Message</CardTitle>
             </CardHeader>
