@@ -1529,6 +1529,16 @@ export type Database = {
           total: number
         }[]
       }
+      get_instructor_display_names: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          dj_name: string
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
       get_instructors_with_profiles: {
         Args: { status_param: string }
         Returns: {
