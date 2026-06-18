@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, EyeOff, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { notifyPush } from '@/lib/notifyPush';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDateUS } from '@/lib/utils';
 import StudentConversationThread from '@/components/student/messages/StudentConversationThread';
 import { useStudentPersonalNotes } from '@/hooks/student/useStudentPersonalNotes';
-import { mockStudentConversations, mockStudentMessages } from '@/data/mockDashboardData';
 
 interface Message {
   id: string;
@@ -50,31 +47,16 @@ const StudentMessages = () => {
   const [loading, setLoading] = useState(true);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
-  const [demoMode, setDemoMode] = useState(false);
   const [activeInstructorId, setActiveInstructorId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
   const [twoWayEnabled, setTwoWayEnabled] = useState<boolean>(true);
 
-  const isDemoMode = !session || demoMode;
   const userId = session?.user?.id;
 
   const { createNote } = useStudentPersonalNotes(userId);
 
   useEffect(() => {
-    if (isDemoMode) {
-      setAllMessages(Object.values(mockStudentMessages).flat() as Message[]);
-      setInstructors(
-        mockStudentConversations.map(c => ({
-          id: c.instructorId,
-          name: c.instructorName,
-          initials: c.initials,
-          avatarUrl: c.avatarUrl,
-        }))
-      );
-      setLoading(false);
-      return;
-    }
     fetchData();
     if (userId) {
       supabase.from('students').select('two_way_messaging').eq('id', userId).maybeSingle()
@@ -83,11 +65,11 @@ const StudentMessages = () => {
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDemoMode]);
+  }, [userId]);
 
   // Realtime: keep two_way_messaging in sync when instructor flips the toggle
   useEffect(() => {
-    if (isDemoMode || !userId) return;
+    if (!userId) return;
     const channel = supabase
       .channel(`student-two-way-${userId}`)
       .on(
@@ -102,7 +84,7 @@ const StudentMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, isDemoMode]);
+  }, [userId]);
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -163,8 +145,8 @@ const StudentMessages = () => {
   };
 
   const conversations = useMemo((): Conversation[] => {
-    if (!userId && !isDemoMode) return [];
-    const effectiveUserId = userId || 'mock-student';
+    if (!userId) return [];
+    const effectiveUserId = userId;
 
     const instructorMap = new Map(instructors.map(instructor => [instructor.id, instructor]));
     const grouped = new Map<string, Message[]>();
@@ -194,18 +176,18 @@ const StudentMessages = () => {
     }
 
     return result.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-  }, [allMessages, instructors, userId, isDemoMode]);
+  }, [allMessages, instructors, userId]);
 
   // Deep-link: open a specific thread when arriving from a push notification
   useEffect(() => {
     const from = searchParams.get('from');
-    if (!from || isDemoMode) return;
+    if (!from) return;
     if (conversations.some(c => c.instructorId === from)) {
       setActiveInstructorId(from);
       searchParams.delete('from');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [conversations, searchParams, isDemoMode, setSearchParams]);
+  }, [conversations, searchParams, setSearchParams]);
 
   const threadMessages = useMemo(() => {
     if (!activeInstructorId || !userId) return [];
@@ -219,7 +201,7 @@ const StudentMessages = () => {
   }, [activeInstructorId, allMessages, userId]);
 
   useEffect(() => {
-    if (!activeInstructorId || isDemoMode || !userId) return;
+    if (!activeInstructorId || !userId) return;
 
     const unread = threadMessages.filter(message => message.receiver_id === userId && !message.read_at);
     if (unread.length === 0) return;
@@ -234,14 +216,9 @@ const StudentMessages = () => {
     };
 
     markRead();
-  }, [activeInstructorId, isDemoMode, queryClient, threadMessages, userId]);
+  }, [activeInstructorId, queryClient, threadMessages, userId]);
 
   const handleSaveToNotes = (msg: { id: string; content: string; sent_at: string; image_url?: string | null }) => {
-    if (isDemoMode) {
-      setSavedMessageIds(prev => new Set(prev).add(msg.id));
-      toast({ title: 'Saved to notes', description: 'Message saved to your personal notes. (Demo)' });
-      return;
-    }
     if (!userId) return;
     const activeInstructor = instructors.find(i => i.id === activeInstructorId);
     const title = `From ${activeInstructor?.name || 'Instructor'} — ${formatDateUS(msg.sent_at)}`;
@@ -261,7 +238,7 @@ const StudentMessages = () => {
   };
 
   const handleSendReply = async (content: string) => {
-    if (isDemoMode || !userId || !activeInstructorId) return;
+    if (!userId || !activeInstructorId) return;
 
     try {
       const { error } = await supabase.from('messages').insert({
@@ -284,13 +261,6 @@ const StudentMessages = () => {
   if (activeInstructorId && activeConvo) {
     return (
       <div className="space-y-6">
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>Showing sample data.</AlertDescription>
-          </Alert>
-        )}
         <StudentConversationThread
           currentUserId={userId || ''}
           instructorName={activeConvo.instructorName}
@@ -301,7 +271,7 @@ const StudentMessages = () => {
           onBack={() => setActiveInstructorId(null)}
           onSaveToNotes={handleSaveToNotes}
           savedMessageIds={savedMessageIds}
-          replyDisabled={!isDemoMode && !twoWayEnabled}
+          replyDisabled={!twoWayEnabled}
         />
       </div>
     );
@@ -316,26 +286,7 @@ const StudentMessages = () => {
             Conversations with your instructors
           </p>
         </div>
-        {session && (
-          <Button
-            variant={demoMode ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
-        )}
       </section>
-
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
-        </Alert>
-      )}
 
       {loading ? (
         <div className="text-center py-12">
