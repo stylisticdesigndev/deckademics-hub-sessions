@@ -4,7 +4,7 @@ import { ClassAttendanceCard } from '@/components/student/classes/ClassAttendanc
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Calendar, CheckCircle, Eye, EyeOff, BookOpen, PlusCircle, CalendarRange } from 'lucide-react';
+import { Calendar, CheckCircle, BookOpen, PlusCircle, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -37,38 +37,6 @@ function getWeeklyDates(dayOfWeek: number, weeksBack: number, weeksForward: numb
   return dates;
 }
 
-// Mock data for demo mode
-function getMockData() {
-  const dayOfWeek = 3; // Wednesday
-  const dates = getWeeklyDates(dayOfWeek, 8, 4);
-  const today = startOfDay(new Date());
-  
-  const statuses = ['present', 'present', 'present', 'present', 'present', 'absent', 'present', 'present'] as const;
-  
-  const attendanceRecords = dates
-    .filter(d => isBefore(d, today))
-    .map((d, i) => ({
-      date: format(d, 'yyyy-MM-dd'),
-      status: statuses[i % statuses.length],
-      classId: 'demo-class',
-    }));
-  
-  return {
-    classInfo: {
-      id: 'demo-class',
-      title: 'Intermediate',
-      location: 'Classroom 1',
-      startTime: new Date().toISOString(),
-      endTime: new Date().toISOString(),
-      instructorId: 'demo-instructor',
-      instructorName: 'DJ Marcus',
-      dayOfWeek,
-    },
-    attendanceRecords,
-    allDates: dates,
-  };
-}
-
 const LEVEL_DISPLAY: Record<string, string> = {
   novice: 'Novice', amateur: 'Amateur', intermediate: 'Intermediate',
   advanced: 'Advanced', beginner: 'Novice',
@@ -77,7 +45,6 @@ const LEVEL_DISPLAY: Record<string, string> = {
 const StudentClasses = () => {
   const { userData, session } = useAuth();
   const { classInfo, attendanceRecords, loading, marking, markAbsent, undoAbsent } = useStudentClassAttendance();
-  const [demoMode, setDemoMode] = useState(false);
   const [studentLevel, setStudentLevel] = useState('');
 
   // Fetch student level
@@ -96,9 +63,8 @@ const StudentClasses = () => {
 
   const isFirstTimeUser = !userData.profile?.first_name || userData.profile?.first_name === '';
 
-  // Resolve data source
-  const activeClassInfo = demoMode ? getMockData().classInfo : classInfo;
-  const activeRecords = demoMode ? getMockData().attendanceRecords : attendanceRecords;
+  const activeClassInfo = classInfo;
+  const activeRecords = attendanceRecords;
 
   // Generate weekly dates
   const allDates = useMemo(() => {
@@ -148,7 +114,7 @@ const StudentClasses = () => {
     // Could scroll to that class card or open mark-absent dialog
   };
 
-  const displayLevel = demoMode ? 'Intermediate' : studentLevel;
+  const displayLevel = studentLevel;
 
   const getClassTime = () => {
     if (!activeClassInfo) return { time: '2:00 PM', duration: '1h 30m' };
@@ -163,8 +129,8 @@ const StudentClasses = () => {
     };
   };
 
-  const classTime = demoMode ? { time: '2:00 PM', duration: '1h 30m' } : getClassTime();
-  const hasData = demoMode || (!isFirstTimeUser && !loading && activeClassInfo);
+  const classTime = getClassTime();
+  const hasData = !isFirstTimeUser && !loading && activeClassInfo;
 
   return (
     <>
@@ -180,26 +146,7 @@ const StudentClasses = () => {
               </p>
             )}
           </div>
-          <Button
-            variant={demoMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
         </section>
-
-        {demoMode && (
-          <Alert className="bg-warning/10 border-warning/30">
-            <Eye className="h-4 w-4 text-warning" />
-            <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-            <AlertDescription>
-              Showing sample attendance data. Click "Live Data" to switch back.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {!hasData ? (
           isFirstTimeUser ? (
