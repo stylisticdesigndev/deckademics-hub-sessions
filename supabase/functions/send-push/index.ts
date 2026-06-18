@@ -40,6 +40,7 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const callerId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
     const recipient_id = body?.recipient_id as string | undefined;
@@ -48,7 +49,11 @@ Deno.serve(async (req: Request) => {
       : undefined;
     const title = (body?.title ?? 'Deckademics').toString().slice(0, 120);
     const message = (body?.body ?? '').toString().slice(0, 300);
-    const url = (body?.url ?? '/').toString().slice(0, 500);
+    // Only allow same-app relative paths to prevent push-based phishing.
+    let url = (body?.url ?? '/').toString().slice(0, 500);
+    if (!url.startsWith('/') || url.startsWith('//')) {
+      url = '/';
+    }
 
     if (!recipient_id && (!target_roles || target_roles.length === 0)) {
       return new Response(JSON.stringify({ error: 'recipient_id or target_roles required' }), {
@@ -70,6 +75,25 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Authorization: determine the caller's role for fan-out checks.
+    const { data: callerRoles } = await admin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerId);
+    const isAdmin = (callerRoles ?? []).some((r) => r.role === 'admin');
+
+    // Role broadcasts are sensitive. Only admins may blast students/instructors.
+    // Non-admins may notify admins only (e.g. instructor schedule-change requests).
+    if (target_roles && target_roles.length > 0 && !isAdmin) {
+      const onlyAdminTarget = target_roles.every((r) => r === 'admin');
+      if (!onlyAdminTarget) {
+        return new Response(JSON.stringify({ error: 'Forbidden: role broadcast not allowed' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Resolve the set of recipient user ids.
     let recipientIds: string[] = [];

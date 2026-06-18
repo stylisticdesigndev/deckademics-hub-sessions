@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
     const { data: challengeRow } = await admin
       .from('passkey_challenges')
       .select('*')
+      .eq('user_id', passkey.user_id)
       .eq('type', 'authentication')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
