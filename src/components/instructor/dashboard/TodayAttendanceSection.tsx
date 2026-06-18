@@ -57,7 +57,7 @@ export function TodayAttendanceSection() {
                       'h-9 gap-1 sm:h-8',
                       item.status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
                     )}
-                    disabled={saving || demoMode}
+                    disabled={saving}
                     onClick={() => markAttendance(item.student.id, item.dateStr, 'present')}
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
