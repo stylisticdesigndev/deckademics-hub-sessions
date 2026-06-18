@@ -38,6 +38,7 @@ import InstructorDashboardGate from "./pages/instructor/InstructorDashboardGate"
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
+import InstructorCalendar from "./pages/instructor/InstructorCalendar";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorMessages from "./pages/instructor/InstructorMessages";
 import InstructorAttendance from "./pages/instructor/InstructorAttendance";
