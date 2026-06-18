@@ -197,27 +197,7 @@ const StudentProfile = () => {
               View and manage your personal information
             </p>
           </div>
-          {session && (
-            <Button
-              variant={demoMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDemoMode(!demoMode)}
-            >
-              {demoMode ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-              {demoMode ? 'Live Data' : 'Demo'}
-            </Button>
-          )}
         </section>
-
-        {isDemoActive && (
-          <Alert variant="default" className="border-destructive/50 bg-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <AlertTitle className="text-destructive">Demo Mode</AlertTitle>
-            <AlertDescription className="text-destructive/80">
-              Viewing sample profile data. {session ? 'Toggle off to see your real profile.' : 'Log in to see your real profile.'}
-            </AlertDescription>
-          </Alert>
-        )}
 
         {loading ? (
           <div className="text-center py-8">
@@ -228,31 +208,23 @@ const StudentProfile = () => {
             {/* Row 1: Profile Header */}
             <Card>
               <CardContent className="flex items-center gap-4 py-5">
-                {isDemoActive ? (
-                  <Avatar className="h-20 w-20">
-                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <AvatarUpload
-                    currentUrl={userData?.profile?.avatar_url}
-                    onUpload={async (url) => {
-                      try {
-                        await updateProfile({ avatar_url: url });
-                      } catch (e) {
-                        console.error('Error updating avatar:', e);
-                      }
-                    }}
-                    initials={initials}
-                    size="md"
-                  />
-                )}
+                <AvatarUpload
+                  currentUrl={userData?.profile?.avatar_url}
+                  onUpload={async (url) => {
+                    try {
+                      await updateProfile({ avatar_url: url });
+                    } catch (e) {
+                      console.error('Error updating avatar:', e);
+                    }
+                  }}
+                  initials={initials}
+                  size="md"
+                />
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{displayFullName || 'Student'}</h2>
                   <p className="text-sm text-muted-foreground truncate">{displayProfile.email}</p>
                 </div>
-                {!isEditing && !isDemoActive && (
+                {!isEditing && (
                   <Button type="button" onClick={() => setIsEditing(true)}>
                     Edit Profile
                   </Button>
