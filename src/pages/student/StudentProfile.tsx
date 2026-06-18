@@ -323,24 +323,24 @@ const StudentProfile = () => {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Status</p>
-                        <p className="text-sm font-medium capitalize">{isDemoActive ? 'Active' : (studentData?.enrollment_status || 'Pending')}</p>
+                        <p className="text-sm font-medium capitalize">{studentData?.enrollment_status || 'Pending'}</p>
                       </div>
                       {/* Weekly schedule */}
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Class Day</p>
-                        <p className="text-sm font-medium">{isDemoActive ? 'Tuesdays' : (studentData?.class_day || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_day || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Class Time</p>
-                        <p className="text-sm font-medium">{isDemoActive ? '6:00 PM' : (studentData?.class_time || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_time || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" /> Classroom</p>
-                        <p className="text-sm font-medium">{isDemoActive ? 'Classroom 1' : (studentData?.class_room || 'Not assigned')}</p>
+                        <p className="text-sm font-medium">{studentData?.class_room || 'Not assigned'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Start Date</p>
-                        <p className="text-sm font-medium">{isDemoActive ? formatDateUS(new Date().toISOString()) : (studentData?.start_date ? formatDateUS(studentData.start_date) : 'Not set')}</p>
+                        <p className="text-sm font-medium">{studentData?.start_date ? formatDateUS(studentData.start_date) : 'Not set'}</p>
                       </div>
                     </div>
                   </div>
