@@ -166,17 +166,11 @@ const InstructorProfile = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col sm:flex-row gap-4 items-center pb-4">
-                    {!demoMode ? (
-                      <AvatarUpload
-                        currentUrl={userData?.profile?.avatar_url}
-                        onUpload={async (url) => { try { await updateProfile({ avatar_url: url }); } catch (e) { console.error('Error updating avatar:', e); } }}
-                        initials={getInitials(`${profile.firstName} ${profile.lastName}`.trim())}
-                      />
-                    ) : (
-                      <Avatar className="h-24 w-24">
-                        <AvatarFallback className="text-2xl bg-deckademics-accent text-primary-foreground">{getInitials(`${profile.firstName} ${profile.lastName}`.trim())}</AvatarFallback>
-                      </Avatar>
-                    )}
+                    <AvatarUpload
+                      currentUrl={userData?.profile?.avatar_url}
+                      onUpload={async (url) => { try { await updateProfile({ avatar_url: url }); } catch (e) { console.error('Error updating avatar:', e); } }}
+                      initials={getInitials(`${profile.firstName} ${profile.lastName}`.trim())}
+                    />
                   </div>
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -184,21 +178,21 @@ const InstructorProfile = () => {
                         <Label htmlFor="firstName">First Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={formData.firstName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                          <Input id="firstName" name="firstName" placeholder="First name" className="pl-10" value={formData.firstName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={formData.lastName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                          <Input id="lastName" name="lastName" placeholder="Last name" className="pl-10" value={formData.lastName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                       </div>
                       <div className="space-y-2 sm:col-span-2">
                         <Label htmlFor="djName">DJ Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input id="djName" name="djName" placeholder="DJ Stagename" className="pl-10" value={formData.djName} onChange={handleChange} disabled={!isEditing || demoMode} />
+                          <Input id="djName" name="djName" placeholder="DJ Stagename" className="pl-10" value={formData.djName} onChange={handleChange} disabled={!isEditing} />
                         </div>
                         <p className="text-xs text-muted-foreground">This is the name students will see across the app.</p>
                       </div>
@@ -214,35 +208,35 @@ const InstructorProfile = () => {
                       <Label htmlFor="phone">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="phone" name="phone" className="pl-10" value={formData.phone} onChange={handleChange} disabled={!isEditing || demoMode} />
+                        <Input id="phone" name="phone" className="pl-10" value={formData.phone} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pronouns">Pronouns</Label>
                       <div className="relative">
                         <UserCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={formData.pronouns} onChange={handleChange} disabled={!isEditing || demoMode} />
+                        <Input id="pronouns" name="pronouns" placeholder="she/her, he/him, they/them..." className="pl-10" value={formData.pronouns} onChange={handleChange} disabled={!isEditing} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" name="bio" rows={4} value={formData.bio} onChange={handleChange} disabled={!isEditing || demoMode} />
+                      <Textarea id="bio" name="bio" rows={4} value={formData.bio} onChange={handleChange} disabled={!isEditing} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="expertiseAreas">Areas of Expertise</Label>
-                      <Input id="expertiseAreas" name="expertiseAreas" value={formData.expertiseAreas} onChange={handleChange} disabled={!isEditing || demoMode} />
+                      <Input id="expertiseAreas" name="expertiseAreas" value={formData.expertiseAreas} onChange={handleChange} disabled={!isEditing} />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                  {!demoMode && (isEditing ? (
+                  {isEditing ? (
                     <>
                       <Button type="button" variant="outline" onClick={() => { setIsEditing(false); setFormData({ ...profile }); }}>Cancel</Button>
                       <Button type="submit"><Save className="h-4 w-4 mr-2" />Save Changes</Button>
                     </>
                   ) : (
                     <Button type="button" onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                  ))}
+                  )}
                 </CardFooter>
               </Card>
             </form>
