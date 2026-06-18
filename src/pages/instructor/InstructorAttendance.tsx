@@ -133,9 +133,8 @@ export default function InstructorAttendance() {
                   status={item.status}
                   isPast={item.isPast}
                   saving={saving}
-                  demoMode={demoMode}
                   onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
-                  makeup={demoMode ? null : getMakeup(item.student.id, item.dateStr)}
+                  makeup={getMakeup(item.student.id, item.dateStr)}
                   makeupSaving={makeupSaving}
                   onScheduleMakeup={(d) => scheduleMakeup(item.student.id, item.dateStr, format(d, 'yyyy-MM-dd'))}
                   onSetMakeupStatus={(s) => {
@@ -170,7 +169,6 @@ export default function InstructorAttendance() {
                     status={item.status}
                     isPast={true}
                     saving={saving}
-                    demoMode={demoMode}
                     onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                     makeup={getMakeup(item.student.id, item.dateStr)}
                     makeupSaving={makeupSaving}
@@ -224,7 +222,6 @@ function StudentAttendanceRow({
   status,
   isPast,
   saving,
-  demoMode,
   onMark,
   makeup,
   makeupSaving,
@@ -236,7 +233,6 @@ function StudentAttendanceRow({
   status: 'present' | 'absent' | null;
   isPast: boolean;
   saving: boolean;
-  demoMode: boolean;
   onMark: (status: 'present' | 'absent') => void;
   makeup: MakeupRow | null;
   makeupSaving: boolean;
@@ -273,7 +269,7 @@ function StudentAttendanceRow({
                   'h-8 gap-1',
                   status === 'present' && 'bg-green-600 hover:bg-green-700 text-white'
                 )}
-                disabled={saving || demoMode}
+                disabled={saving}
                 onClick={() => onMark('present')}
               >
                 <CheckCircle className="h-3.5 w-3.5" />
@@ -286,7 +282,7 @@ function StudentAttendanceRow({
                   'h-8 gap-1',
                   status === 'absent' && 'bg-red-600 hover:bg-red-700 text-white'
                 )}
-                disabled={saving || demoMode}
+                disabled={saving}
                 onClick={() => onMark('absent')}
               >
                 <XCircle className="h-3.5 w-3.5" />
@@ -295,7 +291,7 @@ function StudentAttendanceRow({
             </div>
           )}
         </div>
-        {status === 'absent' && !demoMode && (
+        {status === 'absent' && (
           <div className="w-full flex justify-end pt-1">
             <MakeupControl
               makeup={makeup}
