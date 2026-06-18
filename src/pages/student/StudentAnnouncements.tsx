@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, Megaphone } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { AnnouncementCard, type Announcement } from '@/components/cards/AnnouncementCard';
@@ -26,29 +24,6 @@ interface AnnouncementReadRecord {
 
 type StudentAnnouncement = Announcement & { publishedAt: string };
 
-const demoAnnouncements: StudentAnnouncement[] = [
-  {
-    id: 'demo-1',
-    title: 'Spring Showcase Performance — Sign Up Now!',
-    content: 'Our annual Spring Showcase is coming up on April 19th! All students are invited to perform a 5-minute set.',
-    date: formatDateUS(new Date()),
-    publishedAt: new Date().toISOString(),
-    instructor: { name: 'Admin', initials: 'DA' },
-    isNew: true,
-    type: 'event',
-  },
-  {
-    id: 'demo-2',
-    title: 'New Equipment in Classroom B',
-    content: "We've upgraded Classroom B with new Pioneer DDJ-REV7 controllers and KRK studio monitors.",
-    date: formatDateUS(new Date(Date.now() - 2 * 86400000)),
-    publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    instructor: { name: 'DJ Marcus', initials: 'DM' },
-    isNew: true,
-    type: 'announcement',
-  },
-];
-
 const StudentAnnouncements = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -56,21 +31,14 @@ const StudentAnnouncements = () => {
 
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [filter, setFilter] = useState<'all' | 'event' | 'announcement' | 'update'>('all');
 
-  const isDemoMode = !session || demoMode;
   const userId = session?.user?.id;
 
   useEffect(() => {
-    if (isDemoMode) {
-      setAnnouncements(demoAnnouncements);
-      setLoading(false);
-      return;
-    }
     fetchAnnouncements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDemoMode]);
+  }, [session]);
 
   const fetchAnnouncements = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -169,11 +137,6 @@ const StudentAnnouncements = () => {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
-      toast({ title: 'Marked as read' });
-      return;
-    }
     try {
       await saveReadState(id, { read_at: new Date().toISOString(), dismissed: false });
       setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
@@ -185,11 +148,6 @@ const StudentAnnouncements = () => {
   };
 
   const handleDismiss = async (id: string) => {
-    if (isDemoMode || id.startsWith('demo-')) {
-      setAnnouncements(prev => prev.filter(a => a.id !== id));
-      toast({ title: 'Announcement removed' });
-      return;
-    }
     try {
       await saveReadState(id, { read_at: new Date().toISOString(), dismissed: true });
       setAnnouncements(prev => prev.filter(a => a.id !== id));
@@ -214,26 +172,7 @@ const StudentAnnouncements = () => {
             School-wide updates, events, and important notices
           </p>
         </div>
-        {session && (
-          <Button
-            variant={demoMode ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDemoMode(!demoMode)}
-            className="flex items-center gap-2"
-          >
-            {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {demoMode ? 'Live Data' : 'Demo'}
-          </Button>
-        )}
       </section>
-
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>Showing sample data. Click "Live Data" to switch back.</AlertDescription>
-        </Alert>
-      )}
 
       {loading ? (
         <div className="text-center py-12">
