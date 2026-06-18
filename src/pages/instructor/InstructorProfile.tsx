@@ -3,17 +3,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, Calendar, Eye, EyeOff, UserCircle2 } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AtSign, Phone, Save, User, Calendar, UserCircle2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
-import { mockInstructorProfile } from '@/data/mockInstructorData';
 import { DAY_ORDER, sanitizeScheduleItems, CLASS_SLOTS } from '@/utils/instructorSchedule';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
@@ -32,7 +29,6 @@ const InstructorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [instructorData, setInstructorData] = useState<any>(null);
   const [teachingSchedule, setTeachingSchedule] = useState<TeachingScheduleItem[]>(fallbackSchedule);
-  const [demoMode, setDemoMode] = useState(false);
 
   const [profile, setProfile] = useState({
     firstName: '', lastName: '', djName: '', email: '', phone: '', pronouns: '', bio: '', startDate: '', expertiseAreas: '',
@@ -43,33 +39,6 @@ const InstructorProfile = () => {
   const privacyDirty = privacy.hidePhone !== initialPrivacy.hidePhone || privacy.hideEmail !== initialPrivacy.hideEmail;
 
   useEffect(() => {
-    if (demoMode) {
-      const mockNameParts = (mockInstructorProfile.name || '').split(' ');
-      const mockFirst = mockNameParts[0] || '';
-      const mockLast = mockNameParts.slice(1).join(' ') || '';
-      setProfile({
-        firstName: mockFirst, lastName: mockLast, djName: 'DJ Demo',
-        email: mockInstructorProfile.email,
-        phone: mockInstructorProfile.phone,
-        pronouns: '',
-        bio: mockInstructorProfile.bio,
-        startDate: '',
-        expertiseAreas: mockInstructorProfile.expertiseAreas,
-      });
-      setFormData({
-        firstName: mockFirst, lastName: mockLast, djName: 'DJ Demo',
-        email: mockInstructorProfile.email,
-        phone: mockInstructorProfile.phone,
-        pronouns: '',
-        bio: mockInstructorProfile.bio,
-        startDate: '',
-        expertiseAreas: mockInstructorProfile.expertiseAreas,
-      });
-      setTeachingSchedule(sanitizeScheduleItems(mockInstructorProfile.schedule));
-      setLoading(false);
-      return;
-    }
-
     const fetchInstructorData = async () => {
       if (!session?.user?.id) return;
       try {
@@ -133,7 +102,7 @@ const InstructorProfile = () => {
       }
     };
     fetchInstructorData();
-  }, [session, userData, demoMode]);
+  }, [session, userData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -142,10 +111,6 @@ const InstructorProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (demoMode) {
-      toast({ title: 'Demo Mode', description: 'Changes are not saved in demo mode.' });
-      return;
-    }
     try {
       await updateProfile({
         first_name: formData.firstName,
@@ -174,30 +139,15 @@ const InstructorProfile = () => {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-  const isLoading = !demoMode && loading;
+  const isLoading = loading;
 
   return (
     <div className="space-y-6">
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>Showing sample profile. Click "Live Data" to switch back.</AlertDescription>
-        </Alert>
-      )}
-
       <section className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Instructor Profile</h1>
           <p className="text-muted-foreground mt-2">Manage your personal information and schedule</p>
         </div>
-        <Button
-          variant={demoMode ? "default" : "outline"} size="sm"
-          onClick={() => { setDemoMode(!demoMode); setIsEditing(false); }} className="flex items-center gap-2"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
       </section>
 
       {isLoading ? (
