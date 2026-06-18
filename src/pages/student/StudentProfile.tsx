@@ -6,14 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { AtSign, Phone, Save, User, BookOpen, GraduationCap, Eye, EyeOff, AlertTriangle, UserCircle2, Calendar, Clock, CheckCircle2, MapPin } from 'lucide-react';
+import { AtSign, Phone, Save, User, BookOpen, GraduationCap, UserCircle2, Calendar, Clock, CheckCircle2, MapPin } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { supabase } from '@/integrations/supabase/client';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
-import { mockProfileData } from '@/data/mockDashboardData';
 import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,13 +22,10 @@ const StudentProfile = () => {
   const { userData, updateProfile, session } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
   const [courseData, setCourseData] = useState<any>(null);
   const [instructorData, setInstructorData] = useState<any>(null);
   const [instructorDialogOpen, setInstructorDialogOpen] = useState(false);
-  
-  const isDemoActive = !session || demoMode;
 
   const [profile, setProfile] = useState({
     firstName: userData?.profile?.first_name || session?.user?.user_metadata?.first_name || '',
@@ -45,36 +40,13 @@ const StudentProfile = () => {
   
   const studentId = session?.user?.id;
 
-  // Resolve display data based on demo mode
-  const mockNameParts = (mockProfileData.name || '').split(' ');
-  const mockFirst = mockNameParts[0] || '';
-  const mockLast = mockNameParts.slice(1).join(' ') || '';
-  const displayProfile = isDemoActive ? {
-    firstName: mockFirst, lastName: mockLast,
-    email: mockProfileData.email,
-    phone: mockProfileData.phone,
-    bio: mockProfileData.bio,
-    pronouns: '',
-  } : profile;
-
-  const displayFormData = isDemoActive ? {
-    firstName: mockFirst, lastName: mockLast,
-    email: mockProfileData.email,
-    phone: mockProfileData.phone,
-    bio: mockProfileData.bio,
-    pronouns: '',
-  } : formData;
-
-  const displayCourse = isDemoActive ? mockProfileData.course : courseData;
-  const displayInstructor = isDemoActive ? mockProfileData.instructor : instructorData;
-  const displayLevel = isDemoActive ? mockProfileData.course.level : (courseData?.level || studentData?.level || 'Beginner');
+  const displayProfile = profile;
+  const displayFormData = formData;
+  const displayCourse = courseData;
+  const displayInstructor = instructorData;
+  const displayLevel = courseData?.level || studentData?.level || 'Beginner';
   
   useEffect(() => {
-    if (isDemoActive) {
-      setLoading(false);
-      return;
-    }
-
     const fetchStudentData = async () => {
       if (!studentId) return;
       
@@ -174,7 +146,7 @@ const StudentProfile = () => {
     };
     
     fetchStudentData();
-  }, [studentId, isDemoActive]);
+  }, [studentId]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
