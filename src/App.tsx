@@ -38,6 +38,7 @@ import InstructorDashboardGate from "./pages/instructor/InstructorDashboardGate"
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAnnouncements from "./pages/instructor/InstructorAnnouncements";
 import InstructorClasses from "./pages/instructor/InstructorClasses";
+import InstructorCalendar from "./pages/instructor/InstructorCalendar";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorMessages from "./pages/instructor/InstructorMessages";
 import InstructorAttendance from "./pages/instructor/InstructorAttendance";
@@ -127,6 +128,7 @@ const App = () => {
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />
             <Route path="/instructor/announcements" element={<InstructorAnnouncements />} />
             <Route path="/instructor/classes" element={<InstructorClasses />} />
+            <Route path="/instructor/calendar" element={<InstructorCalendar />} />
             <Route path="/instructor/attendance" element={<InstructorAttendance />} />
             <Route path="/instructor/ledger" element={<InstructorLedger />} />
             <Route path="/instructor/profile" element={<InstructorProfile />} />
