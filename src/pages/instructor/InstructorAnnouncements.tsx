@@ -1,16 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatDateUS } from '@/lib/utils';
-import { Bell, Eye, EyeOff } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AnnouncementCard } from '@/components/cards/AnnouncementCard';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockInstructorAnnouncements } from '@/data/mockInstructorData';
 
 interface AuthorProfile {
   first_name?: string;
@@ -22,13 +19,11 @@ const InstructorAnnouncements = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [demoMode, setDemoMode] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
-    if (demoMode) { setLoading(false); return; }
     fetchAnnouncements();
-  }, [demoMode, session]);
+  }, [session]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -79,10 +74,6 @@ const InstructorAnnouncements = () => {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    if (demoMode) {
-      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isNew: false } : a));
-      return;
-    }
     try {
       const { error } = await supabase
         .from('announcement_reads')
@@ -99,11 +90,6 @@ const InstructorAnnouncements = () => {
   };
 
   const handleDismiss = async (id: string) => {
-    if (demoMode) {
-      setAnnouncements(prev => prev.filter(a => a.id !== id));
-      toast({ title: 'Announcement removed' });
-      return;
-    }
     try {
       const userId = session?.user?.id;
       if (!userId) return;
@@ -133,32 +119,16 @@ const InstructorAnnouncements = () => {
     }
   };
 
-  const activeAnnouncements = demoMode ? mockInstructorAnnouncements : announcements;
-  const isLoading = !demoMode && loading;
-  const filtered = activeTab === 'all' ? activeAnnouncements : activeAnnouncements.filter(a => a.type === activeTab);
+  const isLoading = loading;
+  const filtered = activeTab === 'all' ? announcements : announcements.filter(a => a.type === activeTab);
 
   return (
     <div className="space-y-6">
-      {demoMode && (
-        <Alert className="bg-warning/10 border-warning/30">
-          <Eye className="h-4 w-4 text-warning" />
-          <AlertTitle className="text-warning">Demo Mode Active</AlertTitle>
-          <AlertDescription>Showing sample announcements. Click "Live Data" to switch back.</AlertDescription>
-        </Alert>
-      )}
-
       <section className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Announcements</h1>
           <p className="text-muted-foreground mt-1">View announcements and updates from administration</p>
         </div>
-        <Button
-          variant={demoMode ? "default" : "outline"} size="sm"
-          onClick={() => setDemoMode(!demoMode)} className="flex items-center gap-2"
-        >
-          {demoMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {demoMode ? 'Live Data' : 'Demo'}
-        </Button>
       </section>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
