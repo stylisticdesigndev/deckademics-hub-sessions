@@ -164,15 +164,18 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return <PendingApproval />;
   }
 
+  // Treat null, empty, or whitespace-only avatar values as "no photo".
+  const hasProfilePhoto = !!userData.profile?.avatar_url && userData.profile.avatar_url.trim() !== '';
+
   // Gate students without a profile photo
-  if (effectiveRole === 'student' && userData.profile && !userData.profile.avatar_url) {
+  if (effectiveRole === 'student' && userData.profile && !hasProfilePhoto) {
     if (window.location.pathname !== '/student/photo-upload') {
       return <Navigate to="/student/photo-upload" replace />;
     }
   }
 
   // Gate instructors without a profile photo
-  if (effectiveRole === 'instructor' && userData.profile && !userData.profile.avatar_url) {
+  if (effectiveRole === 'instructor' && userData.profile && !hasProfilePhoto) {
     if (window.location.pathname !== '/instructor/photo-upload') {
       return <Navigate to="/instructor/photo-upload" replace />;
     }
