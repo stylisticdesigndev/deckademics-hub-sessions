@@ -1,11 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { BookOpen, StickyNote, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, StickyNote, Eye, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { cn, capitalizeLevel, formatDateUS } from '@/lib/utils';
 import type { CalendarClass } from '@/hooks/instructor/useInstructorCalendar';
 import { useStudentClassDetail } from '@/hooks/instructor/useStudentClassDetail';
@@ -31,6 +32,7 @@ const NOTES_PER_PAGE = 4;
 export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarClassDetailProps) {
   const { data, isLoading } = useStudentClassDetail(classItem?.studentId, classItem?.level);
   const [notesPage, setNotesPage] = React.useState(0);
+  const navigate = useNavigate();
 
   // Reset pagination whenever a different student/class is opened.
   React.useEffect(() => {
@@ -84,6 +86,15 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                   ))}
                 </div>
               )}
+              <div className="pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/instructor/messages?to=${classItem.studentId}`)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-1.5" /> Message student
+                </Button>
+              </div>
             </SheetHeader>
 
             <ScrollArea className="flex-1">

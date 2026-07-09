@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
+import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +75,9 @@ const InstructorStudents = () => {
   const { toast } = useToast();
   const { userData, session } = useAuth();
   const instructorId = session?.user?.id;
+  const navigate = useNavigate();
+
+  const messageStudent = (studentId: string) => navigate(`/instructor/messages?to=${studentId}`);
 
   // Use the simplified hook to fetch students
   const { students: fetchedStudents, loading, refetch, setStudents: updateStudents } = useInstructorStudentsSimple(instructorId);
@@ -492,10 +495,19 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-2 flex justify-center">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                          <div className="col-span-2 flex justify-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => messageStudent(student.id)}
+                              className="text-xs px-2"
+                              title="Message student"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openNoteDialog(student.id)}
                               className="text-xs px-2"
                             >
@@ -546,9 +558,17 @@ const InstructorStudents = () => {
                             isReady={student.isReady}
                           />
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => messageStudent(student.id)}
+                              className="text-xs flex-1"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openNoteDialog(student.id)}
                               className="text-xs flex-1"
                             >
@@ -761,6 +781,15 @@ const InstructorStudents = () => {
                             <span>{detailedStudent.phone}</span>
                           </a>
                         )}
+                      </div>
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => messageStudent(detailedStudent.id)}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1.5" /> Message
+                        </Button>
                       </div>
                     </div>
                   </div>

@@ -33,6 +33,7 @@ interface StudentOption {
   initials: string;
   avatarUrl?: string | null;
   twoWayMessaging?: boolean;
+  isMine?: boolean;
 }
 
 const InstructorMessages = () => {
@@ -63,53 +64,21 @@ const InstructorMessages = () => {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      // Resolve every student connected to this instructor — primary AND
-      // secondary assignments (student_instructors), the legacy primary column
-      // (students.instructor_id), and cover sessions. Otherwise students
-      // assigned only as secondary would show up as "Unknown" with no photo.
-      const studentIdSet = new Set<string>();
+      // Resolve every real (non-test) enrolled student the instructor can
+      // message. The RPC returns all active students (so "All enrolled"
+      // broadcasts work) plus an `is_mine` flag marking the instructor's own
+      // primary/secondary students. Mock/test accounts are excluded.
+      const { data: studentRows } = await supabase.rpc('get_messageable_students' as any);
 
-      const [{ data: siRows }, { data: legacyRows }, { data: coverRows }] = await Promise.all([
-        supabase
-          .from('student_instructors' as any)
-          .select('student_id')
-          .eq('instructor_id', session.user.id),
-        supabase
-          .from('students')
-          .select('id')
-          .eq('instructor_id', session.user.id),
-        supabase
-          .from('cover_sessions' as any)
-          .select('student_id')
-          .eq('cover_instructor_id', session.user.id),
-      ]);
-
-      (siRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
-      (legacyRows ?? []).forEach((r: any) => r?.id && studentIdSet.add(r.id));
-      (coverRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
-
-      const studentIds = Array.from(studentIdSet);
-
-      if (studentIds.length > 0) {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id, two_way_messaging')
-          .in('id', studentIds);
-        const twoWayMap = new Map((studentData ?? []).map((s: any) => [s.id, s.two_way_messaging ?? true]));
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url')
-          .in('id', studentIds);
-
-        if (profiles) {
-          setStudents(profiles.map(p => ({
-            id: p.id,
-            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
-            initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
-            avatarUrl: p.avatar_url,
-            twoWayMessaging: twoWayMap.get(p.id) ?? true,
-          })));
-        }
+      if (studentRows) {
+        setStudents((studentRows as any[]).map((p) => ({
+          id: p.id,
+          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+          initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
+          avatarUrl: p.avatar_url,
+          twoWayMessaging: p.two_way_messaging ?? true,
+          isMine: p.is_mine ?? false,
+        })));
       }
 
       // Fetch ALL messages involving this instructor
@@ -178,6 +147,20 @@ const InstructorMessages = () => {
       setSearchParams(searchParams, { replace: true });
     }
   }, [conversations, searchParams, setSearchParams]);
+
+  // Deep-link: open a thread with a specific student from a "Message" button
+  // on the Students or Calendar pages, even if no messages exist yet.
+  useEffect(() => {
+    const to = searchParams.get('to');
+    if (!to) return;
+    if (students.some(s => s.id === to)) {
+      setActiveStudentId(to);
+      setActiveTab('conversations');
+      const next = new URLSearchParams(searchParams);
+      next.delete('to');
+      setSearchParams(next, { replace: true });
+    }
+  }, [students, searchParams, setSearchParams]);
 
   // Get messages for the active thread
   const threadMessages = useMemo(() => {
@@ -268,10 +251,9 @@ const InstructorMessages = () => {
     setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
-  const selectAllStudents = () => {
-    const active = students;
-    setSelectedStudents(prev => prev.length === active.length ? [] : active.map(s => s.id));
-  };
+  const myStudentIds = useMemo(() => students.filter(s => s.isMine).map(s => s.id), [students]);
+  const selectMyStudents = () => setSelectedStudents(myStudentIds);
+  const selectEnrolledStudents = () => setSelectedStudents(students.map(s => s.id));
 
   const activeStudents = students;
   const isLoading = loading;
@@ -301,14 +283,14 @@ const InstructorMessages = () => {
   };
 
   // Thread view
-  if (activeStudentId && activeConvo) {
+  if (activeStudentId && (activeConvo || activeStudent)) {
     return (
       <div className="space-y-6">
         <ConversationThread
           currentUserId={session?.user?.id || ''}
-          studentName={activeConvo.studentName}
-          studentInitials={activeConvo.initials}
-          studentAvatarUrl={activeConvo.avatarUrl}
+          studentName={activeConvo?.studentName || activeStudent?.name || 'Student'}
+          studentInitials={activeConvo?.initials || activeStudent?.initials || '??'}
+          studentAvatarUrl={activeConvo?.avatarUrl ?? activeStudent?.avatarUrl}
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveStudentId(null)}
@@ -360,11 +342,21 @@ const InstructorMessages = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <Label>To (select students)</Label>
-                  <Button variant="ghost" size="sm" onClick={selectAllStudents} type="button">
-                    {selectedStudents.length === activeStudents.length ? 'Deselect All' : 'Select All'}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button variant="outline" size="sm" type="button" onClick={selectMyStudents}>
+                      My students ({myStudentIds.length})
+                    </Button>
+                    <Button variant="outline" size="sm" type="button" onClick={selectEnrolledStudents}>
+                      All enrolled ({activeStudents.length})
+                    </Button>
+                    {selectedStudents.length > 0 && (
+                      <Button variant="ghost" size="sm" type="button" onClick={() => setSelectedStudents([])}>
+                        Clear
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {activeStudents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No assigned students found.</p>

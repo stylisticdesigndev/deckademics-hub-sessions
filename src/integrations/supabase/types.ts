@@ -1554,6 +1554,17 @@ export type Database = {
           years_experience: number
         }[]
       }
+      get_messageable_students: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          first_name: string
+          id: string
+          is_mine: boolean
+          last_name: string
+          two_way_messaging: boolean
+        }[]
+      }
       get_profile_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
