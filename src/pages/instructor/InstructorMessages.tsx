@@ -288,14 +288,14 @@ const InstructorMessages = () => {
   };
 
   // Thread view
-  if (activeStudentId && activeConvo) {
+  if (activeStudentId && (activeConvo || activeStudent)) {
     return (
       <div className="space-y-6">
         <ConversationThread
           currentUserId={session?.user?.id || ''}
-          studentName={activeConvo.studentName}
-          studentInitials={activeConvo.initials}
-          studentAvatarUrl={activeConvo.avatarUrl}
+          studentName={activeConvo?.studentName || activeStudent?.name || 'Student'}
+          studentInitials={activeConvo?.initials || activeStudent?.initials || '??'}
+          studentAvatarUrl={activeConvo?.avatarUrl ?? activeStudent?.avatarUrl}
           messages={threadMessages}
           onSendReply={handleSendReply}
           onBack={() => setActiveStudentId(null)}
