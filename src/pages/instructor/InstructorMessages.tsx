@@ -33,6 +33,7 @@ interface StudentOption {
   initials: string;
   avatarUrl?: string | null;
   twoWayMessaging?: boolean;
+  isMine?: boolean;
 }
 
 const InstructorMessages = () => {
