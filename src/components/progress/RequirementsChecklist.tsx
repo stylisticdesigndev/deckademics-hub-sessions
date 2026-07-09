@@ -26,8 +26,8 @@ export const RequirementsChecklist = ({ skills, className }: RequirementsCheckli
     const done = met >= total;
     const remaining = total - met;
     return (
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="flex items-center gap-1.5">
+      <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <span className="flex min-w-0 items-center gap-1.5">
           {done ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
           ) : (
@@ -35,7 +35,7 @@ export const RequirementsChecklist = ({ skills, className }: RequirementsCheckli
           )}
           <span className={cn(done ? 'text-muted-foreground' : 'text-foreground')}>{label}</span>
         </span>
-        <span className={cn('tabular-nums font-medium', done ? 'text-green-500' : 'text-foreground')}>
+        <span className={cn('pl-5 tabular-nums font-medium sm:pl-0', done ? 'text-green-500' : 'text-foreground')}>
           {met} of {total} {verb}
           {remaining > 0 && (
             <span className="text-muted-foreground font-normal"> · {remaining} to go</span>
