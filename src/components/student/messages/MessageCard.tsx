@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDateTimeUS } from '@/lib/utils';
 import { MessageReplyForm } from './MessageReplyForm';
+import AttachmentImage from '@/components/messages/AttachmentImage';
 
 interface DirectMessage {
   id: string;
@@ -62,9 +63,11 @@ export const MessageCard = ({ message, onMarkAsRead, onReply }: MessageCardProps
               <p className="font-medium text-sm mt-1">{message.subject}</p>
             )}
             {message.image_url && (
-              <a href={message.image_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
-                <img src={message.image_url} alt="Attachment" className="rounded-lg max-w-full max-h-48 object-cover" />
-              </a>
+              <AttachmentImage
+                value={message.image_url}
+                wrapperClassName="block mt-2"
+                imgClassName="rounded-lg max-w-full max-h-48 object-cover"
+              />
             )}
             <p className={`text-sm text-muted-foreground mt-1 ${expanded ? '' : 'line-clamp-2'}`}>
               {message.content}
