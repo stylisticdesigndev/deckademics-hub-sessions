@@ -251,11 +251,6 @@ const InstructorMessages = () => {
     setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
-  const selectAllStudents = () => {
-    const active = students;
-    setSelectedStudents(prev => prev.length === active.length ? [] : active.map(s => s.id));
-  };
-
   const myStudentIds = useMemo(() => students.filter(s => s.isMine).map(s => s.id), [students]);
   const selectMyStudents = () => setSelectedStudents(myStudentIds);
   const selectEnrolledStudents = () => setSelectedStudents(students.map(s => s.id));
