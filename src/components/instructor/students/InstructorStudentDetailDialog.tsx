@@ -29,7 +29,7 @@ import type { Student, StudentNote } from "@/hooks/instructor/useInstructorStude
 import { MilestoneChip } from "@/components/progress/MilestoneChip";
 import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
 import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
-import { milestoneLabel, capitalizeLevel as _cl } from "@/lib/skillMilestones";
+import { milestoneLabel } from "@/lib/skillMilestones";
 import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 
 interface Props {
@@ -46,6 +46,7 @@ const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM
 export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenChange, student, instructorId, refetch }) => {
   const { toast } = useToast();
   const { createRequest, pendingRequests } = useScheduleChangeRequests('instructor');
+  const updateStudentLevel = useUpdateStudentLevel();
 
   // Local mirror so optimistic edits survive parent refetch latency
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(student);
