@@ -256,6 +256,10 @@ const InstructorMessages = () => {
     setSelectedStudents(prev => prev.length === active.length ? [] : active.map(s => s.id));
   };
 
+  const myStudentIds = useMemo(() => students.filter(s => s.isMine).map(s => s.id), [students]);
+  const selectMyStudents = () => setSelectedStudents(myStudentIds);
+  const selectEnrolledStudents = () => setSelectedStudents(students.map(s => s.id));
+
   const activeStudents = students;
   const isLoading = loading;
 
