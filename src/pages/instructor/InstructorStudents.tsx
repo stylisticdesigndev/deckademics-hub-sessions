@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
+import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon, ImageOff } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
@@ -188,6 +189,10 @@ const InstructorStudents = () => {
     Intermediate: filteredStudents.filter(s => s.level.toLowerCase() === 'intermediate'),
     Advanced: filteredStudents.filter(s => s.level.toLowerCase() === 'advanced'),
   };
+
+  const isMissingPhoto = (s: Student) =>
+    (!s.avatar || s.avatar.trim() === '') && (s.enrollmentStatus ?? 'active') === 'active';
+  const studentsMissingPhoto = students.filter(isMissingPhoto);
   
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
@@ -361,6 +366,19 @@ const InstructorStudents = () => {
           </div>
         </section>
 
+        {studentsMissingPhoto.length > 0 && (
+          <Alert className="border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
+            <ImageOff className="h-4 w-4" />
+            <AlertTitle>
+              {studentsMissingPhoto.length} student{studentsMissingPhoto.length === 1 ? '' : 's'} missing a profile photo
+            </AlertTitle>
+            <AlertDescription>
+              Please remind {studentsMissingPhoto.map(s => s.name).join(', ')} to add a profile photo.
+              Photos let other instructors identify each student during cover sessions.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -453,6 +471,11 @@ const InstructorStudents = () => {
                               <div className="text-muted-foreground text-xs truncate">
                                 {student.email}
                               </div>
+                              {isMissingPhoto(student) && (
+                                <Badge variant="outline" className="mt-1 border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] gap-1">
+                                  <ImageOff className="h-3 w-3" /> Photo needed
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           
@@ -550,6 +573,11 @@ const InstructorStudents = () => {
                             <div className="flex-1 min-w-0">
                               <div className="font-medium truncate">{student.name}</div>
                               <div className="text-muted-foreground text-xs truncate">{student.email}</div>
+                              {isMissingPhoto(student) && (
+                                <Badge variant="outline" className="mt-1 border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] gap-1">
+                                  <ImageOff className="h-3 w-3" /> Photo needed
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <MilestoneSummary
@@ -791,6 +819,15 @@ const InstructorStudents = () => {
                           <MessageSquare className="h-4 w-4 mr-1.5" /> Message
                         </Button>
                       </div>
+                      {isMissingPhoto(detailedStudent) && (
+                        <Alert className="mt-1 border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
+                          <ImageOff className="h-4 w-4" />
+                          <AlertTitle>No profile photo</AlertTitle>
+                          <AlertDescription>
+                            Remind this student to upload a photo so cover instructors can identify them.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   </div>
                 </DialogHeader>

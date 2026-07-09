@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, MessageSquare, Megaphone } from 'lucide-react';
+import { Bell, Check, MessageSquare, Megaphone, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 const iconMap: Record<string, React.ElementType> = {
   message: MessageSquare,
   announcement: Megaphone,
+  photo_reminder: Camera,
 };
 
 interface UserNotificationDropdownProps {
@@ -32,6 +33,11 @@ export const UserNotificationDropdown = ({ userType }: UserNotificationDropdownP
   }, [unreadCount]);
 
   const handleNotificationClick = (notification: UserNotification) => {
+    if (notification.type === 'photo_reminder') {
+      navigate('/instructor/students');
+      setOpen(false);
+      return;
+    }
     if (!notification.read) {
       setOptimisticUnread(Math.max(0, (optimisticUnread !== null ? optimisticUnread : unreadCount) - 1));
       markAsRead.mutate(notification);
