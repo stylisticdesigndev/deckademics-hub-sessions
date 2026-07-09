@@ -602,23 +602,25 @@ const InstructorStudents = () => {
                             total={student.skillTotal}
                             isReady={student.isReady}
                           />
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => messageStudent(student.id)}
-                              className="text-xs flex-1"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openNoteDialog(student.id)}
-                              className="text-xs flex-1"
-                            >
-                              Add Note
-                            </Button>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => messageStudent(student.id)}
+                                className="text-xs flex-1"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openNoteDialog(student.id)}
+                                className="text-xs flex-1"
+                              >
+                                Add Note
+                              </Button>
+                            </div>
                             <div
                               className="relative z-10 touch-manipulation"
                               onClick={(e) => e.stopPropagation()}
@@ -630,7 +632,7 @@ const InstructorStudents = () => {
                               >
                                 <SelectTrigger
                                   className={cn(
-                                    "w-[120px] h-9 text-xs touch-manipulation",
+                                    "w-full h-9 text-xs touch-manipulation",
                                     student.level.toLowerCase() === 'novice' && "border-green-500/50 text-green-500",
                                     student.level.toLowerCase() === 'amateur' && "border-yellow-500/50 text-yellow-500",
                                     student.level.toLowerCase() === 'intermediate' && "border-blue-500/50 text-blue-500",
