@@ -455,11 +455,12 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-3 flex items-center gap-3 min-w-0">
-                            <Progress value={student.progress} className="h-2 flex-1 min-w-0" />
-                            <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
-                              {student.progress}%
-                            </span>
+                          <div className="col-span-3 flex items-center min-w-0">
+                            <MilestoneSummary
+                              masteredCount={student.masteredCount}
+                              total={student.skillTotal}
+                              isReady={student.isReady}
+                            />
                           </div>
                           
                           <div className="col-span-3 flex justify-center">
@@ -541,10 +542,11 @@ const InstructorStudents = () => {
                               <div className="text-muted-foreground text-xs truncate">{student.email}</div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={student.progress} className="h-2 flex-grow" />
-                            <span className="text-xs font-medium w-8 text-right">{student.progress}%</span>
-                          </div>
+                          <MilestoneSummary
+                            masteredCount={student.masteredCount}
+                            total={student.skillTotal}
+                            isReady={student.isReady}
+                          />
                           <div className="flex gap-2">
                             <Button 
                               variant="outline" 
@@ -639,7 +641,7 @@ const InstructorStudents = () => {
                                       {student.name}
                                     </div>
                                     <div className="text-muted-foreground text-xs">
-                                      Progress: {student.progress}%
+                                      {student.masteredCount} of {student.skillTotal} Mastered
                                     </div>
                                   </div>
                                 </div>
