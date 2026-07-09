@@ -893,56 +893,54 @@ const InstructorStudents = () => {
                     {/* Admin-defined Skills */}
                     {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="font-medium text-base">Skills</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-base">Skills</h3>
+                          <MilestoneSummary
+                            className="text-muted-foreground"
+                            masteredCount={detailedStudent.masteredCount}
+                            total={detailedStudent.skillTotal}
+                            isReady={detailedStudent.isReady}
+                          />
+                        </div>
                         {detailedStudent.skillProgress.map((skill) => (
                           <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium flex items-center gap-1.5">
+                                {skill.skillName}
+                                {skill.isCore && (
+                                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Core</span>
+                                )}
+                              </span>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm">{skill.proficiency}%</span>
+                                <MilestoneChip value={skill.proficiency} />
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="text-xs"
                                   onClick={() => {
-                                    setUpdatingSkillId(skill.skillId);
+                                    setUpdatingSkillId(updatingSkillId === skill.skillId ? null : skill.skillId);
                                     setSkillProficiency(skill.proficiency);
                                     setSelectedStudent(detailedStudent.id);
                                   }}
                                 >
-                                  Update
+                                  {updatingSkillId === skill.skillId ? 'Close' : 'Update'}
                                 </Button>
                               </div>
                             </div>
-                            <Progress value={skill.proficiency} className="h-2" />
-                            
                             {updatingSkillId === skill.skillId && (
-                              <div className="pt-2 space-y-3">
-                                <div className="flex items-center justify-between text-sm mb-1">
-                                  <span className="text-muted-foreground">Proficiency</span>
-                                  <span className="font-medium">{skillProficiency}%</span>
-                                </div>
-                                <Slider
-                                  value={[skillProficiency]}
-                                  min={0}
-                                  max={100}
-                                  step={5}
-                                  onValueChange={([v]) => setSkillProficiency(v)}
-                                  className="[&_[role=slider]]:bg-green-500 [&_[role=slider]]:border-green-500 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&>span:first-child]:bg-gray-200 [&>span:first-child]:dark:bg-gray-700 [&>span:first-child>span]:bg-green-500"
+                              <div className="pt-2">
+                                <MilestoneSelector
+                                  value={skillProficiency}
+                                  onChange={(v) => {
+                                    setSkillProficiency(v);
+                                    handleSkillProficiencyUpdate(
+                                      detailedStudent.id,
+                                      skill.skillName,
+                                      v,
+                                      skill.progressRecordId,
+                                    );
+                                  }}
                                 />
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => setUpdatingSkillId(null)}>
-                                    Cancel
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleSkillProficiencyUpdate(
-                                    detailedStudent.id,
-                                    skill.skillName,
-                                    skillProficiency,
-                                    skill.progressRecordId
-                                  )}>
-                                    Save
-                                  </Button>
-                                </div>
                               </div>
                             )}
                           </div>
