@@ -92,3 +92,48 @@ export function computeReadiness(skills: ReadinessSkill[]): Readiness {
   const isReady = total > 0 && unmetCore === 0 && unmetCreative === 0;
   return { masteredCount, total, isReady, unmetCore, unmetCreative };
 }
+
+export interface Requirements {
+  coreTotal: number;
+  coreMet: number; // Core skills at Mastered (3)
+  coreRemaining: number;
+  creativeTotal: number;
+  creativeMet: number; // Creative skills at Proficient (2) or better
+  creativeRemaining: number;
+  isReady: boolean;
+}
+
+/**
+ * Break down exactly what is left for a student to advance from their current
+ * level: every Core skill must reach Mastered (3) and every Creative skill must
+ * reach at least Proficient (2).
+ */
+export function computeRequirements(skills: ReadinessSkill[]): Requirements {
+  let coreTotal = 0;
+  let coreMet = 0;
+  let creativeTotal = 0;
+  let creativeMet = 0;
+
+  for (const s of skills) {
+    const p = s.proficiency || 0;
+    if (s.is_core) {
+      coreTotal++;
+      if (p >= 3) coreMet++;
+    } else {
+      creativeTotal++;
+      if (p >= 2) creativeMet++;
+    }
+  }
+
+  const coreRemaining = coreTotal - coreMet;
+  const creativeRemaining = creativeTotal - creativeMet;
+  return {
+    coreTotal,
+    coreMet,
+    coreRemaining,
+    creativeTotal,
+    creativeMet,
+    creativeRemaining,
+    isReady: skills.length > 0 && coreRemaining === 0 && creativeRemaining === 0,
+  };
+}

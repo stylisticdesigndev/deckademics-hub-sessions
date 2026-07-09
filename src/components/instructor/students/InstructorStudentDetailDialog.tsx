@@ -28,6 +28,7 @@ import type { Student, StudentNote } from "@/hooks/instructor/useInstructorStude
 import { MilestoneChip } from "@/components/progress/MilestoneChip";
 import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
 import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { RequirementsChecklist } from "@/components/progress/RequirementsChecklist";
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 
@@ -301,6 +302,11 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                       Master every Core skill and reach Proficient on the rest to unlock advancement.
                     </p>
                   )}
+                  {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
+                    <RequirementsChecklist
+                      skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                    />
+                  )}
                 </section>
 
                 <section className="space-y-3 border-t pt-4">
@@ -337,6 +343,9 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                         isReady={detailedStudent.isReady}
                       />
                     </div>
+                    <RequirementsChecklist
+                      skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                    />
                     {detailedStudent.skillProgress.map((skill) => (
                       <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
