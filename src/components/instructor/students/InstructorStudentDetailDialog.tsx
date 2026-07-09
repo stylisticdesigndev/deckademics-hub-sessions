@@ -149,7 +149,16 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
       }
     }
     setUpdatingSkillId(null);
-    toast({ title: "Skill updated", description: `${skillName} proficiency set to ${proficiency}%` });
+    toast({ title: "Skill updated", description: `${skillName} set to ${milestoneLabel(proficiency)}` });
+    await refetch();
+  };
+
+  const handleAdvanceLevel = async () => {
+    if (!detailedStudent?.nextLevel) return;
+    await updateStudentLevel.mutateAsync({
+      studentId: detailedStudent.id,
+      level: detailedStudent.nextLevel as StudentLevel,
+    });
     await refetch();
   };
 
