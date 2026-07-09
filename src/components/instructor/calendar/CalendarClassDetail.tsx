@@ -97,7 +97,7 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                       <MilestoneSummary
                         className="ml-auto text-muted-foreground"
                         masteredCount={data.masteredCount}
-                        skillTotal={data.skillTotal}
+                        total={data.skillTotal}
                         isReady={data.isReady}
                       />
                     )}
