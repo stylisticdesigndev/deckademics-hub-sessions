@@ -42,6 +42,7 @@ const InstructorMessages = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('conversations');
+  const [recipientTab, setRecipientTab] = useState<'mine' | 'all'>('mine');
 
   // Compose state
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -251,9 +252,25 @@ const InstructorMessages = () => {
     setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
-  const myStudentIds = useMemo(() => students.filter(s => s.isMine).map(s => s.id), [students]);
-  const selectMyStudents = () => setSelectedStudents(myStudentIds);
-  const selectEnrolledStudents = () => setSelectedStudents(students.map(s => s.id));
+  const byName = (a: StudentOption, b: StudentOption) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  const myStudents = useMemo(
+    () => students.filter(s => s.isMine).sort(byName),
+    [students],
+  );
+  const allStudents = useMemo(() => [...students].sort(byName), [students]);
+
+  const visibleStudents = recipientTab === 'mine' ? myStudents : allStudents;
+
+  const selectAllVisible = () => {
+    const ids = visibleStudents.map(s => s.id);
+    const allSelected = ids.every(id => selectedStudents.includes(id));
+    setSelectedStudents(prev =>
+      allSelected
+        ? prev.filter(id => !ids.includes(id))
+        : Array.from(new Set([...prev, ...ids])),
+    );
+  };
 
   const activeStudents = students;
   const isLoading = loading;
@@ -342,40 +359,47 @@ const InstructorMessages = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label>To (select students)</Label>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button variant="outline" size="sm" type="button" onClick={selectMyStudents}>
-                      My students ({myStudentIds.length})
-                    </Button>
-                    <Button variant="outline" size="sm" type="button" onClick={selectEnrolledStudents}>
-                      All enrolled ({activeStudents.length})
-                    </Button>
-                    {selectedStudents.length > 0 && (
-                      <Button variant="ghost" size="sm" type="button" onClick={() => setSelectedStudents([])}>
-                        Clear
+                <Label>To (select students)</Label>
+                <Tabs value={recipientTab} onValueChange={(v) => setRecipientTab(v as 'mine' | 'all')}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <TabsList>
+                      <TabsTrigger value="mine">My students ({myStudents.length})</TabsTrigger>
+                      <TabsTrigger value="all">All enrolled ({allStudents.length})</TabsTrigger>
+                    </TabsList>
+                    {visibleStudents.length > 0 && (
+                      <Button variant="ghost" size="sm" type="button" onClick={selectAllVisible}>
+                        {visibleStudents.every(s => selectedStudents.includes(s.id)) ? 'Deselect all' : 'Select all'}
                       </Button>
                     )}
                   </div>
-                </div>
-                {activeStudents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No assigned students found.</p>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {activeStudents.map(student => (
-                      <label
-                        key={student.id}
-                        className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/50 transition-colors"
-                      >
-                        <Checkbox
-                          checked={selectedStudents.includes(student.id)}
-                          onCheckedChange={() => toggleStudent(student.id)}
-                        />
-                        <span className="text-sm font-medium">{student.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                  {(['mine', 'all'] as const).map((tab) => {
+                    const list = tab === 'mine' ? myStudents : allStudents;
+                    return (
+                      <TabsContent key={tab} value={tab} className="mt-3">
+                        {list.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            {tab === 'mine' ? 'No students assigned to you.' : 'No enrolled students found.'}
+                          </p>
+                        ) : (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {list.map(student => (
+                              <label
+                                key={student.id}
+                                className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/50 transition-colors"
+                              >
+                                <Checkbox
+                                  checked={selectedStudents.includes(student.id)}
+                                  onCheckedChange={() => toggleStudent(student.id)}
+                                />
+                                <span className="text-sm font-medium truncate">{student.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
               </div>
 
               <div className="space-y-2">
