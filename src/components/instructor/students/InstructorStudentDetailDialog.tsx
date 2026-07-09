@@ -302,6 +302,11 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                       Master every Core skill and reach Proficient on the rest to unlock advancement.
                     </p>
                   )}
+                  {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
+                    <RequirementsChecklist
+                      skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                    />
+                  )}
                 </section>
 
                 <section className="space-y-3 border-t pt-4">
