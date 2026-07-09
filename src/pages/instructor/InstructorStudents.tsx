@@ -842,9 +842,28 @@ const InstructorStudents = () => {
                     <section className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
                         <span>Overall Progress</span>
-                        <span className="text-foreground">{detailedStudent.progress}%</span>
+                        <MilestoneSummary
+                          className="text-foreground"
+                          masteredCount={detailedStudent.masteredCount}
+                          total={detailedStudent.skillTotal}
+                          isReady={detailedStudent.isReady}
+                        />
                       </div>
-                      <Progress value={detailedStudent.progress} className="h-2" />
+                      {detailedStudent.isReady && detailedStudent.nextLevel && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleLevelChange(detailedStudent.id, detailedStudent.nextLevel as string)}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Advance to {LEVEL_DISPLAY_MAP[detailedStudent.nextLevel as StudentLevel]}
+                        </Button>
+                      )}
+                      {!detailedStudent.isReady && detailedStudent.skillTotal > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Master every Core skill and reach Proficient on the rest to unlock advancement.
+                        </p>
+                      )}
                     </section>
 
                     {/* Actions Section */}
