@@ -9,6 +9,7 @@ import { formatDateTimeUS } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
+import AttachmentImage from '@/components/messages/AttachmentImage';
 
 interface ThreadMessage {
   id: string;
@@ -89,8 +90,9 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
       toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
       return null;
     }
-    const { data } = supabase.storage.from('message-attachments').getPublicUrl(path);
-    return data.publicUrl;
+    // Store the object path only; the bucket is private and images are
+    // served through short-lived signed URLs at render time.
+    return path;
   };
 
   const handleSend = async () => {
@@ -183,13 +185,11 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
                     }`}
                   >
                     {msg.image_url && (
-                      <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
-                        <img
-                          src={msg.image_url}
-                          alt="Attachment"
-                          className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
-                        />
-                      </a>
+                      <AttachmentImage
+                        value={msg.image_url}
+                        wrapperClassName="block mb-1.5"
+                        imgClassName="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
+                      />
                     )}
                     {msg.content && renderTextWithLinks(msg.content, { isSentByMe: isMe })}
                   </div>
