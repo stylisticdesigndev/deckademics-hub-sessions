@@ -28,6 +28,7 @@ import type { Student, StudentNote } from "@/hooks/instructor/useInstructorStude
 import { MilestoneChip } from "@/components/progress/MilestoneChip";
 import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
 import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { RequirementsChecklist } from "@/components/progress/RequirementsChecklist";
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 
