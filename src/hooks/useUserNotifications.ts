@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
 
 export interface UserNotification {
   id: string;
-  type: 'message' | 'announcement' | 'photo_reminder';
+  type: 'message' | 'announcement' | 'photo_reminder' | 'level_reminder';
   title: string;
   message: string;
   read: boolean;
@@ -70,6 +71,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       // profile photo. Photos let cover instructors identify students, so this
       // reminder cannot be dismissed until every student has one.
       const photoReminders: UserNotification[] = [];
+      const levelReminders: UserNotification[] = [];
       if (userRole === 'instructor') {
         // Only consider students assigned to THIS instructor (primary or secondary).
         const { data: links } = await supabase
@@ -78,12 +80,14 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
           .eq('instructor_id', userId);
         const assignedIds = ((links as any[]) || []).map((l: any) => l.student_id);
         let ids: string[] = [];
+        let assignedRows: any[] = [];
         if (assignedIds.length > 0) {
           const { data: assigned } = await supabase
             .from('students')
-            .select('id, enrollment_status')
+            .select('id, level, enrollment_status')
             .in('id', assignedIds)
             .eq('enrollment_status', 'active');
+          assignedRows = assigned || [];
           ids = (assigned || []).map((s: any) => s.id);
         }
         if (ids.length > 0) {
@@ -107,10 +111,68 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
               created_at: new Date().toISOString(),
             });
           }
+
+          // Persistent reminder about assigned students who meet the skill
+          // requirements to move up a level. This is informational only — the
+          // instructor decides whether/when to actually advance them.
+          const nameById: Record<string, string> = {};
+          (profs || []).forEach((p: any) => {
+            nameById[p.id] = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'A student';
+          });
+
+          const [{ data: skills }, { data: progress }] = await Promise.all([
+            supabase
+              .from('progress_skills' as any)
+              .select('name, level, is_core'),
+            supabase
+              .from('student_progress')
+              .select('student_id, skill_name, proficiency')
+              .in('student_id', ids),
+          ]);
+
+          const allSkills = (skills as any[]) || [];
+          const skillNames = new Set(allSkills.map((s: any) => s.name));
+          const progressMap: Record<string, Record<string, number>> = {};
+          ((progress as any[]) || []).forEach((row: any) => {
+            if (row.skill_name && skillNames.has(row.skill_name)) {
+              if (!progressMap[row.student_id]) progressMap[row.student_id] = {};
+              progressMap[row.student_id][row.skill_name] = row.proficiency || 0;
+            }
+          });
+
+          const readyNames: string[] = [];
+          assignedRows.forEach((s: any) => {
+            const level = normalizeLevel(s.level);
+            // Only levels below advanced can advance further.
+            if (!nextLevelOf(s.level)) return;
+            const levelSkills = allSkills.filter(
+              (sk: any) => normalizeLevel(sk.level) === level,
+            );
+            if (levelSkills.length === 0) return;
+            const studentProgress = progressMap[s.id] || {};
+            const readiness = computeReadiness(
+              levelSkills.map((sk: any) => ({
+                proficiency: studentProgress[sk.name] || 0,
+                is_core: sk.is_core ?? true,
+              })),
+            );
+            if (readiness.isReady) readyNames.push(nameById[s.id] || 'A student');
+          });
+
+          if (readyNames.length > 0) {
+            levelReminders.push({
+              id: 'level-reminder',
+              type: 'level_reminder',
+              title: `${readyNames.length} student${readyNames.length === 1 ? '' : 's'} ready to advance a level`,
+              message: `${readyNames.join(', ')} meet${readyNames.length === 1 ? 's' : ''} the requirements to move up. Advance them when you feel they're ready.`,
+              read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
         }
       }
 
-      return [...photoReminders, ...messageNotifications, ...announcementNotifications].sort(
+      return [...photoReminders, ...levelReminders, ...messageNotifications, ...announcementNotifications].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     },
@@ -122,7 +184,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
 
   const markAsRead = useMutation({
     mutationFn: async (notification: UserNotification) => {
-      if (notification.type === 'photo_reminder') {
+      if (notification.type === 'photo_reminder' || notification.type === 'level_reminder') {
         // Persistent reminder — cannot be marked read until resolved.
         return;
       }
