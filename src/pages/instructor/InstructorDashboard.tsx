@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
-import { useEffect } from 'react';
 
 interface Student {
   id: string;
