@@ -193,6 +193,9 @@ const InstructorStudents = () => {
   const isMissingPhoto = (s: Student) =>
     (!s.avatar || s.avatar.trim() === '') && (s.enrollmentStatus ?? 'active') === 'active';
   const studentsMissingPhoto = students.filter(isMissingPhoto);
+  const studentsReadyToAdvance = students.filter(
+    (s) => s.isReady && s.nextLevel && (s.enrollmentStatus ?? 'active') === 'active',
+  );
   
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
