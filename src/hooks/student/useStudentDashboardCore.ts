@@ -115,12 +115,10 @@ export function useStudentDashboardCore() {
     }
   }, [userId, fetchStudentInfo]);
 
-  // Derive totalProgress reactively from progressData
+  // Derive mastered-skill count reactively from progressData (3-point milestone scale)
   const totalProgress = useMemo(() => {
     if (!progressData || !Array.isArray(progressData) || progressData.length === 0) return 0;
-    const total = progressData.reduce((sum: number, item: any) =>
-      sum + (typeof item.proficiency === 'number' ? item.proficiency : 0), 0);
-    return Math.round(total / progressData.length);
+    return progressData.filter((item: any) => (item.proficiency || 0) >= 3).length;
   }, [progressData]);
 
   // Derive nextClass from student's assigned schedule (class_day/class_time)
