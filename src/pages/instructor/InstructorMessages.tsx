@@ -64,53 +64,21 @@ const InstructorMessages = () => {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      // Resolve every student connected to this instructor — primary AND
-      // secondary assignments (student_instructors), the legacy primary column
-      // (students.instructor_id), and cover sessions. Otherwise students
-      // assigned only as secondary would show up as "Unknown" with no photo.
-      const studentIdSet = new Set<string>();
+      // Resolve every real (non-test) enrolled student the instructor can
+      // message. The RPC returns all active students (so "All enrolled"
+      // broadcasts work) plus an `is_mine` flag marking the instructor's own
+      // primary/secondary students. Mock/test accounts are excluded.
+      const { data: studentRows } = await supabase.rpc('get_messageable_students' as any);
 
-      const [{ data: siRows }, { data: legacyRows }, { data: coverRows }] = await Promise.all([
-        supabase
-          .from('student_instructors' as any)
-          .select('student_id')
-          .eq('instructor_id', session.user.id),
-        supabase
-          .from('students')
-          .select('id')
-          .eq('instructor_id', session.user.id),
-        supabase
-          .from('cover_sessions' as any)
-          .select('student_id')
-          .eq('cover_instructor_id', session.user.id),
-      ]);
-
-      (siRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
-      (legacyRows ?? []).forEach((r: any) => r?.id && studentIdSet.add(r.id));
-      (coverRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
-
-      const studentIds = Array.from(studentIdSet);
-
-      if (studentIds.length > 0) {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id, two_way_messaging')
-          .in('id', studentIds);
-        const twoWayMap = new Map((studentData ?? []).map((s: any) => [s.id, s.two_way_messaging ?? true]));
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url')
-          .in('id', studentIds);
-
-        if (profiles) {
-          setStudents(profiles.map(p => ({
-            id: p.id,
-            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
-            initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
-            avatarUrl: p.avatar_url,
-            twoWayMessaging: twoWayMap.get(p.id) ?? true,
-          })));
-        }
+      if (studentRows) {
+        setStudents((studentRows as any[]).map((p) => ({
+          id: p.id,
+          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+          initials: `${(p.first_name || ' ')[0]}${(p.last_name || ' ')[0]}`.toUpperCase(),
+          avatarUrl: p.avatar_url,
+          twoWayMessaging: p.two_way_messaging ?? true,
+          isMine: p.is_mine ?? false,
+        })));
       }
 
       // Fetch ALL messages involving this instructor
