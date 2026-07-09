@@ -34,6 +34,7 @@ import { capitalizeLevel, formatDateUS } from "@/lib/utils";
 import { MilestoneChip } from "@/components/progress/MilestoneChip";
 import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
 import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { RequirementsChecklist } from "@/components/progress/RequirementsChecklist";
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 import { Sparkles } from "lucide-react";
@@ -944,6 +945,11 @@ const InstructorStudents = () => {
                           Master every Core skill and reach Proficient on the rest to unlock advancement.
                         </p>
                       )}
+                      {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
+                        <RequirementsChecklist
+                          skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                        />
+                      )}
                     </section>
 
                     {/* Actions Section */}
@@ -982,6 +988,9 @@ const InstructorStudents = () => {
                             isReady={detailedStudent.isReady}
                           />
                         </div>
+                        <RequirementsChecklist
+                          skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                        />
                         {detailedStudent.skillProgress.map((skill) => (
                           <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
                             <div className="flex items-center justify-between gap-2">
