@@ -32,6 +32,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { notifyPush } from "@/lib/notifyPush";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import { capitalizeLevel, formatDateUS } from "@/lib/utils";
+import { MilestoneChip } from "@/components/progress/MilestoneChip";
+import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
+import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { milestoneLabel } from "@/lib/skillMilestones";
+import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
+import { Sparkles } from "lucide-react";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -46,6 +52,10 @@ interface Student {
   name: string;
   level: string;
   progress: number;
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
+  nextLevel: string | null;
   lastActive: string;
   avatar?: string;
   initials: string;
@@ -331,7 +341,7 @@ const InstructorStudents = () => {
       }
       
       setUpdatingSkillId(null);
-      toast({ title: "Skill updated", description: `${skillName} proficiency set to ${proficiency}%` });
+      toast({ title: "Skill updated", description: `${skillName} set to ${milestoneLabel(proficiency)}` });
       await refetch();
     } catch (error) {
       console.error('Error updating skill proficiency:', error);
