@@ -343,6 +343,9 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                         isReady={detailedStudent.isReady}
                       />
                     </div>
+                    <RequirementsChecklist
+                      skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
+                    />
                     {detailedStudent.skillProgress.map((skill) => (
                       <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
