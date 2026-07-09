@@ -952,6 +952,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_core: boolean
           level: string
           name: string
           order_index: number
@@ -961,6 +962,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_core?: boolean
           level?: string
           name: string
           order_index?: number
@@ -970,6 +972,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_core?: boolean
           level?: string
           name?: string
           order_index?: number

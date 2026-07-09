@@ -16,6 +16,9 @@ interface Student {
   id: string;
   name: string;
   progress: number;
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
   level: string;
   hasNotes: boolean;
   avatar?: string;
@@ -54,6 +57,9 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
       id: student.id,
       name: student.name,
       progress: 0,
+      masteredCount: 0,
+      skillTotal: 0,
+      isReady: false,
       level: student.level || 'Novice',
       hasNotes: false,
       avatar: student.avatar || undefined,

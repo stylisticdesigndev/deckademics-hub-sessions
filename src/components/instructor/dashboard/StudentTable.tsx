@@ -5,8 +5,8 @@ import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ProgressBar } from '@/components/progress/ProgressBar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MilestoneSummary } from '@/components/progress/MilestoneSummary';
 import {
   Table,
   TableBody,
@@ -20,6 +20,9 @@ interface Student {
   id: string;
   name: string;
   progress: number;
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
   level: string;
   hasNotes: boolean;
   avatar?: string;
@@ -102,14 +105,11 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectSt
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <ProgressBar 
-                              value={student.progress} 
-                              max={100}
-                              showPercentage={false}
-                            />
-                            <span className="text-xs">{student.progress}%</span>
-                          </div>
+                          <MilestoneSummary
+                            masteredCount={student.masteredCount}
+                            total={student.skillTotal}
+                            isReady={student.isReady}
+                          />
                         </TableCell>
                         <TableCell className="text-center capitalize">{student.level}</TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
@@ -152,10 +152,11 @@ export const StudentTable: React.FC<StudentTableProps> = ({ students, onSelectSt
                     <div className="text-xs text-muted-foreground mb-1">
                       {student.classTime || '—'}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <ProgressBar value={student.progress} max={100} showPercentage={false} size="sm" />
-                      <span className="text-xs">{student.progress}%</span>
-                    </div>
+                    <MilestoneSummary
+                      masteredCount={student.masteredCount}
+                      total={student.skillTotal}
+                      isReady={student.isReady}
+                    />
                   </div>
                 ))
               ) : (

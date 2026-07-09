@@ -23,10 +23,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         description={todayClasses === 0 ? "No classes scheduled today" : todayClasses === 1 ? "1 class today" : `${todayClasses} classes today`}
       />
       <StatsCard 
-        title="Average Progress"
+        title="Skills Mastered"
         value={`${averageProgress}%`}
         icon={<CheckCircle className="h-5 w-5" />}
-        description={totalStudents === 0 ? "No student data available" : `Across ${totalStudents} students`}
+        description={totalStudents === 0 ? "No student data available" : `Of all skills across ${totalStudents} students`}
       />
       <StatsCard 
         title="Total Students"

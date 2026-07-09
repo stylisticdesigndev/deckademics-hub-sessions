@@ -1,17 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProgressBar } from '@/components/progress/ProgressBar';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link } from 'react-router-dom';
-import { BarChart, PlusCircle } from 'lucide-react';
+import { BarChart, PlusCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { MilestoneChip } from '@/components/progress/MilestoneChip';
+import { computeReadiness } from '@/lib/skillMilestones';
 
 interface SkillWithProficiency {
   skill_name: string;
-  proficiency: number;
+  proficiency: number; // 0–3 milestone
   description: string | null;
+  is_core: boolean;
 }
 
 const StudentProgress = () => {
@@ -41,7 +43,7 @@ const StudentProgress = () => {
         // 2. Fetch admin-defined skills for this level
         const { data: progressSkills } = await supabase
           .from('progress_skills' as any)
-          .select('name, description, order_index')
+          .select('name, description, is_core, order_index')
           .eq('level', level)
           .order('order_index', { ascending: true });
         
@@ -61,6 +63,7 @@ const StudentProgress = () => {
           skill_name: ps.name,
           proficiency: progressMap.get(ps.name) || 0,
           description: ps.description,
+          is_core: ps.is_core ?? true,
         }));
         
         setSkills(matchedSkills);
@@ -76,10 +79,10 @@ const StudentProgress = () => {
 
   const activeSkills = skills;
   const isLoading = loading;
-  
-  const averageProgress = activeSkills.length > 0 
-    ? Math.round(activeSkills.reduce((sum, item) => sum + (item.proficiency || 0), 0) / activeSkills.length) 
-    : 0;
+
+  const readiness = computeReadiness(
+    activeSkills.map((s) => ({ proficiency: s.proficiency, is_core: s.is_core })),
+  );
   
   return (
     <>
@@ -104,17 +107,26 @@ const StudentProgress = () => {
               <CardHeader>
                 <CardTitle>Overall Progress</CardTitle>
                 <CardDescription>
-                  Your average proficiency across all skills
+                  Skills you've mastered at your current level
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Proficiency</span>
-                    <span className="font-medium">{averageProgress}%</span>
-                  </div>
-                  <ProgressBar value={averageProgress} max={100} />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-2xl font-bold tabular-nums">
+                    {readiness.masteredCount} <span className="text-base font-medium text-muted-foreground">of {readiness.total} Mastered</span>
+                  </span>
+                  {readiness.isReady && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-green-500/50 px-3 py-1 text-sm font-medium text-green-500">
+                      <Sparkles className="h-4 w-4" />
+                      Ready to Advance
+                    </span>
+                  )}
                 </div>
+                {!readiness.isReady && readiness.total > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Master every Core skill and reach Proficient on the rest to advance to the next level.
+                  </p>
+                )}
               </CardContent>
             </Card>
             
@@ -128,12 +140,14 @@ const StudentProgress = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {activeSkills.map((skill, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>{skill.skill_name}</span>
-                      <span className="font-medium">{skill.proficiency || 0}%</span>
-                    </div>
-                    <ProgressBar value={skill.proficiency || 0} max={100} />
+                  <div key={index} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="flex items-center gap-1.5">
+                      {skill.skill_name}
+                      {skill.is_core && (
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Core</span>
+                      )}
+                    </span>
+                    <MilestoneChip value={skill.proficiency || 0} />
                   </div>
                 ))}
               </CardContent>

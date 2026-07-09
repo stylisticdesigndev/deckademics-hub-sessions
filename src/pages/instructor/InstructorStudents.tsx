@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
@@ -22,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -32,6 +30,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { notifyPush } from "@/lib/notifyPush";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import { capitalizeLevel, formatDateUS } from "@/lib/utils";
+import { MilestoneChip } from "@/components/progress/MilestoneChip";
+import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
+import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { milestoneLabel } from "@/lib/skillMilestones";
+import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
+import { Sparkles } from "lucide-react";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -46,6 +50,10 @@ interface Student {
   name: string;
   level: string;
   progress: number;
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
+  nextLevel: string | null;
   lastActive: string;
   avatar?: string;
   initials: string;
@@ -331,7 +339,7 @@ const InstructorStudents = () => {
       }
       
       setUpdatingSkillId(null);
-      toast({ title: "Skill updated", description: `${skillName} proficiency set to ${proficiency}%` });
+      toast({ title: "Skill updated", description: `${skillName} set to ${milestoneLabel(proficiency)}` });
       await refetch();
     } catch (error) {
       console.error('Error updating skill proficiency:', error);
@@ -445,11 +453,12 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-3 flex items-center gap-3 min-w-0">
-                            <Progress value={student.progress} className="h-2 flex-1 min-w-0" />
-                            <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
-                              {student.progress}%
-                            </span>
+                          <div className="col-span-3 flex items-center min-w-0">
+                            <MilestoneSummary
+                              masteredCount={student.masteredCount}
+                              total={student.skillTotal}
+                              isReady={student.isReady}
+                            />
                           </div>
                           
                           <div className="col-span-3 flex justify-center">
@@ -531,10 +540,11 @@ const InstructorStudents = () => {
                               <div className="text-muted-foreground text-xs truncate">{student.email}</div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={student.progress} className="h-2 flex-grow" />
-                            <span className="text-xs font-medium w-8 text-right">{student.progress}%</span>
-                          </div>
+                          <MilestoneSummary
+                            masteredCount={student.masteredCount}
+                            total={student.skillTotal}
+                            isReady={student.isReady}
+                          />
                           <div className="flex gap-2">
                             <Button 
                               variant="outline" 
@@ -629,7 +639,7 @@ const InstructorStudents = () => {
                                       {student.name}
                                     </div>
                                     <div className="text-muted-foreground text-xs">
-                                      Progress: {student.progress}%
+                                      {student.masteredCount} of {student.skillTotal} Mastered
                                     </div>
                                   </div>
                                 </div>
@@ -830,9 +840,28 @@ const InstructorStudents = () => {
                     <section className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
                         <span>Overall Progress</span>
-                        <span className="text-foreground">{detailedStudent.progress}%</span>
+                        <MilestoneSummary
+                          className="text-foreground"
+                          masteredCount={detailedStudent.masteredCount}
+                          total={detailedStudent.skillTotal}
+                          isReady={detailedStudent.isReady}
+                        />
                       </div>
-                      <Progress value={detailedStudent.progress} className="h-2" />
+                      {detailedStudent.isReady && detailedStudent.nextLevel && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleLevelChange(detailedStudent.id, detailedStudent.nextLevel as string)}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Advance to {LEVEL_DISPLAY_MAP[detailedStudent.nextLevel as StudentLevel]}
+                        </Button>
+                      )}
+                      {!detailedStudent.isReady && detailedStudent.skillTotal > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Master every Core skill and reach Proficient on the rest to unlock advancement.
+                        </p>
+                      )}
                     </section>
 
                     {/* Actions Section */}
@@ -862,56 +891,54 @@ const InstructorStudents = () => {
                     {/* Admin-defined Skills */}
                     {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="font-medium text-base">Skills</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-base">Skills</h3>
+                          <MilestoneSummary
+                            className="text-muted-foreground"
+                            masteredCount={detailedStudent.masteredCount}
+                            total={detailedStudent.skillTotal}
+                            isReady={detailedStudent.isReady}
+                          />
+                        </div>
                         {detailedStudent.skillProgress.map((skill) => (
                           <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium flex items-center gap-1.5">
+                                {skill.skillName}
+                                {skill.isCore && (
+                                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Core</span>
+                                )}
+                              </span>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm">{skill.proficiency}%</span>
+                                <MilestoneChip value={skill.proficiency} />
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="text-xs"
                                   onClick={() => {
-                                    setUpdatingSkillId(skill.skillId);
+                                    setUpdatingSkillId(updatingSkillId === skill.skillId ? null : skill.skillId);
                                     setSkillProficiency(skill.proficiency);
                                     setSelectedStudent(detailedStudent.id);
                                   }}
                                 >
-                                  Update
+                                  {updatingSkillId === skill.skillId ? 'Close' : 'Update'}
                                 </Button>
                               </div>
                             </div>
-                            <Progress value={skill.proficiency} className="h-2" />
-                            
                             {updatingSkillId === skill.skillId && (
-                              <div className="pt-2 space-y-3">
-                                <div className="flex items-center justify-between text-sm mb-1">
-                                  <span className="text-muted-foreground">Proficiency</span>
-                                  <span className="font-medium">{skillProficiency}%</span>
-                                </div>
-                                <Slider
-                                  value={[skillProficiency]}
-                                  min={0}
-                                  max={100}
-                                  step={5}
-                                  onValueChange={([v]) => setSkillProficiency(v)}
-                                  className="[&_[role=slider]]:bg-green-500 [&_[role=slider]]:border-green-500 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&>span:first-child]:bg-gray-200 [&>span:first-child]:dark:bg-gray-700 [&>span:first-child>span]:bg-green-500"
+                              <div className="pt-2">
+                                <MilestoneSelector
+                                  value={skillProficiency}
+                                  onChange={(v) => {
+                                    setSkillProficiency(v);
+                                    handleSkillProficiencyUpdate(
+                                      detailedStudent.id,
+                                      skill.skillName,
+                                      v,
+                                      skill.progressRecordId,
+                                    );
+                                  }}
                                 />
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => setUpdatingSkillId(null)}>
-                                    Cancel
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleSkillProficiencyUpdate(
-                                    detailedStudent.id,
-                                    skill.skillName,
-                                    skillProficiency,
-                                    skill.progressRecordId
-                                  )}>
-                                    Save
-                                  </Button>
-                                </div>
                               </div>
                             )}
                           </div>

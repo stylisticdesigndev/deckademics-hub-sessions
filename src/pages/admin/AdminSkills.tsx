@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash, Info, GripVertical } from 'lucide-react';
@@ -25,7 +27,7 @@ const AdminSkills = () => {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<ProgressSkill | null>(null);
-  const [newSkill, setNewSkill] = useState({ name: '', description: '', level: 'novice' });
+  const [newSkill, setNewSkill] = useState({ name: '', description: '', level: 'novice', is_core: true });
 
   const getSkillsByLevel = (level: string) =>
     allSkills.filter(s => s.level === level).sort((a, b) => a.order_index - b.order_index);
@@ -34,15 +36,15 @@ const AdminSkills = () => {
     const levelSkills = getSkillsByLevel(newSkill.level);
     const maxOrder = levelSkills.reduce((max, s) => Math.max(max, s.order_index), 0);
     createSkill.mutate(
-      { name: newSkill.name, level: newSkill.level, description: newSkill.description || undefined, order_index: maxOrder + 1 },
-      { onSuccess: () => { setNewSkill({ name: '', description: '', level: selectedLevel }); setIsAddOpen(false); } }
+      { name: newSkill.name, level: newSkill.level, description: newSkill.description || undefined, is_core: newSkill.is_core, order_index: maxOrder + 1 },
+      { onSuccess: () => { setNewSkill({ name: '', description: '', level: selectedLevel, is_core: true }); setIsAddOpen(false); } }
     );
   };
 
   const handleUpdate = () => {
     if (!editingSkill) return;
     updateSkill.mutate(
-      { id: editingSkill.id, name: editingSkill.name, description: editingSkill.description, order_index: editingSkill.order_index },
+      { id: editingSkill.id, name: editingSkill.name, description: editingSkill.description, is_core: editingSkill.is_core, order_index: editingSkill.order_index },
       { onSuccess: () => setEditingSkill(null) }
     );
   };
@@ -72,9 +74,9 @@ const AdminSkills = () => {
         <Info className="h-4 w-4" />
         <AlertTitle>How Skills Work</AlertTitle>
         <AlertDescription>
-          Skills you create here appear on the instructor's student view and on each student's progress page. 
-          Instructors set proficiency percentages for each skill per student. This is separate from the 
-          Curriculum page, which serves as a reference overview of what's taught at each level.
+          Skills you create here appear on the instructor's student view and on each student's progress page.
+          Instructors grade each skill on a 3-point milestone scale: <strong>Needs Work</strong>, <strong>Proficient</strong>, and <strong>Mastered</strong>.
+          Mark a skill as <strong>Critical Core</strong> if it must be fully Mastered to advance a level; non-core (Creative) skills only need to reach Proficient.
         </AlertDescription>
       </Alert>
 
@@ -105,6 +107,16 @@ const AdminSkills = () => {
                   value={newSkill.description}
                   onChange={e => setNewSkill({ ...newSkill, description: e.target.value })}
                   placeholder="Describe what this skill covers"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <Label>Critical Core skill</Label>
+                  <p className="text-xs text-muted-foreground">Must be Mastered to advance the level.</p>
+                </div>
+                <Switch
+                  checked={newSkill.is_core}
+                  onCheckedChange={(v) => setNewSkill({ ...newSkill, is_core: v })}
                 />
               </div>
               <div className="grid gap-2">
@@ -153,6 +165,16 @@ const AdminSkills = () => {
                   onChange={e => setEditingSkill({ ...editingSkill, description: e.target.value })}
                 />
               </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <Label>Critical Core skill</Label>
+                  <p className="text-xs text-muted-foreground">Must be Mastered to advance the level.</p>
+                </div>
+                <Switch
+                  checked={editingSkill.is_core}
+                  onCheckedChange={(v) => setEditingSkill({ ...editingSkill, is_core: v })}
+                />
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -193,7 +215,15 @@ const AdminSkills = () => {
                 <Card key={skill.id}>
                   <CardContent className="flex items-start justify-between p-4">
                     <div className="flex-1">
-                      <h3 className="font-medium">{skill.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{skill.name}</h3>
+                        <Badge
+                          variant="outline"
+                          className={skill.is_core ? 'border-primary/50 text-primary' : 'border-muted-foreground/40 text-muted-foreground'}
+                        >
+                          {skill.is_core ? 'Core' : 'Creative'}
+                        </Badge>
+                      </div>
                       {skill.description && (
                         <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
                       )}

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ProgressItem {
   skill_name: string;
   proficiency: number;
+  is_core: boolean;
 }
 
 export function useStudentProgress(userId?: string) {
@@ -32,7 +33,7 @@ export function useStudentProgress(userId?: string) {
         // Get admin-defined skills for this level
         const { data: skillDefs } = await supabase
           .from('progress_skills' as any)
-          .select('name')
+          .select('name, is_core')
           .eq('level', level);
 
         const skillNames = new Set((skillDefs || []).map((s: any) => s.name));
@@ -60,6 +61,7 @@ export function useStudentProgress(userId?: string) {
           const result: ProgressItem[] = (skillDefs || []).map((s: any) => ({
             skill_name: s.name,
             proficiency: progressMap.get(s.name) || 0,
+            is_core: s.is_core ?? true,
           }));
           
           setProgress(result);

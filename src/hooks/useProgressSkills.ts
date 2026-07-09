@@ -6,6 +6,7 @@ export interface ProgressSkill {
   name: string;
   level: string;
   description: string | null;
+  is_core: boolean;
   order_index: number;
   created_at: string;
   updated_at: string;

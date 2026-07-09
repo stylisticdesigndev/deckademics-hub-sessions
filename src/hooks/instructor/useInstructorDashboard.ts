@@ -16,11 +16,15 @@ import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { isDataObject, hasProperty } from '@/utils/supabaseHelpers';
+import { computeReadiness, normalizeLevel } from '@/lib/skillMilestones';
 
 interface Student {
   id: string;
   name: string;
-  progress: number;
+  progress: number; // number of skills mastered at current level
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
   level: string;
   hasNotes: boolean;
   avatar?: string;
@@ -163,13 +167,14 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
 
         const { data: allProgressSkills } = await supabase
           .from('progress_skills' as any)
-          .select('name, level');
+          .select('name, level, is_core');
 
-        const skillsByLevel = new Map<string, string[]>();
+        const skillsByLevel = new Map<string, { name: string; is_core: boolean }[]>();
         (allProgressSkills || []).forEach((s: any) => {
-          const existing = skillsByLevel.get(s.level) || [];
-          existing.push(s.name);
-          skillsByLevel.set(s.level, existing);
+          const key = normalizeLevel(s.level);
+          const existing = skillsByLevel.get(key) || [];
+          existing.push({ name: s.name, is_core: s.is_core ?? true });
+          skillsByLevel.set(key, existing);
         });
 
         if (import.meta.env.DEV) console.log('Progress data:', progressData);
@@ -182,9 +187,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
           )
           .map(student => {
             const studentData = student as unknown as StudentData;
-            const studentLevel = (studentData?.level || 'novice').toLowerCase();
+            const studentLevel = normalizeLevel(studentData?.level);
             const adminSkills = skillsByLevel.get(studentLevel) || [];
-            const adminSkillSet = new Set(adminSkills);
+            const adminSkillSet = new Set(adminSkills.map(s => s.name));
 
             const proficiencyMap = new Map<string, number>();
             progressData
@@ -199,9 +204,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
                 proficiencyMap.set(p.skill_name as string, Number(p.proficiency) || 0);
               });
 
-            const averageStudentProgress = adminSkills.length > 0
-              ? Math.round(adminSkills.reduce((sum, skillName) => sum + (proficiencyMap.get(skillName) || 0), 0) / adminSkills.length)
-              : 0;
+            const readiness = computeReadiness(
+              adminSkills.map(s => ({ proficiency: proficiencyMap.get(s.name) || 0, is_core: s.is_core })),
+            );
 
             const studentProfile = studentData?.profiles;
             const firstName = studentProfile?.first_name || '';
@@ -210,7 +215,10 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
             return {
               id: student.id as string,
               name: `${firstName} ${lastName}`.trim() || 'Unknown Student',
-              progress: averageStudentProgress,
+              progress: readiness.masteredCount,
+              masteredCount: readiness.masteredCount,
+              skillTotal: readiness.total,
+              isReady: readiness.isReady,
               level: studentData?.level || 'Novice',
               hasNotes: !!studentData?.notes,
               avatar: studentProfile?.avatar_url || undefined,
@@ -232,8 +240,9 @@ export const useInstructorDashboard = (): InstructorDashboardData => {
         setStudents(formattedStudents);
 
         if (formattedStudents.length > 0) {
-          const totalProgress = formattedStudents.reduce((sum, student) => sum + student.progress, 0);
-          setAverageProgress(Math.round(totalProgress / formattedStudents.length));
+          const totalMastered = formattedStudents.reduce((sum, s) => sum + s.masteredCount, 0);
+          const totalSkills = formattedStudents.reduce((sum, s) => sum + s.skillTotal, 0);
+          setAverageProgress(totalSkills > 0 ? Math.round((totalMastered / totalSkills) * 100) : 0);
         } else {
           setAverageProgress(0);
         }

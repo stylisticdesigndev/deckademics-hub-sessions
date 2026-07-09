@@ -2,7 +2,6 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,8 @@ import { BookOpen, StickyNote, Eye, ChevronLeft, ChevronRight } from 'lucide-rea
 import { cn, capitalizeLevel, formatDateUS } from '@/lib/utils';
 import type { CalendarClass } from '@/hooks/instructor/useInstructorCalendar';
 import { useStudentClassDetail } from '@/hooks/instructor/useStudentClassDetail';
+import { MilestoneChip } from '@/components/progress/MilestoneChip';
+import { MilestoneSummary } from '@/components/progress/MilestoneSummary';
 
 const levelBadgeClass = (level: string) =>
   cn(
@@ -93,9 +94,12 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                     <BookOpen className="h-4 w-4 text-deckademics-primary" />
                     <h3 className="font-medium">Skill Progress</h3>
                     {!isLoading && data && (
-                      <span className="ml-auto text-sm text-muted-foreground">
-                        {data.overallProgress}% overall
-                      </span>
+                      <MilestoneSummary
+                        className="ml-auto text-muted-foreground"
+                        masteredCount={data.masteredCount}
+                        total={data.skillTotal}
+                        isReady={data.isReady}
+                      />
                     )}
                   </div>
                   {isLoading ? (
@@ -105,12 +109,14 @@ export function CalendarClassDetail({ classItem, open, onOpenChange }: CalendarC
                   ) : data && data.skills.length > 0 ? (
                     <div className="space-y-3">
                       {data.skills.map((skill) => (
-                        <div key={skill.skillId} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>{skill.skillName}</span>
-                            <span className="text-muted-foreground">{skill.proficiency}%</span>
-                          </div>
-                          <Progress value={skill.proficiency} className="h-2" />
+                        <div key={skill.skillId} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="flex items-center gap-1.5">
+                            {skill.skillName}
+                            {skill.isCore && (
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Core</span>
+                            )}
+                          </span>
+                          <MilestoneChip value={skill.proficiency} />
                         </div>
                       ))}
                     </div>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { computeReadiness, normalizeLevel } from '@/lib/skillMilestones';
 
 interface StudentProgressOverview {
   id: string;
@@ -8,7 +9,9 @@ interface StudentProgressOverview {
   email: string;
   level: string;
   instructorName: string | null;
-  overallProgress: number;
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
 }
 
 export const useAdminProgress = () => {
@@ -36,45 +39,38 @@ export const useAdminProgress = () => {
       }
 
       // Fetch all curriculum modules and lessons
-      const [modulesRes, lessonsRes, progressRes] = await Promise.all([
-        supabase.from('curriculum_modules').select('id, title, level'),
-        supabase.from('curriculum_lessons').select('id, title, module_id'),
+      // Fetch admin-defined skills (with Core flag) and all student progress rows.
+      const [skillsRes, progressRes] = await Promise.all([
+        supabase.from('progress_skills' as any).select('name, level, is_core'),
         supabase.from('student_progress').select('student_id, skill_name, proficiency'),
       ]);
 
-      const modules = modulesRes.data || [];
-      const lessons = lessonsRes.data || [];
+      const allSkills = (skillsRes.data as any[]) || [];
       const allProgress = progressRes.data || [];
 
-      // Build lesson lookup by module
-      const lessonsByModule = new Map<string, any[]>();
-      for (const lesson of lessons) {
-        const arr = lessonsByModule.get(lesson.module_id) || [];
-        arr.push(lesson);
-        lessonsByModule.set(lesson.module_id, arr);
+      // Group skills by (normalized) level.
+      const skillsByLevel = new Map<string, { name: string; is_core: boolean }[]>();
+      for (const sk of allSkills) {
+        const key = normalizeLevel(sk.level);
+        const arr = skillsByLevel.get(key) || [];
+        arr.push({ name: sk.name, is_core: sk.is_core ?? true });
+        skillsByLevel.set(key, arr);
       }
 
       return (students || []).map((s: any) => {
         const profile = s.profiles;
         const instructor = s.instructors;
-        const studentProgress = allProgress.filter((p: any) => p.student_id === s.id && p.skill_name !== 'Overall Progress');
+        const level = normalizeLevel(s.level);
+        const levelSkills = skillsByLevel.get(level) || [];
 
-        // Calculate overall progress: average of module completion percentages
-        let overallProgress = 0;
-        if (modules.length > 0) {
-          const moduleCompletions = modules.map(mod => {
-            const modLessons = lessonsByModule.get(mod.id) || [];
-            if (modLessons.length === 0) return 0;
+        const profByName = new Map<string, number>();
+        allProgress
+          .filter((p: any) => p.student_id === s.id)
+          .forEach((p: any) => profByName.set(p.skill_name, p.proficiency ?? 0));
 
-            const completedCount = modLessons.filter(lesson => {
-              const skillName = `${mod.title} - ${lesson.title}`;
-              return studentProgress.some((p: any) => p.skill_name === skillName && (p.proficiency ?? 0) > 0);
-            }).length;
-
-            return (completedCount / modLessons.length) * 100;
-          });
-          overallProgress = Math.round(moduleCompletions.reduce((sum, v) => sum + v, 0) / moduleCompletions.length);
-        }
+        const readiness = computeReadiness(
+          levelSkills.map(sk => ({ proficiency: profByName.get(sk.name) || 0, is_core: sk.is_core })),
+        );
 
         return {
           id: s.id,
@@ -85,7 +81,9 @@ export const useAdminProgress = () => {
           instructorName: instructor
             ? `${instructor.profiles?.first_name || ''} ${instructor.profiles?.last_name || ''}`.trim()
             : null,
-          overallProgress,
+          masteredCount: readiness.masteredCount,
+          skillTotal: readiness.total,
+          isReady: readiness.isReady,
         };
       });
     },

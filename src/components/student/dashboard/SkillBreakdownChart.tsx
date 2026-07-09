@@ -2,30 +2,24 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { MILESTONE_FILL, milestoneLabel } from '@/lib/skillMilestones';
 
 interface SkillData {
   skill_name: string;
-  proficiency: number;
+  proficiency: number; // 0–3 milestone
 }
 
 interface SkillBreakdownChartProps {
   skills: SkillData[];
 }
 
-const SKILL_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--secondary))',
-  'hsl(133, 43%, 55%)',
-  'hsl(262, 83%, 73%)',
-  'hsl(45, 93%, 58%)',
-  'hsl(200, 80%, 55%)',
-];
-
-const SkillRing = ({ name, value, color }: { name: string; value: number; color: string }) => {
+const SkillRing = ({ name, value }: { name: string; value: number }) => {
+  const fraction = Math.max(0, Math.min(3, value)) / 3;
   const data = [
-    { value: value },
-    { value: 100 - value },
+    { value: fraction * 100 },
+    { value: 100 - fraction * 100 },
   ];
+  const color = MILESTONE_FILL[Math.max(0, Math.min(3, value))];
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -49,10 +43,10 @@ const SkillRing = ({ name, value, color }: { name: string; value: number; color:
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold text-foreground">{value}%</span>
+          <span className="text-xs font-bold text-foreground">{value}/3</span>
         </div>
       </div>
-      <span className="text-xs text-muted-foreground text-center truncate w-20">{name}</span>
+      <span className="text-xs text-muted-foreground text-center truncate w-20" title={`${name} — ${milestoneLabel(value)}`}>{name}</span>
     </div>
   );
 };
@@ -83,12 +77,11 @@ export const SkillBreakdownChart = ({ skills }: SkillBreakdownChartProps) => {
         )}
       </div>
       <div className="flex flex-wrap gap-4 justify-center">
-        {displayed.map((skill, i) => (
+        {displayed.map((skill) => (
           <SkillRing
             key={skill.skill_name}
             name={skill.skill_name}
             value={skill.proficiency}
-            color={SKILL_COLORS[i % SKILL_COLORS.length]}
           />
         ))}
       </div>

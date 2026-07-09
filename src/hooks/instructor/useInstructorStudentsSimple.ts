@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
 
 export interface StudentNote {
   id: string;
@@ -13,7 +14,8 @@ export interface StudentNote {
 export interface SkillProgress {
   skillId: string;
   skillName: string;
-  proficiency: number;
+  proficiency: number; // 0–3 milestone
+  isCore: boolean;
   progressRecordId?: string;
 }
 
@@ -21,7 +23,11 @@ export interface Student {
   id: string;
   name: string;
   level: string;
-  progress: number;
+  progress: number; // legacy: number of skills mastered at current level
+  masteredCount: number;
+  skillTotal: number;
+  isReady: boolean;
+  nextLevel: string | null;
   lastActive: string;
   avatar?: string;
   initials: string;
@@ -136,7 +142,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .order('created_at', { ascending: false }),
           supabase
             .from('progress_skills' as any)
-            .select('id, name, level, order_index')
+            .select('id, name, level, is_core, order_index')
             .order('order_index', { ascending: true }),
         ]);
 
@@ -196,7 +202,7 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           const normalizedLevel = studentLevel.toLowerCase();
 
           // Build skillProgress from admin-defined progress_skills
-          const levelSkills = allProgressSkills.filter((s: any) => s.level.toLowerCase() === normalizedLevel);
+          const levelSkills = allProgressSkills.filter((s: any) => normalizeLevel(s.level) === normalizeLevel(normalizedLevel));
           const studentProgressMap = progressRecordMap[student.id] || {};
           const skillProgress: SkillProgress[] = levelSkills.map((skill: any) => {
             const record = studentProgressMap[skill.name];
@@ -204,20 +210,25 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
               skillId: skill.id,
               skillName: skill.name,
               proficiency: record?.proficiency || 0,
+              isCore: skill.is_core ?? true,
               progressRecordId: record?.id,
             };
           });
 
-          const overallProgress = skillProgress.length
-            ? Math.round(skillProgress.reduce((sum, s) => sum + s.proficiency, 0) / skillProgress.length)
-            : 0;
+          const readiness = computeReadiness(
+            skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore })),
+          );
 
           return {
             id: student.id,
             name: `${firstName} ${lastName}`.trim() || profile?.email || 'Unknown Student',
             email: profile?.email || '',
             avatar: profile?.avatar_url,
-            progress: overallProgress,
+            progress: readiness.masteredCount,
+            masteredCount: readiness.masteredCount,
+            skillTotal: readiness.total,
+            isReady: readiness.isReady,
+            nextLevel: nextLevelOf(student.level),
             level: student.level || 'novice',
             initials: (firstName[0] || '') + (lastName[0] || ''),
             enrollmentDate,

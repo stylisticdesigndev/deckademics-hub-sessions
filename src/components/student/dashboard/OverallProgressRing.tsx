@@ -1,17 +1,21 @@
 import React from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
+import { Sparkles } from 'lucide-react';
 
 interface OverallProgressRingProps {
-  progress: number;
+  masteredCount: number;
+  total: number;
+  isReady?: boolean;
 }
 
-export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
+export const OverallProgressRing = ({ masteredCount, total, isReady = false }: OverallProgressRingProps) => {
+  const progress = total > 0 ? Math.round((masteredCount / total) * 100) : 0;
   const data = [
     { name: 'bg', value: 100, fill: 'hsl(var(--muted))' },
     { name: 'progress', value: progress, fill: 'hsl(var(--primary))' },
   ];
 
-  if (progress === 0) {
+  if (total === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[200px] h-full rounded-xl bg-card border border-border p-6">
         <h3 className="text-sm font-semibold text-foreground mb-4 self-start">Overall Progress</h3>
@@ -20,7 +24,7 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
             <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-foreground">0%</span>
+            <span className="text-2xl font-bold text-foreground">0</span>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-3">No progress data yet</p>
@@ -48,11 +52,17 @@ export const OverallProgressRing = ({ progress }: OverallProgressRingProps) => {
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-semibold text-foreground">{progress}%</span>
-          <span className="text-xs text-muted-foreground">Overall</span>
+          <span className="text-3xl font-semibold text-foreground">{masteredCount}/{total}</span>
+          <span className="text-xs text-muted-foreground">Mastered</span>
         </div>
       </div>
       </div>
+      {isReady && (
+        <div className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-green-500">
+          <Sparkles className="h-3.5 w-3.5" />
+          Ready to Advance
+        </div>
+      )}
     </div>
   );
 };
