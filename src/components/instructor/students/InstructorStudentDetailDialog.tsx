@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon, CalendarClock, Pencil, Plus, Trash2, GripVertical } from "lucide-react";
+import { Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon, CalendarClock, Pencil, Plus, Trash2, GripVertical, Sparkles } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { format } from "date-fns";
 import { cn, capitalizeLevel } from "@/lib/utils";
@@ -27,6 +26,11 @@ import { notifyPush } from "@/lib/notifyPush";
 import { useToast } from "@/hooks/use-toast";
 import { useScheduleChangeRequests } from "@/hooks/useScheduleChangeRequests";
 import type { Student, StudentNote } from "@/hooks/instructor/useInstructorStudentsSimple";
+import { MilestoneChip } from "@/components/progress/MilestoneChip";
+import { MilestoneSelector } from "@/components/progress/MilestoneSelector";
+import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
+import { milestoneLabel, capitalizeLevel as _cl } from "@/lib/skillMilestones";
+import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 
 interface Props {
   open: boolean;
