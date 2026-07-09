@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
 import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats';
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
 import { TodayAttendanceSection } from '@/components/instructor/dashboard/TodayAttendanceSection';
 import { InstructorStudentDetailDialog } from '@/components/instructor/students/InstructorStudentDetailDialog';
+import { GradingWalkthrough } from '@/components/instructor/GradingWalkthrough';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
@@ -47,6 +49,19 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const selectedStudent = selectedStudentId ? richStudents.find(s => s.id === selectedStudentId) ?? null : null;
 
+  // First-time grading walkthrough (persisted per instructor).
+  const walkthroughKey = instructorId ? `grading-walkthrough-seen-${instructorId}` : null;
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  useEffect(() => {
+    if (!walkthroughKey) return;
+    if (localStorage.getItem(walkthroughKey) !== 'true') {
+      setWalkthroughOpen(true);
+    }
+  }, [walkthroughKey]);
+  const completeWalkthrough = () => {
+    if (walkthroughKey) localStorage.setItem(walkthroughKey, 'true');
+  };
+
   // Build Today's Students list from the same source as Today's Attendance, so
   // the two modules always agree on the count. Merge progress/notes data from
   // the dashboard hook when available; fall back to safe defaults otherwise.
@@ -77,6 +92,15 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
 
       <div className="flex items-start justify-between">
         <WelcomeSection />
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-2"
+          onClick={() => setWalkthroughOpen(true)}
+        >
+          <HelpCircle className="h-4 w-4" />
+          How grading works
+        </Button>
       </div>
 
       {fetchError && (
@@ -117,6 +141,12 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
         student={selectedStudent}
         instructorId={instructorId}
         refetch={refetchRich}
+      />
+
+      <GradingWalkthrough
+        open={walkthroughOpen}
+        onOpenChange={setWalkthroughOpen}
+        onComplete={completeWalkthrough}
       />
     </div>
   );
