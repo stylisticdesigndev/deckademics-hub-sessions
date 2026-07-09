@@ -366,6 +366,19 @@ const InstructorStudents = () => {
           </div>
         </section>
 
+        {studentsMissingPhoto.length > 0 && (
+          <Alert className="border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
+            <ImageOff className="h-4 w-4" />
+            <AlertTitle>
+              {studentsMissingPhoto.length} student{studentsMissingPhoto.length === 1 ? '' : 's'} missing a profile photo
+            </AlertTitle>
+            <AlertDescription>
+              Please remind {studentsMissingPhoto.map(s => s.name).join(', ')} to add a profile photo.
+              Photos let other instructors identify each student during cover sessions.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
