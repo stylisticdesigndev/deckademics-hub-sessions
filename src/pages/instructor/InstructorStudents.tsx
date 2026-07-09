@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
+import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +75,9 @@ const InstructorStudents = () => {
   const { toast } = useToast();
   const { userData, session } = useAuth();
   const instructorId = session?.user?.id;
+  const navigate = useNavigate();
+
+  const messageStudent = (studentId: string) => navigate(`/instructor/messages?to=${studentId}`);
 
   // Use the simplified hook to fetch students
   const { students: fetchedStudents, loading, refetch, setStudents: updateStudents } = useInstructorStudentsSimple(instructorId);
