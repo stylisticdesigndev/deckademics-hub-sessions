@@ -819,6 +819,15 @@ const InstructorStudents = () => {
                           <MessageSquare className="h-4 w-4 mr-1.5" /> Message
                         </Button>
                       </div>
+                      {isMissingPhoto(detailedStudent) && (
+                        <Alert className="mt-1 border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
+                          <ImageOff className="h-4 w-4" />
+                          <AlertTitle>No profile photo</AlertTitle>
+                          <AlertDescription>
+                            Remind this student to upload a photo so cover instructors can identify them.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   </div>
                 </DialogHeader>
