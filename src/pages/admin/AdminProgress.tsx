@@ -3,10 +3,10 @@ import { useAdminProgress } from '@/hooks/useAdminProgress';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, TrendingUp, Users, BarChart3 } from 'lucide-react';
+import { MilestoneSummary } from '@/components/progress/MilestoneSummary';
 
 const AdminProgress = () => {
   const { data: students = [], isLoading } = useAdminProgress();
@@ -33,10 +33,7 @@ const AdminProgress = () => {
     });
   }, [students, levelFilter, instructorFilter, searchQuery]);
 
-  const avgProgress = useMemo(() => {
-    if (filtered.length === 0) return 0;
-    return Math.round(filtered.reduce((sum, s) => sum + s.overallProgress, 0) / filtered.length);
-  }, [filtered]);
+  const readyCount = useMemo(() => filtered.filter(s => s.isReady).length, [filtered]);
 
   const levelCounts = useMemo(() => {
     const counts: Record<string, number> = { novice: 0, amateur: 0, intermediate: 0, advanced: 0 };
@@ -72,8 +69,8 @@ const AdminProgress = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-5 w-5 mx-auto mb-1 text-primary" />
-            <p className="text-2xl font-bold">{avgProgress}%</p>
-            <p className="text-xs text-muted-foreground">Avg Progress</p>
+            <p className="text-2xl font-bold">{readyCount}</p>
+            <p className="text-xs text-muted-foreground">Ready to Advance</p>
           </CardContent>
         </Card>
         <Card>
@@ -148,7 +145,7 @@ const AdminProgress = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Level</TableHead>
                 <TableHead>Instructor</TableHead>
-                <TableHead>Overall Progress</TableHead>
+                <TableHead>Skills Mastered</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,10 +165,11 @@ const AdminProgress = () => {
                       {student.instructorName || 'Unassigned'}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3 min-w-[180px]">
-                        <Progress value={student.overallProgress} className="flex-1" />
-                        <span className="text-sm font-medium w-10 text-right">{student.overallProgress}%</span>
-                      </div>
+                      <MilestoneSummary
+                        masteredCount={student.masteredCount}
+                        total={student.skillTotal}
+                        isReady={student.isReady}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
