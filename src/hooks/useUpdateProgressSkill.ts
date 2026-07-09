@@ -5,7 +5,7 @@ export function useUpdateProgressSkill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (skill: { id: string; name?: string; level?: string; description?: string | null; order_index?: number }) => {
+    mutationFn: async (skill: { id: string; name?: string; level?: string; description?: string | null; is_core?: boolean; order_index?: number }) => {
       const { id, ...updates } = skill;
       const { data, error } = await supabase
         .from('progress_skills' as any)

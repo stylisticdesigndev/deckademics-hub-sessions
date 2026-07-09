@@ -5,7 +5,7 @@ export function useCreateProgressSkill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (skill: { name: string; level: string; description?: string; order_index: number }) => {
+    mutationFn: async (skill: { name: string; level: string; description?: string; is_core?: boolean; order_index: number }) => {
       const { data, error } = await supabase
         .from('progress_skills' as any)
         .insert(skill as any)
