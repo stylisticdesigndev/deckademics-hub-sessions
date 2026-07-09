@@ -495,10 +495,19 @@ const InstructorStudents = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-2 flex justify-center">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                          <div className="col-span-2 flex justify-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => messageStudent(student.id)}
+                              className="text-xs px-2"
+                              title="Message student"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openNoteDialog(student.id)}
                               className="text-xs px-2"
                             >
@@ -549,9 +558,17 @@ const InstructorStudents = () => {
                             isReady={student.isReady}
                           />
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => messageStudent(student.id)}
+                              className="text-xs flex-1"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Message
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openNoteDialog(student.id)}
                               className="text-xs flex-1"
                             >
