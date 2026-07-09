@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { differenceInDays } from 'date-fns';
 import { formatDateTimeUS } from '@/lib/utils';
 import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
+import AttachmentImage from '@/components/messages/AttachmentImage';
 
 const REPLY_WINDOW_DAYS = 7;
 
@@ -119,13 +120,11 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                     }`}
                   >
                     {msg.image_url && (
-                      <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
-                        <img
-                          src={msg.image_url}
-                          alt="Attachment"
-                          className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
-                        />
-                      </a>
+                      <AttachmentImage
+                        value={msg.image_url}
+                        wrapperClassName="block mb-1.5"
+                        imgClassName="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
+                      />
                     )}
                     {msg.content && renderTextWithLinks(msg.content, { isSentByMe: isMe })}
                   </div>
