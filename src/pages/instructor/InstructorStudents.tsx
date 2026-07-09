@@ -782,6 +782,15 @@ const InstructorStudents = () => {
                           </a>
                         )}
                       </div>
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => messageStudent(detailedStudent.id)}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1.5" /> Message
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </DialogHeader>
