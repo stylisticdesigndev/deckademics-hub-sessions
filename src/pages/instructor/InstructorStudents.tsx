@@ -573,6 +573,11 @@ const InstructorStudents = () => {
                             <div className="flex-1 min-w-0">
                               <div className="font-medium truncate">{student.name}</div>
                               <div className="text-muted-foreground text-xs truncate">{student.email}</div>
+                              {isMissingPhoto(student) && (
+                                <Badge variant="outline" className="mt-1 border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] gap-1">
+                                  <ImageOff className="h-3 w-3" /> Photo needed
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <MilestoneSummary
