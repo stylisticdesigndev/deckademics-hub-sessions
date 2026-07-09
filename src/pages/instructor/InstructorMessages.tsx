@@ -347,11 +347,21 @@ const InstructorMessages = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <Label>To (select students)</Label>
-                  <Button variant="ghost" size="sm" onClick={selectAllStudents} type="button">
-                    {selectedStudents.length === activeStudents.length ? 'Deselect All' : 'Select All'}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button variant="outline" size="sm" type="button" onClick={selectMyStudents}>
+                      My students ({myStudentIds.length})
+                    </Button>
+                    <Button variant="outline" size="sm" type="button" onClick={selectEnrolledStudents}>
+                      All enrolled ({activeStudents.length})
+                    </Button>
+                    {selectedStudents.length > 0 && (
+                      <Button variant="ghost" size="sm" type="button" onClick={() => setSelectedStudents([])}>
+                        Clear
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {activeStudents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No assigned students found.</p>
