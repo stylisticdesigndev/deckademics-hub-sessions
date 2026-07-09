@@ -382,6 +382,19 @@ const InstructorStudents = () => {
           </Alert>
         )}
 
+        {studentsReadyToAdvance.length > 0 && (
+          <Alert className="border-green-500/50 text-green-700 dark:text-green-400 [&>svg]:text-green-500">
+            <Sparkles className="h-4 w-4" />
+            <AlertTitle>
+              {studentsReadyToAdvance.length} student{studentsReadyToAdvance.length === 1 ? '' : 's'} ready to advance a level
+            </AlertTitle>
+            <AlertDescription>
+              {studentsReadyToAdvance.map(s => s.name).join(', ')} meet the skill requirements to move up.
+              This is just a reminder — advance them whenever you feel they're ready.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
