@@ -9,6 +9,7 @@ import { formatDateTimeUS } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { renderTextWithLinks } from '@/utils/renderTextWithLinks';
+import AttachmentImage from '@/components/messages/AttachmentImage';
 
 interface ThreadMessage {
   id: string;
