@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon } from 'lucide-react';
+import { Search, Filter, X, Edit, Pencil, Plus, Trash2, CalendarClock, GripVertical, Mail, MessageSquare, Phone, Calendar, Clock, CheckCircle2, BookOpen, User as UserIcon, ImageOff } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useInstructorStudentsSimple } from "@/hooks/instructor/useInstructorStudentsSimple";
