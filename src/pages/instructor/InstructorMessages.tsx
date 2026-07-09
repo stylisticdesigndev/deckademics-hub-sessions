@@ -42,6 +42,7 @@ const InstructorMessages = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('conversations');
+  const [recipientTab, setRecipientTab] = useState<'mine' | 'all'>('mine');
 
   // Compose state
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
