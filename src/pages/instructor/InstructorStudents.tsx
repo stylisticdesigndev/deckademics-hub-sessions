@@ -189,6 +189,10 @@ const InstructorStudents = () => {
     Intermediate: filteredStudents.filter(s => s.level.toLowerCase() === 'intermediate'),
     Advanced: filteredStudents.filter(s => s.level.toLowerCase() === 'advanced'),
   };
+
+  const isMissingPhoto = (s: Student) =>
+    (!s.avatar || s.avatar.trim() === '') && (s.enrollmentStatus ?? 'active') === 'active';
+  const studentsMissingPhoto = students.filter(isMissingPhoto);
   
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
