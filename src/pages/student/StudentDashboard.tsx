@@ -63,8 +63,16 @@ const StudentDashboard = ({
     ? progressData.map((p: any) => ({
         skill_name: p.skill_name || 'Unknown',
         proficiency: typeof p.proficiency === 'number' ? p.proficiency : 0,
+        is_core: p.is_core ?? true,
       }))
     : [];
+  const masteredCount = activeSkills.filter((s) => (s.proficiency || 0) >= 3).length;
+  const skillTotal = activeSkills.length;
+  const isReady =
+    skillTotal > 0 &&
+    activeSkills.every((s) =>
+      s.is_core ? (s.proficiency || 0) >= 3 : (s.proficiency || 0) >= 2,
+    );
   const activeAttendance = attendance;
   const activeUpcomingClasses = upcomingClasses;
   const activeAnnouncements = announcements;
@@ -98,7 +106,7 @@ const StudentDashboard = ({
       />
 
       <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
-        <OverallProgressRing progress={activeStudentData.totalProgress} />
+        <OverallProgressRing masteredCount={masteredCount} total={skillTotal} isReady={isReady} />
         <SkillBreakdownChart skills={activeSkills} />
       </section>
 
