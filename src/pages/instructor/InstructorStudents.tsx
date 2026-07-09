@@ -193,6 +193,9 @@ const InstructorStudents = () => {
   const isMissingPhoto = (s: Student) =>
     (!s.avatar || s.avatar.trim() === '') && (s.enrollmentStatus ?? 'active') === 'active';
   const studentsMissingPhoto = students.filter(isMissingPhoto);
+  const studentsReadyToAdvance = students.filter(
+    (s) => s.isReady && s.nextLevel && (s.enrollmentStatus ?? 'active') === 'active',
+  );
   
   const handleLevelChange = async (studentId: string, newLevel: string) => {
     try {
@@ -375,6 +378,19 @@ const InstructorStudents = () => {
             <AlertDescription>
               Please remind {studentsMissingPhoto.map(s => s.name).join(', ')} to add a profile photo.
               Photos let other instructors identify each student during cover sessions.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {studentsReadyToAdvance.length > 0 && (
+          <Alert className="border-green-500/50 text-green-700 dark:text-green-400 [&>svg]:text-green-500">
+            <Sparkles className="h-4 w-4" />
+            <AlertTitle>
+              {studentsReadyToAdvance.length} student{studentsReadyToAdvance.length === 1 ? '' : 's'} ready to advance a level
+            </AlertTitle>
+            <AlertDescription>
+              {studentsReadyToAdvance.map(s => s.name).join(', ')} meet the skill requirements to move up.
+              This is just a reminder — advance them whenever you feel they're ready.
             </AlertDescription>
           </Alert>
         )}
