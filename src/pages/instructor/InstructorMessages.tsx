@@ -95,7 +95,7 @@ const InstructorMessages = () => {
           .from('students')
           .select('id, two_way_messaging')
           .in('id', studentIds);
-        const twoWayMap = new Map(studentData.map((s: any) => [s.id, s.two_way_messaging ?? true]));
+        const twoWayMap = new Map((studentData ?? []).map((s: any) => [s.id, s.two_way_messaging ?? true]));
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, avatar_url')
