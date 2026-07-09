@@ -148,6 +148,20 @@ const InstructorMessages = () => {
     }
   }, [conversations, searchParams, setSearchParams]);
 
+  // Deep-link: open a thread with a specific student from a "Message" button
+  // on the Students or Calendar pages, even if no messages exist yet.
+  useEffect(() => {
+    const to = searchParams.get('to');
+    if (!to) return;
+    if (students.some(s => s.id === to)) {
+      setActiveStudentId(to);
+      setActiveTab('conversations');
+      const next = new URLSearchParams(searchParams);
+      next.delete('to');
+      setSearchParams(next, { replace: true });
+    }
+  }, [students, searchParams, setSearchParams]);
+
   // Get messages for the active thread
   const threadMessages = useMemo(() => {
     if (!activeStudentId) return [];
