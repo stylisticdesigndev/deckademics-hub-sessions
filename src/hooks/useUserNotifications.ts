@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface UserNotification {
   id: string;
-  type: 'message' | 'announcement';
+  type: 'message' | 'announcement' | 'photo_reminder';
   title: string;
   message: string;
   read: boolean;
@@ -66,7 +66,41 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
           created_at: a.published_at || new Date().toISOString(),
         }));
 
-      return [...messageNotifications, ...announcementNotifications].sort(
+      // Instructor-only: persistent reminder about assigned students missing a
+      // profile photo. Photos let cover instructors identify students, so this
+      // reminder cannot be dismissed until every student has one.
+      const photoReminders: UserNotification[] = [];
+      if (userRole === 'instructor') {
+        const { data: assigned } = await supabase
+          .from('students')
+          .select('id, enrollment_status')
+          .eq('enrollment_status', 'active');
+        const ids = (assigned || []).map((s: any) => s.id);
+        if (ids.length > 0) {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', ids);
+          const missing = (profs || []).filter(
+            (p: any) => !p.avatar_url || String(p.avatar_url).trim() === '',
+          );
+          if (missing.length > 0) {
+            const names = missing
+              .map((p: any) => `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'A student')
+              .join(', ');
+            photoReminders.push({
+              id: 'photo-reminder',
+              type: 'photo_reminder',
+              title: `${missing.length} student${missing.length === 1 ? '' : 's'} missing a profile photo`,
+              message: `Please remind ${names} to add a photo so cover instructors can identify them.`,
+              read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      return [...photoReminders, ...messageNotifications, ...announcementNotifications].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     },
@@ -78,6 +112,10 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
 
   const markAsRead = useMutation({
     mutationFn: async (notification: UserNotification) => {
+      if (notification.type === 'photo_reminder') {
+        // Persistent reminder — cannot be marked read until resolved.
+        return;
+      }
       if (notification.type === 'message') {
         const { error } = await supabase
           .from('messages')
