@@ -63,14 +63,38 @@ const InstructorMessages = () => {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      // Fetch assigned students
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('id, two_way_messaging')
-        .eq('instructor_id', session.user.id);
+      // Resolve every student connected to this instructor — primary AND
+      // secondary assignments (student_instructors), the legacy primary column
+      // (students.instructor_id), and cover sessions. Otherwise students
+      // assigned only as secondary would show up as "Unknown" with no photo.
+      const studentIdSet = new Set<string>();
 
-      if (studentData && studentData.length > 0) {
-        const studentIds = studentData.map(s => s.id);
+      const [{ data: siRows }, { data: legacyRows }, { data: coverRows }] = await Promise.all([
+        supabase
+          .from('student_instructors' as any)
+          .select('student_id')
+          .eq('instructor_id', session.user.id),
+        supabase
+          .from('students')
+          .select('id')
+          .eq('instructor_id', session.user.id),
+        supabase
+          .from('cover_sessions' as any)
+          .select('student_id')
+          .eq('cover_instructor_id', session.user.id),
+      ]);
+
+      (siRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
+      (legacyRows ?? []).forEach((r: any) => r?.id && studentIdSet.add(r.id));
+      (coverRows ?? []).forEach((r: any) => r?.student_id && studentIdSet.add(r.student_id));
+
+      const studentIds = Array.from(studentIdSet);
+
+      if (studentIds.length > 0) {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('id, two_way_messaging')
+          .in('id', studentIds);
         const twoWayMap = new Map(studentData.map((s: any) => [s.id, s.two_way_messaging ?? true]));
         const { data: profiles } = await supabase
           .from('profiles')
