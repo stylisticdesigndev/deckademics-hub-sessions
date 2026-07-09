@@ -252,9 +252,25 @@ const InstructorMessages = () => {
     setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
-  const myStudentIds = useMemo(() => students.filter(s => s.isMine).map(s => s.id), [students]);
-  const selectMyStudents = () => setSelectedStudents(myStudentIds);
-  const selectEnrolledStudents = () => setSelectedStudents(students.map(s => s.id));
+  const byName = (a: StudentOption, b: StudentOption) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  const myStudents = useMemo(
+    () => students.filter(s => s.isMine).sort(byName),
+    [students],
+  );
+  const allStudents = useMemo(() => [...students].sort(byName), [students]);
+
+  const visibleStudents = recipientTab === 'mine' ? myStudents : allStudents;
+
+  const selectAllVisible = () => {
+    const ids = visibleStudents.map(s => s.id);
+    const allSelected = ids.every(id => selectedStudents.includes(id));
+    setSelectedStudents(prev =>
+      allSelected
+        ? prev.filter(id => !ids.includes(id))
+        : Array.from(new Set([...prev, ...ids])),
+    );
+  };
 
   const activeStudents = students;
   const isLoading = loading;
