@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, HelpCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CheckCircle } from 'lucide-react';
 import { WelcomeSection } from '@/components/instructor/dashboard/WelcomeSection';
 import { DashboardStats } from '@/components/instructor/dashboard/DashboardStats';
 import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
