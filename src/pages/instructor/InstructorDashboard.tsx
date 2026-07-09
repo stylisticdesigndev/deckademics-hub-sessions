@@ -90,18 +90,7 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
     <div className="space-y-6">
       <PushNotificationPrompt />
 
-      <div className="flex items-start justify-between">
-        <WelcomeSection />
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-2"
-          onClick={() => setWalkthroughOpen(true)}
-        >
-          <HelpCircle className="h-4 w-4" />
-          How grading works
-        </Button>
-      </div>
+      <WelcomeSection />
 
       {fetchError && (
         <Alert variant="destructive">
