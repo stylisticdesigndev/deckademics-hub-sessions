@@ -71,11 +71,21 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       // reminder cannot be dismissed until every student has one.
       const photoReminders: UserNotification[] = [];
       if (userRole === 'instructor') {
-        const { data: assigned } = await supabase
-          .from('students')
-          .select('id, enrollment_status')
-          .eq('enrollment_status', 'active');
-        const ids = (assigned || []).map((s: any) => s.id);
+        // Only consider students assigned to THIS instructor (primary or secondary).
+        const { data: links } = await supabase
+          .from('student_instructors' as any)
+          .select('student_id')
+          .eq('instructor_id', userId);
+        const assignedIds = ((links as any[]) || []).map((l: any) => l.student_id);
+        let ids: string[] = [];
+        if (assignedIds.length > 0) {
+          const { data: assigned } = await supabase
+            .from('students')
+            .select('id, enrollment_status')
+            .in('id', assignedIds)
+            .eq('enrollment_status', 'active');
+          ids = (assigned || []).map((s: any) => s.id);
+        }
         if (ids.length > 0) {
           const { data: profs } = await supabase
             .from('profiles')
