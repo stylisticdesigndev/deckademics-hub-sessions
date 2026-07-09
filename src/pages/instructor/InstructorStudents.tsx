@@ -771,13 +771,13 @@ const InstructorStudents = () => {
 
 
         <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100vw-1.5rem)] max-w-3xl max-h-[88vh] overflow-y-auto p-4 sm:max-h-[90vh] sm:p-6">
             {detailedStudent && (
-              <div className="space-y-6">
+              <div className="min-w-0 space-y-5 sm:space-y-6">
                 <DialogHeader>
-                  <div className="flex items-start gap-4 text-left">
+                  <div className="flex items-start gap-3 pr-6 text-left sm:gap-4 sm:pr-0">
                     <Avatar
-                      className={cn("h-16 w-16 shrink-0", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
+                      className={cn("h-12 w-12 shrink-0 sm:h-16 sm:w-16", detailedStudent.avatar && "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all")}
                       onClick={() => detailedStudent.avatar && setEnlargedPhoto(detailedStudent.avatar)}
                     >
                       {detailedStudent.avatar ? (
@@ -790,7 +790,7 @@ const InstructorStudents = () => {
                     </Avatar>
                     <div className="flex-1 min-w-0 space-y-2">
                       <div>
-                        <DialogTitle className="text-xl">{detailedStudent.name}</DialogTitle>
+                        <DialogTitle className="text-lg leading-tight break-words sm:text-xl">{detailedStudent.name}</DialogTitle>
                         {detailedStudent.pronouns && (
                           <DialogDescription className="text-xs mt-0.5">{detailedStudent.pronouns}</DialogDescription>
                         )}
@@ -817,15 +817,15 @@ const InstructorStudents = () => {
                       </div>
                       <div className="flex flex-col gap-1 text-sm pt-1">
                         {detailedStudent.email && (
-                          <a href={`mailto:${detailedStudent.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                          <a href={`mailto:${detailedStudent.email}`} className="flex min-w-0 items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                             <Mail className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{detailedStudent.email}</span>
                           </a>
                         )}
                         {detailedStudent.phone && (
-                          <a href={`tel:${detailedStudent.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                          <a href={`tel:${detailedStudent.phone}`} className="flex min-w-0 items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                             <Phone className="h-3.5 w-3.5 shrink-0" />
-                            <span>{detailedStudent.phone}</span>
+                            <span className="truncate">{detailedStudent.phone}</span>
                           </a>
                         )}
                       </div>
@@ -853,10 +853,10 @@ const InstructorStudents = () => {
                 
                 <Tabs defaultValue="info">
                   <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="info">Info</TabsTrigger>
-                    <TabsTrigger value="progress">Skills</TabsTrigger>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
-                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                    <TabsTrigger value="info" className="px-1 text-xs sm:px-3 sm:text-sm">Info</TabsTrigger>
+                    <TabsTrigger value="progress" className="px-1 text-xs sm:px-3 sm:text-sm">Skills</TabsTrigger>
+                    <TabsTrigger value="notes" className="px-1 text-xs sm:px-3 sm:text-sm">Notes</TabsTrigger>
+                    <TabsTrigger value="tasks" className="px-1 text-xs sm:px-3 sm:text-sm">Tasks</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="info" className="space-y-6 pt-4">
@@ -923,7 +923,7 @@ const InstructorStudents = () => {
 
                     {/* Overall Progress Section */}
                     <section className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+                      <div className="flex flex-col gap-1 text-sm font-medium text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                         <span>Overall Progress</span>
                         <MilestoneSummary
                           className="text-foreground"
@@ -981,7 +981,7 @@ const InstructorStudents = () => {
                     {/* Admin-defined Skills */}
                     {detailedStudent.skillProgress && detailedStudent.skillProgress.length > 0 && (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                           <h3 className="font-medium text-base">Skills</h3>
                           <MilestoneSummary
                             className="text-muted-foreground"
@@ -994,15 +994,15 @@ const InstructorStudents = () => {
                           skills={detailedStudent.skillProgress.map((s) => ({ proficiency: s.proficiency, is_core: s.isCore }))}
                         />
                         {detailedStudent.skillProgress.map((skill) => (
-                          <div key={skill.skillId} className="border rounded-md p-3 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium flex items-center gap-1.5">
+                          <div key={skill.skillId} className="border rounded-md p-3 space-y-2 overflow-hidden">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <span className="min-w-0 text-sm font-medium flex flex-wrap items-center gap-1.5 break-words">
                                 {skill.skillName}
                                 {skill.isCore && (
                                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Core</span>
                                 )}
                               </span>
-                              <div className="flex items-center gap-2">
+                              <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                                 <MilestoneChip value={skill.proficiency} />
                                 <Button
                                   variant="outline"
