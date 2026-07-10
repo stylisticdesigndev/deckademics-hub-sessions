@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
+import { getOverdueAttendanceStudents } from '@/lib/attendanceReminder';
 
 export interface UserNotification {
   id: string;
-  type: 'message' | 'announcement' | 'photo_reminder' | 'level_reminder';
+  type: 'message' | 'announcement' | 'photo_reminder' | 'level_reminder' | 'attendance_reminder';
   title: string;
   message: string;
   read: boolean;
@@ -72,6 +73,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       // reminder cannot be dismissed until every student has one.
       const photoReminders: UserNotification[] = [];
       const levelReminders: UserNotification[] = [];
+      const attendanceReminders: UserNotification[] = [];
       if (userRole === 'instructor') {
         // Only consider students assigned to THIS instructor (primary or secondary).
         const { data: links } = await supabase
@@ -84,7 +86,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
         if (assignedIds.length > 0) {
           const { data: assigned } = await supabase
             .from('students')
-            .select('id, level, enrollment_status')
+            .select('id, level, enrollment_status, class_day, class_time')
             .in('id', assignedIds)
             .eq('enrollment_status', 'active');
           assignedRows = assigned || [];
@@ -119,6 +121,38 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
           (profs || []).forEach((p: any) => {
             nameById[p.id] = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'A student';
           });
+
+          // Reminder to log attendance for classes that already ended and are
+          // still unmarked. Cover sessions aside, we nudge on assigned students'
+          // most recent past class within the last week.
+          const { data: attRecords } = await supabase
+            .from('attendance')
+            .select('student_id, date, status')
+            .in('student_id', ids);
+          const attendanceMap: Record<string, Record<string, 'present' | 'absent'>> = {};
+          ((attRecords as any[]) || []).forEach((r: any) => {
+            if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+            attendanceMap[r.student_id][r.date] = r.status;
+          });
+          const overdueNames = getOverdueAttendanceStudents(
+            assignedRows.map((s: any) => ({
+              id: s.id,
+              name: nameById[s.id] || 'A student',
+              classDay: s.class_day,
+              classTime: s.class_time,
+            })),
+            attendanceMap,
+          );
+          if (overdueNames.length > 0) {
+            attendanceReminders.push({
+              id: 'attendance-reminder',
+              type: 'attendance_reminder',
+              title: `Attendance not logged for ${overdueNames.length} class${overdueNames.length === 1 ? '' : 'es'}`,
+              message: `Please record attendance for ${overdueNames.join(', ')}.`,
+              read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
 
           const [{ data: skills }, { data: progress }] = await Promise.all([
             supabase
@@ -172,7 +206,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
         }
       }
 
-      return [...photoReminders, ...levelReminders, ...messageNotifications, ...announcementNotifications].sort(
+      return [...attendanceReminders, ...photoReminders, ...levelReminders, ...messageNotifications, ...announcementNotifications].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     },
@@ -184,7 +218,11 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
 
   const markAsRead = useMutation({
     mutationFn: async (notification: UserNotification) => {
-      if (notification.type === 'photo_reminder' || notification.type === 'level_reminder') {
+      if (
+        notification.type === 'photo_reminder' ||
+        notification.type === 'level_reminder' ||
+        notification.type === 'attendance_reminder'
+      ) {
         // Persistent reminder — cannot be marked read until resolved.
         return;
       }
