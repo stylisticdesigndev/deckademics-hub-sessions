@@ -252,6 +252,11 @@ export default function InstructorAttendance() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous Week
+                  {olderFocusCount > 0 && (
+                    <Badge className="ml-1 h-5 min-w-5 px-1.5 bg-deckademics-primary text-white">
+                      {olderFocusCount}
+                    </Badge>
+                  )}
                 </Button>
                 <span className="text-sm text-muted-foreground">
                   Week {safeIndex + 1} of {totalPastWeeks}
@@ -265,6 +270,11 @@ export default function InstructorAttendance() {
                 >
                   Next Week
                   <ChevronRight className="h-4 w-4" />
+                  {newerFocusCount > 0 && (
+                    <Badge className="ml-1 h-5 min-w-5 px-1.5 bg-deckademics-primary text-white">
+                      {newerFocusCount}
+                    </Badge>
+                  )}
                 </Button>
               </div>
             )}
