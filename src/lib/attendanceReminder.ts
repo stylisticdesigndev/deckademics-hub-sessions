@@ -15,6 +15,12 @@ export interface ReminderStudent {
   classTime?: string | null;
 }
 
+export interface OverdueAttendance {
+  id: string;
+  name: string;
+  date: string; // YYYY-MM-DD of the unmarked class
+}
+
 function getClassDayNumber(day?: string | null): number {
   const normalized = (day || '').trim().toLowerCase().replace(/s$/, '');
   return DAY_NAME_TO_NUMBER[normalized] ?? -1;
@@ -45,16 +51,16 @@ function mostRecentOccurrence(dayOfWeek: number, now: Date): Date {
 }
 
 /**
- * Returns the names of students whose most recent class already ended more than
- * OVERDUE_AFTER_HOURS ago (within the last 7 days) and still has no attendance
- * record for that class date.
+ * Returns detailed records of students whose most recent class already ended
+ * more than OVERDUE_AFTER_HOURS ago (within the last 7 days) and still has no
+ * attendance record for that class date.
  */
-export function getOverdueAttendanceStudents(
+export function getOverdueAttendanceDetails(
   students: ReminderStudent[],
   attendanceMap: Record<string, Record<string, 'present' | 'absent'>>,
   now: Date = new Date(),
-): string[] {
-  const overdue: string[] = [];
+): OverdueAttendance[] {
+  const overdue: OverdueAttendance[] = [];
 
   for (const s of students) {
     const dow = getClassDayNumber(s.classDay);
@@ -73,8 +79,19 @@ export function getOverdueAttendanceStudents(
 
     const dateStr = format(classDate, 'yyyy-MM-dd');
     const marked = attendanceMap[s.id]?.[dateStr];
-    if (!marked) overdue.push(s.name);
+    if (!marked) overdue.push({ id: s.id, name: s.name, date: dateStr });
   }
 
   return overdue;
+}
+
+/**
+ * Convenience wrapper returning just the names of overdue students.
+ */
+export function getOverdueAttendanceStudents(
+  students: ReminderStudent[],
+  attendanceMap: Record<string, Record<string, 'present' | 'absent'>>,
+  now: Date = new Date(),
+): string[] {
+  return getOverdueAttendanceDetails(students, attendanceMap, now).map((o) => o.name);
 }

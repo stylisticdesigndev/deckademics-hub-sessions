@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
-import { getOverdueAttendanceStudents } from '@/lib/attendanceReminder';
+import { getOverdueAttendanceDetails } from '@/lib/attendanceReminder';
 
 export interface UserNotification {
   id: string;
@@ -10,6 +10,7 @@ export interface UserNotification {
   message: string;
   read: boolean;
   created_at: string;
+  link?: string;
 }
 
 export const useUserNotifications = (userId?: string, userRole?: 'student' | 'instructor') => {
@@ -134,7 +135,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
             if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
             attendanceMap[r.student_id][r.date] = r.status;
           });
-          const overdueNames = getOverdueAttendanceStudents(
+          const overdueDetails = getOverdueAttendanceDetails(
             assignedRows.map((s: any) => ({
               id: s.id,
               name: nameById[s.id] || 'A student',
@@ -143,7 +144,14 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
             })),
             attendanceMap,
           );
+          const overdueNames = overdueDetails.map((o) => o.name);
           if (overdueNames.length > 0) {
+            // Deep-link to the most recent overdue class date so the instructor
+            // lands on the exact class that needs marking.
+            const latestDate = overdueDetails
+              .map((o) => o.date)
+              .sort()
+              .pop();
             attendanceReminders.push({
               id: 'attendance-reminder',
               type: 'attendance_reminder',
@@ -151,6 +159,9 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
               message: `Please record attendance for ${overdueNames.join(', ')}.`,
               read: false,
               created_at: new Date().toISOString(),
+              link: latestDate
+                ? `/instructor/attendance?date=${latestDate}`
+                : '/instructor/attendance',
             });
           }
 
