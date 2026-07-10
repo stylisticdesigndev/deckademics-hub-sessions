@@ -721,7 +721,7 @@ const AdminInstructors = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
+                  <div className="hidden md:block rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/50">
@@ -832,6 +832,49 @@ const AdminInstructors = () => {
                       </tbody>
                     </table>
                   </div>
+                  {/* Mobile card view */}
+                  <div className="md:hidden space-y-3">
+                    {filteredActiveInstructors && filteredActiveInstructors.length > 0 ? (
+                      filteredActiveInstructors.map((instructor) => (
+                        <MobileCard key={instructor.id} data-state={selectedInstructorIds.includes(instructor.id) ? 'selected' : undefined}>
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              className="mt-1"
+                              checked={selectedInstructorIds.includes(instructor.id)}
+                              onCheckedChange={() => toggleInstructorSelect(instructor.id)}
+                            />
+                            <Avatar className="h-9 w-9">
+                              {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                              <AvatarFallback className="text-xs">
+                                {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold truncate">{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                {instructor.profile.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{instructor.profile.email}</p>
+                            </div>
+                            <Badge variant="outline" className="bg-green-500/10 text-green-500 shrink-0">Active</Badge>
+                          </div>
+                          <MobileActions className="justify-end">
+                            <Button variant="outline" size="sm" onClick={() => handleOpenAssignStudents(instructor.id)}>
+                              <Users className="h-4 w-4 mr-1" /> Assign
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => viewInstructor(instructor.id)}>
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeactivate(instructor.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </MobileActions>
+                        </MobileCard>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-6">No active instructors found.</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -846,7 +889,7 @@ const AdminInstructors = () => {
                 </CardHeader>
                 <CardContent>
                   
-                  <div className="rounded-md border">
+                  <div className="hidden md:block rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/50">
@@ -945,6 +988,44 @@ const AdminInstructors = () => {
                       </tbody>
                     </table>
                   </div>
+                  {/* Mobile card view */}
+                  <div className="md:hidden space-y-3">
+                    {filteredPendingInstructors && filteredPendingInstructors.length > 0 ? (
+                      filteredPendingInstructors.map((instructor) => (
+                        <MobileCard key={instructor.id}>
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-9 w-9">
+                              {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                              <AvatarFallback className="text-xs">
+                                {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold truncate">{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                {instructor.profile.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{instructor.profile.email}</p>
+                            </div>
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 shrink-0">Pending</Badge>
+                          </div>
+                          <MobileActions className="justify-end">
+                            <Button variant="outline" size="sm" onClick={() => viewInstructor(instructor.id)}>
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleApprove(instructor.id)} className="text-green-600 hover:text-green-600 hover:bg-green-600/10">
+                              <Check className="h-4 w-4 mr-1" /> Approve
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDecline(instructor.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </MobileActions>
+                        </MobileCard>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-6">No pending instructors found.</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -959,7 +1040,7 @@ const AdminInstructors = () => {
                 </CardHeader>
                 <CardContent>
                   
-                  <div className="rounded-md border">
+                  <div className="hidden md:block rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/50">
@@ -1042,6 +1123,41 @@ const AdminInstructors = () => {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                  {/* Mobile card view */}
+                  <div className="md:hidden space-y-3">
+                    {filteredInactiveInstructors && filteredInactiveInstructors.length > 0 ? (
+                      filteredInactiveInstructors.map((instructor) => (
+                        <MobileCard key={instructor.id}>
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-9 w-9">
+                              {instructor.profile.avatar_url && <AvatarImage src={instructor.profile.avatar_url} alt={`${instructor.profile.first_name} ${instructor.profile.last_name}`} />}
+                              <AvatarFallback className="text-xs">
+                                {(instructor.profile.first_name?.[0] || '')}{(instructor.profile.last_name?.[0] || '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold truncate">{getInstructorDisplayName(instructor.profile) || `${instructor.profile.first_name || ''} ${instructor.profile.last_name || ''}`.trim()}</span>
+                                {instructor.profile.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{instructor.profile.email}</p>
+                            </div>
+                            <Badge variant="outline" className="bg-red-500/10 text-red-500 shrink-0">Inactive</Badge>
+                          </div>
+                          <MobileActions className="justify-end">
+                            <Button variant="outline" size="sm" onClick={() => viewInstructor(instructor.id)}>
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleActivate(instructor.id)} className="text-green-600 hover:text-green-600 hover:bg-green-600/10">
+                              <Check className="h-4 w-4 mr-1" /> Activate
+                            </Button>
+                          </MobileActions>
+                        </MobileCard>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-6">No inactive instructors found.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
