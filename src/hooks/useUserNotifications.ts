@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
+import { getOverdueAttendanceStudents } from '@/lib/attendanceReminder';
 
 export interface UserNotification {
   id: string;
-  type: 'message' | 'announcement' | 'photo_reminder' | 'level_reminder';
+  type: 'message' | 'announcement' | 'photo_reminder' | 'level_reminder' | 'attendance_reminder';
   title: string;
   message: string;
   read: boolean;
@@ -72,6 +73,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       // reminder cannot be dismissed until every student has one.
       const photoReminders: UserNotification[] = [];
       const levelReminders: UserNotification[] = [];
+      const attendanceReminders: UserNotification[] = [];
       if (userRole === 'instructor') {
         // Only consider students assigned to THIS instructor (primary or secondary).
         const { data: links } = await supabase
@@ -84,7 +86,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
         if (assignedIds.length > 0) {
           const { data: assigned } = await supabase
             .from('students')
-            .select('id, level, enrollment_status')
+            .select('id, level, enrollment_status, class_day, class_time')
             .in('id', assignedIds)
             .eq('enrollment_status', 'active');
           assignedRows = assigned || [];
