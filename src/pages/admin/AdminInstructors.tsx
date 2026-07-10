@@ -681,7 +681,7 @@ const AdminInstructors = () => {
 
           
           <Tabs defaultValue={initialInstructorTab}>
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="active">
                 Active Instructors ({filteredActiveInstructors?.length || 0})
               </TabsTrigger>
@@ -696,7 +696,7 @@ const AdminInstructors = () => {
             <TabsContent value="active" className="space-y-4 pt-4">
               {/* Bulk Action Toolbar */}
               {selectedInstructorIds.length > 0 && (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg">
                   <span className="text-sm font-medium">{selectedInstructorIds.length} selected</span>
                   <Button size="sm" variant="outline" onClick={handleBulkMessageInstructors}>
                     <MessageSquare className="h-3.5 w-3.5 mr-1" />
