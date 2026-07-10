@@ -1523,7 +1523,8 @@ const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEd
       {payments.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">No payments to show.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1571,6 +1572,44 @@ const StudentPaymentsTable = ({ title, description, payments, onMarkPaid, showEd
             </TableBody>
           </Table>
         </div>
+        <div className="md:hidden space-y-3">
+          {payments.map(p => (
+            <MobileCard key={p.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{p.studentName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+                </div>
+                {p.status === 'completed' && <Badge variant="outline" className="border-green-500/50 text-green-500 shrink-0">Paid</Badge>}
+                {p.status === 'pending' && <Badge variant="outline" className="border-yellow-500/50 text-yellow-500 shrink-0">Pending</Badge>}
+                {p.status === 'upcoming' && <Badge variant="outline" className="border-blue-500/50 text-blue-500 shrink-0">Upcoming</Badge>}
+              </div>
+              <MobileField label="Amount">${p.amount.toFixed(2)}</MobileField>
+              <MobileField label="Date">{format(new Date(p.payment_date), 'MM/dd/yyyy')}</MobileField>
+              {p.description && <MobileField label="Description">{p.description}</MobileField>}
+              {(onMarkPaid && p.status === 'pending') || showEditDelete ? (
+                <MobileActions className="justify-end">
+                  {onMarkPaid && p.status === 'pending' && (
+                    <Button size="sm" variant="outline" onClick={() => onMarkPaid(p.id)}>
+                      <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
+                    </Button>
+                  )}
+                  {showEditDelete && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => onEdit?.(p)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete?.(p.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </MobileActions>
+              ) : null}
+            </MobileCard>
+          ))}
+        </div>
+        </>
       )}
     </CardContent>
   </Card>
