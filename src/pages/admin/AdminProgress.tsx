@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, TrendingUp, Users, BarChart3 } from 'lucide-react';
 import { MilestoneSummary } from '@/components/progress/MilestoneSummary';
+import { MobileCard, MobileField } from '@/components/admin/responsive/MobileCard';
 
 const AdminProgress = () => {
   const { data: students = [], isLoading } = useAdminProgress();
@@ -138,7 +139,7 @@ const AdminProgress = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -182,6 +183,32 @@ const AdminProgress = () => {
               )}
             </TableBody>
           </Table>
+          </div>
+          {/* Mobile card view */}
+          <div className="md:hidden space-y-3">
+            {filtered.length > 0 ? (
+              filtered.map(student => (
+                <MobileCard key={student.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{student.firstName} {student.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                    </div>
+                    <Badge variant="outline" className="capitalize shrink-0">{student.level}</Badge>
+                  </div>
+                  <MobileField label="Instructor">{student.instructorName || 'Unassigned'}</MobileField>
+                  <MobileField label="Skills Mastered">
+                    <MilestoneSummary
+                      masteredCount={student.masteredCount}
+                      total={student.skillTotal}
+                      isReady={student.isReady}
+                    />
+                  </MobileField>
+                </MobileCard>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">No students found matching your filters.</p>
+            )}
           </div>
         </CardContent>
       </Card>

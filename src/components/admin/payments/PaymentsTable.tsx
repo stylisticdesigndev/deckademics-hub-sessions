@@ -8,6 +8,7 @@ import { Payment } from "@/hooks/useAdminPayments";
 import { EditPaymentDialog } from "./EditPaymentDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useDeletePayment } from "@/hooks/useDeletePayment";
+import { MobileCard, MobileField, MobileActions } from "@/components/admin/responsive/MobileCard";
 
 interface PaymentsTableProps {
   title: string;
@@ -37,7 +38,8 @@ export const PaymentsTable = ({
       </CardHeader>
       <CardContent>
         {payments.length > 0 ? (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -121,6 +123,75 @@ export const PaymentsTable = ({
             </TableBody>
           </Table>
           </div>
+          {/* Mobile card view */}
+          <div className="md:hidden space-y-3">
+            {payments.map((payment) => (
+              <MobileCard key={payment.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{payment.studentName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{payment.email}</p>
+                  </div>
+                  <Badge
+                    variant={
+                      payment.status === 'completed' ? 'default' :
+                      payment.status === 'pending' ? 'secondary' :
+                      payment.status === 'partial' ? 'outline' :
+                      payment.status === 'failed' ? 'destructive' : 'outline'
+                    }
+                  >
+                    {payment.status}
+                  </Badge>
+                </div>
+                <MobileField label="Amount">${payment.amount}</MobileField>
+                <MobileField label="Due Date">{payment.dueDate}</MobileField>
+                <MobileField label="Type"><span className="capitalize">{payment.paymentType}</span></MobileField>
+                {showActions && onMarkAsPaid && (
+                  <MobileActions>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1 w-full"
+                      onClick={() => onMarkAsPaid(payment.id, 'full')}
+                    >
+                      <Check className="h-3 w-3" />
+                      Mark Paid
+                    </Button>
+                  </MobileActions>
+                )}
+                {showEditDelete && (
+                  <MobileActions className="justify-end">
+                    <EditPaymentDialog payment={payment} students={students} />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this payment for {payment.studentName}? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deletePayment(payment.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </MobileActions>
+                )}
+              </MobileCard>
+            ))}
+          </div>
+          </>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
             No payments found matching your search.

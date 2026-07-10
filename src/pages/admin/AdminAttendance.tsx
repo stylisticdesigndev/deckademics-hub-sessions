@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAdminAttendance } from '@/hooks/useAdminAttendance';
 import { StatsCard } from '@/components/cards/StatsCard';
 import { formatDateUS } from '@/lib/utils';
+import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
 
 type AttendanceStatus = 'missed' | 'attended' | 'made-up';
 
@@ -67,7 +68,7 @@ const AdminAttendance = () => {
             <CardDescription>Students who missed classes and require follow-up</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -147,6 +148,65 @@ const AdminAttendance = () => {
                 )}
               </TableBody>
             </Table>
+            </div>
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-3">
+              {missedAttendance && missedAttendance.length > 0 ? (
+                missedAttendance.map(student => (
+                  <MobileCard key={student.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{student.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                      </div>
+                      <StatusBadge status={student.status} />
+                    </div>
+                    <MobileField label="Missed Class">{formatDateUS(student.classDate)}</MobileField>
+                    <MobileField label="Make-up Date">
+                      {student.makeupDate ? formatDateUS(student.makeupDate) : (
+                        <span className="text-muted-foreground">Not scheduled</span>
+                      )}
+                    </MobileField>
+                    <MobileActions>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <CalendarIcon className="h-4 w-4 mr-1" />
+                            {student.makeupDate ? 'Reschedule' : 'Schedule'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={student.makeupDate || undefined}
+                            onSelect={(date) => date && scheduleMakeup(student.studentId, date, student.id)}
+                            initialFocus
+                            fromDate={new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => updateStatus(student.studentId, student.id, 'attended')}
+                        title="Mark as Attended"
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => updateStatus(student.studentId, student.id, 'made-up')}
+                        title="Mark as Made-up"
+                      >
+                        <Clock className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    </MobileActions>
+                  </MobileCard>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-6">No missed classes this week.</p>
+              )}
             </div>
           </CardContent>
         </Card>
