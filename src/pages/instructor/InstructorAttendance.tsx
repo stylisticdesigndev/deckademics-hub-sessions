@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,12 @@ export default function InstructorAttendance() {
   const { getMakeup, scheduleMakeup, setMakeupStatus, saving: makeupSaving } = useInstructorMakeups(instructorId);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastWeekIndex, setPastWeekIndex] = useState(0);
+
+  // Deep-link support: notifications/pushes link to ?date=YYYY-MM-DD so the
+  // instructor lands on the exact overdue class.
+  const [searchParams] = useSearchParams();
+  const focusDate = searchParams.get('date');
+  const focusHandled = useRef<string | null>(null);
 
   const today = startOfDay(new Date());
   const startOfWeekDate = addDays(today, -(getDay(today) === 0 ? 6 : getDay(today) - 1));
@@ -65,10 +72,39 @@ export default function InstructorAttendance() {
     });
   }, [groupedPastWeeks]);
 
-  // Reset to most recent week when opening or when data length changes
+  // Reset to most recent week when the data set changes.
   useEffect(() => {
     setPastWeekIndex(0);
-  }, [pastOpen, sortedPastWeeks.length]);
+  }, [sortedPastWeeks.length]);
+
+  // When a focus date is present, open the correct past week (if the class is
+  // not in the current week) and scroll it into view. Runs once per date.
+  useEffect(() => {
+    if (!focusDate || focusHandled.current === focusDate) return;
+    if (currentWeekStudents.length === 0 && sortedPastWeeks.length === 0) return;
+
+    const inCurrent = currentWeekStudents.some((i) => i.dateStr === focusDate);
+    if (!inCurrent) {
+      const idx = sortedPastWeeks.findIndex(([, items]) =>
+        items.some((it) => it.dateStr === focusDate),
+      );
+      if (idx >= 0) {
+        setPastOpen(true);
+        setPastWeekIndex(idx);
+      }
+    }
+    focusHandled.current = focusDate;
+  }, [focusDate, currentWeekStudents, sortedPastWeeks]);
+
+  // Scroll the highlighted class into view once it is rendered.
+  useEffect(() => {
+    if (!focusDate) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-att-date="${focusDate}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [focusDate, pastOpen, pastWeekIndex, currentWeekStudents.length]);
 
   const totalPastWeeks = sortedPastWeeks.length;
   const safeIndex = Math.min(pastWeekIndex, Math.max(0, totalPastWeeks - 1));
@@ -133,6 +169,7 @@ export default function InstructorAttendance() {
                   status={item.status}
                   isPast={item.isPast}
                   saving={saving}
+                  highlight={item.dateStr === focusDate}
                   onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                   makeup={getMakeup(item.student.id, item.dateStr)}
                   makeupSaving={makeupSaving}
@@ -169,6 +206,7 @@ export default function InstructorAttendance() {
                     status={item.status}
                     isPast={true}
                     saving={saving}
+                    highlight={item.dateStr === focusDate}
                     onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                     makeup={getMakeup(item.student.id, item.dateStr)}
                     makeupSaving={makeupSaving}
