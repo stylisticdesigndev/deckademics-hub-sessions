@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
 
 const STUDENTS_PER_PAGE = 10;
 
