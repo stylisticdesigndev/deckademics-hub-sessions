@@ -1004,7 +1004,7 @@ const AdminInstructorPayments = () => {
           <CardContent>
             {completedPayments.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1093,6 +1093,46 @@ const AdminInstructorPayments = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                <div className="md:hidden space-y-3">
+                  {paginatedHistory.map((payment) => {
+                    const extraTotal = sumExtras(extrasByPayment(payment.id));
+                    return (
+                      <MobileCard
+                        key={payment.id}
+                        className={cn('cursor-pointer', payment.status === 'void' && 'opacity-60')}
+                        onClick={() => setSelectedDetailPayment(payment)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className={cn('font-semibold truncate min-w-0', payment.status === 'void' && 'line-through')}>{payment.instructorName}</p>
+                          {payment.status === 'void' ? (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive shrink-0">Void</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-accent text-accent-foreground shrink-0">Paid</Badge>
+                          )}
+                        </div>
+                        <MobileField label="Type">
+                          {payment.paymentType === 'bonus' ? <Badge variant="secondary">Bonus</Badge> : <Badge variant="outline">Class</Badge>}
+                        </MobileField>
+                        <MobileField label="Pay Period">{formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}</MobileField>
+                        <MobileField label="Amount">
+                          <span>${(payment.totalAmount + extraTotal).toFixed(2)}</span>
+                          {extraTotal > 0 && <span className="block text-xs text-muted-foreground">includes extra pay</span>}
+                        </MobileField>
+                        <MobileActions className="justify-end" onClick={(e) => e.stopPropagation()}>
+                          {payment.status === 'paid' ? (
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleVoidPayment(payment.id)}>
+                              <XCircle className="h-4 w-4 mr-1" /> Void
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => handleRestorePayment(payment.id)}>
+                              <RotateCcw className="h-4 w-4 mr-1" /> Restore
+                            </Button>
+                          )}
+                        </MobileActions>
+                      </MobileCard>
+                    );
+                  })}
                 </div>
                 {totalHistoryPages > 1 && (
                   <Pagination className="mt-4">
