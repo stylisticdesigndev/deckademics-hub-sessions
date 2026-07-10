@@ -206,7 +206,7 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
         }
       }
 
-      return [...photoReminders, ...levelReminders, ...messageNotifications, ...announcementNotifications].sort(
+      return [...attendanceReminders, ...photoReminders, ...levelReminders, ...messageNotifications, ...announcementNotifications].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     },
@@ -218,7 +218,11 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
 
   const markAsRead = useMutation({
     mutationFn: async (notification: UserNotification) => {
-      if (notification.type === 'photo_reminder' || notification.type === 'level_reminder') {
+      if (
+        notification.type === 'photo_reminder' ||
+        notification.type === 'level_reminder' ||
+        notification.type === 'attendance_reminder'
+      ) {
         // Persistent reminder — cannot be marked read until resolved.
         return;
       }
