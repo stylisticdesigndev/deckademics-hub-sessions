@@ -59,6 +59,7 @@ import { DAY_ORDER, CLASS_SLOTS, sanitizeScheduleItems, sanitizeScheduleHours } 
 import { useInstructorPaymentExtras } from '@/hooks/useInstructorPaymentExtras';
 import { ExtraPayDialog } from '@/components/admin/payments/ExtraPayDialog';
 import { Plus } from 'lucide-react';
+import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
 
 interface Instructor {
   id: string;
