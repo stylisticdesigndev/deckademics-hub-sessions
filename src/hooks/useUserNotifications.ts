@@ -76,12 +76,18 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
       const levelReminders: UserNotification[] = [];
       const attendanceReminders: UserNotification[] = [];
       if (userRole === 'instructor') {
-        // Only consider students assigned to THIS instructor (primary or secondary).
+        // Consider students assigned to THIS instructor (primary or secondary).
+        // Attendance reminders are further scoped to PRIMARY assignments only.
         const { data: links } = await supabase
           .from('student_instructors' as any)
-          .select('student_id')
+          .select('student_id, role')
           .eq('instructor_id', userId);
         const assignedIds = ((links as any[]) || []).map((l: any) => l.student_id);
+        const primaryIds = new Set(
+          ((links as any[]) || [])
+            .filter((l: any) => (l.role || 'primary') === 'primary')
+            .map((l: any) => l.student_id),
+        );
         let ids: string[] = [];
         let assignedRows: any[] = [];
         if (assignedIds.length > 0) {
