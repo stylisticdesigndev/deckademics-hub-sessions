@@ -827,7 +827,8 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             {pendingPayments.length > 0 ? (
-              <div className="overflow-x-auto">
+              <>
+              <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -937,6 +938,57 @@ const AdminInstructorPayments = () => {
                 </TableBody>
               </Table>
               </div>
+              <div className="md:hidden space-y-3">
+                {pendingPayments.map((payment) => {
+                  const items = extrasByPayment(payment.id);
+                  const extraTotal = sumExtras(items);
+                  return (
+                    <MobileCard key={payment.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-semibold truncate min-w-0">{payment.instructorName}</p>
+                        {payment.paymentType === 'bonus' ? (
+                          <Badge variant="secondary" className="shrink-0">Bonus</Badge>
+                        ) : (
+                          <Badge variant="outline" className="shrink-0">Class</Badge>
+                        )}
+                      </div>
+                      <MobileField label="Pay Period">{formatDateToUS(payment.payPeriodStart)} – {formatDateToUS(payment.payPeriodEnd)}</MobileField>
+                      {payment.paymentType === 'class' && (
+                        <>
+                          <MobileField label="Class Rate">
+                            {payment.hoursLogged > 0 ? `$${(payment.totalAmount / payment.hoursLogged).toFixed(2)}/class` : '—'}
+                          </MobileField>
+                          <MobileField label="Classes">{payment.hoursLogged}</MobileField>
+                        </>
+                      )}
+                      <MobileField label="Amount">
+                        <span>${(payment.totalAmount + extraTotal).toFixed(2)}</span>
+                        {items.length > 0 && <span className="block text-xs text-muted-foreground">includes extra pay</span>}
+                      </MobileField>
+                      <MobileActions className="justify-end">
+                        {payment.paymentType === 'class' && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => openEditHoursDialog(payment)}>
+                              <Edit className="mr-1 h-3 w-3" /> Edit Classes
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => openExtraPayForPayment(payment)}>
+                              <DollarSign className="mr-1 h-3 w-3" /> Extra Pay
+                              {items.length > 0 && <Badge variant="secondary" className="ml-1.5">{items.length}</Badge>}
+                            </Button>
+                          </>
+                        )}
+                        <Button variant="outline" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => handleMarkAsPaid(payment.id)}>
+                          <Save className="mr-1 h-3 w-3" /> Mark Paid
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => { setDeletePaymentId(payment.id); setShowDeleteDialog(true); }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </MobileActions>
+                    </MobileCard>
+                  );
+                })}
+              </div>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No pending payments.</p>
             )}
