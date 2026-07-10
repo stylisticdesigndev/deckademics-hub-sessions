@@ -859,7 +859,8 @@ const AdminLedgerPreview = () => {
               {activeInstructors.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">Loading active instructors…</p>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -892,6 +893,30 @@ const AdminLedgerPreview = () => {
                     </TableBody>
                   </Table>
                 </div>
+                <div className="md:hidden space-y-3">
+                  {activeInstructors.map(inst => {
+                    const fee = getEffectiveFee(inst.id, inst.sessionFee);
+                    const overridden = feeOverrides[inst.id] !== undefined;
+                    return (
+                      <MobileCard key={inst.id}>
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{inst.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{inst.email}</p>
+                        </div>
+                        <MobileField label="Class Rate">
+                          ${fee}/class
+                          {overridden && <Badge variant="secondary" className="ml-2">preview</Badge>}
+                        </MobileField>
+                        <MobileActions>
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => openRateDialog(inst.id)}>
+                            Update Rate
+                          </Button>
+                        </MobileActions>
+                      </MobileCard>
+                    );
+                  })}
+                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -902,7 +927,7 @@ const AdminLedgerPreview = () => {
               <CardDescription>{payrollRecords.length} payroll records across {instructorDropdown.length} instructors</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1022,6 +1047,68 @@ const AdminLedgerPreview = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              <div className="md:hidden space-y-3">
+                {paginatedPayroll.map(r => (
+                  <MobileCard
+                    key={r.id}
+                    className={cn('cursor-pointer', r.status === 'void' && 'opacity-60')}
+                    onClick={() => setSelectedDetailPayment(r)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className={cn('font-semibold truncate min-w-0', r.status === 'void' && 'line-through')}>{r.instructorName}</p>
+                      {r.status === 'void'
+                        ? <Badge variant="outline" className="border-destructive/50 text-destructive shrink-0">Void</Badge>
+                        : r.status === 'paid'
+                          ? <Badge variant="outline" className="border-green-500/50 text-green-500 shrink-0">Paid</Badge>
+                          : <Badge variant="outline" className="border-yellow-500/50 text-yellow-500 shrink-0">Pending</Badge>}
+                    </div>
+                    <MobileField label="Pay Period">{format(new Date(r.pay_period_start), 'MM/dd')} – {format(new Date(r.pay_period_end), 'MM/dd/yyyy')}</MobileField>
+                    <MobileField label="Classes">{r.hours_worked}</MobileField>
+                    <MobileField label="Base Pay">${r.amount.toFixed(2)}</MobileField>
+                    <MobileField label="Extra Pay">
+                      {r.extra_pay.length === 0 ? '—' : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setViewExtraPayFor(r.id); }}
+                          className="underline decoration-dotted underline-offset-2 hover:text-primary"
+                        >
+                          ${sumExtraPay(r.extra_pay).toFixed(2)} ({r.extra_pay.length})
+                        </button>
+                      )}
+                    </MobileField>
+                    <MobileField label="Total">${(r.amount + sumExtraPay(r.extra_pay)).toFixed(2)}</MobileField>
+                    {r.status !== 'void' && (
+                      <MobileActions className="justify-end" onClick={(e) => e.stopPropagation()}>
+                        {r.status === 'pending' && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => openEditPayroll(r.id)}>
+                              <Edit className="h-4 w-4 mr-1" /> Edit Classes
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => openExtraPay(r.id)}>
+                              <Plus className="h-4 w-4 mr-1" /> Extra Pay
+                            </Button>
+                            <Button size="sm" onClick={() => markPayrollPaid(r.id)}>
+                              <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid
+                            </Button>
+                          </>
+                        )}
+                        {r.status === 'paid' && (
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => voidPayrollRecord(r.id)}>
+                            <XCircle className="h-4 w-4 mr-1" /> Void
+                          </Button>
+                        )}
+                      </MobileActions>
+                    )}
+                    {r.status === 'void' && (
+                      <MobileActions className="justify-end" onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" onClick={() => restorePayrollRecord(r.id)}>
+                          <RotateCcw className="h-4 w-4 mr-1" /> Restore
+                        </Button>
+                      </MobileActions>
+                    )}
+                  </MobileCard>
+                ))}
               </div>
               {totalHistoryPages > 1 && (
                 <Pagination className="mt-4">
