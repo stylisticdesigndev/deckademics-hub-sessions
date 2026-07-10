@@ -230,6 +230,7 @@ Deno.serve(async (req: Request) => {
       if (!optedInIds.has(instId)) continue;
       const agg = perInstructor.get(instId)!;
       const latestDate = [...agg.dates].sort().reverse()[0];
+      const allDates = [...agg.dates].sort();
 
       // Dedupe: at most one reminder per instructor per class date.
       const { error: dedupeErr } = await admin
@@ -250,7 +251,7 @@ Deno.serve(async (req: Request) => {
       const payload = JSON.stringify({
         title: "Attendance needs logging",
         body: `${agg.count} ${noun} still need attendance marked from a recent class.`,
-        url: `/instructor/attendance?date=${latestDate}`,
+        url: `/instructor/attendance?dates=${allDates.join(",")}`,
         tag: "attendance-reminder",
       });
 
