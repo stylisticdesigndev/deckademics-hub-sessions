@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/pagination';
 import { format, subDays, addDays } from 'date-fns';
 import { toast } from 'sonner';
+import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
