@@ -591,7 +591,7 @@ const AdminStudents = () => {
               <CardDescription>Review and approve student registration requests.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border overflow-x-auto">
+              <div className="hidden md:block rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -688,6 +688,56 @@ const AdminStudents = () => {
                   </TableBody>
                 </Table>
               </div>
+              {/* Mobile card view */}
+              <div className="md:hidden space-y-3">
+                {filteredPendingStudents.length > 0 ? (
+                  filteredPendingStudents.map((student) => (
+                    <MobileCard key={student.id}>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-9 w-9">
+                          {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                          <AvatarFallback className="text-xs">
+                            {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold truncate">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            {student.profile?.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{student.profile?.email}</p>
+                        </div>
+                        {getStatusBadge('pending')}
+                      </div>
+                      <MobileActions className="justify-end">
+                        <Button variant="outline" size="sm" onClick={() => setViewStudentId(student.id)} disabled={processingStudentId === student.id}>
+                          <Eye className="h-4 w-4 mr-1" /> View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApprove(student.id)}
+                          className="text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                          disabled={processingStudentId === student.id}
+                        >
+                          {processingStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-1" />} Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDecline(student.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={processingStudentId === student.id}
+                        >
+                          {processingStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                        </Button>
+                      </MobileActions>
+                    </MobileCard>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-6">No pending students.</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -700,7 +750,7 @@ const AdminStudents = () => {
               <CardDescription>Deactivated and declined students. You can reactivate them.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border overflow-x-auto">
+              <div className="hidden md:block rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -782,6 +832,48 @@ const AdminStudents = () => {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+              {/* Mobile card view */}
+              <div className="md:hidden space-y-3">
+                {filteredInactiveStudents.length > 0 ? (
+                  filteredInactiveStudents.map((student) => (
+                    <MobileCard key={student.id}>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-9 w-9">
+                          {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                          <AvatarFallback className="text-xs">
+                            {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold truncate">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            {student.profile?.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{student.profile?.email}</p>
+                        </div>
+                        {getStatusBadge(student.enrollment_status)}
+                      </div>
+                      <MobileField label="Level"><Badge variant="outline" className="capitalize">{student.level}</Badge></MobileField>
+                      <MobileActions className="justify-end">
+                        <Button variant="outline" size="sm" onClick={() => setViewStudentId(student.id)} disabled={processingStudentId === student.id}>
+                          <Eye className="h-4 w-4 mr-1" /> View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReactivate(student.id)}
+                          className="text-green-600 hover:text-green-600 hover:bg-green-600/10"
+                          disabled={processingStudentId === student.id}
+                        >
+                          {processingStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-1" />} Reactivate
+                        </Button>
+                      </MobileActions>
+                    </MobileCard>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-6">No inactive students.</p>
+                )}
               </div>
             </CardContent>
           </Card>
