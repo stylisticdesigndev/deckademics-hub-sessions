@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
       const payload = JSON.stringify({
         title: "Attendance needs logging",
         body: `${agg.count} ${noun} still need attendance marked from a recent class.`,
-        url: "/instructor/attendance",
+        url: `/instructor/attendance?date=${latestDate}`,
         tag: "attendance-reminder",
       });
 
