@@ -142,7 +142,9 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
             attendanceMap[r.student_id][r.date] = r.status;
           });
           const overdueDetails = getOverdueAttendanceDetails(
-            assignedRows.map((s: any) => ({
+            assignedRows
+              .filter((s: any) => primaryIds.has(s.id))
+              .map((s: any) => ({
               id: s.id,
               name: nameById[s.id] || 'A student',
               classDay: s.class_day,
