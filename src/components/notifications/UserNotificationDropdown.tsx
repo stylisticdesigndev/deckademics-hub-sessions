@@ -36,7 +36,7 @@ export const UserNotificationDropdown = ({ userType }: UserNotificationDropdownP
 
   const handleNotificationClick = (notification: UserNotification) => {
     if (notification.type === 'attendance_reminder') {
-      navigate('/instructor/attendance');
+      navigate(notification.link || '/instructor/attendance');
       setOpen(false);
       return;
     }
