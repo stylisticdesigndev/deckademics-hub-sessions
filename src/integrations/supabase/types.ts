@@ -206,6 +206,27 @@ export type Database = {
           },
         ]
       }
+      attendance_reminder_sent: {
+        Row: {
+          class_date: string
+          created_at: string
+          id: string
+          instructor_id: string
+        }
+        Insert: {
+          class_date: string
+          created_at?: string
+          id?: string
+          instructor_id: string
+        }
+        Update: {
+          class_date?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string
+        }
+        Relationships: []
+      }
       bug_reports: {
         Row: {
           admin_notes: string | null
