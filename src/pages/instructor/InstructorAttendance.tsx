@@ -121,6 +121,16 @@ export default function InstructorAttendance() {
   const safeIndex = Math.min(pastWeekIndex, Math.max(0, totalPastWeeks - 1));
   const currentPastWeek = sortedPastWeeks[safeIndex];
 
+  // Count highlighted (overdue) classes per past week so the Previous/Next Week
+  // controls can badge how many flagged classes sit in adjacent weeks. This
+  // matters when overdue classes span more than one past week.
+  const pastWeekFocusCounts = useMemo(
+    () => sortedPastWeeks.map(([, items]) => items.filter((it) => focusSet.has(it.dateStr)).length),
+    [sortedPastWeeks, focusSet],
+  );
+  const olderFocusCount = pastWeekFocusCounts.slice(safeIndex + 1).reduce((a, b) => a + b, 0);
+  const newerFocusCount = pastWeekFocusCounts.slice(0, safeIndex).reduce((a, b) => a + b, 0);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -242,6 +252,11 @@ export default function InstructorAttendance() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous Week
+                  {olderFocusCount > 0 && (
+                    <Badge className="ml-1 h-5 min-w-5 px-1.5 bg-deckademics-primary text-white">
+                      {olderFocusCount}
+                    </Badge>
+                  )}
                 </Button>
                 <span className="text-sm text-muted-foreground">
                   Week {safeIndex + 1} of {totalPastWeeks}
@@ -255,6 +270,11 @@ export default function InstructorAttendance() {
                 >
                   Next Week
                   <ChevronRight className="h-4 w-4" />
+                  {newerFocusCount > 0 && (
+                    <Badge className="ml-1 h-5 min-w-5 px-1.5 bg-deckademics-primary text-white">
+                      {newerFocusCount}
+                    </Badge>
+                  )}
                 </Button>
               </div>
             )}
