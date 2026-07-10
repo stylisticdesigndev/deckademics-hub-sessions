@@ -121,6 +121,16 @@ export default function InstructorAttendance() {
   const safeIndex = Math.min(pastWeekIndex, Math.max(0, totalPastWeeks - 1));
   const currentPastWeek = sortedPastWeeks[safeIndex];
 
+  // Count highlighted (overdue) classes per past week so the Previous/Next Week
+  // controls can badge how many flagged classes sit in adjacent weeks. This
+  // matters when overdue classes span more than one past week.
+  const pastWeekFocusCounts = useMemo(
+    () => sortedPastWeeks.map(([, items]) => items.filter((it) => focusSet.has(it.dateStr)).length),
+    [sortedPastWeeks, focusSet],
+  );
+  const olderFocusCount = pastWeekFocusCounts.slice(safeIndex + 1).reduce((a, b) => a + b, 0);
+  const newerFocusCount = pastWeekFocusCounts.slice(0, safeIndex).reduce((a, b) => a + b, 0);
+
   if (loading) {
     return (
       <div className="space-y-6">
