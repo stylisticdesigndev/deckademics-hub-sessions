@@ -58,6 +58,7 @@ import { Search, Check, X, Eye, Users, Loader2, AlertCircle, Info, MessageSquare
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator as SeparatorUI } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
 import {
   Tooltip,
   TooltipContent,
