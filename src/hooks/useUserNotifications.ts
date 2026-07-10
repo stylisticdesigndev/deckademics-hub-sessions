@@ -146,12 +146,9 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
           );
           const overdueNames = overdueDetails.map((o) => o.name);
           if (overdueNames.length > 0) {
-            // Deep-link to the most recent overdue class date so the instructor
-            // lands on the exact class that needs marking.
-            const latestDate = overdueDetails
-              .map((o) => o.date)
-              .sort()
-              .pop();
+            // Deep-link to every overdue class date so the instructor can see
+            // and mark all of them, not just the most recent one.
+            const allDates = [...new Set(overdueDetails.map((o) => o.date))].sort();
             attendanceReminders.push({
               id: 'attendance-reminder',
               type: 'attendance_reminder',
@@ -159,8 +156,8 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
               message: `Please record attendance for ${overdueNames.join(', ')}.`,
               read: false,
               created_at: new Date().toISOString(),
-              link: latestDate
-                ? `/instructor/attendance?date=${latestDate}`
+              link: allDates.length
+                ? `/instructor/attendance?dates=${allDates.join(',')}`
                 : '/instructor/attendance',
             });
           }

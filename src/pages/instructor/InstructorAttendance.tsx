@@ -25,10 +25,16 @@ export default function InstructorAttendance() {
   const [pastOpen, setPastOpen] = useState(false);
   const [pastWeekIndex, setPastWeekIndex] = useState(0);
 
-  // Deep-link support: notifications/pushes link to ?date=YYYY-MM-DD so the
-  // instructor lands on the exact overdue class.
+  // Deep-link support: notifications/pushes link to ?dates=YYYY-MM-DD,YYYY-MM-DD
+  // (or legacy ?date=) so the instructor lands on every overdue class.
   const [searchParams] = useSearchParams();
-  const focusDate = searchParams.get('date');
+  const focusDates = useMemo(() => {
+    const raw = searchParams.get('dates') ?? searchParams.get('date') ?? '';
+    return raw.split(',').map((d) => d.trim()).filter(Boolean);
+  }, [searchParams]);
+  const focusSet = useMemo(() => new Set(focusDates), [focusDates]);
+  // Land on the earliest overdue class so the instructor works forward in time.
+  const earliestFocus = focusDates.length ? [...focusDates].sort()[0] : null;
   const focusHandled = useRef<string | null>(null);
 
   const today = startOfDay(new Date());
@@ -80,31 +86,36 @@ export default function InstructorAttendance() {
   // When a focus date is present, open the correct past week (if the class is
   // not in the current week) and scroll it into view. Runs once per date.
   useEffect(() => {
-    if (!focusDate || focusHandled.current === focusDate) return;
+    const key = focusDates.join(',');
+    if (!key || focusHandled.current === key) return;
     if (currentWeekStudents.length === 0 && sortedPastWeeks.length === 0) return;
 
-    const inCurrent = currentWeekStudents.some((i) => i.dateStr === focusDate);
-    if (!inCurrent) {
+    // Find the earliest overdue class that lives in a past week and open it.
+    const pastFocus = focusDates
+      .filter((d) => !currentWeekStudents.some((i) => i.dateStr === d))
+      .sort();
+    if (pastFocus.length > 0) {
+      const target = pastFocus[0];
       const idx = sortedPastWeeks.findIndex(([, items]) =>
-        items.some((it) => it.dateStr === focusDate),
+        items.some((it) => it.dateStr === target),
       );
       if (idx >= 0) {
         setPastOpen(true);
         setPastWeekIndex(idx);
       }
     }
-    focusHandled.current = focusDate;
-  }, [focusDate, currentWeekStudents, sortedPastWeeks]);
+    focusHandled.current = key;
+  }, [focusDates, currentWeekStudents, sortedPastWeeks]);
 
   // Scroll the highlighted class into view once it is rendered.
   useEffect(() => {
-    if (!focusDate) return;
+    if (!earliestFocus) return;
     const timer = setTimeout(() => {
-      const el = document.querySelector(`[data-att-date="${focusDate}"]`);
+      const el = document.querySelector(`[data-att-date="${earliestFocus}"]`);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
     return () => clearTimeout(timer);
-  }, [focusDate, pastOpen, pastWeekIndex, currentWeekStudents.length]);
+  }, [earliestFocus, pastOpen, pastWeekIndex, currentWeekStudents.length]);
 
   const totalPastWeeks = sortedPastWeeks.length;
   const safeIndex = Math.min(pastWeekIndex, Math.max(0, totalPastWeeks - 1));
@@ -169,7 +180,7 @@ export default function InstructorAttendance() {
                   status={item.status}
                   isPast={item.isPast}
                   saving={saving}
-                  highlight={item.dateStr === focusDate}
+                  highlight={focusSet.has(item.dateStr)}
                   onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                   makeup={getMakeup(item.student.id, item.dateStr)}
                   makeupSaving={makeupSaving}
@@ -206,7 +217,7 @@ export default function InstructorAttendance() {
                     status={item.status}
                     isPast={true}
                     saving={saving}
-                    highlight={item.dateStr === focusDate}
+                    highlight={focusSet.has(item.dateStr)}
                     onMark={(status) => markAttendance(item.student.id, item.dateStr, status)}
                     makeup={getMakeup(item.student.id, item.dateStr)}
                     makeupSaving={makeupSaving}
