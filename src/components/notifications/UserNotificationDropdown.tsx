@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, MessageSquare, Megaphone, Camera, TrendingUp } from 'lucide-react';
+import { Bell, Check, MessageSquare, Megaphone, Camera, TrendingUp, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +13,7 @@ const iconMap: Record<string, React.ElementType> = {
   announcement: Megaphone,
   photo_reminder: Camera,
   level_reminder: TrendingUp,
+  attendance_reminder: ClipboardCheck,
 };
 
 interface UserNotificationDropdownProps {
@@ -34,6 +35,11 @@ export const UserNotificationDropdown = ({ userType }: UserNotificationDropdownP
   }, [unreadCount]);
 
   const handleNotificationClick = (notification: UserNotification) => {
+    if (notification.type === 'attendance_reminder') {
+      navigate('/instructor/attendance');
+      setOpen(false);
+      return;
+    }
     if (notification.type === 'photo_reminder' || notification.type === 'level_reminder') {
       navigate('/instructor/students');
       setOpen(false);
