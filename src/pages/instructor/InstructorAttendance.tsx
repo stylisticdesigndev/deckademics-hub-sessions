@@ -260,6 +260,7 @@ function StudentAttendanceRow({
   status,
   isPast,
   saving,
+  highlight,
   onMark,
   makeup,
   makeupSaving,
@@ -271,6 +272,7 @@ function StudentAttendanceRow({
   status: 'present' | 'absent' | null;
   isPast: boolean;
   saving: boolean;
+  highlight?: boolean;
   onMark: (status: 'present' | 'absent') => void;
   makeup: MakeupRow | null;
   makeupSaving: boolean;
@@ -278,7 +280,13 @@ function StudentAttendanceRow({
   onSetMakeupStatus: (status: MakeupStatus) => void;
 }) {
   return (
-    <Card className="p-4">
+    <Card
+      data-att-date={dateStr}
+      className={cn(
+        'p-4 transition-shadow',
+        highlight && 'ring-2 ring-deckademics-primary ring-offset-2 ring-offset-background',
+      )}
+    >
       <div className="flex items-center gap-3 flex-wrap">
         <Avatar className="h-10 w-10">
           {student.avatar && <AvatarImage src={student.avatar} />}
