@@ -164,12 +164,14 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Resolve assigned instructors for each overdue student.
+    // Resolve the PRIMARY instructor for each overdue student. Secondary
+    // instructors are intentionally not reminded to keep accountability clear.
     const overdueStudentIds = [...new Set(overdue.map((o) => o.studentId))];
     const { data: links } = await admin
       .from("student_instructors")
-      .select("student_id, instructor_id")
-      .in("student_id", overdueStudentIds);
+      .select("student_id, instructor_id, role")
+      .in("student_id", overdueStudentIds)
+      .eq("role", "primary");
 
     // Fallback to legacy students.instructor_id where no join rows exist.
     const { data: fallback } = await admin
