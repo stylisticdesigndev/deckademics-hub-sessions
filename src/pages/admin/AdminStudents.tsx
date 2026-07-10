@@ -359,7 +359,7 @@ const AdminStudents = () => {
               <CardDescription>Currently enrolled students.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border overflow-x-auto">
+              <div className="hidden md:block rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -486,6 +486,72 @@ const AdminStudents = () => {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+              {/* Mobile card view */}
+              <div className="md:hidden space-y-3">
+                {paginatedActiveStudents.length > 0 ? (
+                  paginatedActiveStudents.map((student) => (
+                    <MobileCard key={student.id} data-state={selectedIds.includes(student.id) ? 'selected' : undefined}>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          className="mt-1"
+                          checked={selectedIds.includes(student.id)}
+                          onCheckedChange={() => toggleSelect(student.id)}
+                        />
+                        <Avatar className="h-9 w-9">
+                          {student.profile?.avatar_url && <AvatarImage src={student.profile.avatar_url} alt={`${student.profile?.first_name} ${student.profile?.last_name}`} />}
+                          <AvatarFallback className="text-xs">
+                            {(student.profile?.first_name?.[0] || '')}{(student.profile?.last_name?.[0] || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold truncate">{student.profile?.first_name} {student.profile?.last_name}</span>
+                            {student.profile?.is_mock && (<Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">Mock</Badge>)}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{student.profile?.email}</p>
+                        </div>
+                        {getStatusBadge('active')}
+                      </div>
+                      <MobileField label="Instructor">
+                        {student.instructor ? (
+                          getInstructorDisplayName(student.instructor.profile) ||
+                          `${student.instructor.profile?.first_name || ''} ${student.instructor.profile?.last_name || ''}`.trim()
+                        ) : (
+                          <span className="text-muted-foreground">Unassigned</span>
+                        )}
+                      </MobileField>
+                      <MobileField label="Level"><Badge variant="outline" className="capitalize">{student.level}</Badge></MobileField>
+                      <MobileField label="Day">{(student as any).class_day || '—'}</MobileField>
+                      <MobileField label="Time">{(student as any).class_time || '—'}</MobileField>
+                      <MobileActions className="justify-end">
+                        <InstructorAssignmentDialog
+                          studentId={student.id}
+                          studentName={`${student.profile?.first_name} ${student.profile?.last_name}`}
+                          currentInstructorId={student.instructor_id}
+                        >
+                          <Button variant="outline" size="sm" disabled={processingStudentId === student.id}>
+                            <UserRound className="h-4 w-4 mr-1" /> Assign
+                          </Button>
+                        </InstructorAssignmentDialog>
+                        <Button variant="outline" size="sm" onClick={() => setViewStudentId(student.id)} disabled={processingStudentId === student.id}>
+                          <Eye className="h-4 w-4 mr-1" /> View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeactivate(student.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={processingStudentId === student.id}
+                        >
+                          {processingStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                        </Button>
+                      </MobileActions>
+                    </MobileCard>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-6">No active students found.</p>
+                )}
               </div>
               {/* Pagination */}
               {totalActivePages > 1 && (
