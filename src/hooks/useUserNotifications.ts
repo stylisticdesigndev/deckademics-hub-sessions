@@ -122,6 +122,38 @@ export const useUserNotifications = (userId?: string, userRole?: 'student' | 'in
             nameById[p.id] = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'A student';
           });
 
+          // Reminder to log attendance for classes that already ended and are
+          // still unmarked. Cover sessions aside, we nudge on assigned students'
+          // most recent past class within the last week.
+          const { data: attRecords } = await supabase
+            .from('attendance')
+            .select('student_id, date, status')
+            .in('student_id', ids);
+          const attendanceMap: Record<string, Record<string, 'present' | 'absent'>> = {};
+          ((attRecords as any[]) || []).forEach((r: any) => {
+            if (!attendanceMap[r.student_id]) attendanceMap[r.student_id] = {};
+            attendanceMap[r.student_id][r.date] = r.status;
+          });
+          const overdueNames = getOverdueAttendanceStudents(
+            assignedRows.map((s: any) => ({
+              id: s.id,
+              name: nameById[s.id] || 'A student',
+              classDay: s.class_day,
+              classTime: s.class_time,
+            })),
+            attendanceMap,
+          );
+          if (overdueNames.length > 0) {
+            attendanceReminders.push({
+              id: 'attendance-reminder',
+              type: 'attendance_reminder',
+              title: `Attendance not logged for ${overdueNames.length} class${overdueNames.length === 1 ? '' : 'es'}`,
+              message: `Please record attendance for ${overdueNames.join(', ')}.`,
+              read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
+
           const [{ data: skills }, { data: progress }] = await Promise.all([
             supabase
               .from('progress_skills' as any)
