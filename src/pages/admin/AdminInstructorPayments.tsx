@@ -757,7 +757,8 @@ const AdminInstructorPayments = () => {
           </CardHeader>
           <CardContent>
             {instructorsList.length > 0 ? (
-              <div className="overflow-x-auto">
+              <>
+              <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -791,6 +792,27 @@ const AdminInstructorPayments = () => {
                 </TableBody>
               </Table>
               </div>
+              <div className="md:hidden space-y-3">
+                {instructorsList.map((instructor) => (
+                  <MobileCard key={instructor.id}>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{instructor.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{instructor.email}</p>
+                    </div>
+                    <MobileField label="Specialization">{instructor.specialization}</MobileField>
+                    <MobileField label="Class Rate">${instructor.sessionFee}/class</MobileField>
+                    <MobileActions>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openScheduleDialog(instructor)}>
+                        <Clock className="mr-1 h-3 w-3" /> Set Schedule
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openSetRateDialog(instructor)}>
+                        Update Rate
+                      </Button>
+                    </MobileActions>
+                  </MobileCard>
+                ))}
+              </div>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No instructors found.</p>
             )}
