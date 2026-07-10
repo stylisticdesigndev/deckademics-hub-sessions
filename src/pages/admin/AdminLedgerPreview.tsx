@@ -35,6 +35,7 @@ import {
 import { format, subDays, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import { MobileCard, MobileField, MobileActions } from '@/components/admin/responsive/MobileCard';
+import { cn } from '@/lib/utils';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
