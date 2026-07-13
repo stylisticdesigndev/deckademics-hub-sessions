@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import StudentAuth from "./pages/auth/StudentAuth";
 import InstructorAuth from "./pages/auth/InstructorAuth";
 import ResetPassword from "./pages/auth/ResetPassword";
+import DesignSystem from "./pages/DesignSystem";
 
 // Profile setup pages
 import StudentProfileSetup from "./pages/student/StudentProfileSetup";
@@ -76,6 +77,7 @@ const App = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
+        <Route path="/design-system" element={<DesignSystem />} />
         <Route path="/auth">
           <Route index element={<Navigate to="/auth/student" replace />} />
           <Route path="student" element={<StudentAuth />} />
