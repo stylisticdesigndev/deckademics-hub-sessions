@@ -4,7 +4,7 @@ import type { TourStep } from '@/hooks/useTour';
  * Tour ids are versioned so we can bump them if a tour is significantly rewritten
  * (users will re-see the updated tour once, then it's marked seen again).
  */
-const V = 'v1';
+const V = 'v2';
 
 type TourDef = { id: string; label: string; path: string; steps: TourStep[] };
 
@@ -49,6 +49,34 @@ export const STUDENT_TOURS: Record<string, TourDef> = {
         popover: {
           title: 'Messages',
           description: 'Chat directly with your instructor — anytime, from any device.',
+        },
+      },
+      {
+        element: '[data-tour="header-notifications"]',
+        popover: {
+          title: 'Notifications',
+          description: 'The bell shows unread messages and announcements. A red dot means something new is waiting.',
+        },
+      },
+      {
+        element: '[data-tour="header-bug"]',
+        popover: {
+          title: 'Report a bug',
+          description: 'See something broken? Tap here to send a bug report — screenshots welcome.',
+        },
+      },
+      {
+        element: '[data-tour="header-feature"]',
+        popover: {
+          title: 'Request a feature',
+          description: 'Have an idea to make Deckademics better? Send it here — we read every one.',
+        },
+      },
+      {
+        element: '[data-tour="sidebar-user-footer"]',
+        popover: {
+          title: 'Your profile',
+          description: 'Click your name or avatar anytime to open your profile, update your photo, and manage settings.',
         },
       },
     ],
@@ -192,6 +220,34 @@ export const INSTRUCTOR_TOURS: Record<string, TourDef> = {
         popover: {
           title: 'My Payment',
           description: 'Your ledger — every session credited to you, with your pay period totals.',
+        },
+      },
+      {
+        element: '[data-tour="header-notifications"]',
+        popover: {
+          title: 'Notifications',
+          description: 'The bell shows unread messages and announcements. A red dot means something new is waiting.',
+        },
+      },
+      {
+        element: '[data-tour="header-bug"]',
+        popover: {
+          title: 'Report a bug',
+          description: 'See something broken? Tap here to send a bug report — screenshots welcome.',
+        },
+      },
+      {
+        element: '[data-tour="header-feature"]',
+        popover: {
+          title: 'Request a feature',
+          description: 'Have an idea to make Deckademics better? Send it here — we read every one.',
+        },
+      },
+      {
+        element: '[data-tour="sidebar-user-footer"]',
+        popover: {
+          title: 'Your profile',
+          description: 'Click your name or avatar anytime to open your profile, update your DJ name, photo, and settings.',
         },
       },
     ],
