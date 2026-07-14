@@ -92,6 +92,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
             <button
               type="button"
               aria-label="Profile menu"
+            data-tour="sidebar-user-footer"
               className={cn(
                 'flex items-center justify-center h-11 w-11 rounded-md transition-colors',
                 pathname === profileHref
@@ -119,6 +120,7 @@ export const SidebarUserFooter: React.FC<SidebarUserFooterProps> = ({ userType }
         <DropdownMenuTrigger asChild>
           <button
             type="button"
+            data-tour="sidebar-user-footer"
             className={cn(
               'w-full flex items-center gap-x-3 px-3 py-2.5 text-base font-semibold rounded-md',
               pathname === profileHref
