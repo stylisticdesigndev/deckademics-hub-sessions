@@ -4,7 +4,7 @@ import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import '@/lib/tour/driver-theme.css';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
-import { STUDENT_TOURS, INSTRUCTOR_TOURS, ADMIN_TOURS, type Role } from '@/lib/tour/tours';
+import { STUDENT_TOURS, INSTRUCTOR_TOURS, ADMIN_TOURS, welcomeIdForRole, type Role } from '@/lib/tour/tours';
 
 interface PageTourControllerProps {
   role: Role;
@@ -34,6 +34,10 @@ export const PageTourController: React.FC<PageTourControllerProps> = ({ role }) 
     const tour = TOUR_MAP[role][pathname];
     if (!tour) return;
     if (hasSeen(tour.id)) return;
+
+    // Don't overlap with the first-login welcome modal — wait until it's
+    // been dismissed/completed before auto-starting the dashboard tour.
+    if (!hasSeen(welcomeIdForRole(role))) return;
 
     const timer = window.setTimeout(() => {
       // Filter steps whose element selector isn't in the DOM.
@@ -68,6 +72,12 @@ export const PageTourController: React.FC<PageTourControllerProps> = ({ role }) 
 
     return () => window.clearTimeout(timer);
   }, [pathname, role, loaded, hasSeen, markSeen]);
+
+  // Re-evaluate when the welcome tour is marked seen (so the dashboard tour
+  // can auto-start right after the user finishes/skips the welcome).
+  useEffect(() => {
+    lastPathRef.current = null;
+  }, [hasSeen(welcomeIdForRole(role))]);
 
   return null;
 };
