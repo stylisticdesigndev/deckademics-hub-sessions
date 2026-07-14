@@ -108,10 +108,18 @@ export const DashboardLayout = ({
                 <Logo size="header" className="shrink-0 -ml-2 lg:-ml-1 hidden lg:block" />
               </div>
               <div className="flex items-center gap-2">
-                {userType !== 'admin' && <BugReportDialog triggerVariant="icon" />}
-                {userType !== 'admin' && <FeatureRequestDialog triggerVariant="icon" />}
+                {userType !== 'admin' && (
+                  <span data-tour="header-bug"><BugReportDialog triggerVariant="icon" /></span>
+                )}
+                {userType !== 'admin' && (
+                  <span data-tour="header-feature"><FeatureRequestDialog triggerVariant="icon" /></span>
+                )}
                 {userType === 'admin' && <NotificationDropdown />}
-                {userType !== 'admin' && <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />}
+                {userType !== 'admin' && (
+                  <span data-tour="header-notifications">
+                    <UserNotificationDropdown userType={userType as 'student' | 'instructor'} />
+                  </span>
+                )}
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Logout</span>
