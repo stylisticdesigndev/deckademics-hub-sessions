@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence, PanInfo } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,11 +24,22 @@ interface Props {
   items: SwipeItem[];
   saving: boolean;
   onMark: (studentId: string, dateStr: string, status: 'present' | 'absent') => void | Promise<void>;
+  /**
+   * When true, render as an edge-to-edge full-screen deck (photo fills all
+   * available vertical space; no inner heading). Used by the quick-attendance
+   * push-notification flow. Defaults to false for compact/embedded usage.
+   */
+  fullScreen?: boolean;
+  /**
+   * Called whenever progress changes so the parent (e.g. the full-screen
+   * top bar) can display the counter without duplicating a heading.
+   */
+  onProgress?: (info: { decided: number; total: number; currentTime: string | null }) => void;
 }
 
 const SWIPE_THRESHOLD = 110;
 
-export function SwipeAttendanceStack({ items, saving, onMark }: Props) {
+export function SwipeAttendanceStack({ items, saving, onMark, fullScreen = false, onProgress }: Props) {
   // Queue: only students not yet marked, in original order
   const initialQueue = useMemo(() => items.filter(i => i.status === null), [items]);
   const totalToday = items.length;
@@ -51,6 +62,14 @@ export function SwipeAttendanceStack({ items, saving, onMark }: Props) {
   const after = initialQueue[index + 2];
 
   const decidedCount = totalToday - initialQueue.length + index;
+
+  useEffect(() => {
+    onProgress?.({
+      decided: decidedCount,
+      total: totalToday,
+      currentTime: current?.student.classTime ?? null,
+    });
+  }, [decidedCount, totalToday, current?.student.classTime, onProgress]);
 
   const commit = async (status: 'present' | 'absent') => {
     if (!current || lockRef.current || saving) return;
@@ -76,15 +95,81 @@ export function SwipeAttendanceStack({ items, saving, onMark }: Props) {
   // Empty state (no classes today at all)
   if (totalToday === 0) {
     return (
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">{heading}</h2>
-        <Card>
+      <section className={cn(fullScreen ? 'h-full flex items-center justify-center' : 'space-y-3')}>
+        {!fullScreen && <h2 className="text-lg font-semibold">{heading}</h2>}
+        <Card className={fullScreen ? 'w-full max-w-sm' : ''}>
           <CardContent className="py-8 text-center text-muted-foreground">
             <ClipboardCheck className="h-8 w-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm">No classes scheduled today</p>
           </CardContent>
         </Card>
       </section>
+    );
+  }
+
+  if (fullScreen) {
+    return (
+      <div className="h-full w-full flex flex-col">
+        <div className="relative flex-1 min-h-0 w-full">
+          {!current ? (
+            <AllDoneCard fullScreen />
+          ) : (
+            <>
+              {after && (
+                <div
+                  key={`after-${after.student.id}`}
+                  className="absolute inset-0 translate-y-3 scale-[0.94] bg-card border border-border rounded-3xl shadow-sm opacity-40"
+                />
+              )}
+              {next && (
+                <div
+                  key={`next-${next.student.id}`}
+                  className="absolute inset-0 translate-y-1.5 scale-[0.97] bg-card border border-border rounded-3xl shadow-md opacity-70"
+                />
+              )}
+              <AnimatePresence initial={false}>
+                <SwipeCard
+                  key={current.student.id}
+                  item={current}
+                  disabled={saving}
+                  onDecide={commit}
+                />
+              </AnimatePresence>
+            </>
+          )}
+        </div>
+
+        {current && (
+          <div className="pt-5 pb-2 flex justify-around items-center">
+            <ActionButton
+              variant="absent"
+              disabled={saving}
+              onClick={() => commit('absent')}
+              label="Absent"
+            />
+            <ActionButton
+              variant="present"
+              disabled={saving}
+              onClick={() => commit('present')}
+              label="Present"
+            />
+          </div>
+        )}
+
+        {history.length > 0 && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={undo}
+              disabled={saving}
+              className="flex items-center gap-2 py-2 px-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-40"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-tight">Undo last</span>
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
