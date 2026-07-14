@@ -14,6 +14,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { DAY_ORDER, sanitizeScheduleItems, CLASS_SLOTS } from '@/utils/instructorSchedule';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
+import { TourReplayCard } from '@/components/onboarding/TourReplayCard';
 
 type TeachingScheduleItem = {
   day: string;
@@ -329,6 +330,9 @@ const InstructorProfile = () => {
       </div>
       <div className="max-w-2xl">
         <NotificationPreferencesCard />
+      </div>
+      <div className="max-w-2xl">
+        <TourReplayCard role="instructor" />
       </div>
     </div>
   );
