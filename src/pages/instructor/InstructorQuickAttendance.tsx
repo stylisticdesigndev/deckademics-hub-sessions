@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { X, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,24 @@ export default function InstructorQuickAttendance() {
     return todayStudents.filter(i => i.student.classTime === classTimeFilter);
   }, [todayStudents, classTimeFilter]);
 
+  const [progress, setProgress] = useState<{ decided: number; total: number; currentTime: string | null }>({
+    decided: 0,
+    total: 0,
+    currentTime: null,
+  });
+  const handleProgress = useCallback(
+    (info: { decided: number; total: number; currentTime: string | null }) => setProgress(info),
+    []
+  );
+
+  const topTime = progress.currentTime || classTimeFilter;
+  const counter =
+    progress.total > 0
+      ? progress.decided >= progress.total
+        ? `${progress.total} of ${progress.total} · all done`
+        : `${progress.decided + 1} of ${progress.total} · swipe or tap`
+      : null;
+
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       {/* Desktop notice */}
@@ -62,9 +80,9 @@ export default function InstructorQuickAttendance() {
       </div>
 
       {/* Mobile / tablet: full-screen swipe deck */}
-      <div className="md:hidden min-h-screen flex flex-col">
+      <div className="md:hidden h-screen flex flex-col">
         {/* Top bar */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur sticky top-0 z-10">
+        <header className="flex items-center justify-between px-4 py-2.5 bg-background/95 backdrop-blur sticky top-0 z-10 shrink-0">
           <button
             type="button"
             onClick={() => navigate('/instructor/dashboard')}
@@ -73,27 +91,33 @@ export default function InstructorQuickAttendance() {
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="text-center">
+          <div className="text-center leading-tight">
             <p className="text-sm font-bold">Quick Attendance</p>
-            {classTimeFilter && (
-              <p className="text-[11px] text-muted-foreground">{classTimeFilter}</p>
+            {(topTime || counter) && (
+              <p className="text-[11px] text-muted-foreground">
+                {topTime}
+                {topTime && counter ? ' · ' : ''}
+                {counter}
+              </p>
             )}
           </div>
           <div className="w-10" />
         </header>
 
         {/* Body */}
-        <main className="flex-1 flex items-center justify-center p-4">
+        <main className="flex-1 min-h-0 flex flex-col px-3 pb-3 pt-1">
           {loading ? (
-            <VinylLoader message="Loading students..." />
-          ) : (
-            <div className="w-full">
-              <SwipeAttendanceStack
-                items={filteredItems}
-                saving={saving}
-                onMark={markAttendance}
-              />
+            <div className="flex-1 flex items-center justify-center">
+              <VinylLoader message="Loading students..." />
             </div>
+          ) : (
+            <SwipeAttendanceStack
+              items={filteredItems}
+              saving={saving}
+              onMark={markAttendance}
+              fullScreen
+              onProgress={handleProgress}
+            />
           )}
         </main>
       </div>
