@@ -4,6 +4,8 @@ import VinylLoader from '@/components/ui/VinylLoader';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { InstructorNavigation } from '@/components/navigation/InstructorNavigation';
 import InstructorDashboard from './InstructorDashboard';
+import { WelcomeModal } from '@/components/onboarding/WelcomeModal';
+import { PageTourController } from '@/components/onboarding/PageTourController';
 
 const InstructorDashboardGate = () => {
   const dashboardData = useInstructorDashboard();
@@ -15,6 +17,8 @@ const InstructorDashboardGate = () => {
 
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
+      <WelcomeModal role="instructor" />
+      <PageTourController role="instructor" />
       <InstructorDashboard dashboardData={dashboardData} />
     </DashboardLayout>
   );

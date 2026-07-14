@@ -6,6 +6,8 @@ import VinylLoader from '@/components/ui/VinylLoader';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StudentNavigation } from '@/components/navigation/StudentNavigation';
 import StudentDashboard from './StudentDashboard';
+import { WelcomeModal } from '@/components/onboarding/WelcomeModal';
+import { PageTourController } from '@/components/onboarding/PageTourController';
 
 const StudentDashboardGate = () => {
   const { userData, session, isLoading: authLoading } = useAuth();
@@ -31,6 +33,8 @@ const StudentDashboardGate = () => {
 
   return (
     <DashboardLayout sidebarContent={<StudentNavigation />} userType="student">
+      <WelcomeModal role="student" />
+      <PageTourController role="student" />
       <StudentDashboard
         dashboard={dashboard}
         attendance={attendance ?? { present: 0, absent: 0, late: 0, total: 0 }}
