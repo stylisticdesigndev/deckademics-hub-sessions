@@ -45,6 +45,7 @@ import InstructorMessages from "./pages/instructor/InstructorMessages";
 import InstructorAttendance from "./pages/instructor/InstructorAttendance";
 import InstructorLedger from "./pages/instructor/InstructorLedger";
 import InstructorQuickAttendance from "./pages/instructor/InstructorQuickAttendance";
+import PreviewQuickAttendance from "./pages/_PreviewQuickAttendance";
 
 // Admin pages
 import AdminDashboardGate from "./pages/admin/AdminDashboardGate";
@@ -79,6 +80,7 @@ const App = () => {
         {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/design-system" element={<DesignSystem />} />
+        <Route path="/_preview/quick-attendance" element={<PreviewQuickAttendance />} />
         <Route path="/auth">
           <Route index element={<Navigate to="/auth/student" replace />} />
           <Route path="student" element={<StudentAuth />} />
