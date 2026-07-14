@@ -1446,6 +1446,24 @@ export type Database = {
           },
         ]
       }
+      user_onboarding: {
+        Row: {
+          completed_at: string
+          tour_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          tour_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          tour_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_passkeys: {
         Row: {
           counter: number

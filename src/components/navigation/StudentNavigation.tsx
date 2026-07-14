@@ -75,6 +75,7 @@ export const StudentNavigation = () => {
             to={item.href}
             onClick={closeMobileNav}
             className={linkClasses(item.href)}
+            data-tour={`nav-${item.title}`}
           >
             <item.icon className="h-5 w-5" />
             <span className="flex-1">{item.title}</span>

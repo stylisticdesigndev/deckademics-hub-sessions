@@ -103,3 +103,15 @@ When a student marks themselves absent or taps **Running Late**, both the primar
 ## Admin / Teaching View
 
 If you also have admin access, you can switch between views. Use **Return to Teaching View** in the admin menu to come back to your instructor dashboard.
+## Guided Tours
+
+### First-time walkthrough
+On your first sign-in, a short welcome introduces you to your dashboard. You can skip it at any time.
+
+### Per-page tours
+The first time you open a page (Students, Attendance, Calendar, My Payment, etc.), a short tour highlights the key controls. Click **Skip** to dismiss.
+
+### Replaying a tour
+1. Open **Profile** from your avatar menu.
+2. Scroll to the **App walkthrough** card.
+3. Click **Replay welcome**, pick a specific page tour to replay, or **Reset all tours** so every tour auto-plays again next time.

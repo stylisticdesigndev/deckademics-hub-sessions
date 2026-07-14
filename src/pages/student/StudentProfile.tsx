@@ -16,6 +16,7 @@ import { capitalizeLevel } from '@/lib/utils';
 import { formatDateUS } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
+import { TourReplayCard } from '@/components/onboarding/TourReplayCard';
 
 const StudentProfile = () => {
   const { toast } = useToast();
@@ -484,6 +485,9 @@ const StudentProfile = () => {
         </Dialog>
         <div className="mt-6 max-w-2xl">
           <PasskeyManager />
+        </div>
+        <div className="mt-6 max-w-2xl">
+          <TourReplayCard role="student" />
         </div>
       </div>
     </>

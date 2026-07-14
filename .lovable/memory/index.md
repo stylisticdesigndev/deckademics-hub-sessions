@@ -18,6 +18,7 @@
 - User guides live in docs/user-guide/*.md (PDFs in /mnt/documents). On feature changes, update the guide + run generate_pdfs.py --sync; periodically run --check and --sync if drift found.
 
 ## Memories
+- [Guided Tours](mem://features/guided-tours) — Hybrid onboarding: welcome modal + per-page driver.js coach-marks. `user_onboarding` table, replay from Profile.
 - [Video Background](mem://design/video-background) — Unified full-screen muted video background on home screen and all auth pages
 - [Admin Payment Management](mem://features/admin-payment-management) — Batch installment plans, tiered pricing, and two-step data fetch
 - [Student Notes System](mem://features/student-notes-system) — Instructor and student personal notes, unified feed, inline image/hyperlink, full CRUD

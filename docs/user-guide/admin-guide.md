@@ -103,3 +103,15 @@ The **Payments** preview is a safe testing area available to all admins for tryi
 ### Adjusting app settings
 1. Open **Settings** from the menu.
 2. Update the available configuration options for the school.
+## Guided Tours
+
+### First-time walkthrough
+On your first sign-in, a short welcome introduces the admin console. Skip any time.
+
+### Per-page tours
+The first time you open a page (Instructors, Students, Curriculum, Skills, Payments, etc.), a short tour highlights the main controls. Click **Skip** to dismiss.
+
+### Replaying a tour
+1. Open **Profile** from your avatar menu.
+2. Scroll to the **App walkthrough** card.
+3. Click **Replay welcome**, pick any page tour to replay, or **Reset all tours** so every tour auto-plays again on next visit.

@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
+import { TourReplayCard } from '@/components/onboarding/TourReplayCard';
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -137,6 +138,9 @@ const AdminProfile = () => {
         </div>
         <div className="mt-6">
           <NotificationPreferencesCard />
+        </div>
+        <div className="mt-6">
+          <TourReplayCard role="admin" />
         </div>
       </div>
     </div>

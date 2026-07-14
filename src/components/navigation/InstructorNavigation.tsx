@@ -51,6 +51,7 @@ export const InstructorNavigation = () => {
           key={item.href}
           to={item.href}
           onClick={closeMobileNav}
+          data-tour={`nav-${item.title}`}
           className={cn(
             "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",
             pathname === item.href

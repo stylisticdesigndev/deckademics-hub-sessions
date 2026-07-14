@@ -144,3 +144,16 @@ If something is not working, tell the school so they can fix it.
 
 ### Sunday Practice
 The **Sunday Practice** link opens the Deckademics practice page in a new tab for extra practice resources.
+
+## Guided Tours
+
+### First-time walkthrough
+The first time you sign in, a short welcome shows you around the app. You can skip it any time.
+
+### Per-page tours
+The first time you open a page (Skills, Classes, Notes, Messages, etc.), a short guided tour highlights the key things on that page. Follow it, or click **Skip** to dismiss.
+
+### Replaying a tour
+1. Open **Profile** from your avatar menu.
+2. Scroll to the **App walkthrough** card.
+3. Click **Replay welcome**, pick a specific page tour to replay, or **Reset all tours** so every tour auto-plays again next time.
