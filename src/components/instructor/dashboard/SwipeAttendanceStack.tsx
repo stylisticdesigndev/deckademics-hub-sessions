@@ -388,9 +388,12 @@ function ActionButton({
   );
 }
 
-function AllDoneCard() {
+function AllDoneCard({ fullScreen = false }: { fullScreen?: boolean }) {
   return (
-    <div className="absolute inset-0 bg-card border border-border rounded-3xl shadow-xl flex flex-col items-center justify-center text-center p-8">
+    <div className={cn(
+      'bg-card border border-border rounded-3xl shadow-xl flex flex-col items-center justify-center text-center p-8',
+      fullScreen ? 'absolute inset-0' : 'absolute inset-0'
+    )}>
       <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
         <PartyPopper className="w-8 h-8" />
       </div>
