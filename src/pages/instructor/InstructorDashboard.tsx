@@ -8,6 +8,7 @@ import { StudentTable } from '@/components/instructor/dashboard/StudentTable';
 import { TodayAttendanceSection } from '@/components/instructor/dashboard/TodayAttendanceSection';
 import { InstructorStudentDetailDialog } from '@/components/instructor/students/InstructorStudentDetailDialog';
 import { GradingWalkthrough } from '@/components/instructor/GradingWalkthrough';
+import { isWalkthroughEnabled } from '@/lib/featureFlags';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
@@ -53,6 +54,7 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   useEffect(() => {
     if (!walkthroughKey) return;
+    if (!isWalkthroughEnabled()) return;
     if (localStorage.getItem(walkthroughKey) !== 'true') {
       setWalkthroughOpen(true);
     }
