@@ -1,65 +1,68 @@
-## Onboarding Walkthrough
+## Goal
 
-Add a hybrid onboarding system: a short first-login welcome, plus contextual coach-mark tours the first time a user visits each major page. All tours are skippable and replayable from the Profile page.
+Keep the instructor dashboard exactly as it was. Build the swipe-style attendance experience as a **standalone full-screen page** that only opens when an instructor taps a **push notification** on their phone or tablet. Push-only, no in-app notification, no desktop version.
 
-### 1. Tour engine
+## Step 1 — Revert the dashboard
 
-- Add `driver.js` (small, framework-agnostic tour library, ~10KB) as the coach-mark engine. Themed to match the app (dark background, brand green accents, rounded corners).
-- Wrap it in a single `useTour(tourId, steps)` hook that:
-  - Reads/writes completion state to a new `user_onboarding` table (per user, per tour id) so progress follows the user across devices.
-  - Falls back to `localStorage` if the row hasn't loaded yet, to avoid flicker.
-  - Exposes `start()`, `reset()`, `hasSeen`.
+Restore `src/components/instructor/dashboard/TodayAttendanceSection.tsx` to the original list layout (avatar + name + level · class time + Present/Absent buttons). No swipe UI on the dashboard.
 
-### 2. First-login welcome
+The swipe component (`SwipeAttendanceStack.tsx`) is not deleted — it becomes the body of the new standalone page.
 
-- A 3-slide modal shown once per user right after they land on their dashboard for the first time:
-  1. What the app does (role-specific one-liner).
-  2. Where the main things live (sidebar tour teaser).
-  3. Where to get help / replay tours later (Profile → Replay tour).
-- Buttons: **Skip**, **Back**, **Next**, **Start tour** (last slide → kicks off the dashboard page tour).
+You can also roll back the whole previous turn from chat history if you'd rather start clean:
 
-### 3. Per-page coach-mark tours
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
 
-First visit to each page auto-starts a short tour (3–6 steps). Steps highlight real elements via `data-tour="..."` attributes added to existing components — no layout changes.
+## Step 2 — New full-screen page
 
-**Student tours:** Dashboard, Classes, Progress/Skills, Curriculum, Messages, Notes, Announcements, Profile.
-**Instructor tours:** Dashboard, Students, Attendance, Classes, Calendar, Curriculum, Messages, Ledger, Profile.
-**Admin tours:** Dashboard, Instructors, Students, Curriculum, Skills, Payments, Instructor Payments, Announcements, Bug Reports, Feature Requests, Settings, Profile.
+Route: `/instructor/attendance/quick`
 
-Note: the existing instructor `GradingWalkthrough` stays as-is (it's a deeper grading-specific flow) and will be linked from the Instructor Students tour.
+- Mobile/tablet only. On desktop viewports (≥ `md`), show a friendly "Open this on your phone or tablet to swipe through attendance" screen with a link back to `/instructor/attendance`.
+- Full-screen layout — no dashboard sidebar/header chrome. Uses its own minimal top bar (close button + "Today's Attendance" + progress "3 of 5").
+- Renders the existing swipe stack (photo hero, X / ✓ FABs, drag-to-decide, PRESENT/ABSENT stamps, Undo).
+- Optional `?classTime=5:30 PM - 7:00 PM` query param filters to a single class slot; without it, shows all of today's remaining students.
+- When the deck empties, show the "All caught up" state with a "Back to dashboard" button.
 
-### 4. Skip & replay
+## Step 3 — Push notifications (push-only, mid-class + pre-end)
 
-- Every step has **Skip tour** and **Next/Back**. ESC also skips.
-- Profile page (all three roles) gets a new **"App walkthrough"** card with:
-  - **Replay welcome** button.
-  - **Replay tour for this page…** dropdown listing all tours available to that role — clicking one navigates to the page and starts the tour.
-  - **Reset all tours** (marks everything unseen so tours re-trigger naturally).
+Two reminders per class the instructor is scheduled to teach today:
+1. **15 min after class start** — "Class is rolling — take attendance"
+2. **15 min before class end** — "Wrap-up time — log attendance before students leave"
 
-### 5. Data model
+Each push deep-links to `/instructor/attendance/quick?classTime=<slot>` so tapping it opens the full-screen swipe deck for that specific class.
 
-New table `public.user_onboarding`:
-- `user_id uuid` (FK auth.users, cascade)
-- `tour_id text`
-- `completed_at timestamptz default now()`
-- PK `(user_id, tour_id)`
-- RLS: users can select/insert/delete their own rows only. Grants per project convention.
+**Delivery:**
+- New Supabase edge function `attendance-inclass-reminder-push` runs every 5 minutes via `pg_cron` + `pg_net`.
+- Scans `students` grouped by `class_day` + `class_time` to find classes whose start-time+15m or end-time-15m falls in the last 5-minute window (America/New_York, matching your existing scheduling logic).
+- For each match, resolves the assigned instructor(s) via `student_instructors` (+ any active `cover_sessions` for today) and sends a Web Push via the existing `send-push` function with the deep link URL.
+- **No in-app notification, no toast, no bell badge.** Purely OS-level push.
+- New table `attendance_inclass_reminder_sent (instructor_id, class_date, class_time, kind)` with UNIQUE constraint so each reminder fires at most once per instructor per class per kind. Table gets RLS + GRANTs.
 
-### 6. Docs
+**Suppression rules** (so we don't nag when the work is done):
+- Skip a reminder if attendance for every student in that class slot is already marked for today.
+- Skip if the instructor has no active push subscription.
 
-- Update `docs/user-guide/{student,instructor,admin}-guide.md` with a short "Guided tours" section explaining auto-tours and how to replay from Profile.
-- Rebuild PDFs via `python docs/user-guide/generate_pdfs.py --sync`.
-- Add a Change Log entry.
+## Step 4 — Deep-link handling
 
-### Technical notes
+- `ProtectedRoute` already gates `/instructor/*`. The new page sits inside that route so an unauthenticated tap sends the instructor through login and back to the deep link.
+- Service worker's `notificationclick` handler already opens the payload's `url`, so no SW changes needed.
 
-- New files: `src/lib/tour/driver-theme.css`, `src/hooks/useTour.ts`, `src/hooks/useOnboardingState.ts`, `src/components/onboarding/WelcomeModal.tsx`, `src/components/onboarding/TourReplayCard.tsx`, `src/lib/tour/tours/{student,instructor,admin}.ts` (step definitions).
-- Mount `WelcomeModal` inside the three `*DashboardGate` components so it only appears after data loads.
-- Add `data-tour="..."` markers to existing sidebar nav items, key headers, primary action buttons — no behavior changes.
-- Migration adds `user_onboarding` with grants (`authenticated`, `service_role`) and RLS policies scoped to `auth.uid()`.
-- No changes to auth, routes, or business logic.
+## Technical notes
 
-### Out of scope
+- Files touched:
+  - Revert: `src/components/instructor/dashboard/TodayAttendanceSection.tsx`
+  - Keep: `src/components/instructor/dashboard/SwipeAttendanceStack.tsx`
+  - New page: `src/pages/instructor/InstructorQuickAttendance.tsx`
+  - Route registration: `src/App.tsx` (or wherever instructor routes are declared)
+  - New edge function: `supabase/functions/attendance-inclass-reminder-push/index.ts`
+  - Migration: new tracking table + `pg_cron` schedule (every 5 min)
+- Reuses `useInstructorAttendance` hook (already returns `todayStudents` and `markAttendance`) with an optional client-side filter by `classTime`.
+- Reuses `send-push` edge function and existing `push_subscriptions` table.
+- No new dependencies (framer-motion already installed last turn).
 
-- Video tutorials (docs memory notes those will replace PDFs later — separate effort).
-- Analytics on tour completion (can be added later against `user_onboarding`).
+## Out of scope
+
+- Desktop swipe experience (explicitly excluded).
+- In-app notifications for these reminders.
+- Changing the existing 2-hour post-class overdue reminder.
