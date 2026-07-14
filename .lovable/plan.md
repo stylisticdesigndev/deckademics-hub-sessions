@@ -1,48 +1,65 @@
-# Admin Responsive Audit — Mobile-First
+## Onboarding Walkthrough
 
-Goal: make every admin screen scale cleanly on tablet and (priority) mobile. Desktop stays essentially the same, with minor spacing/alignment polish allowed. Approach for dense data tables: **stacked cards on mobile, real table on desktop**.
+Add a hybrid onboarding system: a short first-login welcome, plus contextual coach-mark tours the first time a user visits each major page. All tours are skippable and replayable from the Profile page.
 
-## Problem categories found
+### 1. Tour engine
 
-1. **Dense tables only scroll sideways.** Students (9 columns), Instructor Payments, Ledger Preview, Payments, Attendance, and Progress render full tables inside `overflow-x-auto`. On mobile this forces awkward horizontal swiping and columns get clipped — the main "breaks completely" symptom.
-2. **Dialogs overflow the viewport.** Several use non-responsive fixed widths (`max-w-4xl`, `max-w-3xl`) or lack a mobile height cap, so they run off-screen or can't scroll on small devices.
-3. **Crowded header / filter / action rows.** The dashboard header action cluster, bulk-action button rows, filter rows, and generate/date-range controls wrap poorly or overflow on narrow screens.
+- Add `driver.js` (small, framework-agnostic tour library, ~10KB) as the coach-mark engine. Themed to match the app (dark background, brand green accents, rounded corners).
+- Wrap it in a single `useTour(tourId, steps)` hook that:
+  - Reads/writes completion state to a new `user_onboarding` table (per user, per tour id) so progress follows the user across devices.
+  - Falls back to `localStorage` if the row hasn't loaded yet, to avoid flicker.
+  - Exposes `start()`, `reset()`, `hasSeen`.
 
-## Plan
+### 2. First-login welcome
 
-### 1. Reusable mobile pattern (foundation)
-- Add a small shared helper approach: render the existing `<Table>` inside a `hidden md:block` wrapper and a mobile `md:hidden` list of record cards for the same data. Each mobile card shows the primary identity (name/avatar), key fields as labeled rows, status badge, and the same action buttons.
-- Keep a single source of data/handlers per page so desktop table and mobile cards stay in sync (no duplicated logic, just two presentations).
+- A 3-slide modal shown once per user right after they land on their dashboard for the first time:
+  1. What the app does (role-specific one-liner).
+  2. Where the main things live (sidebar tour teaser).
+  3. Where to get help / replay tours later (Profile → Replay tour).
+- Buttons: **Skip**, **Back**, **Next**, **Start tour** (last slide → kicks off the dashboard page tour).
 
-### 2. Convert the heavy tables to card views on mobile
-- `src/pages/admin/AdminStudents.tsx` — Active / Pending / Inactive tables (3 tables). Mobile card: avatar + name, email, instructor, level, day/time, status, and the row's actions/checkbox. Preserve bulk-select.
-- `src/pages/admin/AdminInstructorPayments.tsx` — pending + history tables and the generate-preview list. Mobile cards for each payment with amount, period, status, and action menu.
-- `src/pages/admin/AdminLedgerPreview.tsx` — ledger tables (several `overflow-x-auto` blocks). Mobile cards per entry with the right-aligned action group stacked.
-- `src/components/admin/payments/PaymentsTable.tsx` (used by `AdminPayments.tsx`) — mobile cards with student, amount, due date, type, status, and Mark Paid / edit / delete actions.
-- `src/pages/admin/AdminProgress.tsx` — student table → mobile cards (name, level, instructor, milestone summary).
-- `src/pages/admin/AdminAttendance.tsx` — attendance table → mobile cards.
+### 3. Per-page coach-mark tours
 
-### 3. Make all admin dialogs mobile-safe
-- Standardize wide dialogs to `w-[calc(100%-2rem)]` gutters + responsive max width + `max-h-[85vh] overflow-y-auto`.
-- Fix specifically: `StudentAssignmentDialog` and `InstructorAssignmentDialog` (`max-w-4xl`), `AdminLedgerPreview` (`max-w-3xl` and tall dialogs), plus review `AdminInstructors`, `AdminCurriculum`, `AdminSkills`, `AdminSettings`, `CreatePaymentDialog`, `ExtraPayDialog`, `AnnouncementForm`, `MockUsersSection` for a consistent mobile gutter + scroll cap.
-- Ensure dialog footers stack (already `flex-col-reverse sm:flex-row`) and long content scrolls.
+First visit to each page auto-starts a short tour (3–6 steps). Steps highlight real elements via `data-tour="..."` attributes added to existing components — no layout changes.
 
-### 4. Header, filters, and action rows
-- `src/components/layout/DashboardLayout.tsx` — verify the header action cluster (bug/feature/notifications/logout) fits on small phones; condense the Logout button to an icon-only variant on mobile if it crowds.
-- Bulk-action row in `AdminStudents` (Change Level / Message / Mark Mock / Deactivate / Clear) — ensure it wraps cleanly and buttons stay tappable.
-- Filter rows (`AdminProgress`, `AdminStudents`, `AdminBugReports`, `AdminFeatureRequests`) — make selects full-width and stack under the search on mobile (fix the fixed `w-[160px]` selects that don't shrink).
-- `AdminInstructorPayments` generate/date-range and instructor-scope controls — stack and go full-width on mobile.
+**Student tours:** Dashboard, Classes, Progress/Skills, Curriculum, Messages, Notes, Announcements, Profile.
+**Instructor tours:** Dashboard, Students, Attendance, Classes, Calendar, Curriculum, Messages, Ledger, Profile.
+**Admin tours:** Dashboard, Instructors, Students, Curriculum, Skills, Payments, Instructor Payments, Announcements, Bug Reports, Feature Requests, Settings, Profile.
 
-### 5. Page shells and stat grids (polish)
-- Confirm page title/action headers use `flex-col gap-3 sm:flex-row` so the primary action button drops below the title on mobile (already done in `AdminPayments`; apply the same to other page headers that place a button beside the title).
-- Verify stat-card grids collapse sensibly (`AdminDashboard`, `AdminProgress`, `AdminAttendance`, `PaymentStatsCards`) — mostly fine; adjust any that stay multi-column too early.
+Note: the existing instructor `GradingWalkthrough` stays as-is (it's a deeper grading-specific flow) and will be linked from the Instructor Students tour.
 
-### 6. Verification
-- Type-check with `tsgo` after changes.
-- Since authenticated preview isn't available in this environment (external Supabase), verify layout via targeted responsive checks: render-level review at 375px (mobile), 768px (tablet), and desktop breakpoints, confirming no horizontal page overflow, tappable controls, and dialogs contained within the viewport.
+### 4. Skip & replay
 
-## Technical notes
-- No backend, data, or business-logic changes — presentation only.
-- Reuse existing shadcn `Card`, `Badge`, `Button`, `DropdownMenu`; no new dependencies.
-- Breakpoint convention: `md` (768px) as the table→card switch; keep `sm` tweaks for filter/header rows.
-- All colors via existing semantic tokens (`deckademics-primary`, `muted-foreground`, etc.); no hardcoded colors.
+- Every step has **Skip tour** and **Next/Back**. ESC also skips.
+- Profile page (all three roles) gets a new **"App walkthrough"** card with:
+  - **Replay welcome** button.
+  - **Replay tour for this page…** dropdown listing all tours available to that role — clicking one navigates to the page and starts the tour.
+  - **Reset all tours** (marks everything unseen so tours re-trigger naturally).
+
+### 5. Data model
+
+New table `public.user_onboarding`:
+- `user_id uuid` (FK auth.users, cascade)
+- `tour_id text`
+- `completed_at timestamptz default now()`
+- PK `(user_id, tour_id)`
+- RLS: users can select/insert/delete their own rows only. Grants per project convention.
+
+### 6. Docs
+
+- Update `docs/user-guide/{student,instructor,admin}-guide.md` with a short "Guided tours" section explaining auto-tours and how to replay from Profile.
+- Rebuild PDFs via `python docs/user-guide/generate_pdfs.py --sync`.
+- Add a Change Log entry.
+
+### Technical notes
+
+- New files: `src/lib/tour/driver-theme.css`, `src/hooks/useTour.ts`, `src/hooks/useOnboardingState.ts`, `src/components/onboarding/WelcomeModal.tsx`, `src/components/onboarding/TourReplayCard.tsx`, `src/lib/tour/tours/{student,instructor,admin}.ts` (step definitions).
+- Mount `WelcomeModal` inside the three `*DashboardGate` components so it only appears after data loads.
+- Add `data-tour="..."` markers to existing sidebar nav items, key headers, primary action buttons — no behavior changes.
+- Migration adds `user_onboarding` with grants (`authenticated`, `service_role`) and RLS policies scoped to `auth.uid()`.
+- No changes to auth, routes, or business logic.
+
+### Out of scope
+
+- Video tutorials (docs memory notes those will replace PDFs later — separate effort).
+- Analytics on tour completion (can be added later against `user_onboarding`).
