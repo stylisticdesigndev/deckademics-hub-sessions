@@ -60,3 +60,4 @@
 - [Push Notifications](mem://features/push-notifications) — Free Web Push (VAPID) for all roles; send-push edge fn + notifyPush helpers wired to all major events
 - [Push Notification Onboarding Prompt](mem://features/push-onboarding-prompt) — One-time post-onboarding modal inviting students/instructors to enable push notifications
 - [User Guide Docs](mem://features/user-guide-docs) — Living Student/Instructor/Admin PDF manuals generated from docs/user-guide Markdown; keep in sync on feature changes
+- [Quick Attendance Push](mem://features/quick-attendance-push) — Push-only in-class reminders (start+15min, end−15min) deep-linking to a mobile/tablet-only full-screen swipe deck at /instructor/attendance/quick
