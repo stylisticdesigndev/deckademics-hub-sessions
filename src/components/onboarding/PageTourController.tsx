@@ -5,6 +5,7 @@ import 'driver.js/dist/driver.css';
 import '@/lib/tour/driver-theme.css';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { STUDENT_TOURS, INSTRUCTOR_TOURS, ADMIN_TOURS, welcomeIdForRole, type Role } from '@/lib/tour/tours';
+import { isWalkthroughEnabled } from '@/lib/featureFlags';
 
 interface PageTourControllerProps {
   role: Role;
@@ -28,6 +29,7 @@ export const PageTourController: React.FC<PageTourControllerProps> = ({ role }) 
 
   useEffect(() => {
     if (!loaded) return;
+    if (!isWalkthroughEnabled()) return;
     if (lastPathRef.current === pathname) return;
     lastPathRef.current = pathname;
 
