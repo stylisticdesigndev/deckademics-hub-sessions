@@ -7,6 +7,7 @@ import './index.css';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './providers/AuthProvider';
 import IOSSplashScreen from './components/pwa/IOSSplashScreen';
+import InstallAppPrompt from './components/pwa/InstallAppPrompt';
 
 // Ensure Supabase is properly initialized before rendering the app
 import { supabase } from './integrations/supabase/client';
@@ -47,6 +48,7 @@ createRoot(rootElement).render(
         {/* PWA splash screen — only visible in standalone (installed) mode */}
         <IOSSplashScreen />
         <App />
+        <InstallAppPrompt />
         <Toaster />
       </AuthProvider>
     </BrowserRouter>
