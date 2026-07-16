@@ -19,7 +19,9 @@ type BIPEvent = Event & {
 };
 
 const DISMISS_KEY = 'install-prompt-dismissed-at';
-const DISMISS_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+// Nudge daily — the app is designed for mobile, so we actively push users
+// to install rather than keep using it in the browser.
+const DISMISS_MS = 24 * 60 * 60 * 1000; // 1 day
 
 const isStandalone = () =>
   typeof window !== 'undefined' &&
