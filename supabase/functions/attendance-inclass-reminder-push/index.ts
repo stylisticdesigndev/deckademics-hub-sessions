@@ -148,7 +148,10 @@ Deno.serve(async (req: Request) => {
       .eq("date", todayStr);
     const marked = new Set((attendance ?? []).map(a => `${a.student_id}|${a.date}`));
 
-    // Resolve instructors for each student: primary/secondary + covers today
+    // Resolve instructors for each student.
+    //   - `start` (attendance nudge): primary/secondary + covers today.
+    //   - `end`   (class-notes nudge): PRIMARY/SECONDARY ONLY. Covers/makeups
+    //             handle their own notes from the student profile page.
     const { data: links } = await admin
       .from("student_instructors")
       .select("student_id, instructor_id")
@@ -159,38 +162,62 @@ Deno.serve(async (req: Request) => {
       .in("student_id", allStudentIds)
       .eq("class_date", todayStr);
 
-    const studentToInstructors = new Map<string, Set<string>>();
+    const primaryMap = new Map<string, Set<string>>();          // notes kind
+    const primaryPlusCoverMap = new Map<string, Set<string>>(); // attendance kind
     for (const l of links ?? []) {
       if (!l.instructor_id) continue;
-      if (!studentToInstructors.has(l.student_id)) studentToInstructors.set(l.student_id, new Set());
-      studentToInstructors.get(l.student_id)!.add(l.instructor_id);
+      if (!primaryMap.has(l.student_id)) primaryMap.set(l.student_id, new Set());
+      primaryMap.get(l.student_id)!.add(l.instructor_id);
+      if (!primaryPlusCoverMap.has(l.student_id)) primaryPlusCoverMap.set(l.student_id, new Set());
+      primaryPlusCoverMap.get(l.student_id)!.add(l.instructor_id);
     }
     for (const c of covers ?? []) {
       if (!c.cover_instructor_id) continue;
-      if (!studentToInstructors.has(c.student_id)) studentToInstructors.set(c.student_id, new Set());
-      studentToInstructors.get(c.student_id)!.add(c.cover_instructor_id);
+      if (!primaryPlusCoverMap.has(c.student_id)) primaryPlusCoverMap.set(c.student_id, new Set());
+      primaryPlusCoverMap.get(c.student_id)!.add(c.cover_instructor_id);
     }
+
+    // For the notes kind, also pull any student_notes the instructor already
+    // wrote today so we can suppress the reminder when they've already logged.
+    const { data: notesToday } = await admin
+      .from("student_notes")
+      .select("student_id, instructor_id, created_at")
+      .in("student_id", allStudentIds)
+      .gte("created_at", `${todayStr}T00:00:00Z`)
+      .lte("created_at", `${todayStr}T23:59:59Z`);
+    const notesKey = new Set(
+      (notesToday ?? []).map((n: { student_id: string; instructor_id: string }) =>
+        `${n.instructor_id}|${n.student_id}`,
+      ),
+    );
 
     // For each fire, aggregate per instructor + skip if all their students in that slot are marked
     type Push = { instructorId: string; slot: ClassSlot; kind: "start" | "end"; unmarkedCount: number };
     const pushes: Push[] = [];
 
     for (const f of toFire) {
-      // instructor -> set of unmarked students in this slot
+      const map = f.kind === "start" ? primaryPlusCoverMap : primaryMap;
+      // instructor -> pending students in this slot for this kind
       const perInst = new Map<string, Set<string>>();
       for (const sid of f.slot.studentIds) {
-        const insts = studentToInstructors.get(sid);
+        const insts = map.get(sid);
         if (!insts) continue;
-        const isMarked = marked.has(`${sid}|${todayStr}`);
-        if (isMarked) continue;
+        if (f.kind === "start") {
+          // Attendance nudge: skip students already marked today
+          if (marked.has(`${sid}|${todayStr}`)) continue;
+        }
         for (const iid of insts) {
+          if (f.kind === "end") {
+            // Notes nudge: skip students the instructor already noted today
+            if (notesKey.has(`${iid}|${sid}`)) continue;
+          }
           if (!perInst.has(iid)) perInst.set(iid, new Set());
           perInst.get(iid)!.add(sid);
         }
       }
-      for (const [iid, unmarked] of perInst.entries()) {
-        if (unmarked.size === 0) continue;
-        pushes.push({ instructorId: iid, slot: f.slot, kind: f.kind, unmarkedCount: unmarked.size });
+      for (const [iid, pending] of perInst.entries()) {
+        if (pending.size === 0) continue;
+        pushes.push({ instructorId: iid, slot: f.slot, kind: f.kind, unmarkedCount: pending.size });
       }
     }
 
@@ -236,16 +263,18 @@ Deno.serve(async (req: Request) => {
       const noun = p.unmarkedCount === 1 ? "student" : "students";
       const title = p.kind === "start"
         ? "Class is rolling — take attendance"
-        : "Wrap-up time — log attendance";
+        : "Log today's class notes";
       const body = p.kind === "start"
         ? `${p.unmarkedCount} ${noun} in your ${p.slot.classTime} class still need attendance.`
-        : `Class ends soon. ${p.unmarkedCount} ${noun} still unmarked in the ${p.slot.classTime} class.`;
-      const url = `/instructor/attendance/quick?classTime=${encodeURIComponent(p.slot.classTime)}`;
+        : `Jot down what you covered today with your ${p.unmarkedCount} ${noun} in the ${p.slot.classTime} class.`;
+      const url = p.kind === "start"
+        ? `/instructor/attendance/quick?classTime=${encodeURIComponent(p.slot.classTime)}`
+        : `/instructor/notes/quick?classTime=${encodeURIComponent(p.slot.classTime)}`;
       const payload = JSON.stringify({
         title,
         body,
         url,
-        tag: `inclass-attendance-${p.slot.classTime}-${p.kind}`,
+        tag: `inclass-${p.kind === "end" ? "notes" : "attendance"}-${p.slot.classTime}-${p.kind}`,
       });
 
       await Promise.all(

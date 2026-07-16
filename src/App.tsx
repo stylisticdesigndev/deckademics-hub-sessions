@@ -45,6 +45,7 @@ import InstructorMessages from "./pages/instructor/InstructorMessages";
 import InstructorAttendance from "./pages/instructor/InstructorAttendance";
 import InstructorLedger from "./pages/instructor/InstructorLedger";
 import InstructorQuickAttendance from "./pages/instructor/InstructorQuickAttendance";
+import InstructorQuickNotes from "./pages/instructor/InstructorQuickNotes";
 
 // Admin pages
 import AdminDashboardGate from "./pages/admin/AdminDashboardGate";
@@ -108,6 +109,7 @@ const App = () => {
           <Route path="/instructor/dashboard" element={<InstructorDashboardGate />} />
           {/* Full-screen quick attendance (opened from push notification). No layout chrome. */}
           <Route path="/instructor/attendance/quick" element={<InstructorQuickAttendance />} />
+          <Route path="/instructor/notes/quick" element={<InstructorQuickNotes />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin/dashboard" element={<AdminDashboardGate />} />
