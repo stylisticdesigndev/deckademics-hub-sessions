@@ -143,10 +143,15 @@ Deno.serve(async (req: Request) => {
     const allStudentIds = [...new Set(toFire.flatMap(f => [...f.slot.studentIds]))];
     const { data: attendance } = await admin
       .from("attendance")
-      .select("student_id, date")
+      .select("student_id, date, status")
       .in("student_id", allStudentIds)
       .eq("date", todayStr);
     const marked = new Set((attendance ?? []).map(a => `${a.student_id}|${a.date}`));
+    const absentToday = new Set(
+      (attendance ?? [])
+        .filter((a: { status: string }) => a.status === "absent")
+        .map((a: { student_id: string }) => a.student_id),
+    );
 
     // Resolve instructors for each student.
     //   - `start` (attendance nudge): primary/secondary + covers today.
@@ -210,6 +215,8 @@ Deno.serve(async (req: Request) => {
           if (f.kind === "end") {
             // Notes nudge: skip students the instructor already noted today
             if (notesKey.has(`${iid}|${sid}`)) continue;
+            // Notes nudge: skip students marked absent — nothing to note
+            if (absentToday.has(sid)) continue;
           }
           if (!perInst.has(iid)) perInst.set(iid, new Set());
           perInst.get(iid)!.add(sid);
