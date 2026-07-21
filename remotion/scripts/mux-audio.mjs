@@ -9,6 +9,18 @@ const videoOut = process.argv[4];
 
 // Load durations (frames) from the composition data by re-declaring.
 const SCENES_BY_ROLE = {
+  admin: [
+    { id: "intro", frames: 374 },
+    { id: "dashboard", frames: 541 },
+    { id: "instructors", frames: 560 },
+    { id: "students", frames: 611 },
+    { id: "curriculum", frames: 603 },
+    { id: "attendance", frames: 469 },
+    { id: "model", frames: 588 },
+    { id: "flow", frames: 1020 },
+    { id: "edge", frames: 502 },
+    { id: "close", frames: 140 },
+  ],
   instructor: [
     { id: "intro", frames: 607 },
     { id: "profile", frames: 677 },
@@ -41,9 +53,11 @@ const SCENES_BY_ROLE = {
 const scenes = SCENES_BY_ROLE[role];
 if (!scenes) throw new Error(`unknown role ${role}`);
 
+const audioDir = role === "admin" ? "remotion/public/audio" : `remotion/public/audio-${role}`;
+
 // Build ffmpeg command with per-scene inputs.
 const inputs = ["-i", videoIn];
-scenes.forEach((s) => inputs.push("-i", `remotion/public/audio-${role}/${s.id}.mp3`));
+scenes.forEach((s) => inputs.push("-i", `${audioDir}/${s.id}.mp3`));
 
 // Filter: pad each audio to its scene duration (seconds), then concat.
 const filterParts = [];
