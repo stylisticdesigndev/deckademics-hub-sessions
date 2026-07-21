@@ -53,7 +53,6 @@ export const AdminVideoWalkthroughModal: React.FC<Props> = ({ forceOpen, onClose
             ref={videoRef}
             src={walkthroughAsset.url}
             controls
-            autoPlay
             playsInline
             className="w-full h-auto max-h-[70vh]"
           />
