@@ -1,0 +1,52 @@
+[
+  {
+    "id": "intro",
+    "path": "audio/intro.mp3",
+    "bytes": 192768
+  },
+  {
+    "id": "dashboard",
+    "path": "audio/dashboard.mp3",
+    "bytes": 281856
+  },
+  {
+    "id": "instructors",
+    "path": "audio/instructors.mp3",
+    "bytes": 292224
+  },
+  {
+    "id": "students",
+    "path": "audio/students.mp3",
+    "bytes": 319488
+  },
+  {
+    "id": "curriculum",
+    "path": "audio/curriculum.mp3",
+    "bytes": 315264
+  },
+  {
+    "id": "attendance",
+    "path": "audio/attendance.mp3",
+    "bytes": 243456
+  },
+  {
+    "id": "model",
+    "path": "audio/model.mp3",
+    "bytes": 307200
+  },
+  {
+    "id": "flow",
+    "path": "audio/flow.mp3",
+    "bytes": 537600
+  },
+  {
+    "id": "edge",
+    "path": "audio/edge.mp3",
+    "bytes": 261120
+  },
+  {
+    "id": "close",
+    "path": "audio/close.mp3",
+    "bytes": 64896
+  }
+]
