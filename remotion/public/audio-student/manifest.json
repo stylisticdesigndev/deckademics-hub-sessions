@@ -1,0 +1,74 @@
+[
+  {
+    "id": "intro",
+    "path": "audio-student/intro.mp3",
+    "bytes": 306432,
+    "text": "Welcome to Deckademics. You're here because you want to learn to DJ, and this app is going to be your daily companion — your schedule, your progress tracker, your line to your instructor. In the next few minutes, I'll walk you through every part of the app so you know exactly what to tap and where to find things. No experience needed. Let's dive in."
+  },
+  {
+    "id": "signup",
+    "path": "audio-student/signup.mp3",
+    "bytes": 355200,
+    "text": "First, signing up. Choose Student when you create your account, enter your email, and set a password. Your account starts as Pending — that's normal. An administrator at the school reviews new students and approves you, usually within a day. Until then, you can't reach the dashboard. Once you're approved, log back in and you're ready to set up your profile."
+  },
+  {
+    "id": "profile",
+    "path": "audio-student/profile.mp3",
+    "bytes": 309120,
+    "text": "Now your profile. Fill in your name, and then upload a clear photo of your face. The photo is required — the app will not let you into your dashboard without it. This helps your instructor recognize you in class. If the upload fails, don't worry, it retries automatically. Once your photo appears, you're in."
+  },
+  {
+    "id": "install",
+    "path": "audio-student/install.mp3",
+    "bytes": 321792,
+    "text": "Before you go further, install the app on your phone. It works like any other app — from your browser, tap Share, then Add to Home Screen on iPhone, or Install app on Android. This makes push notifications work properly so you never miss a class reminder, a message from your instructor, or an announcement from the school."
+  },
+  {
+    "id": "dashboard",
+    "path": "audio-student/dashboard.mp3",
+    "bytes": 309120,
+    "text": "Your dashboard is your home screen. Next Class shows you when and where your next session is. Skills at a glance shows how you're progressing. Every card is a shortcut — tap it to open the full section. This is the first screen you'll see every time you open the app, so glance at it in the morning and you'll always know what's happening."
+  },
+  {
+    "id": "skills",
+    "path": "audio-student/skills.mp3",
+    "bytes": 394368,
+    "text": "Skills is where you see your progress. Instead of a raw percentage, your overall level is shown as one of four words: Novice, Amateur, Intermediate, or Advanced. Below that, you see your individual skills — beatmatching, mixing, EQ control, and so on. Each one has a green progress bar. The fuller the bar, the more you've mastered that skill. Your instructor updates these after class."
+  },
+  {
+    "id": "curriculum",
+    "path": "audio-student/curriculum.mp3",
+    "bytes": 259968,
+    "text": "Curriculum shows you what you'll learn at every level, from Novice up through Advanced. If you're curious what's coming next, or you want to review something you covered weeks ago, open Curriculum and browse the levels. Think of it as the roadmap for your entire journey through the school."
+  },
+  {
+    "id": "classes",
+    "path": "audio-student/classes.mp3",
+    "bytes": 392064,
+    "text": "Classes is your schedule. You'll see every upcoming session with its day, time, and classroom. Two important buttons live here. If you can't make a class, tap Mark Absence — your instructor is notified automatically, and you can cancel it later if your plans change. If you're on your way but behind schedule, tap Running Late. It sends an instant alert so your instructor knows to expect you."
+  },
+  {
+    "id": "notes",
+    "path": "audio-student/notes.mp3",
+    "bytes": 347520,
+    "text": "Notes is your private notebook inside the app. Tap Add Note, write anything you want to remember, and save. Your instructor can't see these — they're just for you. Even better, if your instructor sends you a message or image that's useful, tap Save to Notes on that message and it lands in your notebook so you can find it later without scrolling through chat."
+  },
+  {
+    "id": "messages",
+    "path": "audio-student/messages.mp3",
+    "bytes": 347520,
+    "text": "Messages is your direct chat with your instructor. Open it, read what they've sent, and reply. Two things to know. You can send text, links, and images. And you can reply for up to seven days after your instructor's most recent message. After that, wait for them to reach out again — this keeps everyone's inbox sane. Announcements from the school also appear in your notifications."
+  },
+  {
+    "id": "settings",
+    "path": "audio-student/settings.mp3",
+    "bytes": 366720,
+    "text": "In your profile, you'll find Notification Preferences. Turn email, text, and push notifications on or off — you're in control. If something in the app breaks or feels wrong, use Report a Bug from the menu and describe what happened. The school gets notified and can fix it fast. There's also a Sunday Practice link with extra resources for you to work on outside of class."
+  },
+  {
+    "id": "close",
+    "path": "audio-student/close.mp3",
+    "bytes": 161664,
+    "text": "That's it. Sign in, check your dashboard, watch your skills grow, message your instructor when you need to. Show up, put in the work, and we'll see you in class."
+  }
+]
