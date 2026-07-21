@@ -1,20 +1,30 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import { TransitionSeries, springTiming } from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
-import { wipe } from "@remotion/transitions/wipe";
-import { SceneTitle } from "./scenes/SceneTitle";
-import { SceneOverview } from "./scenes/SceneOverview";
-import { SceneAreas } from "./scenes/SceneAreas";
-import { ScenePayrollModel } from "./scenes/ScenePayrollModel";
-import { ScenePayrollFlow } from "./scenes/ScenePayrollFlow";
-import { SceneClose } from "./scenes/SceneClose";
+import { AbsoluteFill, Series, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { SceneIntro } from "./scenes/v2/SceneIntro";
+import { SceneDashboard } from "./scenes/v2/SceneDashboard";
+import { SceneInstructors } from "./scenes/v2/SceneInstructors";
+import { SceneStudents } from "./scenes/v2/SceneStudents";
+import { SceneCurriculum } from "./scenes/v2/SceneCurriculum";
+import { SceneAttendance } from "./scenes/v2/SceneAttendance";
+import { SceneModel } from "./scenes/v2/SceneModel";
+import { SceneFlow } from "./scenes/v2/SceneFlow";
+import { SceneEdge } from "./scenes/v2/SceneEdge";
+import { SceneCloseV2 } from "./scenes/v2/SceneCloseV2";
 
-const D = { title: 90, overview: 90, areas: 120, model: 150, flow: 180, close: 105 };
-const T = 20;
-// Total = sum durations - (transitions * (n-1))
-export const TOTAL_FRAMES =
-  D.title + D.overview + D.areas + D.model + D.flow + D.close - T * 5;
+// Per-scene durations in frames (30fps) — sized to each narration clip + short tail.
+const D = {
+  intro: 374,
+  dashboard: 541,
+  instructors: 560,
+  students: 611,
+  curriculum: 603,
+  attendance: 469,
+  model: 588,
+  flow: 1020,
+  edge: 502,
+  close: 140,
+};
+export const TOTAL_FRAMES = Object.values(D).reduce((a, b) => a + b, 0);
 
 const PersistentBg: React.FC = () => {
   const frame = useCurrentFrame();
@@ -48,36 +58,21 @@ const PersistentBg: React.FC = () => {
 };
 
 export const MainVideo: React.FC = () => {
-  const wipeT = springTiming({ config: { damping: 200 }, durationInFrames: T });
-  const fadeT = springTiming({ config: { damping: 200 }, durationInFrames: T });
   return (
     <AbsoluteFill>
       <PersistentBg />
-      <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={D.title}>
-          <SceneTitle />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition presentation={fade()} timing={fadeT} />
-        <TransitionSeries.Sequence durationInFrames={D.overview}>
-          <SceneOverview />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition presentation={wipe({ direction: "from-right" })} timing={wipeT} />
-        <TransitionSeries.Sequence durationInFrames={D.areas}>
-          <SceneAreas />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition presentation={fade()} timing={fadeT} />
-        <TransitionSeries.Sequence durationInFrames={D.model}>
-          <ScenePayrollModel />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition presentation={wipe({ direction: "from-bottom" })} timing={wipeT} />
-        <TransitionSeries.Sequence durationInFrames={D.flow}>
-          <ScenePayrollFlow />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition presentation={fade()} timing={fadeT} />
-        <TransitionSeries.Sequence durationInFrames={D.close}>
-          <SceneClose />
-        </TransitionSeries.Sequence>
-      </TransitionSeries>
+      <Series>
+        <Series.Sequence durationInFrames={D.intro}><SceneIntro /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.dashboard}><SceneDashboard /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.instructors}><SceneInstructors /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.students}><SceneStudents /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.curriculum}><SceneCurriculum /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.attendance}><SceneAttendance /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.model}><SceneModel /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.flow}><SceneFlow /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.edge}><SceneEdge /></Series.Sequence>
+        <Series.Sequence durationInFrames={D.close}><SceneCloseV2 /></Series.Sequence>
+      </Series>
     </AbsoluteFill>
   );
 };
