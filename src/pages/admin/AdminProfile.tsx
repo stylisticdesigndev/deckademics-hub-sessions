@@ -13,7 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
-import { TourReplayCard } from '@/components/onboarding/TourReplayCard';
+import { AdminVideoWalkthroughModal } from '@/components/onboarding/AdminVideoWalkthroughModal';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlayCircle } from 'lucide-react';
 
 const AdminProfile = () => {
   const { toast } = useToast();
