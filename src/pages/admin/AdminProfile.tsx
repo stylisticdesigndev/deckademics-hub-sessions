@@ -15,7 +15,6 @@ import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
 import { AdminVideoWalkthroughModal } from '@/components/onboarding/AdminVideoWalkthroughModal';
 import { PlayCircle, Compass } from 'lucide-react';
-import { useState } from 'react';
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -142,7 +141,7 @@ const AdminProfile = () => {
           <NotificationPreferencesCard />
         </div>
         <div className="mt-6">
-          <TourReplayCard role="admin" />
+          <AdminWalkthroughReplay />
         </div>
       </div>
     </div>
