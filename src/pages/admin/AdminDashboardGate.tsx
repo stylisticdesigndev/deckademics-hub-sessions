@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { useAdminInstructors } from '@/hooks/useAdminInstructors';
 import { useAdminPayments } from '@/hooks/useAdminPayments';
@@ -9,6 +9,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import AdminDashboard from './AdminDashboard';
 import { AdminVideoWalkthroughModal } from '@/components/onboarding/AdminVideoWalkthroughModal';
+import { Button } from '@/components/ui/button';
+import { PlayCircle } from 'lucide-react';
 
 const AdminDashboardGate = () => {
   const { data: dashboardData, isLoading } = useAdminDashboard();
@@ -33,6 +35,7 @@ const AdminDashboardGate = () => {
   });
 
   const allLoading = isLoading || isLoadingInstructors || isLoadingPayments || isLoadingPendingStudents;
+  const [replayOpen, setReplayOpen] = useState(false);
 
   if (allLoading) {
     return <VinylLoader message="Loading dashboard..." />;
@@ -40,7 +43,16 @@ const AdminDashboardGate = () => {
 
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
-      <AdminVideoWalkthroughModal />
+      <AdminVideoWalkthroughModal
+        forceOpen={replayOpen}
+        onClose={() => setReplayOpen(false)}
+      />
+      <div className="flex justify-end mb-4">
+        <Button variant="outline" size="sm" onClick={() => setReplayOpen(true)}>
+          <PlayCircle className="h-4 w-4 mr-2" />
+          Watch walkthrough video
+        </Button>
+      </div>
       <AdminDashboard
         dashboardData={dashboardData}
         pendingInstructors={pendingInstructors}
