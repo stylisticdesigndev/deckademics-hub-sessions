@@ -13,7 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { PasskeyManager } from '@/components/profile/PasskeyManager';
 import NotificationPreferencesCard from '@/components/student/profile/NotificationPreferencesCard';
-import { TourReplayCard } from '@/components/onboarding/TourReplayCard';
+import { AdminVideoWalkthroughModal } from '@/components/onboarding/AdminVideoWalkthroughModal';
+import { PlayCircle, Compass } from 'lucide-react';
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -140,10 +141,34 @@ const AdminProfile = () => {
           <NotificationPreferencesCard />
         </div>
         <div className="mt-6">
-          <TourReplayCard role="admin" />
+          <AdminWalkthroughReplay />
         </div>
       </div>
     </div>
+  );
+};
+
+const AdminWalkthroughReplay: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Compass className="h-5 w-5 text-primary" />
+          App walkthrough
+        </CardTitle>
+        <CardDescription>
+          Rewatch the narrated walkthrough video of the admin console.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Watch walkthrough video
+        </Button>
+      </CardContent>
+      {open && <AdminVideoWalkthroughModal forceOpen onClose={() => setOpen(false)} />}
+    </Card>
   );
 };
 

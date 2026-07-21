@@ -8,8 +8,7 @@ import VinylLoader from '@/components/ui/VinylLoader';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AdminNavigation } from '@/components/navigation/AdminNavigation';
 import AdminDashboard from './AdminDashboard';
-import { WelcomeModal } from '@/components/onboarding/WelcomeModal';
-import { PageTourController } from '@/components/onboarding/PageTourController';
+import { AdminVideoWalkthroughModal } from '@/components/onboarding/AdminVideoWalkthroughModal';
 
 const AdminDashboardGate = () => {
   const { data: dashboardData, isLoading } = useAdminDashboard();
@@ -41,8 +40,7 @@ const AdminDashboardGate = () => {
 
   return (
     <DashboardLayout sidebarContent={<AdminNavigation />} userType="admin">
-      <WelcomeModal role="admin" />
-      <PageTourController role="admin" />
+      <AdminVideoWalkthroughModal />
       <AdminDashboard
         dashboardData={dashboardData}
         pendingInstructors={pendingInstructors}
