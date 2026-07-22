@@ -2,51 +2,51 @@
   {
     "id": "intro",
     "path": "audio/intro.mp3",
-    "bytes": 192768
+    "bytes": 204288
   },
   {
     "id": "dashboard",
     "path": "audio/dashboard.mp3",
-    "bytes": 281856
+    "bytes": 369024
   },
   {
     "id": "instructors",
     "path": "audio/instructors.mp3",
-    "bytes": 292224
+    "bytes": 359424
   },
   {
     "id": "students",
     "path": "audio/students.mp3",
-    "bytes": 319488
+    "bytes": 334464
   },
   {
     "id": "curriculum",
     "path": "audio/curriculum.mp3",
-    "bytes": 315264
+    "bytes": 327168
   },
   {
     "id": "attendance",
     "path": "audio/attendance.mp3",
-    "bytes": 243456
+    "bytes": 271488
   },
   {
     "id": "model",
     "path": "audio/model.mp3",
-    "bytes": 307200
+    "bytes": 289920
   },
   {
     "id": "flow",
     "path": "audio/flow.mp3",
-    "bytes": 537600
+    "bytes": 555264
   },
   {
     "id": "edge",
     "path": "audio/edge.mp3",
-    "bytes": 261120
+    "bytes": 288768
   },
   {
     "id": "close",
     "path": "audio/close.mp3",
-    "bytes": 64896
+    "bytes": 57600
   }
 ]
