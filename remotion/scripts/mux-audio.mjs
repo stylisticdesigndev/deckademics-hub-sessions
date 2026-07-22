@@ -10,16 +10,16 @@ const videoOut = process.argv[4];
 // Load durations (frames) from the composition data by re-declaring.
 const SCENES_BY_ROLE = {
   admin: [
-    { id: "intro", frames: 374 },
-    { id: "dashboard", frames: 541 },
-    { id: "instructors", frames: 560 },
-    { id: "students", frames: 611 },
-    { id: "curriculum", frames: 603 },
-    { id: "attendance", frames: 469 },
-    { id: "model", frames: 588 },
-    { id: "flow", frames: 1020 },
-    { id: "edge", frames: 502 },
-    { id: "close", frames: 140 },
+    { id: "intro", frames: 414 },
+    { id: "dashboard", frames: 722 },
+    { id: "instructors", frames: 704 },
+    { id: "students", frames: 657 },
+    { id: "curriculum", frames: 644 },
+    { id: "attendance", frames: 540 },
+    { id: "model", frames: 574 },
+    { id: "flow", frames: 1071 },
+    { id: "edge", frames: 572 },
+    { id: "close", frames: 138 },
   ],
   instructor: [
     { id: "intro", frames: 607 },
