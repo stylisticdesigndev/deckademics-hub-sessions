@@ -13,16 +13,16 @@ import { SceneCloseV2 } from "./scenes/v2/SceneCloseV2";
 
 // Per-scene durations in frames (30fps) — sized to each narration clip + short tail.
 const D = {
-  intro: 374,
-  dashboard: 541,
-  instructors: 560,
-  students: 611,
-  curriculum: 603,
-  attendance: 469,
-  model: 588,
-  flow: 1020,
-  edge: 502,
-  close: 140,
+  intro: 414,
+  dashboard: 722,
+  instructors: 704,
+  students: 657,
+  curriculum: 644,
+  attendance: 540,
+  model: 574,
+  flow: 1071,
+  edge: 572,
+  close: 138,
 };
 export const TOTAL_FRAMES = Object.values(D).reduce((a, b) => a + b, 0);
 
