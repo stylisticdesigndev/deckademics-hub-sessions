@@ -23,7 +23,7 @@ const composition = await selectComposition({ serveUrl: bundled, id, puppeteerIn
 await renderMedia({
   composition, serveUrl: bundled, codec: "h264",
   outputLocation: out, puppeteerInstance: browser,
-  muted: true, concurrency: 1,
+  muted: true, concurrency: 4,
 });
 
 await browser.close({ silent: false });
