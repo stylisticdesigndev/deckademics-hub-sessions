@@ -17,7 +17,7 @@ const D = {
   dashboard: 722,
   instructors: 704,
   students: 657,
-  curriculum: 644,
+  curriculum: 866,
   attendance: 540,
   model: 574,
   flow: 1071,
