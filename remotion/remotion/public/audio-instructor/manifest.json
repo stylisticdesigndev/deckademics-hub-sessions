@@ -1,0 +1,68 @@
+[
+  {
+    "id": "intro",
+    "path": "audio-instructor/intro.mp3",
+    "bytes": 327168,
+    "text": "Welcome to Deckademics. You're an instructor, which means students are counting on you to guide their progress. This walkthrough covers every part of the app you'll actually use, from your first login to running your day to day class. Give me about five minutes, and by the end you'll know exactly where everything lives."
+  },
+  {
+    "id": "profile",
+    "path": "audio-instructor/profile.mp3",
+    "bytes": 328320,
+    "text": "First, your profile. When your account is approved, the app asks for your DJ Name. This matters — students see your DJ Name everywhere, not your legal name. If you leave it blank, we fall back to your first and last name, but the DJ Name is what makes you recognizable. Add a clear photo of your face too. Both are required before you can reach your dashboard."
+  },
+  {
+    "id": "dashboard",
+    "path": "audio-instructor/dashboard.mp3",
+    "bytes": 403968,
+    "text": "Your dashboard is your morning check in. Three stat cards up top show today's classes, average student progress, and your total student count. Below that, the Today's Attendance section lists everyone scheduled for today, and your Student Table gives you the full roster with progress bars. Tap any student to open their detail view. It's meant to be glanceable — one look and you know what your day looks like."
+  },
+  {
+    "id": "students",
+    "path": "audio-instructor/students.mp3",
+    "bytes": 378624,
+    "text": "The Students page shows the students assigned to you. Tap any name to open the detail dialog, where you'll find their skills, notes, tasks, and history. Each student has a primary instructor and, optionally, a secondary instructor. Think of secondary as a backup — the primary teaches and gets reminders, but the secondary can still see the student and mark attendance if they cover the class. Both of you can grade."
+  },
+  {
+    "id": "classes",
+    "path": "audio-instructor/classes.mp3",
+    "bytes": 337920,
+    "text": "The Classes page is your class schedule. It's grouped by day of the week — Monday through Sunday — with every student assigned to you on that day, their time slot, and their current level. There's a search box at the top so you can jump to a specific student, day, or time. This same schedule is what drives the attendance reminders that show up on your phone."
+  },
+  {
+    "id": "attendance",
+    "path": "audio-instructor/attendance.mp3",
+    "bytes": 394368,
+    "text": "Attendance is one of the most important things you do. Fifteen minutes after each class starts, you'll get a push notification reminding you to take attendance. Open it and you land on a full screen Quick Attendance page built for your phone — you swipe or tap each student, green for Present, red for Absent. It saves automatically. If you forget, we'll nudge you again after class ends until it's logged."
+  },
+  {
+    "id": "skills",
+    "path": "audio-instructor/skills.mp3",
+    "bytes": 457728,
+    "text": "Skills is where you grade progress. Open any student and you'll see their skills organized by level. Each one is rated on a three tier scale — Needs Work, Proficient, or Mastered. Skills marked Critical Core must be fully Mastered before a student can move up a level; the rest only need to reach Proficient. Your grades update the student's overall level — Novice, Amateur, Intermediate, or Advanced — automatically."
+  },
+  {
+    "id": "notes",
+    "path": "audio-instructor/notes.mp3",
+    "bytes": 432768,
+    "text": "Notes and Messages work together. Notes live inside each student's detail dialog — private observations you write about them, things to remember, follow ups. Messages are your direct chat. You can send text, links, and images. Students can reply for seven days after your most recent message, then the thread pauses until you message them again — so no one messages you at midnight three months later."
+  },
+  {
+    "id": "alerts",
+    "path": "audio-instructor/alerts.mp3",
+    "bytes": 405888,
+    "text": "The app pushes what matters straight to your phone. If a student taps Running Late, you get an instant push. If a student marks themselves Absent, you're notified the same way. Fifteen minutes after class starts, you're reminded to take attendance. Fifteen minutes before class ends, you're nudged to log class notes — and only for students who actually showed up, so absent students never clutter that list."
+  },
+  {
+    "id": "payment",
+    "path": "audio-instructor/payment.mp3",
+    "bytes": 459264,
+    "text": "Finally, My Payment. This is your personal ledger, and it's simple — you earn a flat fee for every class session you teach, once per scheduled time slot, regardless of how many students show up. Up top you'll see your Unpaid Balance, Unpaid Sessions, and Lifetime Paid. Below that, every session is listed with a Paid, Unpaid, or Void status. Covers, gigs, and bonuses show up separately under Extra Pay. If something looks off, message the admin — never edit it yourself."
+  },
+  {
+    "id": "close",
+    "path": "audio-instructor/close.mp3",
+    "bytes": 123264,
+    "text": "That's your complete tour. Log in, take attendance, grade skills, message your students, get paid. You're ready. Let's teach."
+  }
+]
