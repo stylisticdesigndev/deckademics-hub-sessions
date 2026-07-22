@@ -26,7 +26,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Set your DJ Name and photo first.",
   },
   {
-    kind: "cards", frames: 653, audio: A("dashboard"),
+    kind: "cards", frames: 745, audio: A("dashboard"),
     label: "Part 02 · Dashboard",
     title: "Three stats. One glance.",
     url: "deckademics.app/instructor",
@@ -77,7 +77,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Push 15 min after start → full-screen Quick Attendance.",
   },
   {
-    kind: "list", frames: 728, audio: A("skills"),
+    kind: "list", frames: 778, audio: A("skills"),
     label: "Part 06 · Skills",
     title: "Three tiers. Simple.",
     url: "deckademics.app/instructor/students/maya",
@@ -90,7 +90,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Critical Core = Mastered required · rest need Proficient.",
   },
   {
-    kind: "cards", frames: 850, audio: A("notes"),
+    kind: "cards", frames: 742, audio: A("notes"),
     label: "Part 07 · Notes & Messages",
     title: "Two tools · one goal.",
     cards: [
@@ -101,7 +101,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Notes remember · Messages communicate.",
   },
   {
-    kind: "steps", frames: 743, audio: A("alerts"),
+    kind: "steps", frames: 715, audio: A("alerts"),
     label: "Part 08 · Automated Alerts",
     title: "The app pushes what matters.",
     steps: [
@@ -113,7 +113,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "You never have to check manually.",
   },
   {
-    kind: "list", frames: 668, audio: A("payment"),
+    kind: "list", frames: 1047, audio: A("payment"),
     label: "Part 09 · My Payment",
     title: "Flat fee. Per session.",
     url: "deckademics.app/instructor/payment",
