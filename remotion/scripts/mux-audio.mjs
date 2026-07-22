@@ -14,7 +14,7 @@ const SCENES_BY_ROLE = {
     { id: "dashboard", frames: 722 },
     { id: "instructors", frames: 704 },
     { id: "students", frames: 657 },
-    { id: "curriculum", frames: 644 },
+    { id: "curriculum", frames: 866 },
     { id: "attendance", frames: 540 },
     { id: "model", frames: 574 },
     { id: "flow", frames: 1071 },
