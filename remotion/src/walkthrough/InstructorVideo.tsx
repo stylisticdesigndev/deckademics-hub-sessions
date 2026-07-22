@@ -7,14 +7,14 @@ const A = (id: string) => `audio-instructor/${id}.mp3`;
 
 export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
   {
-    kind: "title", frames: 619, audio: A("intro"),
+    kind: "title", frames: 625, audio: A("intro"),
     label: "Deckademics · Instructor Walkthrough",
     titleTop: "Teach smarter.",
     titleAccent: "Everything in one app.",
     sub: "A five-minute tour built for instructors.",
   },
   {
-    kind: "list", frames: 689, audio: A("profile"),
+    kind: "list", frames: 716, audio: A("profile"),
     label: "Part 01 · Profile",
     title: "Your DJ Name is your identity.",
     url: "deckademics.app/instructor/profile",
@@ -26,7 +26,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Set your DJ Name and photo first.",
   },
   {
-    kind: "cards", frames: 745, audio: A("dashboard"),
+    kind: "cards", frames: 790, audio: A("dashboard"),
     label: "Part 02 · Dashboard",
     title: "Three stats. One glance.",
     url: "deckademics.app/instructor",
@@ -38,7 +38,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Today's Attendance + Student Table live right below.",
   },
   {
-    kind: "phone", frames: 818, audio: A("students"),
+    kind: "phone", frames: 841, audio: A("students"),
     label: "Part 03 · Students",
     title: "Primary & secondary — a safety net.",
     phoneTitle: "Your Roster",
@@ -51,7 +51,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Tap any name → detail dialog: skills · notes · tasks.",
   },
   {
-    kind: "list", frames: 704, audio: A("classes"),
+    kind: "list", frames: 674, audio: A("classes"),
     label: "Part 04 · Classes",
     title: "Your schedule, grouped by day.",
     url: "deckademics.app/instructor/classes",
@@ -64,7 +64,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "The same schedule drives your push reminders.",
   },
   {
-    kind: "phone", frames: 695, audio: A("attendance"),
+    kind: "phone", frames: 757, audio: A("attendance"),
     label: "Part 05 · Attendance",
     title: "Swipe. Present. Absent. Done.",
     phoneTitle: "Class 2 · 6:00 PM",
@@ -77,7 +77,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Push 15 min after start → full-screen Quick Attendance.",
   },
   {
-    kind: "list", frames: 778, audio: A("skills"),
+    kind: "list", frames: 823, audio: A("skills"),
     label: "Part 06 · Skills",
     title: "Three tiers. Simple.",
     url: "deckademics.app/instructor/students/maya",
@@ -90,7 +90,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Critical Core = Mastered required · rest need Proficient.",
   },
   {
-    kind: "cards", frames: 742, audio: A("notes"),
+    kind: "cards", frames: 787, audio: A("notes"),
     label: "Part 07 · Notes & Messages",
     title: "Two tools · one goal.",
     cards: [
@@ -101,7 +101,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Notes remember · Messages communicate.",
   },
   {
-    kind: "steps", frames: 715, audio: A("alerts"),
+    kind: "steps", frames: 760, audio: A("alerts"),
     label: "Part 08 · Automated Alerts",
     title: "The app pushes what matters.",
     steps: [
@@ -113,7 +113,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "You never have to check manually.",
   },
   {
-    kind: "list", frames: 1047, audio: A("payment"),
+    kind: "list", frames: 1092, audio: A("payment"),
     label: "Part 09 · My Payment",
     title: "Flat fee. Per session.",
     url: "deckademics.app/instructor/payment",
@@ -126,7 +126,7 @@ export const INSTRUCTOR_SCENES: (SceneSpec & { frames: number })[] = [
     caption: "Something off? Message the admin — never edit it.",
   },
   {
-    kind: "close", frames: 295, audio: A("close"),
+    kind: "close", frames: 323, audio: A("close"),
     label: "That's your complete tour.",
     title: "Let's",
     accent: "teach.",

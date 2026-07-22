@@ -29,7 +29,7 @@ await renderMedia({
   outputLocation: out,
   puppeteerInstance: browser,
   muted: true,
-  concurrency: 1,
+  concurrency: 4,
   frameRange: [start, end],
 });
 
