@@ -194,11 +194,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     initializeAuth();
 
+    // Keep long-lived sessions alive in the installed PWA. When the app is
+    // backgrounded the auto-refresh timer can be suspended, so we explicitly
+    // refresh on resume and pause the timer while hidden.
+    const resumeRefresh = async () => {
+      try {
+        await supabase.auth.startAutoRefresh();
+        const { data: { session: refreshed } } = await supabase.auth.getSession();
+        if (refreshed) setSession(refreshed);
+      } catch (error) {
+        console.error('Error refreshing session on resume:', error);
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        resumeRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', resumeRefresh);
+
     // Cleanup: unsubscribe auth listener to prevent duplicates in StrictMode
     return () => {
       data.subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', resumeRefresh);
     };
   }, [navigate]);
+
 
   const fetchUserProfile = async (userId: string) => {
     try {
