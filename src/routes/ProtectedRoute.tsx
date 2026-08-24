@@ -4,7 +4,7 @@
  * Gate stages (in order):
  * 1. Auth loading — shows VinylLoader while Supabase session initialises.
  * 2. Profile wait — if session exists but profile/role hasn't loaded yet, waits
- *    up to 2 s (8 s hard timeout triggers sign-out with an error toast).
+ *    up to 2 s (after 10 s a non-destructive "Retry" screen is shown — never a sign-out).
  * 3. Authentication check — redirects to the role-appropriate auth page if no session.
  * 4. Role check — redirects to the user's own dashboard if their role doesn't match
  *    the `allowedRoles` for this route.
