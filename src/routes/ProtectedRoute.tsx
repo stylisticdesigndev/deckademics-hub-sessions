@@ -116,9 +116,29 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const loadingSkeleton = <VinylLoader />;
 
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 10000) {
     return loadingSkeleton;
   }
+
+  // Session is valid but the profile still hasn't loaded — offer a retry
+  // instead of signing the user out.
+  if (session && !effectiveRole && waitTime >= 10000) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <h1 className="text-xl font-semibold">Trouble loading your profile</h1>
+        <p className="text-muted-foreground max-w-sm text-sm">
+          You're still signed in — the connection just seems slow. Try again in a moment.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   
   // Check if user is authenticated
   if (!session) {
