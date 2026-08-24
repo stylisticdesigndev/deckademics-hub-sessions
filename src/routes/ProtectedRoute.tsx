@@ -4,7 +4,7 @@
  * Gate stages (in order):
  * 1. Auth loading — shows VinylLoader while Supabase session initialises.
  * 2. Profile wait — if session exists but profile/role hasn't loaded yet, waits
- *    up to 2 s (8 s hard timeout triggers sign-out with an error toast).
+ *    up to 2 s (after 10 s a non-destructive "Retry" screen is shown — never a sign-out).
  * 3. Authentication check — redirects to the role-appropriate auth page if no session.
  * 4. Role check — redirects to the user's own dashboard if their role doesn't match
  *    the `allowedRoles` for this route.
@@ -17,7 +17,6 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth, UserRole } from '@/providers/AuthProvider';
 import VinylLoader from '@/components/ui/VinylLoader';
 import { useEffect, useState } from 'react';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PendingApproval from '@/pages/PendingApproval';
 
@@ -26,7 +25,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { userData, isLoading, session, signOut } = useAuth();
+  const { userData, isLoading, session } = useAuth();
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
     return isLoading || (!userData.role && !!session);
   });
@@ -64,27 +63,19 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }, [userData.role]);
 
+  // If the profile is slow to load we NEVER sign the user out — a slow or flaky
+  // network looks identical to a broken session. Instead we surface a
+  // non-destructive retry state once the wait gets long.
   useEffect(() => {
     const needsRole = session && !userData.profile && !userData.role;
     if (!isLoading && needsRole) {
       const interval = window.setInterval(() => {
-        setWaitTime(prev => {
-          const newTime = prev + 500;
-          if (newTime >= 8000) {
-            clearInterval(interval);
-            toast({
-              title: 'Profile issue detected',
-              description: 'Having trouble loading your profile. Please try signing in again.',
-              variant: 'destructive',
-            });
-            setTimeout(() => signOut(), 2000);
-          }
-          return newTime;
-        });
+        setWaitTime(prev => Math.min(prev + 500, 10000));
       }, 500);
       return () => clearInterval(interval);
     }
-  }, [isLoading, session, userData, signOut]);
+  }, [isLoading, session, userData]);
+
 
   // Check approval status for students and instructors
   const effectiveRole = userData.role;
@@ -124,9 +115,29 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const loadingSkeleton = <VinylLoader />;
 
   // Show loading state but with a maximum wait time
-  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 8000) {
+  if ((isLoading || (session && isWaitingForProfile)) && waitTime < 10000) {
     return loadingSkeleton;
   }
+
+  // Session is valid but the profile still hasn't loaded — offer a retry
+  // instead of signing the user out.
+  if (session && !effectiveRole && waitTime >= 10000) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <h1 className="text-xl font-semibold">Trouble loading your profile</h1>
+        <p className="text-muted-foreground max-w-sm text-sm">
+          You're still signed in — the connection just seems slow. Try again in a moment.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   
   // Check if user is authenticated
   if (!session) {
