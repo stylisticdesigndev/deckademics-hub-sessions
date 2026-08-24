@@ -24,11 +24,17 @@ export const supabase = createClient<Database>(
   supabaseAnonKey,
   {
     auth: {
+      // Keep the session in localStorage and silently refresh the access token
+      // so users stay signed in across app restarts and long idle periods.
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      storageKey: 'sb-qeuzosggikxwnpyhulox-auth-token',
     }
   }
 );
+
 
 // Log auth state changes in development only
 supabase.auth.onAuthStateChange((event, session) => {
