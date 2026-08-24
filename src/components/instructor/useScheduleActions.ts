@@ -17,7 +17,7 @@ export function useScheduleActions(
   closeDialog: (state: boolean) => void
 ) {
   const { toast } = useToast();
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
 
   const saveSchedule = async () => {
     if (!instructorId) {
@@ -31,10 +31,9 @@ export function useScheduleActions(
     if (!session) {
       toast({
         title: "Authentication Error",
-        description: "Your session has expired. Please sign in again.",
+        description: "We couldn't verify your session. Please try again in a moment.",
         variant: "destructive"
       });
-      setTimeout(() => signOut(), 2000);
       return false;
     }
     try {
@@ -48,10 +47,9 @@ export function useScheduleActions(
         if (deleteError.message.includes('JWT') || deleteError.message.includes('token') || deleteError.message.includes('auth')) {
             toast({
               title: "Authentication Error",
-              description: "Your session has expired. Please sign in again.",
+              description: "We couldn't verify your session. Please try again in a moment.",
               variant: "destructive"
             });
-            setTimeout(() => signOut(), 2000);
             return false;
           }
         throw deleteError;
@@ -74,10 +72,9 @@ export function useScheduleActions(
           if (insertError.message.includes('JWT') || insertError.message.includes('token') || insertError.message.includes('auth')) {
             toast({
               title: "Authentication Error",
-              description: "Your session has expired. Please sign in again.",
+              description: "We couldn't verify your session. Please try again in a moment.",
               variant: "destructive"
             });
-            setTimeout(() => signOut(), 2000);
             return false;
           }
           throw insertError;
