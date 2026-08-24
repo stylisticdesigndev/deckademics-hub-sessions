@@ -64,27 +64,19 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     }
   }, [userData.role]);
 
+  // If the profile is slow to load we NEVER sign the user out — a slow or flaky
+  // network looks identical to a broken session. Instead we surface a
+  // non-destructive retry state once the wait gets long.
   useEffect(() => {
     const needsRole = session && !userData.profile && !userData.role;
     if (!isLoading && needsRole) {
       const interval = window.setInterval(() => {
-        setWaitTime(prev => {
-          const newTime = prev + 500;
-          if (newTime >= 8000) {
-            clearInterval(interval);
-            toast({
-              title: 'Profile issue detected',
-              description: 'Having trouble loading your profile. Please try signing in again.',
-              variant: 'destructive',
-            });
-            setTimeout(() => signOut(), 2000);
-          }
-          return newTime;
-        });
+        setWaitTime(prev => Math.min(prev + 500, 10000));
       }, 500);
       return () => clearInterval(interval);
     }
-  }, [isLoading, session, userData, signOut]);
+  }, [isLoading, session, userData]);
+
 
   // Check approval status for students and instructors
   const effectiveRole = userData.role;
