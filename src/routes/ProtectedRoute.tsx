@@ -17,7 +17,6 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth, UserRole } from '@/providers/AuthProvider';
 import VinylLoader from '@/components/ui/VinylLoader';
 import { useEffect, useState } from 'react';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PendingApproval from '@/pages/PendingApproval';
 
@@ -26,7 +25,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { userData, isLoading, session, signOut } = useAuth();
+  const { userData, isLoading, session } = useAuth();
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
     return isLoading || (!userData.role && !!session);
   });
