@@ -110,7 +110,7 @@ const Index = () => {
               variant="outline" 
               size="lg"
               asChild
-              onClick={ensureCleanAuthState}
+
             >
               <Link to="/auth/student" replace={true}>
                 Student
@@ -122,7 +122,7 @@ const Index = () => {
               variant="outline" 
               size="lg"
               asChild
-              onClick={ensureCleanAuthState}
+
             >
               <Link to="/auth/instructor" replace={true}>
                 Instructor
