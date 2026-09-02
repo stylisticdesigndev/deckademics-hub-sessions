@@ -1,18 +1,18 @@
-# Fix the remaining random sign-outs
+# Fix being asked to log in again after leaving the app
 
-Last time we removed the forced sign-out in the route guard and added refresh-on-resume. There is one more place that still destroys a good session — and it sits on the exact screen the installed app opens to.
+This is the same thing you're describing: use the app, go back to the home screen, come back a few minutes later, and it wants a login. Below is the exact code that causes it.
 
 ## What I found
 
-`src/pages/Index.tsx` (the landing page at `/`) runs this on load:
+When you leave the installed app and return, the phone usually discards the page and relaunches it at the manifest's `start_url`, which is `/` — the landing page. That page, `src/pages/Index.tsx`, runs this on load:
 
 ```text
 if (session exists) and (profile/role not loaded yet) -> clearLocalStorage()
 ```
 
-`clearLocalStorage()` in `AuthProvider` deletes the Supabase auth token from localStorage and wipes the session state. But "role not loaded yet" is the *normal* state for the first second or two after the app opens: the provider restores the session first, then asynchronously calls `get_user_role` and fetches the profile. On a slow or flaky connection (or a cold PWA start), the landing page fires first and throws away a perfectly valid session.
+`clearLocalStorage()` in `AuthProvider` deletes the Supabase auth token from localStorage and wipes the session state. But "role not loaded yet" is the *normal* state for the first second or two after the app opens: the provider restores the saved session first, then asynchronously calls `get_user_role` and fetches the profile. The landing page checks before that finishes, decides the session looks broken, and throws away a perfectly valid login — so you get the sign-in screen.
 
-The PWA manifest's `start_url` is `/`, so every time the installed app is launched from the home screen it lands on exactly this page. That matches "logged out three times in one day" — three cold launches on a slow connection.
+That's why it feels random: it depends on whether the profile query wins the race. Slow connection or cold relaunch means you lose it. Three times in one day matches three relaunches.
 
 The same stale-session check is duplicated in an unused `ensureCleanAuthState` helper on that page.
 
