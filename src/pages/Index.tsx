@@ -9,9 +9,9 @@ import { useAuth } from '@/providers/AuthProvider';
 const Index = () => {
   const [backgroundVideoUrl, setBackgroundVideoUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { userData, session, clearLocalStorage } = useAuth();
+  const { userData, session, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   // Clear any potential authentication errors on load
   useEffect(() => {
     localStorage.removeItem('auth-error');
@@ -23,20 +23,13 @@ const Index = () => {
     setBackgroundVideoUrl(videoPath);
     setIsLoading(false);
   }, []);
-  
-  // Check authentication state and clean up if necessary
-  useEffect(() => {
-    if (isLoading) return;
-    
-    const handleInitialLoad = () => {
-      if (session && (!userData || !userData.role)) {
-        clearLocalStorage();
-      }
-    };
 
-    handleInitialLoad();
-  }, [session, userData, clearLocalStorage, isLoading]);
-  
+  // NOTE: we intentionally never clear the stored auth session here. A session
+  // that exists while the role/profile is still loading is a normal loading
+  // state (the profile is fetched asynchronously after the session restores) —
+  // not a corrupt session. Clearing it here used to log people out whenever the
+  // installed app relaunched at "/" before the profile query finished.
+
   // Handle redirection if user is already logged in
   // Admins always route to instructor dashboard first
   const checkAndRedirect = useCallback(() => {
@@ -61,19 +54,20 @@ const Index = () => {
     checkAndRedirect();
   }, [checkAndRedirect]);
 
-  // Only clear auth if session is stale/inconsistent
-  const ensureCleanAuthState = () => {
-    if (session && (!userData || !userData.role)) {
-      clearLocalStorage();
-    }
-  };
+  const spinner = (
+    <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="w-12 h-12 border-4 border-deckademics-primary border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="w-12 h-12 border-4 border-deckademics-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return spinner;
+  }
+
+  // Signed in: keep showing the loader while the role resolves, then redirect.
+  // Never fall through to the signed-out landing page with a live session.
+  if (authLoading || session) {
+    return spinner;
   }
 
   return (
