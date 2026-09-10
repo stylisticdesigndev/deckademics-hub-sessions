@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { capitalizeLevel } from '@/lib/skillMilestones';
+import { cn, capitalizeLevel } from '@/lib/utils';
 import { useStudentGlance } from '@/hooks/instructor/useStudentGlance';
 import {
   CalendarClock,
