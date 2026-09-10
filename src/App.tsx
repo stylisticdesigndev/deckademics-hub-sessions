@@ -64,6 +64,11 @@ import AdminProgress from "./pages/admin/AdminProgress";
 import AdminBugReports from "./pages/admin/AdminBugReports";
 import AdminFeatureRequests from "./pages/admin/AdminFeatureRequests";
 import AdminLedgerPreview from "./pages/admin/AdminLedgerPreview";
+// Payroll (standalone app at /payroll)
+import PayrollLayoutRoute from "./routes/PayrollLayoutRoute";
+import PayrollProtectedRoute from "./routes/PayrollProtectedRoute";
+import PayrollLogin from "./pages/payroll/PayrollLogin";
+
 import StudentCurriculum from "./pages/student/StudentCurriculum";
 import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 
@@ -161,6 +166,17 @@ const App = () => {
             <Route path="/admin/ledger-preview" element={<AdminLedgerPreview />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+          </Route>
+        </Route>
+
+        {/* Standalone Payroll app — owner only, installable separately */}
+        <Route path="/payroll/login" element={<PayrollLogin />} />
+        <Route element={<PayrollProtectedRoute />}>
+          <Route element={<PayrollLayoutRoute />}>
+            <Route path="/payroll" element={<Navigate to="/payroll/instructors" replace />} />
+            <Route path="/payroll/instructors" element={<AdminInstructorPayments />} />
+            <Route path="/payroll/students" element={<AdminPayments />} />
+            <Route path="/payroll/overview" element={<AdminLedgerPreview />} />
           </Route>
         </Route>
 

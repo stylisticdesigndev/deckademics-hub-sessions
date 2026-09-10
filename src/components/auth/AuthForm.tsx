@@ -14,9 +14,11 @@ import { useNavigate } from 'react-router-dom';
 interface AuthFormProps {
   userType: UserRole;
   disableSignup?: boolean;
+  /** Where to send the user after a successful sign-in (defaults to their role dashboard). */
+  redirectTo?: string;
 }
 
-export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => {
+export const AuthForm = ({ userType, disableSignup = false, redirectTo }: AuthFormProps) => {
   const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -76,6 +78,10 @@ export const AuthForm = ({ userType, disableSignup = false }: AuthFormProps) => 
       
       // Add a slight delay before redirecting to ensure state is updated
       setTimeout(() => {
+        if (redirectTo) {
+          navigate(redirectTo);
+          return;
+        }
         // Redirect based on role
         if (userType === 'student') {
           navigate('/student/dashboard');
