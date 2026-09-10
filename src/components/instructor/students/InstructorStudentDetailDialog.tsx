@@ -31,6 +31,7 @@ import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
 import { RequirementsChecklist } from "@/components/progress/RequirementsChecklist";
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
+import { StudentProfileSummary } from "@/components/instructor/students/StudentProfileSummary";
 
 interface Props {
   open: boolean;
@@ -47,6 +48,7 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
   const { toast } = useToast();
   const { createRequest, pendingRequests } = useScheduleChangeRequests('instructor');
   const updateStudentLevel = useUpdateStudentLevel();
+  const [activeTab, setActiveTab] = useState('info');
 
   // Local mirror so optimistic edits survive parent refetch latency
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(student);
@@ -226,7 +228,14 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
               </div>
             </DialogHeader>
 
-            <Tabs defaultValue="info">
+            <StudentProfileSummary
+              student={detailedStudent}
+              instructorId={instructorId}
+              onAddNote={() => { setActiveTab('notes'); setNoteText(''); setShowNoteDialog(true); }}
+              onAddTask={() => { setActiveTab('tasks'); setShowAddTask(true); }}
+            />
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="info">Info</TabsTrigger>
                 <TabsTrigger value="progress">Skills</TabsTrigger>
@@ -396,24 +405,32 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                 </div>
                 {detailedStudent.notes?.length ? (
                   <div className="space-y-3">
-                    {detailedStudent.notes.map((note) => (
+                    {detailedStudent.notes.map((note) => {
+                      const isMine = !note.authorId || note.authorId === instructorId;
+                      return (
                       <div
                         key={note.id}
-                        className="border rounded-md p-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors group"
-                        onClick={() => { setEditingNote(note); setEditNoteText(note.content); setShowEditNoteDialog(true); }}
+                        className={cn(
+                          "border rounded-md p-3 text-sm transition-colors group",
+                          isMine && "cursor-pointer hover:bg-accent/50"
+                        )}
+                        onClick={isMine ? () => { setEditingNote(note); setEditNoteText(note.content); setShowEditNoteDialog(true); } : undefined}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             {note.title && <p className="font-medium text-foreground mb-1">{note.title}</p>}
                             <p className="text-muted-foreground">{note.content}</p>
                           </div>
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                          {isMine && (
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {(() => { try { return format(new Date(note.created_at), 'MM/dd/yyyy h:mm a'); } catch { return note.created_at || 'Unknown date'; } })()}
+                          {note.authorName || 'Instructor'} · {(() => { try { return format(new Date(note.created_at), 'MM/dd/yyyy h:mm a'); } catch { return note.created_at || 'Unknown date'; } })()}
                         </p>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">No notes have been added for this student yet.</div>

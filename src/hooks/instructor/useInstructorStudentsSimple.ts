@@ -3,12 +3,17 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 
 export interface StudentNote {
   id: string;
   content: string;
   title?: string | null;
   created_at: string;
+  /** Instructor who wrote the note. */
+  authorId?: string | null;
+  /** Display name (DJ name preferred) of the note's author. */
+  authorName?: string;
 }
 
 export interface SkillProgress {
@@ -134,10 +139,10 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .from('student_progress')
             .select('id, student_id, skill_name, proficiency')
             .in('student_id', studentIds),
+          // Notes from every instructor, so covering staff see full history.
           supabase
             .from('student_notes')
-            .select('id, student_id, content, title, created_at')
-            .eq('instructor_id', instructorId)
+            .select('id, student_id, content, title, created_at, instructor_id')
             .in('student_id', studentIds)
             .order('created_at', { ascending: false }),
           supabase
@@ -171,15 +176,29 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           }
         });
 
+        // Resolve note author display names (DJ name preferred).
+        const authorNameById = new Map<string, string>();
+        const noteRows = (notesResult.data || []) as any[];
+        if (noteRows.some((n) => n.instructor_id)) {
+          const { data: authorRows } = await supabase.rpc('get_instructor_display_names' as any);
+          ((authorRows as any[]) || []).forEach((row) => {
+            authorNameById.set(row.id, getInstructorDisplayName(row) || 'Instructor');
+          });
+        }
+
         // Group notes by student
         const notesById: { [id: string]: StudentNote[] } = {};
-        (notesResult.data || []).forEach((note) => {
+        noteRows.forEach((note) => {
           if (!notesById[note.student_id]) notesById[note.student_id] = [];
           notesById[note.student_id].push({
             id: note.id,
             content: note.content,
             title: note.title,
             created_at: note.created_at,
+            authorId: note.instructor_id ?? null,
+            authorName: note.instructor_id === instructorId
+              ? 'You'
+              : (authorNameById.get(note.instructor_id) || 'Instructor'),
           });
         });
 

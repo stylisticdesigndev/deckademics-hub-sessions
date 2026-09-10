@@ -38,6 +38,7 @@ import { RequirementsChecklist } from "@/components/progress/RequirementsCheckli
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 import { Sparkles } from "lucide-react";
+import { StudentProfileSummary } from "@/components/instructor/students/StudentProfileSummary";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -45,6 +46,8 @@ interface StudentNote {
   content: string;
   title?: string | null;
   created_at: string;
+  authorId?: string | null;
+  authorName?: string;
 }
 
 interface Student {
@@ -106,6 +109,7 @@ const InstructorStudents = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<{id: string; title: string; description: string} | null>(null);
   const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState('info');
 
   // Schedule change request state
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -851,7 +855,15 @@ const InstructorStudents = () => {
                   </div>
                 </DialogHeader>
                 
-                <Tabs defaultValue="info">
+                <StudentProfileSummary
+                  student={detailedStudent}
+                  instructorId={instructorId}
+                  onAddNote={() => { setDetailTab('notes'); openNoteDialog(detailedStudent.id); }}
+                  onAddTask={() => { setDetailTab('tasks'); setShowAddTask(true); }}
+                  className="mb-4"
+                />
+
+                <Tabs value={detailTab} onValueChange={setDetailTab}>
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="info" className="px-1 text-xs sm:px-3 sm:text-sm">Info</TabsTrigger>
                     <TabsTrigger value="progress" className="px-1 text-xs sm:px-3 sm:text-sm">Skills</TabsTrigger>
@@ -1055,15 +1067,20 @@ const InstructorStudents = () => {
                     
                     {detailedStudent.notes?.length ? (
                       <div className="space-y-3">
-                        {detailedStudent.notes.map((note) => (
+                        {detailedStudent.notes.map((note) => {
+                          const isMine = !note.authorId || note.authorId === instructorId;
+                          return (
                           <div 
                             key={note.id} 
-                            className="border rounded-md p-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors group"
-                            onClick={() => {
+                            className={cn(
+                              "border rounded-md p-3 text-sm transition-colors group",
+                              isMine && "cursor-pointer hover:bg-accent/50"
+                            )}
+                            onClick={isMine ? () => {
                               setEditingNote(note);
                               setEditNoteText(note.content);
                               setShowEditNoteDialog(true);
-                            }}
+                            } : undefined}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
@@ -1072,13 +1089,16 @@ const InstructorStudents = () => {
                                 )}
                                 <p className="text-muted-foreground">{note.content}</p>
                               </div>
-                              <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                              {isMine && (
+                                <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                              )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
-                              {(() => { try { return format(new Date(note.created_at), 'MM/dd/yyyy h:mm a'); } catch { return note.created_at || 'Unknown date'; } })()}
+                              {note.authorName || 'Instructor'} · {(() => { try { return format(new Date(note.created_at), 'MM/dd/yyyy h:mm a'); } catch { return note.created_at || 'Unknown date'; } })()}
                             </p>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
