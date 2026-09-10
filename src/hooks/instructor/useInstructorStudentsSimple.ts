@@ -9,6 +9,10 @@ export interface StudentNote {
   content: string;
   title?: string | null;
   created_at: string;
+  /** Instructor who wrote the note. */
+  authorId?: string | null;
+  /** Display name (DJ name preferred) of the note's author. */
+  authorName?: string;
 }
 
 export interface SkillProgress {
@@ -134,10 +138,10 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
             .from('student_progress')
             .select('id, student_id, skill_name, proficiency')
             .in('student_id', studentIds),
+          // Notes from every instructor, so covering staff see full history.
           supabase
             .from('student_notes')
-            .select('id, student_id, content, title, created_at')
-            .eq('instructor_id', instructorId)
+            .select('id, student_id, content, title, created_at, instructor_id')
             .in('student_id', studentIds)
             .order('created_at', { ascending: false }),
           supabase
