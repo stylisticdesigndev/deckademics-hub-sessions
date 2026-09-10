@@ -175,15 +175,29 @@ export function useInstructorStudentsSimple(instructorId: string | undefined) {
           }
         });
 
+        // Resolve note author display names (DJ name preferred).
+        const authorNameById = new Map<string, string>();
+        const noteRows = (notesResult.data || []) as any[];
+        if (noteRows.some((n) => n.instructor_id)) {
+          const { data: authorRows } = await supabase.rpc('get_instructor_display_names' as any);
+          ((authorRows as any[]) || []).forEach((row) => {
+            authorNameById.set(row.id, getInstructorDisplayName(row) || 'Instructor');
+          });
+        }
+
         // Group notes by student
         const notesById: { [id: string]: StudentNote[] } = {};
-        (notesResult.data || []).forEach((note) => {
+        noteRows.forEach((note) => {
           if (!notesById[note.student_id]) notesById[note.student_id] = [];
           notesById[note.student_id].push({
             id: note.id,
             content: note.content,
             title: note.title,
             created_at: note.created_at,
+            authorId: note.instructor_id ?? null,
+            authorName: note.instructor_id === instructorId
+              ? 'You'
+              : (authorNameById.get(note.instructor_id) || 'Instructor'),
           });
         });
 
