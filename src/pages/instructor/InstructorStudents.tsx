@@ -38,6 +38,7 @@ import { RequirementsChecklist } from "@/components/progress/RequirementsCheckli
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 import { Sparkles } from "lucide-react";
+import { StudentProfileSummary } from "@/components/instructor/students/StudentProfileSummary";
 
 // --------- TYPES ---------
 interface StudentNote {
