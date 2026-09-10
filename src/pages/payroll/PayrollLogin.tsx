@@ -29,7 +29,7 @@ const PayrollLogin = () => {
             alt="Deckademics Payroll"
             width={72}
             height={72}
-            className="h-18 w-18 rounded-2xl"
+            className="h-16 w-16 rounded-2xl"
           />
           <h1 className="text-2xl font-bold tracking-tight">Deckademics Payroll</h1>
           <p className="text-sm text-muted-foreground">
