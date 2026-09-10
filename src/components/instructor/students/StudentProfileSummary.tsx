@@ -40,6 +40,10 @@ interface StudentProfileSummaryProps {
   className?: string;
 }
 
+// Each action grows to fill the row so buttons stay evenly spaced with no
+// leftover gap on the right, at any screen width.
+const actionClass = 'flex-1 basis-[calc(50%-0.25rem)] sm:basis-32 min-w-0';
+
 const Stat = ({
   icon: Icon,
   label,
@@ -141,24 +145,24 @@ export const StudentProfileSummary = ({
 
       {/* Quick actions */}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => navigate(`/instructor/messages?to=${student.id}`)}>
+        <Button size="sm" className={actionClass} onClick={() => navigate(`/instructor/messages?to=${student.id}`)}>
           <MessageSquare className="h-4 w-4 mr-2" />
           Message
         </Button>
         {onAddNote && (
-          <Button size="sm" variant="outline" onClick={onAddNote}>
+          <Button size="sm" variant="outline" className={actionClass} onClick={onAddNote}>
             <StickyNote className="h-4 w-4 mr-2" />
             Add note
           </Button>
         )}
         {onAddTask && (
-          <Button size="sm" variant="outline" onClick={onAddTask}>
+          <Button size="sm" variant="outline" className={actionClass} onClick={onAddTask}>
             <ClipboardList className="h-4 w-4 mr-2" />
             Add task
           </Button>
         )}
         {student.phone && (
-          <Button size="sm" variant="outline" asChild>
+          <Button size="sm" variant="outline" className={actionClass} asChild>
             <a href={`tel:${student.phone}`}>
               <Phone className="h-4 w-4 mr-2" />
               Call
@@ -166,7 +170,7 @@ export const StudentProfileSummary = ({
           </Button>
         )}
         {student.email && (
-          <Button size="sm" variant="outline" asChild>
+          <Button size="sm" variant="outline" className={actionClass} asChild>
             <a href={`mailto:${student.email}`}>
               <Mail className="h-4 w-4 mr-2" />
               Email
