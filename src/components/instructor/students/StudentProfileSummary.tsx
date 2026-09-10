@@ -40,6 +40,10 @@ interface StudentProfileSummaryProps {
   className?: string;
 }
 
+// Each action grows to fill the row so buttons stay evenly spaced with no
+// leftover gap on the right, at any screen width.
+const actionClass = 'flex-1 basis-[calc(50%-0.25rem)] sm:basis-32 min-w-0';
+
 const Stat = ({
   icon: Icon,
   label,
