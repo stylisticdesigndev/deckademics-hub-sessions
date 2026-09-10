@@ -46,6 +46,8 @@ interface StudentNote {
   content: string;
   title?: string | null;
   created_at: string;
+  authorId?: string | null;
+  authorName?: string;
 }
 
 interface Student {
