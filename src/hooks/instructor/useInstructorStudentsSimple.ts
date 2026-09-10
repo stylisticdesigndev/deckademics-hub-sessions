@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { computeReadiness, nextLevelOf, normalizeLevel } from '@/lib/skillMilestones';
+import { getInstructorDisplayName } from '@/utils/instructorName';
 
 export interface StudentNote {
   id: string;
