@@ -9,6 +9,8 @@ import { NotesSection } from '@/components/student/dashboard/NotesSection';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CertificateCelebration } from '@/components/certificates/CertificateCelebration';
+import { CertificatesWidget } from '@/components/certificates/EarnedCertificates';
 
 interface StudentDashboardProps {
   dashboard: {
@@ -97,6 +99,8 @@ const StudentDashboard = ({
         </Alert>
       )}
 
+      <CertificateCelebration studentId={studentId} studentName={studentName} />
+
       <StudentStatsSection
         level={activeStudentData.level}
         totalProgress={activeStudentData.totalProgress}
@@ -104,6 +108,8 @@ const StudentDashboard = ({
         instructor={activeStudentData.instructor}
         classesAttended={activeAttendance.present}
       />
+
+      <CertificatesWidget studentId={studentId} />
 
       <section className="grid gap-6 grid-cols-1 md:grid-cols-2">
         <OverallProgressRing masteredCount={masteredCount} total={skillTotal} isReady={isReady} />

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MilestoneChip } from '@/components/progress/MilestoneChip';
 import { computeReadiness } from '@/lib/skillMilestones';
+import { EarnedCertificates } from '@/components/certificates/EarnedCertificates';
 
 interface SkillWithProficiency {
   skill_name: string;
@@ -95,6 +96,9 @@ const StudentProgress = () => {
             </p>
           </div>
         </section>
+
+        <EarnedCertificates studentId={userData.user?.id} />
+
 
         {isLoading ? (
           <div className="text-center py-12">

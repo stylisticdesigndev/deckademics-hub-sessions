@@ -43,6 +43,10 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 210 9% 26%;
     --sidebar-ring: 133 43% 45%;
+
+    --cert-gold: 43 65% 55%;
+    --cert-ink: 220 20% 9%;
+    --cert-paper: 40 30% 94%;
   }
 }
 
@@ -110,4 +114,14 @@
   .progress-bar {
     @apply h-full bg-gradient-to-r from-deckademics-primary to-deckademics-secondary transition-all duration-500 ease-out;
   }
+}
+
+/* Certificate printing: only the certificate, landscape letter, no margins */
+#certificate-print-root { display: none; }
+@media print {
+  @page { size: 11in 8.5in; margin: 0; }
+  html, body { background: hsl(var(--cert-ink)) !important; }
+  body > *:not(#certificate-print-root) { display: none !important; }
+  #certificate-print-root { display: block !important; width: 11in; height: 8.5in; }
+  #certificate-print-root .certificate-doc { width: 11in; height: 8.5in; border-radius: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

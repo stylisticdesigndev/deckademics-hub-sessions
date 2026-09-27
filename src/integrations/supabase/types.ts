@@ -1166,6 +1166,53 @@ export type Database = {
           },
         ]
       }
+      student_certificates: {
+        Row: {
+          certificate_id: string
+          course_level: string
+          created_at: string
+          id: string
+          instructor_name: string | null
+          instructor_signature_url: string | null
+          issued_date: string
+          student_display_name: string
+          student_id: string
+          unseen: boolean
+        }
+        Insert: {
+          certificate_id: string
+          course_level: string
+          created_at?: string
+          id?: string
+          instructor_name?: string | null
+          instructor_signature_url?: string | null
+          issued_date?: string
+          student_display_name: string
+          student_id: string
+          unseen?: boolean
+        }
+        Update: {
+          certificate_id?: string
+          course_level?: string
+          created_at?: string
+          id?: string
+          instructor_name?: string | null
+          instructor_signature_url?: string | null
+          issued_date?: string
+          student_display_name?: string
+          student_id?: string
+          unseen?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_instructors: {
         Row: {
           created_at: string
@@ -1565,6 +1612,27 @@ export type Database = {
         Args: { _instructor_id: string; _student_id: string }
         Returns: Json
       }
+      award_certificate_internal: {
+        Args: { _issued?: string; _level: string; _student_id: string }
+        Returns: {
+          certificate_id: string
+          course_level: string
+          created_at: string
+          id: string
+          instructor_name: string | null
+          instructor_signature_url: string | null
+          issued_date: string
+          student_display_name: string
+          student_id: string
+          unseen: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_certificates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_instructor_access_student: {
         Args: { _instructor_id: string; _student_id: string }
         Returns: boolean
@@ -1689,6 +1757,28 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      issue_student_certificate: {
+        Args: { _level: string; _student_id: string }
+        Returns: {
+          certificate_id: string
+          course_level: string
+          created_at: string
+          id: string
+          instructor_name: string | null
+          instructor_signature_url: string | null
+          issued_date: string
+          student_display_name: string
+          student_id: string
+          unseen: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_certificates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      level_rank: { Args: { _level: string }; Returns: number }
       set_mock_flag: {
         Args: { _is_mock: boolean; _user_ids: string[] }
         Returns: Json
