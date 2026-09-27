@@ -19,6 +19,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				cert: ["Cinzel", "serif"],
+				script: ["\"Great Vibes\"", "cursive"],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -78,6 +82,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
+				confetti: { '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' }, '100%': { transform: 'translateY(520px) rotate(540deg)', opacity: '0' } },
+				'badge-pop': { '0%': { transform: 'scale(0.3)', opacity: '0' }, '60%': { transform: 'scale(1.12)', opacity: '1' }, '100%': { transform: 'scale(1)' } },
 				'accordion-down': {
 					from: {
 						height: '0'
@@ -103,6 +109,8 @@ export default {
 				}
 			},
 			animation: {
+				confetti: 'confetti 3s ease-in forwards',
+				'badge-pop': 'badge-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both',
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',

@@ -31,6 +31,7 @@ import { MilestoneSummary } from "@/components/progress/MilestoneSummary";
 import { RequirementsChecklist } from "@/components/progress/RequirementsChecklist";
 import { milestoneLabel } from "@/lib/skillMilestones";
 import { useUpdateStudentLevel, LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
+import { StaffCertificatesPanel } from "@/components/certificates/StaffCertificatesPanel";
 import { StudentProfileSummary } from "@/components/instructor/students/StudentProfileSummary";
 
 interface Props {
@@ -227,6 +228,8 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
                 </div>
               </div>
             </DialogHeader>
+
+            <StaffCertificatesPanel studentId={detailedStudent.id} currentLevel={detailedStudent.level} />
 
             <StudentProfileSummary
               student={detailedStudent}
