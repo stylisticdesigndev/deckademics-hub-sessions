@@ -25,7 +25,7 @@ export const CertificateDocument = ({ cert }: { cert: StudentCertificate }) => {
           DECKADEMICS DJ SCHOOL
         </p>
         <h2 className="mt-[1.4cqw] font-cert text-[4cqw] leading-none">
-          {isMaster ? 'Master DJ Certification' : 'Certificate of Completion'}
+          {isMaster ? 'Master DJ Certification' : `${cert.course_level} DJ Certification`}
         </h2>
         <p className="mt-[2.2cqw] text-[1.4cqw] italic opacity-80">This certifies that</p>
         <p className="mt-[0.6cqw] font-script text-[6cqw] leading-tight text-[hsl(var(--cert-gold))]">
@@ -35,7 +35,7 @@ export const CertificateDocument = ({ cert }: { cert: StudentCertificate }) => {
         <p className="mt-[1.6cqw] max-w-[68cqw] text-[1.45cqw] leading-relaxed opacity-90">
           {isMaster
             ? `Having demonstrated complete artistic mastery, technical excellence, and dedication to the craft, ${cert.student_display_name} is hereby awarded the Deckademics Master DJ Certification.`
-            : `has successfully demonstrated mastery of all core competencies and is hereby awarded the Certificate of Completion for the ${cert.course_level} DJ Curriculum.`}
+            : `has successfully completed the ${cert.course_level} DJ Curriculum and demonstrated mastery of all its core competencies and requirements.`}
         </p>
 
         <div className="mt-auto w-full grid grid-cols-3 items-end gap-[3cqw]">
