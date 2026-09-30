@@ -39,6 +39,7 @@ import { milestoneLabel } from "@/lib/skillMilestones";
 import { LEVEL_DISPLAY_MAP, type StudentLevel } from "@/hooks/useUpdateStudentLevel";
 import { Sparkles } from "lucide-react";
 import { StudentProfileSummary } from "@/components/instructor/students/StudentProfileSummary";
+import { StaffCertificatesPanel } from "@/components/certificates/StaffCertificatesPanel";
 
 // --------- TYPES ---------
 interface StudentNote {
@@ -833,15 +834,6 @@ const InstructorStudents = () => {
                           </a>
                         )}
                       </div>
-                      <div className="pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => messageStudent(detailedStudent.id)}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1.5" /> Message
-                        </Button>
-                      </div>
                       {isMissingPhoto(detailedStudent) && (
                         <Alert className="mt-1 border-amber-500/50 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-500">
                           <ImageOff className="h-4 w-4" />
@@ -854,7 +846,9 @@ const InstructorStudents = () => {
                     </div>
                   </div>
                 </DialogHeader>
-                
+
+                <StaffCertificatesPanel studentId={detailedStudent.id} currentLevel={detailedStudent.level} />
+
                 <StudentProfileSummary
                   student={detailedStudent}
                   instructorId={instructorId}
@@ -862,6 +856,7 @@ const InstructorStudents = () => {
                   onAddTask={() => { setDetailTab('tasks'); setShowAddTask(true); }}
                   className="mb-4"
                 />
+
 
                 <Tabs value={detailTab} onValueChange={setDetailTab}>
                   <TabsList className="grid w-full grid-cols-4">
