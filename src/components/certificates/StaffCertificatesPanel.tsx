@@ -29,7 +29,9 @@ export const StaffCertificatesPanel = ({ studentId, currentLevel }: { studentId:
             return (
               <Button key={level} variant="outline" className="h-auto py-2 flex-col" onClick={() => setViewing(c)}>
                 <span className="font-medium">{level}</span>
-                <span className="text-[10px] text-muted-foreground font-mono">{c.certificate_id}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Issued {new Date(c.issued_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+                </span>
               </Button>
             );
           const eligible = i < cur || (level === 'Advanced' && cur === 3);
