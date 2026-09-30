@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Award, ChevronRight, Lock } from 'lucide-react';
+import { ArrowUpRight, Award, ChevronRight, Lock } from 'lucide-react';
 import { CERT_LEVELS, StudentCertificate, formatCertDate, useCertificates } from '@/hooks/useCertificates';
 import { CertificateViewerDialog } from './CertificateViewerDialog';
 
@@ -23,7 +23,8 @@ export const EarnedCertificates = ({ studentId }: { studentId?: string }) => {
         {CERT_LEVELS.map((level) => {
           const c = certs.find((x) => x.course_level === level);
           return c ? (
-            <div key={level} className="rounded-lg border border-[hsl(var(--cert-gold)/0.4)] bg-[hsl(var(--cert-gold)/0.06)] p-4 flex flex-col gap-2 hover-scale">
+            <div key={level} role="button" tabIndex={0} aria-label={`View ${level} certificate`} onClick={() => setViewing(c)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewing(c)} className="relative cursor-pointer rounded-lg border border-[hsl(var(--cert-gold)/0.4)] bg-[hsl(var(--cert-gold)/0.06)] p-4 flex flex-col gap-2 hover-scale">
+              <ArrowUpRight className="absolute top-3 right-3 h-4 w-4 text-[hsl(var(--cert-gold))]" />
               <div className="flex items-center gap-2">
                 <div className="h-9 w-9 rounded-full bg-[hsl(var(--cert-gold)/0.2)] flex items-center justify-center">
                   <Award className="h-5 w-5 text-[hsl(var(--cert-gold))]" />
@@ -35,7 +36,7 @@ export const EarnedCertificates = ({ studentId }: { studentId?: string }) => {
                 {c.instructor_name && <div>Instructor: {c.instructor_name}</div>}
                 <div className="font-mono">{c.certificate_id}</div>
               </div>
-              <Button size="sm" variant="outline" className="mt-auto" onClick={() => setViewing(c)}>
+              <Button size="sm" variant="outline" className="mt-auto" onClick={(e) => { e.stopPropagation(); setViewing(c); }}>
                 View / Download
               </Button>
             </div>
