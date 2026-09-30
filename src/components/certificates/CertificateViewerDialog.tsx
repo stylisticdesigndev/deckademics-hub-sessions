@@ -26,16 +26,42 @@ export const CertificateViewerDialog = ({ cert, open, onOpenChange }: Props) => 
     if (!captureRef.current) return;
     setBusy(true);
     try {
-      const [{ toPng }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')]);
+      const { toPng } = await import('html-to-image');
       await document.fonts?.ready;
       const dataUrl = await toPng(captureRef.current, { width: W, height: H, pixelRatio: 2, cacheBust: true });
+      const base = `Deckademics-${cert.course_level}-Certificate-${cert.student_display_name.replace(/[^a-z0-9]+/gi, '-')}`;
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+      // Phones/tablets: open the share sheet with the image so it can be saved to Photos / Gallery.
+      if (isTouch && navigator.canShare) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `${base}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: `${cert.course_level} Certificate` });
+          } catch (err: any) {
+            if (err?.name !== 'AbortError') throw err;
+          }
+          return;
+        }
+      }
+
+      if (isTouch) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${base}.png`;
+        a.click();
+        return;
+      }
+
+      // Desktop: save a print-ready PDF.
+      const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
       pdf.addImage(dataUrl, 'PNG', 0, 0, 11, 8.5);
-      const name = cert.student_display_name.replace(/[^a-z0-9]+/gi, '-');
-      pdf.save(`Deckademics-${cert.course_level}-Certificate-${name}.pdf`);
+      pdf.save(`${base}.pdf`);
     } catch (e) {
       console.error(e);
-      toast.error('Could not download certificate. Please try again.');
+      toast.error('Could not save certificate. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -54,7 +80,7 @@ export const CertificateViewerDialog = ({ cert, open, onOpenChange }: Props) => 
         <div className="flex justify-end">
           <Button onClick={download} disabled={busy}>
             {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            {busy ? 'Preparing…' : 'Download PDF'}
+            {busy ? 'Preparing…' : 'Save Certificate'}
           </Button>
         </div>
         {open &&
