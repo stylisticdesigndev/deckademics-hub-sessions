@@ -944,6 +944,184 @@ export type Database = {
           },
         ]
       }
+      production_attendance: {
+        Row: {
+          class_date: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          class_date: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          class_date?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_attendance_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "production_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_enrollments: {
+        Row: {
+          active: boolean
+          class_day: string | null
+          class_time: string | null
+          created_at: string
+          id: string
+          instructor_id: string
+          level: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          class_day?: string | null
+          class_time?: string | null
+          created_at?: string
+          id?: string
+          instructor_id: string
+          level?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          class_day?: string | null
+          class_time?: string | null
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          level?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_enrollments_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_module_completions: {
+        Row: {
+          completed_at: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          module_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          module_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          module_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_module_completions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "production_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_module_completions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "production_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_modules: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          description: string
+          homework_prompt: string
+          id: string
+          is_draft: boolean
+          lesson_outline: string
+          level: string
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          description?: string
+          homework_prompt?: string
+          id?: string
+          is_draft?: boolean
+          lesson_outline?: string
+          level: string
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          description?: string
+          homework_prompt?: string
+          id?: string
+          is_draft?: boolean
+          lesson_outline?: string
+          level?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_modules_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
