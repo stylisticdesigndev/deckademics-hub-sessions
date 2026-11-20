@@ -10,6 +10,7 @@
 - [ ] Run a signed-in pilot of enrollment, completion, and student read-back (preview sign-in unavailable for this Supabase project).
 
 # Production flexible learning build
+- [x] Rework the curriculum editor using Notion web/mobile references; fixture checks verified inline editing, formatting, block ordering, and mobile menus. Authenticated persistence remains unverified.
 - [x] Build blank, reorderable multimedia lessons with optional homework.
 - [x] Add student audio uploads/links and instructor-reviewed homework; cloud sources without supported embeds open securely in their provider.
 - [x] Add instructor-confirmed catch-up packets and first-session intake.

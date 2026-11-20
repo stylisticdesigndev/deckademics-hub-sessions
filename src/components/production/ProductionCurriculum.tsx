@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Plus, Pencil, Trash2, AudioLines, ArrowUp, ArrowDown } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Trash2, AudioLines, ArrowUp, ArrowDown, FileText, ChevronRight, ArrowLeft, Check, MoreHorizontal } from 'lucide-react';
 import { lessonBlocks } from '@/lib/productionLearning';
 import { LessonBlocks } from './LessonBlocks';
 import { HomeworkSubmission } from './HomeworkSubmission';
@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,9 +23,11 @@ export function ProductionCurriculum() {
   const [level, setLevel] = useState('novice');
   const [editing, setEditing] = useState<Partial<ProductionModule> | null>(null);
   const [deleting, setDeleting] = useState<ProductionModule | null>(null);
+  const [search, setSearch] = useState('');
   const staff = userData.role === 'admin' || userData.role === 'instructor';
   const activeLevel = staff ? level : enrollments[0]?.level ?? level;
   const selected = modules.filter(module => module.level === activeLevel);
+  const visible = selected.filter(module => module.title.toLowerCase().includes(search.toLowerCase()));
   const canEdit = (module: ProductionModule) => staff && (userData.role === 'admin' || !module.author_id || module.author_id === session?.user.id);
   if (isLoading) return <p className="text-muted-foreground py-8">Loading production curriculum…</p>;
   if (error) return <Alert variant="destructive"><AlertDescription>Production curriculum could not be loaded.</AlertDescription></Alert>;
@@ -36,16 +38,45 @@ export function ProductionCurriculum() {
     </div>
     {staff && <Tabs value={level} onValueChange={setLevel}><TabsList className="flex h-auto w-full flex-wrap justify-start">{PRODUCTION_LEVELS.map(item => <TabsTrigger className="flex-1 min-h-10" key={item} value={item}>{productionLevelLabel(item)}</TabsTrigger>)}</TabsList></Tabs>}
     {selected.length === 0 && <div className="border-y py-12 text-center text-muted-foreground"><BookOpen className="h-8 w-8 mx-auto mb-3" />No published modules available.</div>}
-    <div className="divide-y border-y">{selected.map(module => <article key={module.id} className="py-6 space-y-4">
+    {staff && <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 border-b pb-3"><p className="text-sm font-medium flex items-center gap-2"><BookOpen className="h-4 w-4 text-muted-foreground" />Lessons</p><Input aria-label="Search lessons" placeholder="Search lessons…" className="h-8 max-w-52 border-0 bg-transparent shadow-none" value={search} onChange={e => setSearch(e.target.value)} /></div>
+      <div>{visible.map(module => <div key={module.id} className="group flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60">
+        <Button variant="ghost" className="h-auto min-h-14 min-w-0 flex-1 justify-start gap-3 px-1 py-3 text-left" onClick={() => setEditing(module)} aria-label={`Edit ${module.title}`}>
+          <FileText className="h-5 w-5 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1"><span className="block whitespace-normal break-words font-medium">{module.title}</span><span className="mt-1 block text-xs font-normal text-muted-foreground">Lesson {module.order_index} · {lessonBlocks(module.blocks).length} blocks</span></span><span className="hidden shrink-0 text-xs font-normal text-muted-foreground sm:block">{module.is_draft ? 'Draft' : 'Published'}</span><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+        {canEdit(module) && <DropdownMenu><DropdownMenuTrigger asChild><Button size="icon" variant="ghost" aria-label={`Actions for ${module.title}`} className="h-9 w-9 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => setEditing(module)}><Pencil className="mr-2 h-4 w-4" />Edit lesson</DropdownMenuItem>
+          {[-1,1].map(direction => <DropdownMenuItem key={direction} disabled={saving || !selected[selected.indexOf(module)+direction]} onSelect={() => { const ids=selected.map(m=>m.id);const i=selected.indexOf(module);[ids[i],ids[i+direction]]=[ids[i+direction],ids[i]];void save({kind:'reorder',ids}); }}>{direction === -1 ? <ArrowUp className="mr-2 h-4 w-4" /> : <ArrowDown className="mr-2 h-4 w-4" />}{direction === -1 ? 'Move up' : 'Move down'}</DropdownMenuItem>)}
+          <DropdownMenuItem className="text-destructive" onSelect={() => setDeleting(module)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+        </DropdownMenuContent></DropdownMenu>}
+      </div>)}</div>
+      {visible.length === 0 && selected.length > 0 && <p className="py-6 text-sm text-muted-foreground">No matching lessons.</p>}
+    </div>}
+    {!staff && <div className="divide-y border-y">{selected.map(module => <article key={module.id} className="py-6 space-y-4">
       <div className="flex gap-3 items-start"><span className="h-9 w-9 shrink-0 bg-primary/10 text-primary rounded-md flex items-center justify-center font-semibold">{module.order_index}</span><div className="min-w-0 flex-1"><div className="flex gap-2 flex-wrap items-center"><h2 className="text-lg font-semibold break-words">{module.title}</h2>{module.is_draft && <Badge variant="outline">Draft</Badge>}{completions.some(item => item.module_id === module.id) && !staff && <Badge>Complete</Badge>}</div><p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{module.description}</p></div>{canEdit(module) && <div className="flex gap-1"><Button size="icon" variant="ghost" aria-label={`Edit ${module.title}`} title="Edit module" onClick={() => setEditing(module)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${module.title}`} title="Delete module" onClick={() => setDeleting(module)}><Trash2 className="h-4 w-4" /></Button></div>}</div>
       <div className="sm:pl-12 space-y-5"><LessonBlocks blocks={lessonBlocks(module.blocks)}/>{!lessonBlocks(module.blocks).length&&module.lesson_outline&&<p className="whitespace-pre-wrap text-sm">{module.lesson_outline}</p>}{!staff&&enrollments[0]&&lessonBlocks(module.blocks).filter(b=>b.type==='homework').map(b=><HomeworkSubmission key={b.id} enrollmentId={enrollments[0].id} moduleId={module.id} blockId={b.id}/>)}{!staff&&enrollments[0]&&module.homework_prompt&&!lessonBlocks(module.blocks).some(b=>b.type==='homework')&&<><p>{module.homework_prompt}</p><HomeworkSubmission enrollmentId={enrollments[0].id} moduleId={module.id} blockId="legacy-homework"/></>}{canEdit(module)&&<div className="flex gap-2">{[-1,1].map(direction=><Button key={direction} size="icon" variant="outline" aria-label={direction===-1?'Move module up':'Move module down'} title={direction===-1?'Move module up':'Move module down'} disabled={saving||!selected[selected.indexOf(module)+direction]} onClick={()=>save({kind:'reorder',ids: (()=>{const ids=selected.map(m=>m.id);const i=selected.indexOf(module);[ids[i],ids[i+direction]]=[ids[i+direction],ids[i]];return ids;})()})}>{direction===-1?<ArrowUp className="h-4 w-4"/>:<ArrowDown className="h-4 w-4"/>}</Button>)}</div>}</div>
-    </article>)}</div>
-    <Dialog open={!!editing} onOpenChange={open => { if (!open) setEditing(null); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing?.id ? 'Edit Module' : 'New Module'}</DialogTitle><DialogDescription>Music Production</DialogDescription></DialogHeader>{editing && <form className="space-y-4" onSubmit={async event => { event.preventDefault(); await save({ kind: 'module', value: { ...editing, title: editing.title?.trim() ?? '', level: editing.level ?? level } }); setEditing(null); }}>
-      <div className="space-y-2"><Label htmlFor="production-title">Title</Label><Input required id="production-title" value={editing.title ?? ''} onChange={event => setEditing({ ...editing, title: event.target.value })} /></div>
-      <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label>Level</Label><Select value={editing.level} onValueChange={value => setEditing({ ...editing, level: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRODUCTION_LEVELS.map(item => <SelectItem key={item} value={item}>{productionLevelLabel(item)}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="production-order">Module order</Label><Input id="production-order" type="number" min="1" required value={editing.order_index ?? 1} onChange={event => setEditing({ ...editing, order_index: Number(event.target.value) })} /></div></div>
-      <LessonBlocks blocks={lessonBlocks(editing.blocks ?? (editing.id ? [{id:'legacy-lesson',type:'text',content:editing.lesson_outline??''},...(editing.homework_prompt?[{id:'legacy-homework',type:'homework',content:editing.homework_prompt}]:[])].filter(b=>b.content) : []))} onChange={blocks=>setEditing({...editing,blocks,lesson_outline:'',homework_prompt:''})}/>
-      <div className="flex items-center gap-2"><Checkbox id="production-published" checked={!editing.is_draft} onCheckedChange={checked => setEditing({ ...editing, is_draft: checked !== true })} /><Label htmlFor="production-published">Published to students</Label></div><DialogFooter><Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" disabled={saving || !editing.title?.trim()}>Save Module</Button></DialogFooter>
-    </form>}</DialogContent></Dialog>
+    </article>)}</div>}
+    <Dialog open={!!editing} onOpenChange={open => { if (!open) setEditing(null); }}><DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:h-[94dvh] sm:max-h-[94dvh] sm:w-[95vw] sm:max-w-6xl sm:rounded-lg [&>button]:hidden">
+      <DialogHeader className="sr-only"><DialogTitle>{editing?.id ? 'Edit lesson' : 'New lesson'}</DialogTitle><DialogDescription>Music Production lesson editor</DialogDescription></DialogHeader>
+      {editing && <form className="flex min-h-0 flex-1 flex-col" onSubmit={async event => { event.preventDefault(); try { await save({ kind: 'module', value: { ...editing, title: editing.title?.trim() ?? '', level: editing.level ?? level } }); setEditing(null); } catch { /* Keep unsaved lesson open. */ } }}>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2"><Button type="button" size="icon" variant="ghost" aria-label="Close lesson" title="Back to curriculum" onClick={() => setEditing(null)}><ArrowLeft className="h-4 w-4" /></Button><span className="hidden text-sm text-muted-foreground sm:block">Curriculum</span><ChevronRight className="hidden h-3 w-3 text-muted-foreground sm:block" /><span className="truncate text-sm">{editing.title || 'Untitled'}</span></div>
+          <Button type="submit" size="sm" disabled={saving || !editing.title?.trim()}><Check className="mr-2 h-4 w-4" />{saving ? 'Saving…' : 'Save'}</Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-10 sm:px-12 sm:pt-16">
+            <FileText className="mb-6 h-10 w-10 text-muted-foreground" />
+            <textarea required id="production-title" aria-label="Title" placeholder="Untitled" rows={1} ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }} value={editing.title ?? ''} onChange={event => setEditing({ ...editing, title: event.target.value })} className="mb-5 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-3xl font-bold leading-tight text-foreground placeholder:text-muted-foreground focus:outline-none md:text-4xl" />
+            <div className="mb-8 space-y-2 border-b pb-5 text-sm">
+              <div className="flex items-center gap-3"><Label className="w-20 shrink-0 text-muted-foreground">Level</Label><Select value={editing.level} onValueChange={value => setEditing({ ...editing, level: value })}><SelectTrigger aria-label="Lesson level" className="h-8 w-40 border-0 bg-transparent px-2 shadow-none"><SelectValue /></SelectTrigger><SelectContent>{PRODUCTION_LEVELS.map(item => <SelectItem key={item} value={item}>{productionLevelLabel(item)}</SelectItem>)}</SelectContent></Select></div>
+              <div className="flex items-center gap-3"><Label htmlFor="production-order" className="w-20 shrink-0 text-muted-foreground">Order</Label><Input id="production-order" type="number" min="1" required className="h-8 w-20 border-0 bg-transparent px-2 shadow-none" value={editing.order_index ?? 1} onChange={event => setEditing({ ...editing, order_index: Number(event.target.value) })} /></div>
+              <div className="flex items-center gap-3"><span className="w-20 shrink-0 text-muted-foreground">Visibility</span><Checkbox id="production-published" checked={!editing.is_draft} onCheckedChange={checked => setEditing({ ...editing, is_draft: checked !== true })} /><Label htmlFor="production-published" className="font-normal">{editing.is_draft ? 'Draft' : 'Published to students'}</Label></div>
+            </div>
+            <LessonBlocks blocks={lessonBlocks(editing.blocks ?? (editing.id ? [{id:'legacy-lesson',type:'text',content:editing.lesson_outline??''},...(editing.homework_prompt?[{id:'legacy-homework',type:'homework',content:editing.homework_prompt}]:[])].filter(b=>b.content) : []))} onChange={blocks=>setEditing({...editing,blocks,lesson_outline:'',homework_prompt:''})}/>
+          </div>
+        </div>
+      </form>}
+    </DialogContent></Dialog>
     <Dialog open={!!deleting} onOpenChange={open => { if (!open) setDeleting(null); }}><DialogContent><DialogHeader><DialogTitle>Delete module?</DialogTitle><DialogDescription>This removes {deleting?.title} and its completion records.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="destructive" disabled={saving} onClick={async () => { if (!deleting) return; await save({ kind: 'delete-module', id: deleting.id }); setDeleting(null); }}>Delete Module</Button></DialogFooter></DialogContent></Dialog>
   </div>;
 }
