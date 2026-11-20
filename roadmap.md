@@ -1,4 +1,5 @@
 # Music Production Phase 1
+- [x] Remove instructor program switches and give Production its own dashboard and curriculum pages; verify mobile rendering and curriculum destination with fixtures.
 - [x] Add separate production enrollments, five levels, modules, and completion tracking with staff access rules.
 - [x] Add DJ / Production switches, production instructor dashboard, curriculum editing, and student curriculum view.
 - [x] Create and visually inspect the stakeholder blueprint PDF with open decisions.

@@ -20,6 +20,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 
 export const InstructorNavigation = () => {
   const { pathname } = useLocation();
+  const isProduction = pathname.startsWith('/instructor/production');
   const { userData } = useAuth();
   const userId = userData.user?.id;
   const { setOpenMobile, isMobile, state } = useSidebar();
@@ -40,7 +41,12 @@ export const InstructorNavigation = () => {
   ];
 
   // Profile is accessed via the avatar dropdown in the footer on all viewports
-  const navItems = baseNavItems;
+  const navItems = isProduction ? [
+    { title: 'Dashboard', icon: LayoutDashboard, href: '/instructor/production' },
+    { title: 'Curriculum', icon: BookOpen, href: '/instructor/production/curriculum' },
+    { title: 'Messages', icon: MessageSquare, href: '/instructor/production/messages', badge: unreadMsgCount },
+    { title: 'Announcements', icon: Bell, href: '/instructor/production/announcements' },
+  ] : baseNavItems;
 
   if (!isMobile && state === 'collapsed') return null;
 

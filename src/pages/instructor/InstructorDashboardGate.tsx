@@ -7,10 +7,8 @@ import InstructorDashboard from './InstructorDashboard';
 import { InstructorVideoWalkthroughModal } from '@/components/onboarding/InstructorVideoWalkthroughModal';
 import { Button } from '@/components/ui/button';
 import { PlayCircle } from 'lucide-react';
-import { useProgram } from '@/hooks/useProgram';
 
 const InstructorDashboardGate = () => {
-  const { program } = useProgram();
   const dashboardData = useInstructorDashboard();
   const [replayOpen, setReplayOpen] = useState(false);
 
@@ -20,7 +18,7 @@ const InstructorDashboardGate = () => {
 
   return (
     <DashboardLayout sidebarContent={<InstructorNavigation />} userType="instructor">
-      {program === 'dj' && <><InstructorVideoWalkthroughModal
+      <InstructorVideoWalkthroughModal
         forceOpen={replayOpen}
         onClose={() => setReplayOpen(false)}
       />
@@ -30,7 +28,6 @@ const InstructorDashboardGate = () => {
           Watch walkthrough video
         </Button>
       </div>
-      </>}
       <InstructorDashboard dashboardData={dashboardData} />
     </DashboardLayout>
   );

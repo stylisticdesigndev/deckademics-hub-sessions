@@ -5,12 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Book, BookOpen } from 'lucide-react';
 import { useCurriculumModules } from '@/hooks/useCurriculumModules';
 import { useCurriculumLessons } from '@/hooks/useCurriculumLessons';
-import { ProgramSwitch } from '@/components/production/ProgramSwitch';
-import { ProductionCurriculum } from '@/components/production/ProductionCurriculum';
-import { useProgram } from '@/hooks/useProgram';
 
 const InstructorCurriculum = () => {
-  const { program } = useProgram();
   const { data: allModules = [], isLoading } = useCurriculumModules();
   const { data: allLessons = [] } = useCurriculumLessons();
 
@@ -20,7 +16,6 @@ const InstructorCurriculum = () => {
   const getLessonsForModule = (moduleId: string) =>
     allLessons.filter(l => l.module_id === moduleId).sort((a, b) => a.order_index - b.order_index);
 
-  if (program === 'production') return <div className="space-y-6"><ProgramSwitch /><ProductionCurriculum /></div>;
 
   if (isLoading) {
     return (
@@ -35,7 +30,6 @@ const InstructorCurriculum = () => {
   return (
     <>
       <div className="space-y-6">
-        <ProgramSwitch />
         <div>
           <h1 className="text-2xl font-bold">Teaching Curriculum</h1>
           <p className="text-muted-foreground">Reference guide for student instruction</p>

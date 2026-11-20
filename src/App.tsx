@@ -71,6 +71,9 @@ import PayrollLogin from "./pages/payroll/PayrollLogin";
 
 import StudentCurriculum from "./pages/student/StudentCurriculum";
 import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
+import ProductionInstructorLayoutRoute from "./routes/ProductionInstructorLayoutRoute";
+import { ProductionInstructorDashboard } from "./components/production/ProductionInstructorDashboard";
+import { ProductionCurriculum } from "./components/production/ProductionCurriculum";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +138,12 @@ const App = () => {
         
         {/* Instructor routes - persistent layout (admin users can also access) */}
         <Route element={<ProtectedRoute allowedRoles={['instructor', 'admin']} />}>
+          <Route element={<ProductionInstructorLayoutRoute />}>
+            <Route path="/instructor/production" element={<ProductionInstructorDashboard />} />
+            <Route path="/instructor/production/curriculum" element={<ProductionCurriculum />} />
+            <Route path="/instructor/production/messages" element={<InstructorMessages />} />
+            <Route path="/instructor/production/announcements" element={<InstructorAnnouncements />} />
+          </Route>
           <Route element={<InstructorLayoutRoute />}>
             <Route path="/instructor/students" element={<InstructorStudents />} />
             <Route path="/instructor/curriculum" element={<InstructorCurriculum />} />

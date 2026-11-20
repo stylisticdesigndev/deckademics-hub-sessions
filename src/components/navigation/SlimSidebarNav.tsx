@@ -15,7 +15,9 @@ export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
   // Only render in slim mode (desktop + collapsed)
   if (isMobile || state !== 'collapsed') return null;
 
-  const dashboardHref = `/${userType}/dashboard`;
+  const dashboardHref = userType === 'instructor' && pathname.startsWith('/instructor/production')
+    ? '/instructor/production'
+    : `/${userType}/dashboard`;
 
   const itemClass = (active: boolean) =>
     cn(
