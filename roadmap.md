@@ -1,4 +1,5 @@
 # Production UX / UI rebuild
+- [x] Add narrated screenshot-based tutorials (instructor 7:06, student 3:55) with captions and chapter navigation on both dashboards; verified file playback, mobile/desktop containment, and hosted media responses. Full-length viewing remains unverified; some actions are narrated rather than shown.
 - [x] Add instructor and student showcase profiles with DJ-style personal details, local photo/edit persistence, and Production schedule/enrollment context; verified saves, cancellation, mentor read-back, and desktop/mobile layouts. Real account settings remain outside the sample preview.
 - [x] Align showcase messaging with DJ conversation lists, compose, and role-specific threads; verified instructor compose/send → student reply → instructor read-back after reload, back navigation, and phone/tablet layouts. Live routes already reuse DJ messages; sample attachment uploads remain disabled.
 - [x] Rebuild the shared audio player with real audio envelopes, seeking/speed/mute and submission/feedback presentation with bounce history.

@@ -26,6 +26,7 @@ import { useProductionDemo } from '@/providers/ProductionDemoProvider';
 import { DemoNotebook } from './demo/DemoNotebook';
 import { ReviewInbox } from './ReviewInbox';
 import { Progress } from '@/components/ui/progress';
+import { ProductionTutorialVideo } from './ProductionTutorialVideo';
 
 export function ProductionInstructorDashboard() {
   const { session } = useAuth();
@@ -56,7 +57,7 @@ export function ProductionInstructorDashboard() {
   if (isLoading) return <p className="py-8 text-muted-foreground">Loading Music Production…</p>;
   if (error) return <Alert variant="destructive"><AlertDescription>Music Production could not be loaded. Please reopen this page.</AlertDescription></Alert>;
   return <div className="space-y-6">
-    <header className="flex flex-wrap justify-between items-start gap-3"><div><h1 className="text-2xl font-bold flex gap-2 items-center"><AudioLines className="h-6 w-6 text-primary" />Music Production</h1><p className="text-muted-foreground">{format(new Date(), 'MM/dd/yyyy')} · Instructor dashboard</p></div><Button asChild variant="outline"><Link to={`${base}/curriculum`}><BookOpen className="mr-2 h-4 w-4"/>Curriculum</Link></Button></header>
+    <header className="flex flex-wrap justify-between items-start gap-3"><div><h1 className="text-2xl font-bold flex gap-2 items-center"><AudioLines className="h-6 w-6 text-primary" />Music Production</h1><p className="text-muted-foreground">{format(new Date(), 'MM/dd/yyyy')} · Instructor dashboard</p></div><div className="flex flex-wrap gap-2"><ProductionTutorialVideo role="instructor"/><Button asChild variant="outline"><Link to={`${base}/curriculum`}><BookOpen className="mr-2 h-4 w-4"/>Curriculum</Link></Button></div></header>
     <section className="grid grid-cols-1 md:grid-cols-3 gap-6">{[
       { label: 'Active students', value: enrollments.length, icon: AudioLines },
       { label: "Today's sessions", value: todayEnrollments.length, icon: CalendarDays },
