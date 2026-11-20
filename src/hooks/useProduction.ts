@@ -49,7 +49,9 @@ export function useProduction() {
         const { error } = await supabase.from('production_modules').delete().eq('id', action.id);
         if (error) throw error;
       } else if (action.kind === 'enroll') {
-        const { error } = await supabase.from('production_enrollments').upsert(action.value, { onConflict: 'student_id' });
+        const { error } = action.value.id
+          ? await supabase.from('production_enrollments').update(action.value).eq('id', action.value.id)
+          : await supabase.from('production_enrollments').insert(action.value);
         if (error) throw error;
       } else if (action.kind === 'attendance') {
         const { error } = await supabase.from('production_attendance').upsert({ enrollment_id: action.enrollmentId, class_date: action.date, status: action.status }, { onConflict: 'enrollment_id,class_date' });
