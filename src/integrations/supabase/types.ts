@@ -710,6 +710,38 @@ export type Database = {
           },
         ]
       }
+      instructor_programs: {
+        Row: {
+          created_at: string
+          instructor_id: string
+          is_lead: boolean
+          program: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          instructor_id: string
+          is_lead?: boolean
+          program: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          instructor_id?: string
+          is_lead?: boolean
+          program?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_programs_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: true
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructor_schedules: {
         Row: {
           created_at: string | null
@@ -1935,6 +1967,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_production_instructor: { Args: { _user_id: string }; Returns: boolean }
       issue_student_certificate: {
         Args: { _level: string; _student_id: string }
         Returns: {
