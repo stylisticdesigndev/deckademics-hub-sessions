@@ -13,12 +13,14 @@
  * 6. Photo gate (students only) — redirects to /student/photo-upload if no avatar_url.
  * 7. Render — passes through to <Outlet />.
  */
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '@/providers/AuthProvider';
 import VinylLoader from '@/components/ui/VinylLoader';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import PendingApproval from '@/pages/PendingApproval';
+import { useInstructorProgram } from '@/hooks/useInstructorProgram';
+import { instructorProgramRedirect } from '@/lib/instructorProgram';
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -26,6 +28,8 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { userData, isLoading, session } = useAuth();
+  const location = useLocation();
+  const teachingProgram = useInstructorProgram();
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(() => {
     return isLoading || (!userData.role && !!session);
   });
@@ -150,7 +154,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   
   // If user is authenticated but has no role or wrong role
   // Access is governed solely by the database-backed role.
-  const hasAccess = allowedRoles.includes(effectiveRole!);
+  const hasAccess = effectiveRole ? allowedRoles.includes(effectiveRole) : false;
   
   if (!effectiveRole || !hasAccess) {
     const roleForRedirect = effectiveRole || 'student';
@@ -193,5 +197,11 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   }
 
   // Render the protected content
+  if (effectiveRole === 'instructor') {
+    if (teachingProgram.isLoading) return loadingSkeleton;
+    if (teachingProgram.isError) return <div className="p-6 text-center text-muted-foreground">Your teaching assignment could not be loaded. Please reopen the app.</div>;
+    const destination = instructorProgramRedirect(teachingProgram.data ?? 'dj', location.pathname);
+    if (destination) return <Navigate to={`${destination}${location.search}`} replace />;
+  }
   return <Outlet />;
 };

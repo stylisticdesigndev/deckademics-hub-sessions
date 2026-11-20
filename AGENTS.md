@@ -1,3 +1,4 @@
 # Architecture rules
 - Store Music Production enrollments, curriculum, and module completion separately from DJ records so production levels never trigger DJ certificates or alter DJ assessment rules.
 - Keep instructor DJ and Production dashboards and curricula on separate routes, independent of the student/admin program switch; database policies remain responsible for authorizing production changes.
+- Store teaching-program assignments separately in admin-managed instructor_programs; ProtectedRoute resolves those assignments before rendering instructor pages so login and deep links use the correct program.

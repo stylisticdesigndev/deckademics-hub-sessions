@@ -44,6 +44,7 @@ export const InstructorNavigation = () => {
   const navItems = isProduction ? [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/instructor/production' },
     { title: 'Curriculum', icon: BookOpen, href: '/instructor/production/curriculum' },
+    { title: 'My Payment', icon: Wallet, href: '/instructor/production/ledger' },
     { title: 'Messages', icon: MessageSquare, href: '/instructor/production/messages', badge: unreadMsgCount },
     { title: 'Announcements', icon: Bell, href: '/instructor/production/announcements' },
   ] : baseNavItems;

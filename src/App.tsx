@@ -143,6 +143,8 @@ const App = () => {
             <Route path="/instructor/production/curriculum" element={<ProductionCurriculum />} />
             <Route path="/instructor/production/messages" element={<InstructorMessages />} />
             <Route path="/instructor/production/announcements" element={<InstructorAnnouncements />} />
+            <Route path="/instructor/production/profile" element={<InstructorProfile />} />
+            <Route path="/instructor/production/ledger" element={<InstructorLedger />} />
           </Route>
           <Route element={<InstructorLayoutRoute />}>
             <Route path="/instructor/students" element={<InstructorStudents />} />
