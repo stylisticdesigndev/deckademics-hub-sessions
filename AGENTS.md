@@ -10,3 +10,4 @@
 - Isolate the temporary Production showcase under its own provider and routes with browser-only sample records/files; reuse real lesson and learning screens, but never synthesize authentication or send showcase changes to Supabase.
 - Share Production playback and submission review presentation between instructor, student, and showcase screens; derive bounce numbering from existing submissions and focused lesson selection from URL parameters so UI changes need no schema or permission changes.
 - Adapt browser-only showcase messages to the existing DJ conversation list and role-specific threads; disable live attachment uploads in the showcase so shared presentation never writes sample data to school storage.
+- Keep showcase profile edits and resized photo data in the showcase provider with defaults for older saved samples; never mount live account/security controls in sample profiles because they would change real accounts.

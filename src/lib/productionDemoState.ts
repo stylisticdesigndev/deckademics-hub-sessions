@@ -7,6 +7,7 @@ export type DemoStudent = { id: string; name: string; initials: string };
 export type DemoMessage = { id: string; studentId: string; sender: 'student' | 'instructor'; content: string; created_at: string };
 export type DemoNote = { id: string; studentId: string; content: string; created_at: string };
 export type DemoTask = { id: string; studentId: string; title: string; completed: boolean };
+export type DemoProfile = { firstName: string; lastName: string; stageName: string; email: string; phone: string; pronouns: string; bio: string; expertise: string; avatarUrl: string };
 export type ProductionDemoState = {
   enrollments: Tables['production_enrollments']['Row'][];
   modules: Tables['production_modules']['Row'][];
@@ -20,6 +21,7 @@ export type ProductionDemoState = {
   notes: DemoNote[];
   tasks: DemoTask[];
   messages: DemoMessage[];
+  profiles?: Record<string, DemoProfile>;
 };
 export type ProductionAction =
   | { kind: 'module'; value: Tables['production_modules']['Insert'] }
@@ -35,12 +37,21 @@ export type LearningAction =
   | { kind: 'catchup'; value: Tables['production_catchups']['Insert'] }
   | { kind: 'package'; value: Tables['production_packages']['Insert'] };
 export type DemoAction = ProductionAction | LearningAction
+  | { kind: 'profile'; id: string; value: DemoProfile }
   | { kind: 'note'; studentId: string; content: string }
   | { kind: 'task'; studentId: string; title: string }
   | { kind: 'toggle-task'; id: string }
   | { kind: 'message'; studentId: string; sender: 'student' | 'instructor'; content: string };
 export const DEMO_INSTRUCTOR_ID = 'demo-lonegevity';
 export const DEMO_STORAGE_KEY = 'deckademics-production-showcase-v1';
+
+export function getDemoProfile(state: ProductionDemoState, id: string): DemoProfile {
+  if (state.profiles?.[id]) return state.profiles[id];
+  const instructor = id === DEMO_INSTRUCTOR_ID;
+  const student = state.students.find(s => s.id === id);
+  const [firstName = '', ...lastName] = (instructor ? 'Sean' : student?.name || '').split(' ');
+  return { firstName, lastName: lastName.join(' '), stageName: instructor ? 'Lonegevity' : '', email: instructor ? 'lonegevity@example.com' : `${firstName.toLowerCase()}@example.com`, phone: '', pronouns: '', bio: instructor ? 'Music Production lead. Working with producers on beat-making, sampling, arrangement, and developing their own sound.' : '', expertise: instructor ? 'Beat-making, Sampling, Arrangement, Mixing' : '', avatarUrl: '' };
+}
 
 export function createProductionDemo(): ProductionDemoState {
   const now = new Date().toISOString();
@@ -91,6 +102,7 @@ export function applyDemoAction(state: ProductionDemoState, action: DemoAction):
   const id = crypto.randomUUID();
   const stamp = { id, created_at: now, updated_at: now };
   switch (action.kind) {
+    case 'profile': return { ...state, profiles: { ...state.profiles, [action.id]: action.value }, students: state.students.map(s => s.id === action.id ? { ...s, name: `${action.value.firstName} ${action.value.lastName}`.trim(), initials: `${action.value.firstName[0] || ''}${action.value.lastName[0] || ''}`.toUpperCase() } : s) };
     case 'module': {
       const old = state.modules.find(m => m.id === action.value.id);
       const value = { ...stamp, description: '', lesson_outline: '', homework_prompt: '', blocks: [], is_draft: true, author_id: DEMO_INSTRUCTOR_ID, order_index: 1, ...old, ...action.value };
