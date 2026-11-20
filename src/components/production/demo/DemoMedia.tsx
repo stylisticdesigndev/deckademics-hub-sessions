@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileDown } from 'lucide-react';
 import { resolveDemoFile } from '@/lib/productionDemoMedia';
 import { safeMediaUrl } from '@/lib/productionLearning';
+import { TrackPlayer } from '../TrackPlayer';
 
 let grooveUrl = '';
 function referenceGroove() {
@@ -17,8 +18,8 @@ export function DemoMedia({type,url='',path,filename}:{type:string;url?:string;p
   const [source,setSource]=useState('');
   useEffect(()=>{let active=true;let object='';if(path?.startsWith('demo-file:')){void resolveDemoFile(path).then(value=>{object=value;if(active)setSource(value);});}else if(url.startsWith('https://demo.invalid/'))setSource(referenceGroove());else setSource(safeMediaUrl(url));return()=>{active=false;if(object)URL.revokeObjectURL(object);};},[path,url]);
   if(type==='file')return <a href={path?source:'data:text/plain;charset=utf-8,Deckademics%20Session%20Guide%0A%0A1.%20Listen%20to%20the%20reference.%0A2.%20Build%20a%20four-bar%20groove.%0A3.%20Export%20an%20MP3%20or%20WAV.%0A4.%20Write%20one%20question%20for%20your%20mentor.'} download={path?filename:'Session guide.txt'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary underline"><FileDown className="h-4 w-4"/>{filename||'Session guide'}</a>;
-  if(url.includes('demo.invalid')&&type==='video')return <div className="space-y-3 bg-muted/30 p-4 rounded-md"><div className="flex h-32 items-center justify-center gap-1" aria-label="Reference groove waveform">{Array.from({length:32},(_,i)=><span key={i} className={`w-1.5 bg-primary rounded-sm ${['h-5','h-12','h-20','h-8','h-16'][i%5]}`}/>)}</div><audio controls src={source} className="w-full"/><p className="text-xs text-muted-foreground">Audio visualizer · sample reference</p></div>;
-  if(source&&(path||/\.(wav|mp3)(\?|$)/i.test(url)||url.includes('demo.invalid')))return type==='video'?<video controls src={source} className="w-full aspect-video bg-muted"/>:<audio controls preload="metadata" src={source} className="w-full"/>;
+  if(url.includes('demo.invalid')&&type==='video')return <TrackPlayer source={source} title={filename || 'Reference groove'} />;
+  if(source&&(path||/\.(wav|mp3)(\?|$)/i.test(url)||url.includes('demo.invalid')))return type==='video'?<video controls src={source} className="w-full aspect-video bg-muted"/>:<TrackPlayer source={source} title={filename || 'Audio bounce'} />;
   if(url){let embed='';try{const u=new URL(url);if(['soundcloud.com','www.soundcloud.com'].includes(u.hostname))embed=`https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}`;if(u.hostname==='youtu.be')embed=`https://www.youtube-nocookie.com/embed/${u.pathname.slice(1)}`;if(['youtube.com','www.youtube.com'].includes(u.hostname))embed=`https://www.youtube-nocookie.com/embed/${u.searchParams.get('v')}`;}catch{}if(embed)return <iframe src={embed} title={filename||'Lesson media'} className="w-full aspect-video border-0"/>;return <a href={safeMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">{filename||'Open source'}</a>;}
   return <p className="text-muted-foreground text-sm">{path?'Sample file unavailable on this device.':'Add a media source'}</p>;
 }

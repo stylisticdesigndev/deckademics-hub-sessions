@@ -1,3 +1,9 @@
+# Production UX / UI rebuild
+- [x] Rebuild the shared audio player with real audio envelopes, seeking/speed/mute and submission/feedback presentation with bounce history.
+- [x] Add URL-selected focused lessons, syllabus/homework sheets, producer identity, priority recaps, and circular session balances.
+- [x] Add a searchable dashboard review inbox and scannable instructor roster; keep confirmed catch-up in a side sheet.
+- [x] Verify showcase playback, new WAV upload → inbox approval → student read-back after reload, catch-up confirmation, session meter, and 390/716/1280px layouts; 12 existing tests passed and preview build OK. Live authenticated pilot remains blocked below.
+
 # Music Production Phase 1
 - [x] Add dedicated Production student routes and enrollment-aware navigation; signed-out route redirects verified, authenticated live pilot still pending below.
 - [x] Build isolated, interactive instructor/student showcase with shared sample lessons, reviews, intake, catch-up, credits, notes, and messages.
