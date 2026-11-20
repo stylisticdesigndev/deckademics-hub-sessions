@@ -32,6 +32,7 @@ interface StudentConversationThreadProps {
   onSaveToNotes?: (message: ThreadMessage) => void;
   savedMessageIds?: Set<string>;
   replyDisabled?: boolean;
+  className?: string;
 }
 
 const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
@@ -46,6 +47,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   onSaveToNotes,
   savedMessageIds = new Set(),
   replyDisabled = false,
+  className,
 }) => {
   const [replyText, setReplyText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -81,10 +83,10 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] min-h-[500px]">
+    <div className={className || "flex flex-col h-[calc(100vh-5rem)] min-h-[500px]"}>
       {/* Header */}
       <div className="flex items-center gap-3 py-3 border-b">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <Avatar className="h-9 w-9">
@@ -111,7 +113,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
                     </AvatarFallback>
                   </Avatar>
                 )}
-                <div>
+                <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                   <div
                     className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
                       isMe
@@ -185,6 +187,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
           <div className="flex gap-2">
             <Textarea
               placeholder="Type a reply..."
+              aria-label="Message"
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -196,6 +199,7 @@ const StudentConversationThread: React.FC<StudentConversationThreadProps> = ({
               disabled={!replyText.trim() || sending}
               size="icon"
               className="shrink-0 h-[42px] w-[42px]"
+              aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </Button>

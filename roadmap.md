@@ -1,4 +1,5 @@
 # Production UX / UI rebuild
+- [x] Align showcase messaging with DJ conversation lists, compose, and role-specific threads; verified instructor compose/send → student reply → instructor read-back after reload, back navigation, and phone/tablet layouts. Live routes already reuse DJ messages; sample attachment uploads remain disabled.
 - [x] Rebuild the shared audio player with real audio envelopes, seeking/speed/mute and submission/feedback presentation with bounce history.
 - [x] Add URL-selected focused lessons, syllabus/homework sheets, producer identity, priority recaps, and circular session balances.
 - [x] Add a searchable dashboard review inbox and scannable instructor roster; keep confirmed catch-up in a side sheet.

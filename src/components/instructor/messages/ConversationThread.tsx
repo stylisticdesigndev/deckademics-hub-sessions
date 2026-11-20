@@ -32,6 +32,8 @@ interface ConversationThreadProps {
   twoWayMessaging?: boolean;
   onToggleTwoWayMessaging?: (next: boolean) => Promise<void> | void;
   canToggleTwoWayMessaging?: boolean;
+  imageAttachmentsEnabled?: boolean;
+  className?: string;
 }
 
 const ConversationThread: React.FC<ConversationThreadProps> = ({
@@ -46,6 +48,8 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   twoWayMessaging = true,
   onToggleTwoWayMessaging,
   canToggleTwoWayMessaging = true,
+  imageAttachmentsEnabled = true,
+  className,
 }) => {
   const [replyText, setReplyText] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -133,10 +137,10 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] min-h-[500px]">
+    <div className={className || "flex flex-col h-[calc(100vh-5rem)] min-h-[500px]"}>
       {/* Header */}
       <div className="flex items-center gap-3 py-3 border-b">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" aria-label="Back to conversations">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <Avatar className="h-9 w-9">
@@ -176,7 +180,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
                     </AvatarFallback>
                   </Avatar>
                 )}
-                <div>
+                <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                   <div
                     className={`px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
                       isMe
@@ -228,17 +232,19 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
           className="hidden"
           onChange={handleImageSelect}
         />
-        <Button
+        {imageAttachmentsEnabled && <Button
           variant="ghost"
           size="icon"
           className="shrink-0 h-[42px] w-[42px]"
           onClick={() => fileInputRef.current?.click()}
           disabled={isBusy}
+          aria-label="Attach image"
         >
           <ImagePlus className="h-4 w-4" />
-        </Button>
+        </Button>}
         <Textarea
           placeholder="Type a message..."
+          aria-label="Message"
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -250,6 +256,7 @@ const ConversationThread: React.FC<ConversationThreadProps> = ({
           disabled={(!replyText.trim() && !selectedImage) || isBusy}
           size="icon"
           className="shrink-0 h-[42px] w-[42px]"
+          aria-label="Send message"
         >
           <Send className="h-4 w-4" />
         </Button>
