@@ -8,3 +8,11 @@
 - [x] Choose the first production instructor: Sean (Lonegevity).
 - [ ] Choose pilot Production students (waiting on stakeholder).
 - [ ] Run a signed-in pilot of enrollment, completion, and student read-back (preview sign-in unavailable for this Supabase project).
+
+# Production flexible learning build
+- [ ] Build blank, reorderable multimedia lessons with optional homework.
+- [ ] Add student audio uploads/links and instructor-reviewed homework.
+- [ ] Add instructor-confirmed catch-up packets and first-session intake.
+- [ ] Add Advanced Plus session packages and low-balance alerts.
+- [ ] Restrict linked dual-program enrollment to admins and hide switches for single-program students.
+- [ ] Test rules, check desktop/mobile screens, and save changes.
