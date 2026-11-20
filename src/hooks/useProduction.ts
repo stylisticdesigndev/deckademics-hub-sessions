@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { useProductionDemo } from '@/providers/ProductionDemoProvider';
+import type { ProductionAction } from '@/lib/productionDemoState';
 
 export type ProductionModule = Database['public']['Tables']['production_modules']['Row'];
 export type ProductionEnrollment = Database['public']['Tables']['production_enrollments']['Row'];
@@ -10,11 +12,12 @@ type ModuleInput = Database['public']['Tables']['production_modules']['Insert'];
 type EnrollmentInput = Database['public']['Tables']['production_enrollments']['Insert'];
 
 export function useProduction() {
+  const demo = useProductionDemo();
   const { session, userData } = useAuth();
   const userId = session?.user.id;
   const client = useQueryClient();
   const query = useQuery({
-    queryKey: ['production', userId, userData.role], enabled: !!userId,
+    queryKey: ['production', userId, userData.role], enabled: !!userId && !demo,
     queryFn: async () => {
       let enrollmentQuery = supabase.from('production_enrollments').select('*').eq('active', true);
       if (userData.role === 'student' && userId) enrollmentQuery = enrollmentQuery.eq('student_id', userId);
@@ -30,14 +33,8 @@ export function useProduction() {
     },
   });
   const mutation = useMutation({
-    mutationFn: async (action:
-      | { kind: 'module'; value: ModuleInput }
-      | { kind: 'delete-module'; id: string }
-      | { kind: 'reorder'; ids: string[] }
-      | { kind: 'enroll'; value: EnrollmentInput }
-      | { kind: 'complete'; enrollmentId: string; moduleId: string; complete: boolean }
-      | { kind: 'attendance'; enrollmentId: string; date: string; status: 'present' | 'absent' }
-    ) => {
+    mutationFn: async (action: ProductionAction) => {
+      if (demo) return demo.save(action);
       if (!userId) throw new Error('Please sign in again.');
       if (action.kind === 'reorder') {
         const { error } = await supabase.rpc('reorder_production_modules', { module_ids: action.ids });
@@ -66,5 +63,6 @@ export function useProduction() {
     onSuccess: () => { client.invalidateQueries({ queryKey: ['production'] }); },
     onError: () => { toast.error('Unable to save this production update. Please try again.'); },
   });
-  return { ...query, ...query.data, save: mutation.mutateAsync, saving: mutation.isPending };
+  const demoData = demo ? { ...demo.state, enrollments: demo.role === 'student' ? demo.state.enrollments.filter(e => e.student_id === demo.studentId) : demo.state.enrollments, modules: demo.role === 'student' ? demo.state.modules.filter(m => !m.is_draft) : demo.state.modules } : undefined;
+  return { ...query, ...(demoData ?? query.data), isLoading: demo ? false : query.isLoading, error: demo ? null : query.error, save: mutation.mutateAsync, saving: mutation.isPending };
 }

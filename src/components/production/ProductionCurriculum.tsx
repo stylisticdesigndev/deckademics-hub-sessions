@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, Plus, Pencil, Trash2, AudioLines, ArrowUp, ArrowDown, FileText, ChevronRight, ArrowLeft, Check, MoreHorizontal } from 'lucide-react';
 import { lessonBlocks } from '@/lib/productionLearning';
 import { LessonBlocks } from './LessonBlocks';
 import { HomeworkSubmission } from './HomeworkSubmission';
 import { useProduction, type ProductionModule } from '@/hooks/useProduction';
 import { useAuth } from '@/providers/AuthProvider';
+import { useProductionDemo } from '@/providers/ProductionDemoProvider';
+import { DEMO_INSTRUCTOR_ID } from '@/lib/productionDemoState';
 import { PRODUCTION_LEVELS, productionLevelLabel } from '@/lib/production';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,22 +22,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function ProductionCurriculum() {
   const { userData, session } = useAuth();
+  const demo = useProductionDemo();
+  const role = demo?.role ?? userData.role;
+  const userId = demo ? DEMO_INSTRUCTOR_ID : session?.user.id;
   const { modules = [], enrollments = [], completions = [], isLoading, error, save, saving } = useProduction();
   const [level, setLevel] = useState('novice');
   const [editing, setEditing] = useState<Partial<ProductionModule> | null>(null);
   const [deleting, setDeleting] = useState<ProductionModule | null>(null);
   const [search, setSearch] = useState('');
-  const staff = userData.role === 'admin' || userData.role === 'instructor';
+  const staff = role === 'admin' || role === 'instructor';
   const activeLevel = staff ? level : enrollments[0]?.level ?? level;
   const selected = modules.filter(module => module.level === activeLevel);
   const visible = selected.filter(module => module.title.toLowerCase().includes(search.toLowerCase()));
-  const canEdit = (module: ProductionModule) => staff && (userData.role === 'admin' || !module.author_id || module.author_id === session?.user.id);
+  const canEdit = (module: ProductionModule) => staff && (role === 'admin' || !module.author_id || module.author_id === userId);
   if (isLoading) return <p className="text-muted-foreground py-8">Loading production curriculum…</p>;
   if (error) return <Alert variant="destructive"><AlertDescription>Production curriculum could not be loaded.</AlertDescription></Alert>;
   return <div className="space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h1 className="text-2xl font-bold flex items-center gap-2"><AudioLines className="h-6 w-6 text-primary" />Music Production Curriculum</h1><p className="text-muted-foreground">{productionLevelLabel(activeLevel)} · {selected.length} {selected.length === 1 ? "module" : "modules"}</p></div>
-      {staff && <Button onClick={() => setEditing({ level, order_index: selected.reduce((max, module) => Math.max(max, module.order_index), 0) + 1, is_draft: true })}><Plus className="h-4 w-4 mr-2" />Add Module</Button>}
+      {staff && <div className="flex flex-wrap gap-2">{!demo&&<Button asChild variant="outline"><Link to="/production/showcase/instructor"><AudioLines className="h-4 w-4"/>Sean’s Preview</Link></Button>}<Button onClick={() => setEditing({ level, order_index: selected.reduce((max, module) => Math.max(max, module.order_index), 0) + 1, is_draft: true })}><Plus className="h-4 w-4 mr-2" />Add Module</Button></div>}
     </div>
     {staff && <Tabs value={level} onValueChange={setLevel}><TabsList className="flex h-auto w-full flex-wrap justify-start">{PRODUCTION_LEVELS.map(item => <TabsTrigger className="flex-1 min-h-10" key={item} value={item}>{productionLevelLabel(item)}</TabsTrigger>)}</TabsList></Tabs>}
     {selected.length === 0 && <div className="border-y py-12 text-center text-muted-foreground"><BookOpen className="h-8 w-8 mx-auto mb-3" />No published modules available.</div>}
@@ -53,7 +59,7 @@ export function ProductionCurriculum() {
       {visible.length === 0 && selected.length > 0 && <p className="py-6 text-sm text-muted-foreground">No matching lessons.</p>}
     </div>}
     {!staff && <div className="divide-y border-y">{selected.map(module => <article key={module.id} className="py-6 space-y-4">
-      <div className="flex gap-3 items-start"><span className="h-9 w-9 shrink-0 bg-primary/10 text-primary rounded-md flex items-center justify-center font-semibold">{module.order_index}</span><div className="min-w-0 flex-1"><div className="flex gap-2 flex-wrap items-center"><h2 className="text-lg font-semibold break-words">{module.title}</h2>{module.is_draft && <Badge variant="outline">Draft</Badge>}{completions.some(item => item.module_id === module.id) && !staff && <Badge>Complete</Badge>}</div><p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{module.description}</p></div>{canEdit(module) && <div className="flex gap-1"><Button size="icon" variant="ghost" aria-label={`Edit ${module.title}`} title="Edit module" onClick={() => setEditing(module)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${module.title}`} title="Delete module" onClick={() => setDeleting(module)}><Trash2 className="h-4 w-4" /></Button></div>}</div>
+      <div className="flex gap-3 items-start"><span className="h-9 w-9 shrink-0 bg-primary/10 text-primary rounded-md flex items-center justify-center font-semibold">{module.order_index}</span><div className="min-w-0 flex-1"><div className="flex gap-2 flex-wrap items-center"><h2 className="text-lg font-semibold break-words">{module.title}</h2>{module.is_draft && <Badge variant="outline">Draft</Badge>}{completions.some(item => item.module_id === module.id && item.enrollment_id === enrollments[0]?.id) && !staff && <Badge>Complete</Badge>}</div><p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{module.description}</p></div>{canEdit(module) && <div className="flex gap-1"><Button size="icon" variant="ghost" aria-label={`Edit ${module.title}`} title="Edit module" onClick={() => setEditing(module)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${module.title}`} title="Delete module" onClick={() => setDeleting(module)}><Trash2 className="h-4 w-4" /></Button></div>}</div>
       <div className="sm:pl-12 space-y-5"><LessonBlocks blocks={lessonBlocks(module.blocks)}/>{!lessonBlocks(module.blocks).length&&module.lesson_outline&&<p className="whitespace-pre-wrap text-sm">{module.lesson_outline}</p>}{!staff&&enrollments[0]&&lessonBlocks(module.blocks).filter(b=>b.type==='homework').map(b=><HomeworkSubmission key={b.id} enrollmentId={enrollments[0].id} moduleId={module.id} blockId={b.id}/>)}{!staff&&enrollments[0]&&module.homework_prompt&&!lessonBlocks(module.blocks).some(b=>b.type==='homework')&&<><p>{module.homework_prompt}</p><HomeworkSubmission enrollmentId={enrollments[0].id} moduleId={module.id} blockId="legacy-homework"/></>}{canEdit(module)&&<div className="flex gap-2">{[-1,1].map(direction=><Button key={direction} size="icon" variant="outline" aria-label={direction===-1?'Move module up':'Move module down'} title={direction===-1?'Move module up':'Move module down'} disabled={saving||!selected[selected.indexOf(module)+direction]} onClick={()=>save({kind:'reorder',ids: (()=>{const ids=selected.map(m=>m.id);const i=selected.indexOf(module);[ids[i],ids[i+direction]]=[ids[i+direction],ids[i]];return ids;})()})}>{direction===-1?<ArrowUp className="h-4 w-4"/>:<ArrowDown className="h-4 w-4"/>}</Button>)}</div>}</div>
     </article>)}</div>}
     <Dialog open={!!editing} onOpenChange={open => { if (!open) setEditing(null); }}><DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:h-[94dvh] sm:max-h-[94dvh] sm:w-[95vw] sm:max-w-6xl sm:rounded-lg [&>button]:hidden">

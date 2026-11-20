@@ -17,7 +17,7 @@ export const SlimSidebarNav = ({ userType }: SlimSidebarNavProps) => {
 
   const dashboardHref = userType === 'instructor' && pathname.startsWith('/instructor/production')
     ? '/instructor/production'
-    : `/${userType}/dashboard`;
+    : userType === 'student' && pathname.startsWith('/student/production') ? '/student/production' : `/${userType}/dashboard`;
 
   const itemClass = (active: boolean) =>
     cn(

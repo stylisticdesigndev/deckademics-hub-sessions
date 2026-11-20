@@ -11,9 +11,12 @@ import { useAuth } from '@/providers/AuthProvider';
 import { ProductionMedia } from './ProductionMedia';
 import { BlockInsertMenu, BLOCK_TYPES } from './BlockInsertMenu';
 import { toast } from 'sonner';
+import { useProductionDemo } from '@/providers/ProductionDemoProvider';
+import { DEMO_INSTRUCTOR_ID } from '@/lib/productionDemoState';
 
 export function LessonBlocks({ blocks, onChange }: { blocks: LessonBlock[]; onChange?: (blocks: LessonBlock[]) => void }) {
   const { session } = useAuth();
+  const demo = useProductionDemo();
   const [uploading, setUploading] = useState<string | null>(null);
   const [slashId, setSlashId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export function LessonBlocks({ blocks, onChange }: { blocks: LessonBlock[]; onCh
       </div> : <div className="space-y-3 rounded-md border bg-muted/20 p-4">
         <p className="flex items-center gap-2 text-sm font-medium">{(() => { const Icon = BLOCK_TYPES.find(b => b.type === block.type)?.icon; return Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null; })()}{BLOCK_TYPES.find(b => b.type === block.type)?.label}</p>
         <Input type="url" aria-label="Media link" placeholder="Paste a link…" value={block.url ?? ''} onChange={e => change(index, { url: e.target.value, storage_path: undefined })} />
-        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm text-muted-foreground"><Upload className="h-4 w-4" />{uploading === block.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upload file'}<input className="sr-only" type="file" disabled={!!uploading} accept={block.type === 'audio' ? '.mp3,.wav' : block.type === 'video' ? '.mp4,.webm' : '.pdf,.txt,.zip,.docx,.png,.jpg,.jpeg'} onChange={async e => { const file = e.target.files?.[0]; const id = session?.user.id; if (!file || !id) return; setUploading(block.id); try { const path = await uploadProductionFile(file, id); change(index, { storage_path: path, filename: file.name, url: '' }); } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed.'); } finally { setUploading(null); } }} /></label>
+        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm text-muted-foreground"><Upload className="h-4 w-4" />{uploading === block.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upload file'}<input className="sr-only" type="file" disabled={!!uploading} accept={block.type === 'audio' ? '.mp3,.wav' : block.type === 'video' ? '.mp4,.webm' : '.pdf,.txt,.zip,.docx,.png,.jpg,.jpeg'} onChange={async e => { const file = e.target.files?.[0]; const id = demo ? DEMO_INSTRUCTOR_ID : session?.user.id; if (!file || !id) return; setUploading(block.id); try { const path = await uploadProductionFile(file, id, false, !!demo); change(index, { storage_path: path, filename: file.name, url: '' }); } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed.'); } finally { setUploading(null); } }} /></label>
         {(block.url || block.storage_path) && <ProductionMedia type={block.type} url={block.url} path={block.storage_path} filename={block.filename} />}
         <Input aria-label="Media caption" placeholder="Add a caption…" className="h-8 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0" value={block.content} onChange={e => change(index, { content: e.target.value })} />
       </div>}

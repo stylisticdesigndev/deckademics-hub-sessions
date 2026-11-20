@@ -6,3 +6,5 @@
 - Keep Production lesson editing in a document-style canvas with shared inline block menus; preserve the existing block schema so presentation changes never alter student submissions or permissions.
 - Keep Production submissions, intake, catch-up packets, and session packages in enrollment-scoped tables; students submit pending work, staff verify it, and only admins create/link program enrollment.
 - Derive Production session balances from purchased credits and unique present attendance dates from the first package start; absence never consumes a session, and renewals append credits rather than erase history.
+- Keep Production student routes enrollment-gated in a separate route module; existing shared student pages remain compatible with dual enrollment.
+- Isolate the temporary Production showcase under its own provider and routes with browser-only sample records/files; reuse real lesson and learning screens, but never synthesize authentication or send showcase changes to Supabase.

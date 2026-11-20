@@ -18,10 +18,12 @@ import { useUnreadMessagesCount } from '@/hooks/student/useUnreadMessages';
 import { useUnreadAnnouncementsCount } from '@/hooks/student/useUnreadAnnouncementsCount';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useProduction } from '@/hooks/useProduction';
 
 export const StudentNavigation = () => {
   const { pathname } = useLocation();
   const { userData } = useAuth();
+  const { enrollments = [] } = useProduction();
   const studentId = userData.user?.id;
   const { setOpenMobile, isMobile, state } = useSidebar();
   const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
@@ -42,7 +44,7 @@ export const StudentNavigation = () => {
   ];
 
   // Profile is accessed via the avatar dropdown in the footer on all viewports
-  const navItems = baseNavItems;
+  const navItems = enrollments.length ? [{ title: 'Music Production', icon: Music, href: '/student/production' }, ...baseNavItems] : baseNavItems;
 
   const linkClasses = (href: string) => cn(
     "flex items-center gap-x-2 px-2.5 py-2 text-sm font-medium rounded-md relative",

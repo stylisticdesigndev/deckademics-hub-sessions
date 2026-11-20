@@ -74,6 +74,8 @@ import InstructorCurriculum from "./pages/instructor/InstructorCurriculum";
 import ProductionInstructorLayoutRoute from "./routes/ProductionInstructorLayoutRoute";
 import { ProductionInstructorDashboard } from "./components/production/ProductionInstructorDashboard";
 import { ProductionCurriculum } from "./components/production/ProductionCurriculum";
+import { productionStudentRoutes } from './routes/ProductionStudentRoutes';
+import { productionDemoRoutes } from './routes/ProductionDemoRoutes';
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,8 @@ const App = () => {
         {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/design-system" element={<DesignSystem />} />
+        {productionDemoRoutes()}
+        {productionStudentRoutes()}
         <Route path="/auth">
           <Route index element={<Navigate to="/auth/student" replace />} />
           <Route path="student" element={<StudentAuth />} />

@@ -1,4 +1,7 @@
 # Music Production Phase 1
+- [x] Add dedicated Production student routes and enrollment-aware navigation; signed-out route redirects verified, authenticated live pilot still pending below.
+- [x] Build isolated, interactive instructor/student showcase with shared sample lessons, reviews, intake, catch-up, credits, notes, and messages.
+- [x] Verify showcase audio upload → instructor approval → student feedback, confirmed catch-up, renewal, messaging, lesson publication/read-back after reload, and mobile/desktop screens; 16 tests passed, no live data writes.
 - [x] Assign Sean (Lonegevity) to Production and open his Production dashboard automatically.
 - [x] Remove instructor program switches and give Production its own dashboard and curriculum pages; verify mobile rendering and curriculum destination with fixtures.
 - [x] Add separate production enrollments, five levels, modules, and completion tracking with staff access rules.
