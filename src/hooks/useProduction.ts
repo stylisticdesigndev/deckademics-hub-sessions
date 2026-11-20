@@ -33,12 +33,16 @@ export function useProduction() {
     mutationFn: async (action:
       | { kind: 'module'; value: ModuleInput }
       | { kind: 'delete-module'; id: string }
+      | { kind: 'reorder'; ids: string[] }
       | { kind: 'enroll'; value: EnrollmentInput }
       | { kind: 'complete'; enrollmentId: string; moduleId: string; complete: boolean }
       | { kind: 'attendance'; enrollmentId: string; date: string; status: 'present' | 'absent' }
     ) => {
       if (!userId) throw new Error('Please sign in again.');
-      if (action.kind === 'module') {
+      if (action.kind === 'reorder') {
+        const { error } = await supabase.rpc('reorder_production_modules', { module_ids: action.ids });
+        if (error) throw error;
+      } else if (action.kind === 'module') {
         const { error } = await supabase.from('production_modules').upsert({ ...action.value, author_id: action.value.author_id ?? userId });
         if (error) throw error;
       } else if (action.kind === 'delete-module') {

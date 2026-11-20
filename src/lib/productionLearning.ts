@@ -1,0 +1,8 @@
+export type LessonBlock = { id: string; type: 'text' | 'heading' | 'video' | 'audio' | 'file' | 'homework'; content: string; url?: string; storage_path?: string; filename?: string };
+export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+export function audioUploadAllowed(name: string, size: number) { return /\.(mp3|wav)$/i.test(name) && size <= MAX_AUDIO_BYTES; }
+export function safeMediaUrl(value: string) { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : ''; } catch { return ''; } }
+export function lessonBlocks(value: unknown): LessonBlock[] { return Array.isArray(value) ? value.filter(b => b && typeof b.id === 'string' && ['text','heading','video','audio','file','homework'].includes(b.type)).map(b => ({ ...b, content: typeof b.content === 'string' ? b.content : '' })) : []; }
+export function moveItem<T>(items: T[], from: number, direction: number): T[] { const next = [...items]; const to = from + direction; if (to < 0 || to >= next.length) return next; const [item] = next.splice(from, 1); next.splice(to, 0, item); return next; }
+export function sessionBalance(packages: { sessions: number; start_date: string }[], attendance: { class_date: string; status: string }[]) { const first = packages.map(p => p.start_date).sort()[0]; const total = packages.reduce((n,p) => n + p.sessions, 0); const used = new Set(attendance.filter(a => first && a.class_date >= first && a.status === 'present').map(a => a.class_date)).size; return { total, used, remaining: Math.max(0, total-used), low: total > 0 && total-used <= 2 }; }
+export function studentProgramAccess(enrollment?: { dj_enabled: boolean }) { return { dual: !!enrollment?.dj_enabled, onlyProduction: !!enrollment && !enrollment.dj_enabled }; }

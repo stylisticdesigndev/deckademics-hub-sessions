@@ -1,0 +1,2 @@
+REVOKE ALL ON public.production_intakes,public.production_submissions,public.production_catchups,public.production_packages FROM anon,PUBLIC;
+CREATE INDEX production_catchups_enrollment ON public.production_catchups(enrollment_id);
