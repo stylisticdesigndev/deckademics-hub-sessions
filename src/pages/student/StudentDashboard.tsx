@@ -11,6 +11,9 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CertificateCelebration } from '@/components/certificates/CertificateCelebration';
 import { CertificatesWidget } from '@/components/certificates/EarnedCertificates';
+import { ProgramSwitch } from '@/components/production/ProgramSwitch';
+import { ProductionStudentDashboard } from '@/components/production/ProductionStudentDashboard';
+import { useProgram } from '@/hooks/useProgram';
 
 interface StudentDashboardProps {
   dashboard: {
@@ -35,6 +38,7 @@ const StudentDashboard = ({
   studentId,
 }: StudentDashboardProps) => {
   const { userData, session } = useAuth();
+  const { program } = useProgram();
 
   const {
     studentData,
@@ -81,6 +85,8 @@ const StudentDashboard = ({
 
   return (
     <div className="space-y-6">
+      <ProgramSwitch />
+      {program === 'production' ? <ProductionStudentDashboard /> : <>
       <PushNotificationPrompt />
 
       <section className="space-y-1">
@@ -136,6 +142,7 @@ const StudentDashboard = ({
           onDismiss={handleDismissAnnouncement}
         />
       </section>
+      </>}
     </div>
   );
 };

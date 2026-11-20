@@ -18,8 +18,12 @@ import { useDeleteCurriculumModule } from '@/hooks/useDeleteCurriculumModule';
 import { useCreateCurriculumLesson } from '@/hooks/useCreateCurriculumLesson';
 import { useUpdateCurriculumLesson } from '@/hooks/useUpdateCurriculumLesson';
 import { useDeleteCurriculumLesson } from '@/hooks/useDeleteCurriculumLesson';
+import { ProgramSwitch } from '@/components/production/ProgramSwitch';
+import { ProductionCurriculum } from '@/components/production/ProductionCurriculum';
+import { useProgram } from '@/hooks/useProgram';
 
 const AdminCurriculum = () => {
+  const { program } = useProgram();
   const [selectedLevel, setSelectedLevel] = useState<'novice' | 'amateur' | 'intermediate' | 'advanced'>('novice');
   
   const { data: allModules = [], isLoading } = useCurriculumModules();
@@ -116,6 +120,8 @@ const AdminCurriculum = () => {
   const getLessonsForModule = (moduleId: string) =>
     allLessons.filter(l => l.module_id === moduleId).sort((a, b) => a.order_index - b.order_index);
 
+  if (program === 'production') return <div className="space-y-6"><ProgramSwitch /><ProductionCurriculum /></div>;
+
   if (isLoading) {
     return (
       <>
@@ -129,6 +135,7 @@ const AdminCurriculum = () => {
   return (
     <>
       <div className="space-y-6">
+        <ProgramSwitch />
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold">Curriculum Management</h1>

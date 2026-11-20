@@ -8,8 +8,12 @@ import { useCurriculumLessons } from '@/hooks/useCurriculumLessons';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { LEVEL_VALUE_MAP } from '@/hooks/useUpdateStudentLevel';
+import { ProgramSwitch } from '@/components/production/ProgramSwitch';
+import { ProductionCurriculum } from '@/components/production/ProductionCurriculum';
+import { useProgram } from '@/hooks/useProgram';
 
 const StudentCurriculum = () => {
+  const { program } = useProgram();
   const { userData } = useAuth();
   const userId = userData.user?.id;
   const { data: allModules = [], isLoading } = useCurriculumModules();
@@ -42,6 +46,8 @@ const StudentCurriculum = () => {
   const getLessonsForModule = (moduleId: string) =>
     allLessons.filter(l => l.module_id === moduleId).sort((a, b) => a.order_index - b.order_index);
 
+  if (program === 'production') return <div className="space-y-6"><ProgramSwitch /><ProductionCurriculum /></div>;
+
   if (isLoading || levelLoading) {
     return (
       <>
@@ -55,6 +61,7 @@ const StudentCurriculum = () => {
   return (
     <>
       <div className="space-y-6">
+        <ProgramSwitch />
         <section className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">Learning Curriculum</h1>

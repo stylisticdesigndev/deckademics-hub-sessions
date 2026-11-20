@@ -40,16 +40,17 @@ interface Props {
   student: Student | null;
   instructorId: string | undefined;
   refetch: () => Promise<void> | void;
+  program?: 'dj' | 'production';
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const TIME_SLOTS = ['3:30 PM - 5:00 PM', '5:30 PM - 7:00 PM', '7:30 PM - 9:00 PM'];
 
-export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenChange, student, instructorId, refetch }) => {
+export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenChange, student, instructorId, refetch, program = 'dj' }) => {
   const { toast } = useToast();
   const { createRequest, pendingRequests } = useScheduleChangeRequests('instructor');
   const updateStudentLevel = useUpdateStudentLevel();
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState(program === 'production' ? 'notes' : 'info');
 
   // Local mirror so optimistic edits survive parent refetch latency
   const [detailedStudent, setDetailedStudent] = useState<Student | null>(student);
@@ -229,19 +230,21 @@ export const InstructorStudentDetailDialog: React.FC<Props> = ({ open, onOpenCha
               </div>
             </DialogHeader>
 
-            <StaffCertificatesPanel studentId={detailedStudent.id} currentLevel={detailedStudent.level} />
+            {program === 'dj' && <StaffCertificatesPanel studentId={detailedStudent.id} currentLevel={detailedStudent.level} />}
 
+            {program === 'dj' ?
             <StudentProfileSummary
               student={detailedStudent}
               instructorId={instructorId}
               onAddNote={() => { setActiveTab('notes'); setNoteText(''); setShowNoteDialog(true); }}
               onAddTask={() => { setActiveTab('tasks'); setShowAddTask(true); }}
             />
+            : <div className="grid grid-cols-2 gap-2"><Button onClick={() => { setActiveTab('notes'); setNoteText(''); setShowNoteDialog(true); }}><Plus className="h-4 w-4 mr-2" />Add Note</Button><Button variant="outline" onClick={() => { setActiveTab('tasks'); setShowAddTask(true); }}><Plus className="h-4 w-4 mr-2" />Add Task</Button></div>}
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="info">Info</TabsTrigger>
-                <TabsTrigger value="progress">Skills</TabsTrigger>
+              <TabsList className={cn('grid w-full', program === 'dj' ? 'grid-cols-4' : 'grid-cols-2')}>
+                {program === 'dj' && <TabsTrigger value="info">Info</TabsTrigger>}
+                {program === 'dj' && <TabsTrigger value="progress">Skills</TabsTrigger>}
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
               </TabsList>

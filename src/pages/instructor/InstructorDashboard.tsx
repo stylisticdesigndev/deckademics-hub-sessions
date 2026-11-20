@@ -13,6 +13,9 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useInstructorStudentsSimple } from '@/hooks/instructor/useInstructorStudentsSimple';
 import { useInstructorAttendance } from '@/hooks/instructor/useInstructorAttendance';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
+import { ProgramSwitch } from '@/components/production/ProgramSwitch';
+import { ProductionInstructorDashboard } from '@/components/production/ProductionInstructorDashboard';
+import { useProgram } from '@/hooks/useProgram';
 
 interface Student {
   id: string;
@@ -40,6 +43,7 @@ interface InstructorDashboardProps {
 }
 
 const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
+  const { program } = useProgram();
   const { students, todayClasses, averageProgress, totalStudents, fetchError } = dashboardData;
   const { session } = useAuth();
   const instructorId = session?.user?.id;
@@ -89,6 +93,8 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
 
   return (
     <div className="space-y-6">
+      <ProgramSwitch />
+      {program === 'production' ? <ProductionInstructorDashboard /> : <>
       <PushNotificationPrompt />
 
       <WelcomeSection />
@@ -138,6 +144,7 @@ const InstructorDashboard = ({ dashboardData }: InstructorDashboardProps) => {
         onOpenChange={setWalkthroughOpen}
         onComplete={completeWalkthrough}
       />
+      </>}
     </div>
   );
 };
