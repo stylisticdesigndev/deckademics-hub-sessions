@@ -1011,12 +1011,61 @@ export type Database = {
           },
         ]
       }
+      production_catchups: {
+        Row: {
+          class_date: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          module_id: string
+          note: string
+          sent_by: string
+          updated_at: string
+        }
+        Insert: {
+          class_date: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          module_id: string
+          note?: string
+          sent_by?: string
+          updated_at?: string
+        }
+        Update: {
+          class_date?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          module_id?: string
+          note?: string
+          sent_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_catchups_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "production_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_catchups_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "production_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_enrollments: {
         Row: {
           active: boolean
           class_day: string | null
           class_time: string | null
           created_at: string
+          dj_enabled: boolean
           id: string
           instructor_id: string
           level: string
@@ -1028,6 +1077,7 @@ export type Database = {
           class_day?: string | null
           class_time?: string | null
           created_at?: string
+          dj_enabled?: boolean
           id?: string
           instructor_id: string
           level?: string
@@ -1039,6 +1089,7 @@ export type Database = {
           class_day?: string | null
           class_time?: string | null
           created_at?: string
+          dj_enabled?: boolean
           id?: string
           instructor_id?: string
           level?: string
@@ -1058,6 +1109,50 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: true
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_intakes: {
+        Row: {
+          created_at: string
+          daw: string
+          enrollment_id: string
+          experience: string
+          genres: string
+          goals: string
+          hardware: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daw?: string
+          enrollment_id: string
+          experience?: string
+          genres?: string
+          goals?: string
+          hardware?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daw?: string
+          enrollment_id?: string
+          experience?: string
+          genres?: string
+          goals?: string
+          hardware?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_intakes_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "production_enrollments"
             referencedColumns: ["id"]
           },
         ]
@@ -1107,6 +1202,7 @@ export type Database = {
       production_modules: {
         Row: {
           author_id: string | null
+          blocks: Json
           created_at: string
           description: string
           homework_prompt: string
@@ -1120,6 +1216,7 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          blocks?: Json
           created_at?: string
           description?: string
           homework_prompt?: string
@@ -1133,6 +1230,7 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          blocks?: Json
           created_at?: string
           description?: string
           homework_prompt?: string
@@ -1150,6 +1248,107 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_packages: {
+        Row: {
+          created_at: string
+          created_by: string
+          enrollment_id: string
+          id: string
+          note: string
+          sessions: number
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          enrollment_id: string
+          id?: string
+          note?: string
+          sessions: number
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          enrollment_id?: string
+          id?: string
+          note?: string
+          sessions?: number
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_packages_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "production_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_submissions: {
+        Row: {
+          block_id: string
+          created_at: string
+          enrollment_id: string
+          feedback: string
+          id: string
+          media_url: string
+          module_id: string
+          reviewed_by: string | null
+          status: string
+          storage_path: string | null
+          student_note: string
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          enrollment_id: string
+          feedback?: string
+          id?: string
+          media_url?: string
+          module_id: string
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string | null
+          student_note?: string
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          enrollment_id?: string
+          feedback?: string
+          id?: string
+          media_url?: string
+          module_id?: string
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string | null
+          student_note?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_submissions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "production_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_submissions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "production_modules"
             referencedColumns: ["id"]
           },
         ]
@@ -1990,6 +2189,10 @@ export type Database = {
         }
       }
       level_rank: { Args: { _level: string }; Returns: number }
+      production_staff_access: {
+        Args: { _enrollment: string }
+        Returns: boolean
+      }
       set_mock_flag: {
         Args: { _is_mock: boolean; _user_ids: string[] }
         Returns: Json
