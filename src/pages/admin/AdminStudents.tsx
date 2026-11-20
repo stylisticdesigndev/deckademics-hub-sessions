@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ProductionEnrollmentAdmin } from '@/components/production/ProductionEnrollmentAdmin';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
 import { useMockUsers } from '@/hooks/useMockUsers';
@@ -908,6 +909,7 @@ const AdminStudents = () => {
           </SheetHeader>
           {viewedStudent && (
             <div className="space-y-6 mt-6">
+              {viewedStudent.enrollment_status === 'active' && <ProductionEnrollmentAdmin studentId={viewedStudent.id} />}
               <div className="flex items-center gap-2">
                 {getStatusBadge(viewedStudent.enrollment_status)}
                 <Badge variant="outline" className="capitalize">{viewedStudent.level}</Badge>

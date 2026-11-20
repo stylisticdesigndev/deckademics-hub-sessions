@@ -2193,6 +2193,10 @@ export type Database = {
         Args: { _enrollment: string }
         Returns: boolean
       }
+      reorder_production_modules: {
+        Args: { module_ids: string[] }
+        Returns: undefined
+      }
       set_mock_flag: {
         Args: { _is_mock: boolean; _user_ids: string[] }
         Returns: Json
